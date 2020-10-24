@@ -59,13 +59,13 @@ start:
    sta AD_attack_rate
    lda #63
    sta AD_attack_rate+1
-   lda #0
+   lda #16
    sta AD_decay_rate
-   lda #1
+   lda #0
    sta AD_decay_rate+1
 
    ; setup playback of PSG waveform
-   VERA_SET_VOICE_PARAMS 0,$0000,$00,128
+   VERA_SET_VOICE_PARAMS 0,$0000,$00,64
 
    ; setup the timer
 
@@ -114,23 +114,7 @@ play_note:
    lda Octave
    clc
    adc Note
-   ; multiply by 2 to get memory address of frequency data
-   asl
-   tax
-
-   sei ; I don't want corruption of my data transfer by interrupts
-   ; upload frequency to the VERA
-   lda #0
-   sta VERA_ctrl
-   ; set address of first PSG register into VRAM address register
-   VERA_SET_ADDR $1F9C0,1
-   ; load data into VERA
-   lda pitch_data,x
-   sta VERA_data0   ; freq low byte
-   inx
-   lda pitch_data,x
-   sta VERA_data0   ; freq high byte
-   cli ; allow interrupts again
+   sta Pitch
 
    ; launch ENV generator
    stz AD_phase

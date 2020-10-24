@@ -18,6 +18,7 @@ do_fillup:
 
    ; now do all PSG control
 do_psg_control:
+
    ; do env generator
    ; advance first
    ; then update volume
@@ -26,7 +27,7 @@ do_psg_control:
    beq AD_do_attack
    cmp #2
    beq AD_do_decay
-   bra end_aflow
+   jmp end_aflow
 AD_do_attack:
    clc
    lda AD_attack_rate
@@ -62,6 +63,12 @@ AD_finished:
 AD_update_volume:
 
    VERA_SET_VOICE_VOLUME_X 0,192
+
+   ; do pitch control
+   inc Fine
+   inc Fine
+   COMPUTE_FREQUENCY Pitch,Fine,Frequency
+   VERA_SET_VOICE_FREQUENCY 0,Frequency
 
 end_aflow:
    ; call default interrupt handler

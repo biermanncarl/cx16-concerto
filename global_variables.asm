@@ -9,15 +9,19 @@ message:
    .byte "q           quit", $0D
 end_message:
 
-   ; keyboard values
+; keyboard values
 Octave:
    .byte 60
 Note:
    .byte 0
+Pitch:
+   .byte 0
 Fine:
    .byte 0
+Frequency:
+   .word 0
 
-   ; AD-Envelope variables
+; AD-Envelope variables
    ; front end
 AD_attack:
    .byte 0
@@ -31,4 +35,8 @@ AD_decay_rate:
 AD_step:
    .byte 0
 AD_phase:
+   .word 0
+
+; Pitch Computation Variables
+CP_diff:
    .word 0
