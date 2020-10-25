@@ -1,5 +1,4 @@
 .include "x16.asm"
-.include "macros.asm"
 
 .zeropage
 .include "zeropage.asm"
@@ -14,11 +13,15 @@
 
 ; data
 .include "pitch_data.asm"
-; variables
-.include "global_variables.asm"
-; subroutines
+; variables/macros
+.include "global_definitions.asm"
+.include "synth_macros.asm"
+; sub modules
+.include "timbres_user.asm"
+.include "timbres_preint.asm"
+.include "voices.asm"
+.include "synth_engine.asm"
 .include "my_isr.asm"
-
 
 
 
@@ -39,73 +42,27 @@ start:
    bra @loop_msg
 @done_msg:
 
-   ; copy address of default interrupt handler
-   lda IRQVec
-   sta Default_isr
-   lda IRQVec+1
-   sta Default_isr+1
-   ; replace irq handler
-   sei            ; block interrupts
-   lda #<My_isr
-   sta IRQVec
-   lda #>My_isr
-   sta IRQVec+1
-   cli            ; allow interrupts
+
 
    ; initialize AD env generator
    ; for now, just use the rates directly
    ; instead of deriving them from times
    lda #0
-   sta AD_attack_rate
-   lda #63
-   sta AD_attack_rate+1
+   sta timbres_pre::Timbre::ad1::attack
    lda #16
-   sta AD_decay_rate
+   sta timbres_pre::Timbre::ad1::attack+1
+   lda #128
+   sta timbres_pre::Timbre::ad1::decay
    lda #0
-   sta AD_decay_rate+1
+   sta timbres_pre::Timbre::ad1::decay+1
 
    ; setup playback of PSG waveform
-   VERA_SET_VOICE_PARAMS 0,$0000,$00,64
+   ; VERA_SET_VOICE_PARAMS 0,$0000,$00,64
 
-   ; setup the timer
-
-   ; prepare playback
-   lda #$8F       ; reset PCM buffer, 8 bit mono, max volume
-   sta VERA_audio_ctrl
-
-   lda #0         ; set playback rate to zero
-   sta VERA_audio_rate
-
-   ; fill FIFO buffer up to 1/4
-   lda #4
-   tax
-   lda #0
-   tay
-@loop:
-   sta VERA_audio_data
-   iny
-   bne @loop
-   dex
-   bne @loop
-
-   ; enable AFLOW interrupt
-   ; TODO: disable other interrupts for better performance
-   ; (and store which ones were activated in a variable to restore them on exit)
-   lda VERA_ien
-   ora #$08
-   sta VERA_ien
-
-   ; start playback
-   ; this will trigger AFLOW interrupts to occur
-   ; set sample rate in multiples of 381.5 Hz = 25 MHz / (512*128)
-   lda #1
-   sta VERA_audio_rate
-
-
-
-
+   jsr my_isr::launch_isr
    ; main loop ... wait until "Q" is pressed.
 mainloop:
+
 .include "keyboard_polling.asm"
 
 play_note:
@@ -114,44 +71,21 @@ play_note:
    lda Octave
    clc
    adc Note
-   sta Pitch
 
-   ; launch ENV generator
-   stz AD_phase
-   stz AD_phase+1
-   lda #1
-   sta AD_step
+   ; play note
+   sta voices::note_pitch
+   lda #127
+   sta voices::note_velocity
+   stz voices::note_timbre
+   jsr voices::play_monophonic
+
 end_mainloop:
 
    jmp mainloop
 
 
 exit:
-
-   ; stop PSG waveform
-   VERA_MUTE_VOICE 0
-
-
-   ; stop PCM
-   lda #0
-   sta VERA_audio_rate
-
-   ; restore interrupt handler
-   sei            ; block interrupts
-   lda #<Default_isr
-   sta IRQVec
-   lda #>Default_isr
-   sta IRQVec+1
-   cli            ; allow interrupts
-
-   ; reset FIFO buffer
-   lda #$8F
-   sta VERA_audio_ctrl
-
-   ; disable AFLOW interrupt
-   lda VERA_ien
-   and #$F7
-   sta VERA_ien
+   jsr my_isr::shutdown_isr
 
    rts            ; return to BASIC
    ; NOTE

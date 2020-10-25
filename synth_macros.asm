@@ -1,3 +1,6 @@
+.ifndef SYNTH_MACROS_INC
+SYNTH_MACROS_INC = 1
+
 .macro VERA_SET_VOICE_PARAMS n_voice, frequency, volume, waveform
     VERA_SET_ADDR $1F9C0+4*n_voice, 1
     lda #0
@@ -9,6 +12,20 @@
     lda #volume
     sta VERA_data0
     lda #waveform
+    sta VERA_data0
+.endmacro
+
+.macro VERA_SET_VOICE_PARAMS_MEM frequency, volume, waveform
+    VERA_SET_ADDR $1F9C0, 1
+    lda #0
+    sta VERA_ctrl
+    lda frequency
+    sta VERA_data0
+    lda frequency+1
+    sta VERA_data0
+    lda volume
+    sta VERA_data0
+    lda waveform
     sta VERA_data0
 .endmacro
 
@@ -44,6 +61,9 @@
 
 ; computes the frequency of a given pitch+fine combo
 ; may have to redo it with indirect mode for more flexibility later
+; Pitch Computation Variables
+CP_diff:
+   .word 0
 .macro COMPUTE_FREQUENCY cf_pitch, cf_fine, cf_output
     lda cf_pitch
     asl         ; multiply by 2 to get address
@@ -172,3 +192,7 @@
     ; total 418 cycles + page crossings = 53 us
 @skip_bit0:
 .endmacro
+
+
+
+.endif
