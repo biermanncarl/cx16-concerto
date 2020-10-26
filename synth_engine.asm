@@ -23,6 +23,9 @@ synth_tick:
    lda voices::Voice::active
    bne :+
    jmp skip_voice
+
+   ; do voice specific stuff
+
 :  ; do attack-decay env generator
    ; advance first
    ; then update volume
@@ -56,25 +59,74 @@ AD_finished:
    ldx #0
    stz voices::Voice::active
 AD_update_volume:
-
-
-   ;VERA_SET_VOICE_VOLUME_X 0,192
    ; volume is in X
    txa
    clc
    adc #192
    sta volume
 
-   ; do pitch control
+   ; determine *voice* pitch  (no oscillator pitch yet)
+   ; check portamento
+   lda voices::Voice::porta::active
+   beq @skip_porta   ; porta inactive?
+   cmp #1            ; porta upwards?
+   beq @porta_up     ; if not, it is going down:
+
+   ;porta downwards
+   lda voices::Voice::porta::pos+1
+   sec
+   sbc voices::Voice::porta::rate+1
+   sta voices::Voice::porta::pos+1
+   sta fine
+   lda voices::Voice::porta::pos
+   sbc voices::Voice::porta::rate
+   sta voices::Voice::porta::pos
+   sta pitch
+   cmp voices::Voice::pitch
+   bcs @voice_pitch_done      ; porta still needs going. if not, end it
+   stz voices::Voice::porta::active
+   stz fine
    lda voices::Voice::pitch
+   sta pitch
+   bra @voice_pitch_done
+@porta_up:
+   ; porta upwards
+   lda voices::Voice::porta::rate+1
    clc
+   adc voices::Voice::porta::pos+1
+   sta voices::Voice::porta::pos+1
+   sta fine
+   lda voices::Voice::porta::rate
+   adc voices::Voice::porta::pos
+   sta voices::Voice::porta::pos
+   sta pitch
+   cmp voices::Voice::pitch
+   bcc @voice_pitch_done      ; porta still needs going. if not, end it
+   stz voices::Voice::porta::active
+   stz fine
+   lda voices::Voice::pitch
+   sta pitch
+   bra @voice_pitch_done
+@skip_porta:
+   lda voices::Voice::pitch
+   sta pitch
+   stz fine
+@voice_pitch_done:
+
+
+
+
+
+
+
+   ; do oscillator pitch control
+   lda fine
+   clc
+   adc timbres_pre::Timbre::osc1::fine
+   sta fine
+   lda pitch
    adc timbres_pre::Timbre::osc1::pitch
    sta pitch
-   lda timbres_pre::Timbre::osc1::fine
-   sta fine
-
-   ; TODO
-   ; portamento logic
 
    COMPUTE_FREQUENCY pitch,fine,frequency
 

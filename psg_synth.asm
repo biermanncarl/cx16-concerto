@@ -49,12 +49,15 @@ start:
    ; instead of deriving them from times
    lda #0
    sta timbres_pre::Timbre::ad1::attack
-   lda #16
+   lda #63
    sta timbres_pre::Timbre::ad1::attack+1
    lda #128
    sta timbres_pre::Timbre::ad1::decay
    lda #0
    sta timbres_pre::Timbre::ad1::decay+1
+   ; seta porta rate
+   lda #65
+   sta timbres_pre::Timbre::porta_r
 
    ; setup playback of PSG waveform
    ; VERA_SET_VOICE_PARAMS 0,$0000,$00,64

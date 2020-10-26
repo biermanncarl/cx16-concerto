@@ -32,9 +32,11 @@
    osc8_psg:  VOICE_BYTE_FIELD
 
    ; portamento
-   porta_active: VOICE_BYTE_FIELD   ; active at beginning of note
-   porta_pos:    VOICE_WORD_FIELD   ; current position in protamento (note, fine). Overwrites note as long as active
-   porta_rate:   VOICE_WORD_FIELD   ; unsigned rate (note, fine) negative slopes just by overflowing
+   .scope porta
+      active: VOICE_BYTE_FIELD   ; is porta still going? 0 if inactive, 1 if going up, 2 if going down
+      rate:   VOICE_WORD_FIELD   ; unsigned rate (note, fine)
+      pos:    VOICE_WORD_FIELD   ; current position in protamento (note, fine). Overwrites note as long as active
+   .endscope
 .endscope
 
 
@@ -66,12 +68,33 @@ play_monophonic:
    stz Voice::ad1::phase+1
    stz Voice::ad1::step
 
-   ; activate voice
-   lda #1
-   sta Voice::active
-
-   ; monophonic specific stuff
-   sta Voice::porta_active
+   ; portamento stuff (must come before voice's pitch is replaced!)
+   ldx #2
+   lda note_pitch
+   sec
+   sbc Voice::pitch ; if aimed pitch is higher than current pitch, no overflow, thus carry set
+   bcs :+
+   ; aimed lower
+   ; must invert accumulator for correct portamento rate determination
+   sta distance
+   lda #0
+   sec
+   sbc distance
+   sta distance
+   bra :++
+:  ; aimed higher
+   sta distance
+   ldx #1
+:  stx Voice::porta::active ; up or down
+   ; determine porta rate
+   MUL8x8 distance, timbres_pre::Timbre::porta_r, Voice::porta::rate
+   ;lda #0
+   ;sta Voice::porta::rate
+   ;lda #128
+   ;sta Voice::porta::rate+1
+   lda Voice::pitch
+   sta Voice::porta::pos
+   stz Voice::porta::pos+1
 
    ; other stuff
    lda note_pitch
@@ -90,6 +113,8 @@ play_monophonic:
    sta Voice::active
 rts
 
+distance:
+   .byte 0
 
 
 
