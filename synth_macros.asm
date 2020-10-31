@@ -15,10 +15,20 @@ SYNTH_MACROS_INC = 1
     sta VERA_data0
 .endmacro
 
-.macro VERA_SET_VOICE_PARAMS_MEM frequency, volume, waveform
-    VERA_SET_ADDR $1F9C0, 1
-    lda #0
-    sta VERA_ctrl
+; parameters in memory, but PSG voice number X
+.macro VERA_SET_VOICE_PARAMS_MEM_X frequency, volume, waveform
+    lda #$11
+	sta VERA_addr_bank
+	lda #$F9
+	sta VERA_addr_high
+	txa
+    asl
+    asl
+    clc
+    adc #$C0
+	sta VERA_addr_low
+    stz VERA_ctrl
+
     lda frequency
     sta VERA_data0
     lda frequency+1

@@ -301,9 +301,16 @@ play_note:
    jmp @non_mono_dependent_setup
 
 @poly_voice_acquisition:
-   nop ; TODO
-   ; deactivate voice, so the ISR won't play an "unfinished" voice
+   phy
+   jsr get_voice
+   ply
+   ; check if we got a valid voice
+   cpx #0
+   bpl :+
+   jmp @skip_play
+:  ; deactivate voice first, so the ISR won't play an "unfinished" voice
    stz Voice::active,x
+   
 
 @non_mono_dependent_setup:
    ; launch ENV generator (this might be migrated to mono/poly specific stuff for legato modes)

@@ -58,7 +58,7 @@ start:
    ; set mono & porta rate
    lda #65
    sta timbres_pre::Timbre::porta_r
-   lda #1
+   lda #0
    sta timbres_pre::Timbre::mono
    ; set oscillator parameters
    lda #64

@@ -169,7 +169,7 @@ AD_done:
    sta waveform
    ;lda #$FF
    ;sta volume
-   VERA_SET_VOICE_PARAMS_MEM frequency,volume,waveform
+   VERA_SET_VOICE_PARAMS_MEM_X frequency,volume,waveform
 
 
    jmp next_voice
