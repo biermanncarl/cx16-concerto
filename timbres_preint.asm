@@ -12,13 +12,15 @@
    ;general
    n_oscs:  TIMBRE_BYTE_FIELD         ; how many oscillators are used
    volume:  TIMBRE_BYTE_FIELD         ; overall volume
-   porta_r: TIMBRE_WORD_FIELD         ; portamento rate
    mono:    TIMBRE_BYTE_FIELD         ; monophonic on/off
+   porta_r: TIMBRE_BYTE_FIELD         ; portamento rate
 
    ; envelope rates (not times!)
    .scope ad1
-      attack: TIMBRE_WORD_FIELD
-      decay:  TIMBRE_WORD_FIELD
+      attackL: TIMBRE_BYTE_FIELD
+      attackH: TIMBRE_BYTE_FIELD
+      decayL:  TIMBRE_BYTE_FIELD
+      decayH:  TIMBRE_BYTE_FIELD
    .endscope
 
    ; oscillators

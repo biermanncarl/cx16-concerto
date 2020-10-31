@@ -29,14 +29,14 @@ start:
    ; startup code
    ; print message
    lda #<message
-   sta my_zp_ptr
+   sta mzpwa
    lda #>message
-   sta my_zp_ptr+1
+   sta mzpwa+1
    ldy #0
 @loop_msg:
    cpy #(end_message-message)
    beq @done_msg
-   lda (my_zp_ptr),y
+   lda (mzpwa),y
    jsr CHROUT
    iny
    bra @loop_msg
@@ -48,24 +48,33 @@ start:
    ; for now, just use the rates directly
    ; instead of deriving them from times
    lda #0
-   sta timbres_pre::Timbre::ad1::attack
+   sta timbres_pre::Timbre::ad1::attackL
    lda #63
-   sta timbres_pre::Timbre::ad1::attack+1
+   sta timbres_pre::Timbre::ad1::attackH
    lda #128
-   sta timbres_pre::Timbre::ad1::decay
+   sta timbres_pre::Timbre::ad1::decayL
    lda #0
-   sta timbres_pre::Timbre::ad1::decay+1
-   ; seta porta rate
+   sta timbres_pre::Timbre::ad1::decayH
+   ; set mono & porta rate
    lda #65
    sta timbres_pre::Timbre::porta_r
+   lda #1
+   sta timbres_pre::Timbre::mono
+   ; set oscillator parameters
+   lda #64
+   sta timbres_pre::Timbre::osc1::waveform
+   stz timbres_pre::Timbre::osc1::pitch
+   stz timbres_pre::Timbre::osc1::fine
+
+
 
    ; setup playback of PSG waveform
    ; VERA_SET_VOICE_PARAMS 0,$0000,$00,64
-
+   jsr voices::init_voicelist
    jsr my_isr::launch_isr
    ; main loop ... wait until "Q" is pressed.
 mainloop:
-
+   jsr voices::do_stack_releases
 .include "keyboard_polling.asm"
 
 play_note:
@@ -80,7 +89,7 @@ play_note:
    lda #127
    sta voices::note_velocity
    stz voices::note_timbre
-   jsr voices::play_monophonic
+   jsr voices::play_note
 
 end_mainloop:
 

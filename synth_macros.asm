@@ -48,6 +48,22 @@ SYNTH_MACROS_INC = 1
     sta VERA_data0
 .endmacro
 
+; mutes PSG voice with index stored in register x
+.macro VERA_MUTE_VOICE_X
+    lda #$11
+	sta VERA_addr_bank
+	lda #$F9
+	sta VERA_addr_high
+	txa
+    asl
+    asl
+    clc
+    adc #$C2
+	sta VERA_addr_low
+    stz VERA_ctrl
+    stz VERA_data0
+.endmacro
+
 ; sets volume to value stored in register X
 .macro VERA_SET_VOICE_FREQUENCY svf_n_voice, svf_frequency
     VERA_SET_ADDR ($1F9C0+4*svf_n_voice), 1
@@ -64,7 +80,7 @@ SYNTH_MACROS_INC = 1
 ; Pitch Computation Variables
 CP_diff:
    .word 0
-.macro COMPUTE_FREQUENCY cf_pitch, cf_fine, cf_output
+.macro COMPUTE_FREQUENCY cf_pitch, cf_fine, cf_output ; done in ISR
     lda cf_pitch
     asl         ; multiply by 2 to get address
     tax
@@ -83,113 +99,113 @@ CP_diff:
     sec
     lda pitch_data,y
     sbc pitch_data,x
-    sta CP_diff
+    sta mzpwb   ; here: contains frequency difference between the two adjacent half steps
     inx
     iny
     lda pitch_data,y
     sbc pitch_data,x
-    sta CP_diff+1 ; 38 cycles
+    sta mzpwb+1 ; 36 cycles
 
-    ; add 0.fine * CP_diff to output
+    ; add 0.fine * mzpwb to output
     lda cf_fine
-    sta my_bit_register ; 8 cycles
+    sta mzpbb ; 7 cycles
 
     clc
-    ror CP_diff+1
-    ror CP_diff
-    bbr7 my_bit_register, @skip_bit7
+    ror mzpwb+1
+    ror mzpwb
+    bbr7 mzpbb, @skip_bit7
     clc
-    lda CP_diff
+    lda mzpwb
     adc cf_output
     sta cf_output
-    lda CP_diff+1
+    lda mzpwb+1
     adc cf_output+1
-    sta cf_output+1 ; 42 cycles
+    sta cf_output+1 ; 38 cycles
 @skip_bit7:
     clc
-    ror CP_diff+1
-    ror CP_diff
-    bbr6 my_bit_register, @skip_bit6
+    ror mzpwb+1
+    ror mzpwb
+    bbr6 mzpbb, @skip_bit6
     clc
-    lda CP_diff
+    lda mzpwb
     adc cf_output
     sta cf_output
-    lda CP_diff+1
+    lda mzpwb+1
     adc cf_output+1
     sta cf_output+1
 @skip_bit6:
     clc
-    ror CP_diff+1
-    ror CP_diff
-    bbr5 my_bit_register, @skip_bit5
+    ror mzpwb+1
+    ror mzpwb
+    bbr5 mzpbb, @skip_bit5
     clc
-    lda CP_diff
+    lda mzpwb
     adc cf_output
     sta cf_output
-    lda CP_diff+1
+    lda mzpwb+1
     adc cf_output+1
     sta cf_output+1
 @skip_bit5:
     clc
-    ror CP_diff+1
-    ror CP_diff
-    bbr4 my_bit_register, @skip_bit4
+    ror mzpwb+1
+    ror mzpwb
+    bbr4 mzpbb, @skip_bit4
     clc
-    lda CP_diff
+    lda mzpwb
     adc cf_output
     sta cf_output
-    lda CP_diff+1
+    lda mzpwb+1
     adc cf_output+1
     sta cf_output+1
 @skip_bit4:
     clc
-    ror CP_diff+1
-    ror CP_diff
-    bbr3 my_bit_register, @skip_bit3
+    ror mzpwb+1
+    ror mzpwb
+    bbr3 mzpbb, @skip_bit3
     clc
-    lda CP_diff
+    lda mzpwb
     adc cf_output
     sta cf_output
-    lda CP_diff+1
+    lda mzpwb+1
     adc cf_output+1
     sta cf_output+1
 @skip_bit3:
     clc
-    ror CP_diff+1
-    ror CP_diff
-    bbr2 my_bit_register, @skip_bit2
+    ror mzpwb+1
+    ror mzpwb
+    bbr2 mzpbb, @skip_bit2
     clc
-    lda CP_diff
+    lda mzpwb
     adc cf_output
     sta cf_output
-    lda CP_diff+1
+    lda mzpwb+1
     adc cf_output+1
     sta cf_output+1
 @skip_bit2:
     clc
-    ror CP_diff+1
-    ror CP_diff
-    bbr1 my_bit_register, @skip_bit1
+    ror mzpwb+1
+    ror mzpwb
+    bbr1 mzpbb, @skip_bit1
     clc
-    lda CP_diff
+    lda mzpwb
     adc cf_output
     sta cf_output
-    lda CP_diff+1
+    lda mzpwb+1
     adc cf_output+1
     sta cf_output+1
 @skip_bit1:
     clc
-    ror CP_diff+1
-    ror CP_diff
-    bbr0 my_bit_register, @skip_bit0
+    ror mzpwb+1
+    ror mzpwb
+    bbr0 mzpbb, @skip_bit0
     clc
-    lda CP_diff
+    lda mzpwb
     adc cf_output
     sta cf_output
-    lda CP_diff+1
+    lda mzpwb+1
     adc cf_output+1
-    sta cf_output+1 ; 42 * 8 cycles = 336 cycles
-    ; total 418 cycles + page crossings = 53 us
+    sta cf_output+1 ; 38 * 8 cycles = 304 cycles
+    ; total 373 cycles + page crossings ~= 47 us
 @skip_bit0:
 .endmacro
 

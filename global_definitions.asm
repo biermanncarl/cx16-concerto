@@ -5,6 +5,7 @@ GLOBAL_DEFS_INC = 1
 .define N_VOICES 16
 .define N_TIMBRES 8
 .define MAX_OSCS_PER_VOICE 8
+.define N_OSCILLATORS 16 ; total number of PSG voices, which correspond to oscillators
 
 
 ; string constants
@@ -43,96 +44,96 @@ Note:
    sta sub_a+1
 .endmacro
 
-.macro MUL8x8 mul_a, mul_b, mul_result ; stores result in a 16 bit variable, uses ZP variables in the process
+.macro MUL8x8_MP mul_a, mul_b, mul_result ; stores result in a 16 bit variable, uses ZP variables in the process
    ; convention here is that MSB comes first
    ; initialization
    lda mul_a
-   sta my_bit_register
+   sta mzpba
    lda mul_b
-   sta my_zp_ptr+1
-   stz my_zp_ptr
+   sta mzpwa+1
+   stz mzpwa
    stz mul_result+1
    stz mul_result
 
    ; multiplication
-   bbr0 my_bit_register, :+
-   lda my_zp_ptr+1
+   bbr0 mzpba, :+
+   lda mzpwa+1
    sta mul_result+1
 :  clc
-   rol my_zp_ptr+1
-   rol my_zp_ptr
-   bbr1 my_bit_register, :+
+   rol mzpwa+1
+   rol mzpwa
+   bbr1 mzpba, :+
    clc
-   lda my_zp_ptr+1
+   lda mzpwa+1
    adc mul_result+1
    sta mul_result+1
-   lda my_zp_ptr
+   lda mzpwa
    adc mul_result
    sta mul_result
 :  clc
-   rol my_zp_ptr+1
-   rol my_zp_ptr
-   bbr2 my_bit_register, :+
+   rol mzpwa+1
+   rol mzpwa
+   bbr2 mzpba, :+
    clc
-   lda my_zp_ptr+1
+   lda mzpwa+1
    adc mul_result+1
    sta mul_result+1
-   lda my_zp_ptr
+   lda mzpwa
    adc mul_result
    sta mul_result
 :  clc
-   rol my_zp_ptr+1
-   rol my_zp_ptr
-   bbr3 my_bit_register, :+
+   rol mzpwa+1
+   rol mzpwa
+   bbr3 mzpba, :+
    clc
-   lda my_zp_ptr+1
+   lda mzpwa+1
    adc mul_result+1
    sta mul_result+1
-   lda my_zp_ptr
+   lda mzpwa
    adc mul_result
    sta mul_result
 :  clc
-   rol my_zp_ptr+1
-   rol my_zp_ptr
-   bbr4 my_bit_register, :+
+   rol mzpwa+1
+   rol mzpwa
+   bbr4 mzpba, :+
    clc
-   lda my_zp_ptr+1
+   lda mzpwa+1
    adc mul_result+1
    sta mul_result+1
-   lda my_zp_ptr
+   lda mzpwa
    adc mul_result
    sta mul_result
 :  clc
-   rol my_zp_ptr+1
-   rol my_zp_ptr
-   bbr5 my_bit_register, :+
+   rol mzpwa+1
+   rol mzpwa
+   bbr5 mzpba, :+
    clc
-   lda my_zp_ptr+1
+   lda mzpwa+1
    adc mul_result+1
    sta mul_result+1
-   lda my_zp_ptr
+   lda mzpwa
    adc mul_result
    sta mul_result
 :  clc
-   rol my_zp_ptr+1
-   rol my_zp_ptr
-   bbr6 my_bit_register, :+
+   rol mzpwa+1
+   rol mzpwa
+   bbr6 mzpba, :+
    clc
-   lda my_zp_ptr+1
+   lda mzpwa+1
    adc mul_result+1
    sta mul_result+1
-   lda my_zp_ptr
+   lda mzpwa
    adc mul_result
    sta mul_result
 :  clc
-   rol my_zp_ptr+1
-   rol my_zp_ptr
-   bbr7 my_bit_register, @end_macro
+   rol mzpwa+1
+   rol mzpwa
+   bbr7 mzpba, @end_macro
    clc
-   lda my_zp_ptr+1
+   lda mzpwa+1
    adc mul_result+1
    sta mul_result+1
-   lda my_zp_ptr
+   lda mzpwa
    adc mul_result
    sta mul_result
 @end_macro:
@@ -140,7 +141,7 @@ Note:
 
 .macro VOICE_BYTE_FIELD
    .repeat N_VOICES, I
-   .byte 0
+      .byte 0
    .endrep
 .endmacro
 
