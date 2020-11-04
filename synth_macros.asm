@@ -3,8 +3,7 @@ SYNTH_MACROS_INC = 1
 
 .macro VERA_SET_VOICE_PARAMS n_voice, frequency, volume, waveform
     VERA_SET_ADDR $1F9C0+4*n_voice, 1
-    lda #0
-    sta VERA_ctrl
+    stz VERA_ctrl
     lda #<frequency
     sta VERA_data0
     lda #>frequency

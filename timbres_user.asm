@@ -15,3 +15,11 @@
 ; Subroutines that will be implemented here are for e.g.
 ;   * loading/saving presets
 ;   * editing functions (if needed at all? probably rather macros than subroutines)
+
+; EDIT: I figured that the approach of two separate sets of patch data is simply
+; too memory intensive. Therefore there will be only one set of patches,
+; with some redundancy (namely user side and interpreter side variables)
+; There will be a rule, e.g. if the two sides do not match, the user variables
+; are given priority, because then I do only have to implement 
+; the conversion user --> interpreter and not the other way around.
+; Only the user side variables are stored and loaded in files.

@@ -102,7 +102,7 @@ note_velocity:
 .macro ADVANCE_FVL_POINTER adv_fvl_ptr
    lda adv_fvl_ptr
    ina
-   cmp #(N_VOICES-1)
+   cmp #(N_VOICES)
    bcc :+
    lda #0
 :  sta adv_fvl_ptr
