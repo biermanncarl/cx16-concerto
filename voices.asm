@@ -81,7 +81,7 @@ note_velocity:
    ; bits 0 to 6 indicate voice number
    monovoicetable:   VOICE_BYTE_FIELD
 
-   ; TODO stack for voice release routine
+   ; stack for voice release routine
    ; This stack is filled with a "job" every time a note has finished playing (from inside
    ; the ISR). This is convenient for one-shot notes that only have a note-on event and
    ; no note-off event, where the synth can determine if a voice has finished.
@@ -373,7 +373,7 @@ get_voice:
    tya
    sta Voicemap::usedvoicesdn, x
 rts
-@we_are_first: ; if last voice didn't exist, setup start and end pointers
+@we_are_first: ; if last voice didn't exist, setup start and end pointers, and set down link to none
    stx Voicemap::uvf
    stx Voicemap::uvl
    sta Voicemap::usedvoicesdn, x
@@ -387,6 +387,7 @@ rts
 ; this is NOT a note-off, because note-offs still need to be translated from
 ; Pitch/Timbre to Voice index
 release_voice:
+   tax
    ; update freevoicelist
    ldy Voicemap::lfv
    sta Voicemap::freevoicelist, y
@@ -394,7 +395,6 @@ release_voice:
    inc Voicemap::nfv
 
    ; update monovoicelist
-   tax
    lda #255
    sta Voicemap::monovoicetable, x   ; set to "not playing" (bit 7 set)
 
@@ -414,9 +414,11 @@ release_voice:
    bmi @next_is_none
    lda Voicemap::usedvoicesdn, x
    sta Voicemap::usedvoicesdn, y
+   bra @continue2
 @next_is_none:
    lda Voicemap::usedvoicesdn, x
    sta Voicemap::uvl    ; replace index of youngest voice
+@continue2:
 
    ; TODO update freeosclist
 rts
