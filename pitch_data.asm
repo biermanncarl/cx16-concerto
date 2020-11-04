@@ -1,18 +1,6 @@
 .segment "RODATA"
 
 pitch_data:
-    .byte 10, 0
-    .byte 11, 0
-    .byte 12, 0
-    .byte 13, 0
-    .byte 13, 0
-    .byte 14, 0
-    .byte 15, 0
-    .byte 16, 0
-    .byte 17, 0
-    .byte 18, 0
-    .byte 19, 0
-    .byte 20, 0
     .byte 21, 0
     .byte 23, 0
     .byte 24, 0
@@ -129,3 +117,16 @@ pitch_data:
     .byte 151, 58
     .byte 19, 62
     .byte 196, 65
+    .byte 173, 69
+    .byte 209, 73
+    .byte 53, 78
+    .byte 220, 82
+    .byte 201, 87
+    .byte 1, 93
+    .byte 137, 98
+    .byte 101, 104
+    .byte 154, 110
+    .byte 46, 117
+    .byte 38, 124
+    .byte 136, 131
+

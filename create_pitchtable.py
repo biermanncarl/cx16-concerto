@@ -7,32 +7,29 @@
 # We are going to implement the function
 # f = 440 * 2**((n-69)/12)
 
+# and the frequency generation rule of the VERA
+# output_frequency = sample_rate / (2^17) * frequency_word
+
 import numpy as np
 
-# desired playback rate
-PLAYBACK_SAMPLE_RATE = 48828.125
-
-# how many samples equals one oscillation?
-WAVETABLE_SIZE = 256
-
+# the notes we want to map
 notes = np.arange(0,128)
 
+# desired playback rate
+PLAYBACK_SAMPLE_RATE = 25.0e6 / 512. # = 48828.125
+
 # SI frequencies
-frequencies = 440 * 2**((notes-69)/12)
+output_frequencies = 440 * 2**((notes-69)/12)
 
-# convert into phase advance per sample
-phases = frequencies / PLAYBACK_SAMPLE_RATE
-
-# convert into wavetable entries advance per sample
-strides = phases * WAVETABLE_SIZE
+frequency_words = output_frequencies * (2**17) / PLAYBACK_SAMPLE_RATE
 
 
 
 myfile = open("pitchdata.txt","w")
 
-for s in strides:
-    msb = int(s)
-    lsb = int(256 * (s-msb))
+for s in frequency_words:
+    msb = int(int(s)//256)
+    lsb = int(s-256*msb)
     myfile.write("    .byte {}, {}\n".format(lsb,msb))
 
 myfile.close()
