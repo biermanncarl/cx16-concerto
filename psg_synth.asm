@@ -22,6 +22,7 @@
 .include "synth_engine.asm"
 .include "my_isr.asm"
 .include "gui.asm"
+.include "presets.asm"
 
 
 
@@ -48,63 +49,7 @@ start:
 @done_msg:
 
    ; initialize patch 0
-   patch_no = 0
-   ; global parameters
-   ldx #patch_no
-   lda #2
-   sta timbres::Timbre::n_oscs, x
-   lda #2
-   sta timbres::Timbre::n_envs, x
-   ; set mono & porta rate
-   lda #20
-   sta timbres::Timbre::porta_r, x
-   lda #0
-   sta timbres::Timbre::mono, x
-   ; env 0
-   ldx #(0*N_TIMBRES+patch_no)
-   lda #0
-   sta timbres::Timbre::env::attackL, x
-   lda #63
-   sta timbres::Timbre::env::attackH, x
-   lda #0
-   sta timbres::Timbre::env::decayL, x
-   lda #1
-   sta timbres::Timbre::env::decayH, x
-   ; env 1
-   ldx #(1*N_TIMBRES+patch_no)
-   lda #0
-   sta timbres::Timbre::env::attackL, x
-   lda #63
-   sta timbres::Timbre::env::attackH, x
-   lda #0
-   sta timbres::Timbre::env::decayL, x
-   lda #6
-   sta timbres::Timbre::env::decayH, x
-   ; set oscillator parameters
-   ; oscillator 0
-   ldx #(0*N_TIMBRES+patch_no)
-   lda #128
-   sta timbres::Timbre::osc::waveform, x
-   lda #0
-   sta timbres::Timbre::osc::pitch, x
-   lda #0
-   sta timbres::Timbre::osc::fine, x
-   lda #192
-   sta timbres::Timbre::osc::lrmid, x
-   lda #0
-   sta timbres::Timbre::osc::amp_sel, x
-   ; oscillator 1
-   ldx #(1*N_TIMBRES+patch_no)
-   lda #64
-   sta timbres::Timbre::osc::waveform, x
-   lda #0
-   sta timbres::Timbre::osc::pitch, x
-   lda #0
-   sta timbres::Timbre::osc::fine, x
-   lda #192
-   sta timbres::Timbre::osc::lrmid, x
-   lda #1
-   sta timbres::Timbre::osc::amp_sel, x
+   PRESET_SNARE_DRUM 0
 
 
    ; do other initializations
