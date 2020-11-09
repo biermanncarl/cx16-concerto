@@ -12,3 +12,11 @@ mzpwb:   .word 0
 mzpba:   .byte 0
 ; my zero page bytes (ISR)
 mzpbb:   .byte 0
+; my zero page bytes (ISR)
+mzpbc:   .byte 0
+; my zero page bytes (ISR)
+mzpbd:   .byte 0
+; my zero page bytes (ISR)
+mzpbe:   .byte 0
+; my zero page bytes (ISR)
+mzpbf:   .byte 0

@@ -23,22 +23,14 @@ note_velocity:
    timbre:    VOICE_BYTE_FIELD   ; which synth patch to use
 
    ; envelopes
-   .scope ad1
-      step:   VOICE_BYTE_FIELD
-      phaseL:  VOICE_BYTE_FIELD
-      phaseH:  VOICE_BYTE_FIELD
+   .scope env
+      step:    ENVELOPE_VOICE_BYTE_FIELD
+      phaseL:  ENVELOPE_VOICE_BYTE_FIELD
+      phaseH:  ENVELOPE_VOICE_BYTE_FIELD
    .endscope
 
    ; PSG voices (oscillator to PSG voice mapping) (unused ATM)
-   osc_psg_map:
-   osc1_psg:  VOICE_BYTE_FIELD
-   osc2_psg:  VOICE_BYTE_FIELD
-   osc3_psg:  VOICE_BYTE_FIELD
-   osc4_psg:  VOICE_BYTE_FIELD
-   osc5_psg:  VOICE_BYTE_FIELD
-   osc6_psg:  VOICE_BYTE_FIELD
-   osc7_psg:  VOICE_BYTE_FIELD
-   osc8_psg:  VOICE_BYTE_FIELD
+   osc_psg_map:   OSCILLATOR_VOICE_BYTE_FIELD
 
    ; portamento
    .scope porta
@@ -94,6 +86,14 @@ note_velocity:
    rvsp: .byte 0  ; stack pointer, points one past last message
 .endscope
 
+.scope Oscmap
+   ; information about which oscillators are free
+   freeosclist:   OSCILLATOR_BYTE_FIELD
+   ffo:  .byte 0  ; index of entry in ringlist, which denotes the first free oscillator
+   lfo:  .byte 0  ; index of entry in ringlist, which points one past the last free oscillator
+   nfo:  .byte 0  ; number of free oscillators
+   ; similar mechanics like for the freevoicelist ... see there
+.endscope
 
 ; other variables used by voices.asm
 ;distance:
@@ -108,6 +108,15 @@ note_velocity:
 :  sta adv_fvl_ptr
 .endmacro
 
+.macro ADVANCE_FOL_POINTER adv_fol_ptr
+   lda adv_fol_ptr
+   ina
+   cmp #(N_OSCILLATORS)
+   bcc :+
+   lda #0
+:  sta adv_fol_ptr
+.endmacro
+
 .macro MUL8x8_PORTA ; uses ZP variables in the process
    ; the idea is that portamento is finished in a constant time
    ; that means, rate must be higher, the larger the porta distance is
@@ -116,7 +125,7 @@ note_velocity:
    ; initialization
    ; mzpwa stores the porta rate. It needs a 16 bit variable because it is left shifted
    ; throughout the multiplication
-   lda timbres_pre::Timbre::porta_r, y
+   lda timbres::Timbre::porta_r, y
    sta mzpwa+1
    stz mzpwa
    stz Voice::porta::rateL, x
@@ -209,13 +218,13 @@ note_velocity:
 
 
 
-; Puts all the Voicemap variables into a state ready to receive
+; Puts all the Voicemap & Oscmap variables into a state ready to receive
 ; play_note commands.
 init_voicelist:
    ; init freevoicelist, used-voices-list, and monovoicetable at the same time
    ; and while we're in this loop, deactivate all voices
    ldx #(N_VOICES-1)
-@loop:
+@loop_voi:
    txa
    sta Voicemap::freevoicelist, x
    lda #255
@@ -224,7 +233,7 @@ init_voicelist:
    sta Voicemap::monovoicetable, x ; none
    stz Voice::active, x
    dex
-   bpl @loop
+   bpl @loop_voi
 
    stz Voicemap::ffv
    stz Voicemap::lfv ; first and last free voice are set to 0
@@ -236,6 +245,19 @@ init_voicelist:
 
    ; release-voices stack
    stz Voicemap::rvsp    ; the actual stack doesn't need to be initialized.
+
+   ; init free-oscillator-list
+   ldx #(N_OSCILLATORS-1)
+@loop_osc:
+   txa
+   sta Oscmap::freeosclist, x
+   dex
+   bpl @loop_osc
+
+   stz Oscmap::ffo
+   stz Oscmap::lfo
+   lda #N_OSCILLATORS
+   sta Oscmap::nfo
 rts
 
 
@@ -247,7 +269,7 @@ play_note:
 
    ; check if mono patch
    ldy note_timbre
-   lda timbres_pre::Timbre::mono, y
+   lda timbres::Timbre::mono, y
    bne :+
    jmp @poly_voice_acquisition
 
@@ -256,10 +278,9 @@ play_note:
    bpl @reuse_mono_voice
 
 @get_new_mono_voice:
-   phy
    jsr get_voice
-   ply
-   cpx #0
+   ldy note_timbre   ; restore, has been disrupted by get_voice
+   cpx #0   ; this just checks whether bit 7 of X is set or not
    bpl :+
    jmp @skip_play
 :  ; update monovoicetable
@@ -295,29 +316,56 @@ play_note:
    ldy note_timbre
    MUL8x8_PORTA
    ; set current porta starting point
-   stz Voice::porta::posL
-   lda Voice::pitch
-   sta Voice::porta::posH
-   jmp @non_mono_dependent_setup
+   stz Voice::porta::posL, x
+   lda Voice::pitch, x
+   sta Voice::porta::posH, x
+   jmp @set_pitch
 
 @poly_voice_acquisition:
-   phy
    jsr get_voice
-   ply
+   ldy note_timbre   ; restore, has been disrupted by get_voice
    ; check if we got a valid voice
-   cpx #0
+   cpx #0   ; this just checks whether bit 7 of X is set or not
    bpl :+
    jmp @skip_play
 :  ; deactivate voice first, so the ISR won't play an "unfinished" voice
    stz Voice::active,x
-   
+
 
 @non_mono_dependent_setup:
-   ; launch ENV generator (this might be migrated to mono/poly specific stuff for legato modes)
-   stz Voice::ad1::phaseL, x
-   stz Voice::ad1::phaseH, x
-   stz Voice::ad1::step, x
+   ; initialize envelopes
+   ; x: starts as voice index, becomes env1, env2, env3 sublattice offset by addition of N_VOICES
+   ; mzpba: is set to n_envs
+   ; y: counter (and timbre index before that)
+   phx
+   lda timbres::Timbre::n_envs, y
+   sta mzpba
+   ldy #0
+@loop_envs:
+   ; set envelope levels/phases to 0 (phase is both)
+   stz Voice::env::phaseL, x
+   stz Voice::env::phaseH, x
+   ; figure out if envelope is active. If yes, set step to 1, if not set it to 0
+   cpy mzpba ;   if index<n_envs, env is active, i.e. if carry clear (that means, y<mzpba)
+   bcc :+
+   stz Voice::env::step, x
+   bra :++
+:  lda #1
+   sta Voice::env::step, x
+:  ; advance x offset and y counter
+   txa
+   clc
+   adc #N_VOICES
+   tax
+   iny
+   cpy #MAX_ENVS_PER_VOICE
+   bne @loop_envs
 
+   ; restore x and y
+   plx
+   ldy note_timbre
+
+@set_pitch:
    ; other stuff
    lda note_pitch
    sta Voice::pitch, x
@@ -325,8 +373,6 @@ play_note:
    sta Voice::velocity, x
    lda note_timbre
    sta Voice::timbre, x
-   lda #0
-   sta Voice::osc1_psg, x
 
    ; activate note (should be the last thing done!)
    lda #1
@@ -348,19 +394,53 @@ stop_instrument:
 rts
 
 ; acquires a new voice and returns voice index in register X
-; oscillators needed are assumed to be according to note_timbre
+; Number of oscillators needed is assumed to be according to note_timbre
 ; this is NOT a note-on.
 ; note-on events need further setting up of the voice
 ; if unsuccessful, bit 7 of X is set (indicating NONE)
 get_voice:
-   ; check how many voices are free
+   ; check if there are enough oscillators
+   ldy note_timbre
+   lda Oscmap::nfo
+   cmp timbres::Timbre::n_oscs, y ; carry is set if nfo>=non (number of oscillators needed)
+   bcs :+
+   jmp @unsuccessful    ; if there's no oscillator left, don't play ... or steal a voice (TODO)
+
+:  ; check how many voices are free (this is redundant if every voice uses at least one oscillator)
    lda Voicemap::nfv
    beq @unsuccessful    ; if there's no voice left, don't play ... or steal a voice (TODO)
+
    ; get voice from and update free voices ringlist
    ldy Voicemap::ffv
-   ldx Voicemap::freevoicelist, y  ; index of acquired voice in X
+   ldx Voicemap::freevoicelist, y  ; index of acquired voice is in X
    ADVANCE_FVL_POINTER Voicemap::ffv
    dec Voicemap::nfv
+
+   ; get oscillators from and update free oscillators ringlist
+   ; x: offset in voice data
+   ; y: offset in freeosclist (but first, it is timbre index)
+   ; mzpba: loop counter
+   phx
+   ldy note_timbre
+   lda timbres::Timbre::n_oscs, y
+   sta mzpba
+@loop_osc:
+   ; get oscillator from list and put it into voice data
+   ldy Oscmap::ffo
+   lda Oscmap::freeosclist, y
+   sta Voice::osc_psg_map, x
+   ; advance indices
+   txa
+   clc
+   adc #N_VOICES
+   tax
+   ADVANCE_FOL_POINTER Oscmap::ffo
+   dec Oscmap::nfo
+   dec mzpba
+   bne @loop_osc
+
+   plx
+
 
    ; append to used voices list
    lda #255
@@ -372,6 +452,7 @@ get_voice:
    sta Voicemap::usedvoicesup, y
    tya
    sta Voicemap::usedvoicesdn, x
+
 rts
 @we_are_first: ; if last voice didn't exist, setup start and end pointers, and set down link to none
    stx Voicemap::uvf
@@ -385,7 +466,7 @@ rts
 ; takes index of voice to be released in register A and does all the buereaucracy
 ; to check out the voice
 ; this is NOT a note-off, because note-offs still need to be translated from
-; Pitch/Timbre to Voice index
+; Pitch&Timbre to Voice index
 release_voice:
    tax
    ; update freevoicelist
@@ -394,9 +475,37 @@ release_voice:
    ADVANCE_FVL_POINTER Voicemap::lfv
    inc Voicemap::nfv
 
+   ; update freeosclist
+   ; get oscillators from voice and put them back into free oscillators ringlist
+   ; x: offset in voice data
+   ; y: offset in freeosclist (but first, it is timbre index)
+   ; mzpba: loop counter
+   phx
+   ldy Voice::timbre, x
+   lda timbres::Timbre::n_oscs, y
+   sta mzpba
+@loop_osc:
+   ; get oscillator from voice and put it into ringlist
+   ldy Oscmap::lfo
+   lda Voice::osc_psg_map, x
+   sta Oscmap::freeosclist, y
+   ; advance indices
+   txa
+   clc
+   adc #N_VOICES
+   tax
+   ADVANCE_FOL_POINTER Oscmap::lfo
+   inc Oscmap::nfo
+   dec mzpba
+   bne @loop_osc
+
+   plx
+
+
    ; update monovoicelist
+   ldy Voice::timbre, x
    lda #255
-   sta Voicemap::monovoicetable, x   ; set to "not playing" (bit 7 set)
+   sta Voicemap::monovoicetable, y   ; set to "not playing" (bit 7 set)
 
    ; update bidirectional used voice list
    ; link previous one to next one
@@ -420,7 +529,6 @@ release_voice:
    sta Voicemap::uvl    ; replace index of youngest voice
 @continue2:
 
-   ; TODO update freeosclist
 rts
 
 ; does all the release commands put on the release stack by the ISR

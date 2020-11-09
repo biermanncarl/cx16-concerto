@@ -4,8 +4,9 @@ GLOBAL_DEFS_INC = 1
 ; compiler level definitions
 .define N_VOICES 16
 .define N_TIMBRES 8
-.define MAX_OSCS_PER_VOICE 8
 .define N_OSCILLATORS 16 ; total number of PSG voices, which correspond to oscillators
+.define MAX_OSCS_PER_VOICE 6
+.define MAX_ENVS_PER_VOICE 3
 
 
 ; string constants
@@ -145,21 +146,45 @@ Note:
    .endrep
 .endmacro
 
-.macro VOICE_WORD_FIELD
-   .repeat N_VOICES, I
-      .word 0
-   .endrep
-.endmacro
-
 .macro TIMBRE_BYTE_FIELD
    .repeat N_TIMBRES, I
       .byte 0
    .endrep
 .endmacro
 
-.macro TIMBRE_WORD_FIELD
-   .repeat N_TIMBRES, I
-      .word 0
+.macro OSCILLATOR_BYTE_FIELD
+   .repeat N_OSCILLATORS, I
+      .byte 0
+   .endrep
+.endmacro
+
+; osc1: timbre1 timbre2 timbre3 ... osc2: timbre1 timbre2 timbre3 ... 
+; ---> this format saves multiplication when accessing with arbitrary timbre indes
+.macro OSCILLATOR_TIMBRE_BYTE_FIELD
+   .repeat MAX_OSCS_PER_VOICE*N_TIMBRES
+      .byte 0
+   .endrep
+.endmacro
+
+; osc1: voice1 voice2 voice3 ... osc2: voice1 voice2 voice3 ...
+.macro OSCILLATOR_VOICE_BYTE_FIELD
+   .repeat MAX_OSCS_PER_VOICE*N_VOICES
+      .byte 0
+   .endrep
+.endmacro
+
+; env1: timbre1 timbre2 timbre3 ... env2: timbre1 timbre2 tibre3 ...
+; ---> this format saves multiplication when accessing with arbitrary timbre indes
+.macro ENVELOPE_TIMBRE_BYTE_FIELD
+   .repeat MAX_ENVS_PER_VOICE*N_TIMBRES
+      .byte 0
+   .endrep
+.endmacro
+
+; env1: voice1 voice2 voice3 ... env2: voice1 voice2 voice3 ...
+.macro ENVELOPE_VOICE_BYTE_FIELD
+   .repeat MAX_ENVS_PER_VOICE*N_VOICES
+      .byte 0
    .endrep
 .endmacro
 

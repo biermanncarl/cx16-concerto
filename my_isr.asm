@@ -109,6 +109,7 @@ do_fillup:
    ;lda #4
    sta VERA_audio_data
    ;sta VERA_audio_data
+   ;sta VERA_audio_data
 
    ; now do all PSG control
 do_psg_control:

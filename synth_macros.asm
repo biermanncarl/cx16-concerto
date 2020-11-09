@@ -14,13 +14,14 @@ SYNTH_MACROS_INC = 1
     sta VERA_data0
 .endmacro
 
-; parameters in memory, but PSG voice number X
-.macro VERA_SET_VOICE_PARAMS_MEM_X frequency, volume, waveform
+; parameters in memory, but PSG voice number A
+.macro VERA_SET_VOICE_PARAMS_MEM_A frequency, volume, waveform
+    pha
     lda #$11
 	sta VERA_addr_bank
 	lda #$F9
 	sta VERA_addr_high
-	txa
+	pla
     asl
     asl
     clc
@@ -57,13 +58,13 @@ SYNTH_MACROS_INC = 1
     sta VERA_data0
 .endmacro
 
-; mutes PSG voice with index stored in register x
+; mutes PSG voice with index stored in register A
 .macro VERA_MUTE_VOICE_X
     lda #$11
 	sta VERA_addr_bank
 	lda #$F9
 	sta VERA_addr_high
-	txa
+    txa
     asl
     asl
     clc
@@ -117,12 +118,12 @@ CP_diff:
 
     ; add 0.fine * mzpwb to output
     lda cf_fine
-    sta mzpbb ; 7 cycles
+    sta mzpbf ; 7 cycles
 
     clc
     ror mzpwb+1
     ror mzpwb
-    bbr7 mzpbb, @skip_bit7
+    bbr7 mzpbf, @skip_bit7
     clc
     lda mzpwb
     adc cf_output
@@ -134,7 +135,7 @@ CP_diff:
     clc
     ror mzpwb+1
     ror mzpwb
-    bbr6 mzpbb, @skip_bit6
+    bbr6 mzpbf, @skip_bit6
     clc
     lda mzpwb
     adc cf_output
@@ -146,7 +147,7 @@ CP_diff:
     clc
     ror mzpwb+1
     ror mzpwb
-    bbr5 mzpbb, @skip_bit5
+    bbr5 mzpbf, @skip_bit5
     clc
     lda mzpwb
     adc cf_output
@@ -158,7 +159,7 @@ CP_diff:
     clc
     ror mzpwb+1
     ror mzpwb
-    bbr4 mzpbb, @skip_bit4
+    bbr4 mzpbf, @skip_bit4
     clc
     lda mzpwb
     adc cf_output
@@ -170,7 +171,7 @@ CP_diff:
     clc
     ror mzpwb+1
     ror mzpwb
-    bbr3 mzpbb, @skip_bit3
+    bbr3 mzpbf, @skip_bit3
     clc
     lda mzpwb
     adc cf_output
@@ -182,7 +183,7 @@ CP_diff:
     clc
     ror mzpwb+1
     ror mzpwb
-    bbr2 mzpbb, @skip_bit2
+    bbr2 mzpbf, @skip_bit2
     clc
     lda mzpwb
     adc cf_output
@@ -194,7 +195,7 @@ CP_diff:
     clc
     ror mzpwb+1
     ror mzpwb
-    bbr1 mzpbb, @skip_bit1
+    bbr1 mzpbf, @skip_bit1
     clc
     lda mzpwb
     adc cf_output
@@ -206,7 +207,7 @@ CP_diff:
     clc
     ror mzpwb+1
     ror mzpwb
-    bbr0 mzpbb, @skip_bit0
+    bbr0 mzpbf, @skip_bit0
     clc
     lda mzpwb
     adc cf_output
