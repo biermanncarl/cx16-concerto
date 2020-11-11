@@ -58,13 +58,30 @@ SYNTH_MACROS_INC = 1
     sta VERA_data0
 .endmacro
 
-; mutes PSG voice with index stored in register A
+; mutes PSG voice with index stored in register X
 .macro VERA_MUTE_VOICE_X
     lda #$11
 	sta VERA_addr_bank
 	lda #$F9
 	sta VERA_addr_high
     txa
+    asl
+    asl
+    clc
+    adc #$C2
+	sta VERA_addr_low
+    stz VERA_ctrl
+    stz VERA_data0
+.endmacro
+
+; mutes PSG voice with index stored in register A
+.macro VERA_MUTE_VOICE_A
+    pha
+    lda #$11
+	sta VERA_addr_bank
+	lda #$F9
+	sta VERA_addr_high
+    pla
     asl
     asl
     clc

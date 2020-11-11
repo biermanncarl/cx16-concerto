@@ -141,7 +141,7 @@ env_finish:
    cmp #1
    bne advance_env
    ; if we got to this point, this voice will be deactivated
-   ; therefore, the offset x can be safely discarded because it is no longer needed
+   ; therefore, the voice data offset in X can be safely discarded, as it is no longer needed
    ; deactivate voice
    ldx voice_index
    stz voices::Voice::active, x
@@ -150,12 +150,23 @@ env_finish:
    ldx voices::Voicemap::rvsp
    sta voices::Voicemap::releasevoicestack, x
    inc voices::Voicemap::rvsp
-   ; mute voice (TODO ... this must be done for every oscillator)
-   ; VERA_MUTE_VOICE_X
+   ; mute every oscillator
+   ldx timbres::Timbre::n_oscs, y   ; that was the last use of the timbre index in Y, can now be used for other stuff
+   ldy voice_index   ; acts as offset to access PSG indices
+@loop:
+   lda voices::Voice::osc_psg_map, y
+   VERA_MUTE_VOICE_A
+   tya
+   clc
+   adc #N_VOICES
+   tay
+   dex
+   bne @loop
    ; everything that needs to be done when the voice is deactivated
    ; must be done here
    ; (although it might not be the only place that can trigger
    ; a voice deactivation in the future ... thinking of voice stealing)
+   ldx voice_index
    jmp next_voice
 
 advance_env: ; load phase into modsource and go to next envelope
