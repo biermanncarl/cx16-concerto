@@ -12,8 +12,11 @@
 
 import numpy as np
 
+# number of notes in our table
+N_NOTES = 139
+
 # the notes we want to map
-notes = np.arange(0,128)
+notes = np.arange(0,N_NOTES)
 
 # desired playback rate
 PLAYBACK_SAMPLE_RATE = 25.0e6 / 512. # = 48828.125
@@ -23,13 +26,19 @@ output_frequencies = 440 * 2**((notes-69)/12)
 
 frequency_words = output_frequencies * (2**17) / PLAYBACK_SAMPLE_RATE
 
+msb = np.array((frequency_words.astype(int)//256), dtype=int)
+lsb = np.array(frequency_words-256*msb, dtype=int)
 
 
-myfile = open("pitchdata.txt","w")
+myfile = open("pitch_data.asm","w")
+myfile.write('.segment "RODATA"\n')
 
-for s in frequency_words:
-    msb = int(int(s)//256)
-    lsb = int(s-256*msb)
-    myfile.write("    .byte {}, {}\n".format(lsb,msb))
+myfile.write('pitch_dataH:\n')
+for n in msb:
+    myfile.write("   .byte {}\n".format(n))
+
+myfile.write('pitch_dataL:\n')
+for n in lsb:
+    myfile.write("   .byte {}\n".format(n))
 
 myfile.close()

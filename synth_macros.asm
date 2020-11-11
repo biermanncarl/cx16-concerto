@@ -108,30 +108,24 @@ SYNTH_MACROS_INC = 1
 CP_diff:
    .word 0
 .macro COMPUTE_FREQUENCY cf_pitch, cf_fine, cf_output ; done in ISR
-    lda cf_pitch
-    asl         ; multiply by 2 to get address
-    tax
+    ldx cf_pitch
     ; copy lower frequency to output
-    lda pitch_data,x
+    lda pitch_dataL,x
     sta cf_output
-    inx
-    lda pitch_data,x
-    sta cf_output+1 ; 26 cycles
+    lda pitch_dataH,x
+    sta cf_output+1 ; 20 cycles
 
     ; compute difference between higher and lower frequency
-    txa
-    tay
+    ldy cf_pitch
     iny
-    dex
     sec
-    lda pitch_data,y
-    sbc pitch_data,x
+    lda pitch_dataL,y
+    sbc pitch_dataL,x
     sta mzpwb   ; here: contains frequency difference between the two adjacent half steps
-    inx
-    iny
-    lda pitch_data,y
-    sbc pitch_data,x
-    sta mzpwb+1 ; 36 cycles
+
+    lda pitch_dataH,y
+    sbc pitch_dataH,x
+    sta mzpwb+1 ; 32 cycles
 
     ; add 0.fine * mzpwb to output
     lda cf_fine
