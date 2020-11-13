@@ -7,6 +7,8 @@
 mzpwa:   .word 0
 ; my zero page words (ISR)
 mzpwb:   .word 0
+; my zero page words (ISR)
+mzpwc:   .word 0
 
 ; my zero page bytes (main program)
 mzpba:   .byte 0
@@ -20,3 +22,5 @@ mzpbd:   .byte 0
 mzpbe:   .byte 0
 ; my zero page bytes (ISR)
 mzpbf:   .byte 0
+; my zero page bytes (ISR)
+mzpbg:   .byte 0

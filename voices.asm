@@ -293,6 +293,8 @@ play_note:
    jmp @non_mono_dependent_setup
 
 @reuse_mono_voice:   ; reuse voice, setup portamento etc.
+   ; deactivate voice to prevent PSG voice updates (while updating stuff) for smoother sound
+   ;stz Voice::active, x ; doesn't do the trick
    ; portamento stuff (must come before voice's pitch is replaced!)
    ldy #2
    lda note_pitch
@@ -319,7 +321,11 @@ play_note:
    stz Voice::porta::posL, x
    lda Voice::pitch, x
    sta Voice::porta::posH, x
+   ; retrigger or continue?
+   lda timbres::Timbre::retrig, y
+   bne :+
    jmp @set_pitch
+:  jmp @reset_envelopes
 
 @poly_voice_acquisition:
    jsr get_voice
@@ -333,6 +339,7 @@ play_note:
 
 
 @non_mono_dependent_setup:
+@reset_envelopes:
    ; initialize envelopes
    ; x: starts as voice index, becomes env1, env2, env3 sublattice offset by addition of N_VOICES
    ; mzpba: is set to n_envs

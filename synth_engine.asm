@@ -35,7 +35,7 @@ osc_counter = mzpbc ; c and d are reused
 n_oscs      = mzpbd
 modsource_index = mzpbe ; keeps track of which modsource we're processing
 osc_offset = mzpbe ; e reused for oscillators loop
-; mzpbf is reserved for compute_frequency
+; mzpbf and mzpbg are reserved for multiplications
 
 
 
@@ -306,6 +306,9 @@ next_osc:
 
 
    ; do oscillator pitch control
+   ; keyboard + portamento
+   lda timbres::Timbre::osc::track, y
+   beq @notrack
    lda voi_fine
    clc
    adc timbres::Timbre::osc::fine, y
@@ -313,6 +316,21 @@ next_osc:
    lda voi_pitch
    adc timbres::Timbre::osc::pitch, y
    sta osc_pitch
+   bra @donetrack
+@notrack:
+   lda timbres::Timbre::osc::fine, y
+   sta osc_fine
+   lda timbres::Timbre::osc::pitch, y
+   sta osc_pitch
+@donetrack:
+   ; pitch mod source 1
+   ldx timbres::Timbre::osc::pitch_mod_sel, y
+   bpl :+
+   jmp @skip_pitchmod
+:  ; source indexed by X
+   ; depth indexed by Y
+   SCALE5_16 voi_modsourcesL, voi_modsourcesH, timbres::Timbre::osc::pitch_mod_dep, osc_fine, osc_pitch
+@skip_pitchmod:
    ; compute frequency
    phy
    COMPUTE_FREQUENCY osc_pitch,osc_fine,osc_freq

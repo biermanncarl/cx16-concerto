@@ -21,6 +21,7 @@
    volume:  TIMBRE_BYTE_FIELD         ; overall volume
    mono:    TIMBRE_BYTE_FIELD         ; monophonic on/off
    porta_r: TIMBRE_BYTE_FIELD         ; portamento rate
+   retrig:  TIMBRE_BYTE_FIELD         ; when monophonic, will envelopes be retriggered? (could be combined with mono variable)
 
    ; envelope rates (not times!)
    .scope env
@@ -31,21 +32,28 @@
    .endscope
 
    ; oscillators
+   ; modulation sources are inactive if negative (bit 7 active)
+   ; Except amp_sel: it is assumed to be always active.
+   ; modulation depth is assumed to be negative if _depH is negative (bit 7 active)
    .scope osc
-      waveform:         OSCILLATOR_TIMBRE_BYTE_FIELD    ; including pulse width (PSG format) (? maybe not)
-      volume:           OSCILLATOR_TIMBRE_BYTE_FIELD    ; how many powers of 2 down
-      lrmid:            OSCILLATOR_TIMBRE_BYTE_FIELD    ; 0, 64, 128 or 192 for mute, L, R or center
-      pitch:            OSCILLATOR_TIMBRE_BYTE_FIELD    ; offset or absolute (if no tracking)
+      ; pitch stuff
+      pitch:            OSCILLATOR_TIMBRE_BYTE_FIELD    ; offset (or absolute if no tracking)
       fine:             OSCILLATOR_TIMBRE_BYTE_FIELD    ; unsigned (only up)
       track:            OSCILLATOR_TIMBRE_BYTE_FIELD    ; keyboard tracking on/off (also affects portamento on/off)
+      pitch_mod_sel:    OSCILLATOR_TIMBRE_BYTE_FIELD    ; selects source for pitch modulation (bit 7 on means none)
+      pitch_mod_dep:   OSCILLATOR_TIMBRE_BYTE_FIELD     ; pitch modulation depth (! weird format)
+
+      ; volume stuff
+      lrmid:            OSCILLATOR_TIMBRE_BYTE_FIELD    ; 0, 64, 128 or 192 for mute, L, R or center
+      volume:           OSCILLATOR_TIMBRE_BYTE_FIELD    ; how many powers of 2 down
       amp_sel:          OSCILLATOR_TIMBRE_BYTE_FIELD    ; amplifier select: gate, or one of the envelopes
+
+      ; waveform stuff
+      waveform:         OSCILLATOR_TIMBRE_BYTE_FIELD    ; including pulse width (PSG format) (? maybe not)
       pulse:            OSCILLATOR_TIMBRE_BYTE_FIELD    ; pulse width
       pwm_lfo_sel:      OSCILLATOR_TIMBRE_BYTE_FIELD    ; selects lfo to modulate pulse width
       pwm_lfo_depH:     OSCILLATOR_TIMBRE_BYTE_FIELD    ; high byte of pwm modulation by lfo depth
       pwm_lfo_depL:     OSCILLATOR_TIMBRE_BYTE_FIELD    ; low byte of pwm modulation by lfo depth
-      pitch_env_sel:    OSCILLATOR_TIMBRE_BYTE_FIELD    ; selects envelope for pitch modulation
-      pitch_env_depH:   OSCILLATOR_TIMBRE_BYTE_FIELD    ; high byte of pitch modulation by envelope depth
-      pitch_env_depL:   OSCILLATOR_TIMBRE_BYTE_FIELD    ; low byte of pitch modulation by envelope depth
       ; etc.
    .endscope
 .endscope
