@@ -45,7 +45,7 @@
 
       ; volume stuff
       lrmid:            OSCILLATOR_TIMBRE_BYTE_FIELD    ; 0, 64, 128 or 192 for mute, L, R or center
-      volume:           OSCILLATOR_TIMBRE_BYTE_FIELD    ; how many powers of 2 down
+      volume:           OSCILLATOR_TIMBRE_BYTE_FIELD    ; oscillator volume (! weird format)
       amp_sel:          OSCILLATOR_TIMBRE_BYTE_FIELD    ; amplifier select: gate, or one of the envelopes
 
       ; waveform stuff

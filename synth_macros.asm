@@ -483,4 +483,123 @@ SYNTH_MACROS_INC = 1
     ; worst case overall: 35 + 64 + 24 + 107 + 14 = 244 cycles ... much more than I hoped.
 .endmacro
 
+
+
+
+; this is used for volume scaling
+; modulation depth is assumed to be indexed by register Y
+; value to be scaled is assumed to be in register A
+; result is returned in register A
+; volume is moddepth
+; moddepth has the format  %0LLL0HHH
+; where %HHHH is the number of rightshifts to be applied to the volume signal
+; and %LLL is the number of the sub-level
+.macro VOLUME_SCALE5_8 moddepth
+
+    ; initialize zero page 8 bit value
+    sta mzpwb   ; only low byte is used  (3 cycles)
+
+    ; do %0HHH rightshifts (highest bit is discarded, because 7 rightshifts is maximum)
+    ; TODO: check highest bit first ... (if that gives us any advantage)
+    .local @endH
+    .local @loopH
+    .local @skipH2
+    clc ; do a clc so every branch below can assume carry is cleared
+    ; check bit 2, and do 4 RORs if it's set
+    lda moddepth, y
+    and #%00000100
+    beq @skipH2 ; or skip this part if it's clear
+    lda mzpwb
+    and #%11110000
+    ror
+    ror
+    ror
+    ror
+    sta mzpwb
+@skipH2:
+    lda moddepth, y
+    and #%00000011
+    bne :+          ; if no bit is set, we are done
+    jmp @endH
+:   phx ; if we got here, we've got a nonzero number of rightshifts to be done in register A
+    tax
+    lda mzpwb
+@loopH:
+    ror
+    clc ; doing clc after, because we assume it's cleared and we leave it clear (just as we do with toilets)
+    dex
+    bne @loopH
+    plx
+    sta mzpwb   ; worst case: 7 rightshifts, makes 45 + 3*9 = 72 cycles  (naive approach without bit 2 checking would be 84 ... almost not worth it to check it separately)
+@endH:
+
+    ; do sublevel scaling
+    .local @endL
+    .local @tableL
+    .local @sublevel_1
+    .local @sublevel_2
+    .local @sublevel_3
+    .local @sublevel_4
+    ; select subroutine
+    lda moddepth, y
+    and #%01110000
+    beq :+
+    clc
+    ror
+    ror
+    ror
+    tax
+    jmp (@tableL-2, x)  ; if x=0, nothing has to be done. if x=2,4,6 or 8, jump to respective subroutine
+:   lda mzpwb
+    jmp @endL
+    ; 24 cycles
+@tableL:
+    .word @sublevel_1
+    .word @sublevel_2
+    .word @sublevel_3
+    .word @sublevel_4
+@sublevel_1:
+    ; 2^(1/5) ~= %1.001
+    lda mzpwb
+    and #%11111000  ; saves 3 clc=4 cycles, adds 2 cycles --> saves 4 cycles
+    ; no clc is needed in the beginning, since the select subroutine code guarantees it's cleared
+    ror
+    ror
+    ror
+    adc mzpwb
+    jmp @endL  ; 17 cycles
+@sublevel_2:
+    ; 2^(2/5) ~= %1.01
+    ; refer to @sublevel_1 for code commentary
+    lda mzpwb
+    and #%11111100
+    ror
+    ror
+    adc mzpwb
+    jmp @endL  ; 15 cycles
+@sublevel_3:
+    ; 2^(3/5) ~= %1.1
+    lda mzpwb
+    ror
+    clc
+    adc mzpwb
+    jmp @endL  ; 13 cycles
+@sublevel_4:
+    ; 2^(4/5) ~= %1.11
+    lda mzpwb
+    ror
+    sta mzpwb+1 ; save intermediate
+    clc
+    ror
+    clc
+    adc mzpwb+1 ; no clc after this ... if we get a carry, result is broken anyway
+    adc mzpwb   ; 20 cycles
+@endL:
+    ; result is in register A
+
+    ; worst case overall: 20 + 24 + 72 + 3 = 119 cycles ... more than I hoped.
+.endmacro
+
+
+
 .endif

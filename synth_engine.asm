@@ -296,10 +296,14 @@ end_env: ; jump here when done with all envelopes
 next_osc:
 
    ; do oscillator volume control
+   ; read amplifier
    ldx timbres::Timbre::osc::amp_sel, y
    lda voi_modsourcesH, x
    clc
    ror
+   ; multiply with oscillator volume setting, input and output via register A
+   VOLUME_SCALE5_8 timbres::Timbre::osc::volume
+   ; do channel selection
    clc
    adc timbres::Timbre::osc::lrmid, y
    sta osc_volume
