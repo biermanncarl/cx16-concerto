@@ -243,14 +243,22 @@ SYNTH_MACROS_INC = 1
 ; where %HHHH is the number of rightshifts to be applied to the 16 bit mod source
 ; and %LLL is the number of the sub-level
 ; skipping is NOT done in this macro if modsource select is "none"
+; modsourceH is also allowed to have a sign bit (bit 7)
 .macro SCALE5_16 modsourceL, modsourceH, moddepth, resultL, resultH
+    ; mzpbf will hold the sign
+    stz mzpbf
 
     ; initialize zero page 16 bit value
     lda modsourceL, x
     sta mzpwb
     lda modsourceH, x
+    and #%0111111
+    cmp modsourceH, x
     sta mzpwb+1        ; 14 cycles
-
+    ; get the modulation sign
+    beq :+
+    inc mzpbf
+:
 
     ; do %HHHH rightshifts
     ; instead of the naive approach of looping over rightshifting a 16 bit variable
@@ -453,13 +461,19 @@ SYNTH_MACROS_INC = 1
 @endL:
 
 
+    ; determine overall sign (mod source * mod depth)
+    lda moddepth, y
+    and #%10000000
+    beq :+
+    inc mzpbf
+:   ; now if lowest bit of mzpbf is even, sign is positive and if it's odd, sign is negative
 
     ; now add/subtract scaling result to modulation destiny, according to sign
     .local @minusS
     .local @endS
-    lda moddepth, y
-    and #%10000000
-    bne @minusS
+    lda mzpbf
+    ror
+    bcs @minusS
     ; if we're here, sign is positive --> add
     clc
     lda mzpwb
@@ -480,7 +494,7 @@ SYNTH_MACROS_INC = 1
     sta resultH
 @endS:
     ; 35 cycles
-    ; worst case overall: 35 + 64 + 24 + 107 + 14 = 244 cycles ... much more than I hoped.
+    ; worst case overall: 35 + 64 + 24 + 107 + 14 = 244 cycles ... much more than I hoped. (even more now with proper sign handling)
 .endmacro
 
 

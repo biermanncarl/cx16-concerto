@@ -7,6 +7,7 @@ GLOBAL_DEFS_INC = 1
 .define N_OSCILLATORS 16 ; total number of PSG voices, which correspond to oscillators
 .define MAX_OSCS_PER_VOICE 6
 .define MAX_ENVS_PER_VOICE 3
+.define MAX_LFOS_PER_VOICE 1
 
 
 ; string constants
@@ -184,6 +185,21 @@ Note:
 ; env1: voice1 voice2 voice3 ... env2: voice1 voice2 voice3 ...
 .macro ENVELOPE_VOICE_BYTE_FIELD
    .repeat MAX_ENVS_PER_VOICE*N_VOICES
+      .byte 0
+   .endrep
+.endmacro
+
+; lfo1: timbre1 timbre2 timbre3 ... lfo2: timbre1 timbre2 tibre3 ...
+; ---> this format saves multiplication when accessing with arbitrary timbre indes
+.macro LFO_TIMBRE_BYTE_FIELD
+   .repeat MAX_LFOS_PER_VOICE*N_TIMBRES
+      .byte 0
+   .endrep
+.endmacro
+
+; lfo1: voice1 voice2 voice3 ... lfo2: voice1 voice2 voice3 ...
+.macro LFO_VOICE_BYTE_FIELD
+   .repeat MAX_LFOS_PER_VOICE*N_VOICES
       .byte 0
    .endrep
 .endmacro

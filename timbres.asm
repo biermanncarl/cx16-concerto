@@ -18,6 +18,7 @@
    ;general
    n_oscs:  TIMBRE_BYTE_FIELD         ; how many oscillators are used
    n_envs:  TIMBRE_BYTE_FIELD         ; how many envelopes are used
+   n_lfos:  TIMBRE_BYTE_FIELD
    volume:  TIMBRE_BYTE_FIELD         ; overall volume
    mono:    TIMBRE_BYTE_FIELD         ; monophonic on/off
    porta_r: TIMBRE_BYTE_FIELD         ; portamento rate
@@ -29,6 +30,15 @@
       attackH: ENVELOPE_TIMBRE_BYTE_FIELD
       decayL:  ENVELOPE_TIMBRE_BYTE_FIELD
       decayH:  ENVELOPE_TIMBRE_BYTE_FIELD
+   .endscope
+
+   ; lfo stuff
+   .scope lfo
+      rateH:   LFO_TIMBRE_BYTE_FIELD
+      rateL:   LFO_TIMBRE_BYTE_FIELD
+      wave:    LFO_TIMBRE_BYTE_FIELD   ; waveform select: triangle, square, noise (S'n'H)
+      retrig:  LFO_TIMBRE_BYTE_FIELD   ; retrigger
+      offs:    LFO_TIMBRE_BYTE_FIELD   ; offset (high byte only, or seed for SnH)
    .endscope
 
    ; oscillators

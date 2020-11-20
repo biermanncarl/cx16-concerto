@@ -14,10 +14,20 @@ osc_wave:      .byte 0
 osc_pw:        .byte 0
 osc_panmute:   .byte 0
 
+; MODULATION SOURCE NUMBER FORMAT
+; -------------------------------
+; Modulation sources consist of two bytes:
+; A high byte and a low byte
+; There are unipolar and bipolar sources.
+; The low byte can have any desired value
+; The high byte can range from 0 to 127 on unipolar sources.
+; On bipolar sources, it is allowed to range from 0 to 64 (or 63?)
+; and bit 7 is the sign of the modulation.
+
 ; modulation sources, indexed
-; available: env1, env2, env3
-; maybe later: lfo, gate, wavetable
-.define N_MODSOURCES MAX_ENVS_PER_VOICE
+; available: env1, env2, env3, lfo1
+; maybe later: gate, wavetable, MSEG, modwheel
+.define N_MODSOURCES MAX_ENVS_PER_VOICE+MAX_LFOS_PER_VOICE
 voi_modsourcesL:
    .repeat N_MODSOURCES
       .byte 0
@@ -31,6 +41,8 @@ voi_modsourcesH:
 voice_index = mzpbb
 env_counter = mzpbc
 n_envs      = mzpbd
+n_lfos      = mzpbd
+bittest     = mzpbc  ; for Sample and Hold RNG
 osc_counter = mzpbc ; c and d are reused
 n_oscs      = mzpbd
 modsource_index = mzpbe ; keeps track of which modsource we're processing
@@ -67,8 +79,8 @@ next_voice:
    ; (At the moment, we just got AD envelopes)
 
    ; step = 0 means inactive (either not started or already finished) 
-   ; when envelope is inactive, phase has to be 0 for reference
-   ; since the envelope amplitude is in "phase"
+   ; When the envelope is inactive, phase has to be 0 for reference,
+   ; since the envelope amplitude is in "phase".
 
    ; load timbre index into register Y ... this will function as the indexing 
    ; offset to access the correct envelope data.
@@ -200,6 +212,150 @@ end_env: ; jump here when done with all envelopes
    ; advance modsource index up to position for next modsource in case we didn't get there
    lda #MAX_ENVS_PER_VOICE
    sta modsource_index
+
+
+
+
+
+
+   ; -----------
+   ; -----------
+   ; - L F O s -
+   ; -----------
+   ; -----------
+
+   ; This section updates the LFOs (it is only one LFO planned ... but I kept the engine general
+   ; just incase I change my mind)
+
+   ; X register: starts as voice index, increased by N_VOICES to get to the other LFO voice fields
+   ; Y register: starts as timbre index, increased by N_TIMBRES to get to the other LFO timbre fields
+   ; once the LFO phase has been incremented, Y is changed to indexing the modsources
+   ldy voices::Voice::timbre, x
+   lda timbres::Timbre::n_lfos, y
+   sta n_lfos
+@loop_lfos:
+   ; assumes that the zero flag is set according to a counter counting down from n_lfos
+   bne :+
+   jmp @end_lfos
+:  
+   ; select waveform / algorithm
+   lda timbres::Timbre::lfo::wave, y
+   asl
+   phx
+   tax
+   jmp (@jmp_table, x)
+@jmp_table:
+   .word @alg_triangle
+   .word @alg_square
+   .word @alg_snh
+
+   ; triangle waveform
+   ; modulation rising, if most significant phase bit is 0
+   ; modulation falling, if most significant phase bit is 1
+@alg_triangle:
+   plx
+   ; advance phase
+   lda voices::Voice::lfo::phaseL, x
+   clc
+   adc timbres::Timbre::lfo::rateL, y
+   sta voices::Voice::lfo::phaseL, x
+   lda voices::Voice::lfo::phaseH, x
+   adc timbres::Timbre::lfo::rateH, y
+   sta voices::Voice::lfo::phaseH, x
+   ; check high bit
+   bmi @tri_falling
+@tri_rising:
+   ; accumulator is in the range 0 ... 127
+   phy
+   ldy modsource_index
+   ; adapt the numbering format: shift to range -64 ... 63
+   ; and then flip sign if negative
+   sec
+   sbc #64
+   bpl @tri_rising_positive
+@tri_rising_negative:
+   ; we are in the range %11000000 to %11111111
+   ; transform to  range %10111111 to %10000000
+   eor #%01111111
+   sta voi_modsourcesH, y
+   ; invert fine tuning
+   lda voices::Voice::lfo::phaseL, x
+   eor #%11111111
+   sta voi_modsourcesL, y
+   jmp @tri_done
+@tri_rising_positive:
+   ; we are in the range %00000000 to %00111111
+   ; simply store result in modsource list
+   sta voi_modsourcesH, y
+   lda voices::Voice::lfo::phaseL, x
+   sta voi_modsourcesL, y
+   jmp @tri_done
+@tri_falling:
+   ; accumulator is in range 128 ... 255
+   phy
+   ldy modsource_index
+   ; adapt numbering format: shift to range -64 ... 63
+   clc
+   adc #64
+   bmi @tri_falling_positive
+@tri_falling_negative:
+   ; we are in the range %00000000 to %00111111
+   ; put negative sign onto everything
+   ora #%10000000
+   sta voi_modsourcesH, y
+   lda voices::Voice::lfo::phaseL, x
+   sta voi_modsourcesL, y
+   jmp @tri_done
+@tri_falling_positive:
+   ; we are in the range %11000000 to %11111111
+   ; transform to  range %00111111 to %00000000
+   eor #%11111111
+   sta voi_modsourcesH, y
+   ; invert fine tuning
+   lda voices::Voice::lfo::phaseL, x
+   eor #%11111111
+   sta voi_modsourcesL, y
+@tri_done:
+   ply
+   jmp @advance_lfos
+
+   ; square waveform
+   ; modulation is maximal, if most significant phase bit is 0
+   ; modulation is minimal, if most significant phase bit is 1
+@alg_square:
+   plx
+   jmp @advance_lfos
+
+   ; Sample and Hold
+   ; phaseL is a counter, which upon hitting 0 initiates the generation of a new random value
+   ; phaseH is the seed as well as the random value itself (LFSR algorithm)
+@alg_snh:
+   plx
+
+
+@advance_lfos:
+   ; advance counters
+   txa
+   clc
+   adc #N_VOICES
+   tax
+   tya
+   clc   ; unnecessary
+   adc #N_TIMBRES
+   tay
+   inc modsource_index
+   lda n_lfos
+   dec
+   jmp @loop_lfos
+
+@end_lfos:
+
+   ldx voice_index
+   lda #(MAX_ENVS_PER_VOICE+MAX_LFOS_PER_VOICE)
+   sta modsource_index
+
+
+
 
 
    ; ---------------

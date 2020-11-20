@@ -29,6 +29,12 @@ note_velocity:
       phaseH:  ENVELOPE_VOICE_BYTE_FIELD
    .endscope
 
+   ; lfos
+   .scope lfo
+      phaseL:  LFO_VOICE_BYTE_FIELD
+      phaseH:  LFO_VOICE_BYTE_FIELD
+   .endscope
+
    ; PSG voices (oscillator to PSG voice mapping) (unused ATM)
    osc_psg_map:   OSCILLATOR_VOICE_BYTE_FIELD
 
@@ -371,6 +377,41 @@ play_note:
    ; restore x and y
    plx
    ldy note_timbre
+   
+   ; initialize LFOs
+   ; x: starts as voice index, becomes lfo1, lfo2, lfo3 sublattice offset by addition of N_VOICES
+   ; mzpba: is set to n_lfos
+   ; y: starts as timbre index, becomes lfo1, lfo2, lfo3 sublattice offset by addition of N_TIMBRES
+@reset_lfos:
+   lda timbres::Timbre::n_lfos, y
+   beq @skip_lfos   ; for now we skip only if there are NO LFOs active. should be fine tho, because initializing unused stuff doesn't hurt
+   sta mzpba
+   ldy #0
+   phx
+@loop_lfos:
+   ; figure out if lfo is retriggered. If yes, reset phase
+   lda timbres::Timbre::lfo::retrig, y
+   beq @advance_lfo
+   ; set lfo phase
+   lda timbres::Timbre::lfo::offs, y
+   sta Voice::lfo::phaseH, x
+   stz Voice::lfo::phaseL, x
+
+@advance_lfo:  ; advance x and y offset
+   txa
+   clc
+   adc #N_VOICES
+   tax
+   tya
+   clc
+   adc #N_TIMBRES
+   tay
+   cpx #(MAX_LFOS_PER_VOICE*N_VOICES) ; a bit wonky ... but should do.
+   bcc @loop_envs
+
+   plx
+   ldy note_timbre
+@skip_lfos:
 
 @set_pitch:
    ; other stuff

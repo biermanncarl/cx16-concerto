@@ -353,6 +353,8 @@
    sta timbres::Timbre::n_oscs, x
    lda #2
    sta timbres::Timbre::n_envs, x
+   lda #1
+   sta timbres::Timbre::n_lfos, x
    ; set mono & porta rate
    lda #30
    sta timbres::Timbre::porta_r, x
@@ -365,7 +367,7 @@
    sta timbres::Timbre::env::attackL, x
    lda #127
    sta timbres::Timbre::env::attackH, x
-   lda #126
+   lda #128
    sta timbres::Timbre::env::decayL, x
    lda #0
    sta timbres::Timbre::env::decayH, x
@@ -375,10 +377,22 @@
    sta timbres::Timbre::env::attackL, x
    lda #127
    sta timbres::Timbre::env::attackH, x
-   lda #128
+   lda #126
    sta timbres::Timbre::env::decayL, x
-   lda #1
+   lda #3
    sta timbres::Timbre::env::decayH, x
+   ; lfo 0
+   ldx #(0*N_TIMBRES+patch_no)
+   lda #0
+   sta timbres::Timbre::lfo::wave, x
+   lda #14
+   sta timbres::Timbre::lfo::rateH, x
+   lda #8
+   sta timbres::Timbre::lfo::rateL, x
+   lda #1
+   sta timbres::Timbre::lfo::retrig, x
+   lda #128
+   sta timbres::Timbre::lfo::offs, x
    ; set oscillator parameters
    ; oscillator 0
    ldx #(0*N_TIMBRES+patch_no)
@@ -394,9 +408,9 @@
    sta timbres::Timbre::osc::amp_sel, x
    lda #1
    sta timbres::Timbre::osc::track, x
-   lda #1
+   lda #3
    sta timbres::Timbre::osc::pitch_mod_sel, x
-   lda #(1 * 128 + 4 * 16  +  3)
+   lda #(0 * 128 + 2 * 16  +  8)
    sta timbres::Timbre::osc::pitch_mod_dep, x
 .endmacro
 
