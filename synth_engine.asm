@@ -239,9 +239,9 @@ end_env: ; jump here when done with all envelopes
    jmp @end_lfos
 :  
    ; select waveform / algorithm
+   phx
    lda timbres::Timbre::lfo::wave, y
    asl
-   phx
    tax
    jmp (@jmp_table, x)
 @jmp_table:
@@ -324,6 +324,33 @@ end_env: ; jump here when done with all envelopes
    ; modulation is minimal, if most significant phase bit is 1
 @alg_square:
    plx
+   ; advance phase
+   lda voices::Voice::lfo::phaseL, x
+   clc
+   adc timbres::Timbre::lfo::rateL, y
+   sta voices::Voice::lfo::phaseL, x
+   lda voices::Voice::lfo::phaseH, x
+   adc timbres::Timbre::lfo::rateH, y
+   sta voices::Voice::lfo::phaseH, x
+   ; check high bit
+   bmi @squ_high
+@squ_low:
+   phy
+   ldy modsource_index
+   lda #(128+63)
+   sta voi_modsourcesH, y
+   lda #255
+   sta voi_modsourcesL, y
+   jmp @squ_done
+@squ_high:
+   phy
+   ldy modsource_index
+   lda #63
+   sta voi_modsourcesH, y
+   lda #255
+   sta voi_modsourcesL, y
+@squ_done:
+   ply
    jmp @advance_lfos
 
    ; Sample and Hold
