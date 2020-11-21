@@ -36,7 +36,7 @@
    .scope lfo
       rateH:   LFO_TIMBRE_BYTE_FIELD
       rateL:   LFO_TIMBRE_BYTE_FIELD
-      wave:    LFO_TIMBRE_BYTE_FIELD   ; waveform select: triangle, square, noise (S'n'H)
+      wave:    LFO_TIMBRE_BYTE_FIELD   ; waveform select: triangle, square, ramp up, ramp down, noise (S'n'H)
       retrig:  LFO_TIMBRE_BYTE_FIELD   ; retrigger
       offs:    LFO_TIMBRE_BYTE_FIELD   ; offset (high byte only, or seed for SnH)
    .endscope

@@ -21,7 +21,7 @@ osc_panmute:   .byte 0
 ; There are unipolar and bipolar sources.
 ; The low byte can have any desired value
 ; The high byte can range from 0 to 127 on unipolar sources.
-; On bipolar sources, it is allowed to range from 0 to 64 (or 63?)
+; On bipolar sources, it is allowed to range from 0 to 64 (or 63?) (doesn't matter)
 ; and bit 7 is the sign of the modulation.
 
 ; modulation sources, indexed
@@ -41,8 +41,8 @@ voi_modsourcesH:
 voice_index = mzpbb
 env_counter = mzpbc
 n_envs      = mzpbd
-n_lfos      = mzpbd
-bittest     = mzpbc  ; for Sample and Hold RNG
+lfo_counter = mzpbc
+bittest     = mzpbd  ; for Sample and Hold RNG
 osc_counter = mzpbc ; c and d are reused
 n_oscs      = mzpbd
 modsource_index = mzpbe ; keeps track of which modsource we're processing
@@ -232,7 +232,7 @@ end_env: ; jump here when done with all envelopes
    ; once the LFO phase has been incremented, Y is changed to indexing the modsources
    ldy voices::Voice::timbre, x
    lda timbres::Timbre::n_lfos, y
-   sta n_lfos
+   sta lfo_counter
 @loop_lfos:
    ; assumes that the zero flag is set according to a counter counting down from n_lfos
    bne :+
@@ -247,7 +247,10 @@ end_env: ; jump here when done with all envelopes
 @jmp_table:
    .word @alg_triangle
    .word @alg_square
+   .word @ramp_up
+   .word @ramp_down
    .word @alg_snh
+
 
    ; triangle waveform
    ; modulation rising, if most significant phase bit is 0
@@ -282,14 +285,16 @@ end_env: ; jump here when done with all envelopes
    lda voices::Voice::lfo::phaseL, x
    eor #%11111111
    sta voi_modsourcesL, y
-   jmp @tri_done
+   ply
+   jmp @advance_lfos
 @tri_rising_positive:
    ; we are in the range %00000000 to %00111111
    ; simply store result in modsource list
    sta voi_modsourcesH, y
    lda voices::Voice::lfo::phaseL, x
    sta voi_modsourcesL, y
-   jmp @tri_done
+   ply
+   jmp @advance_lfos
 @tri_falling:
    ; accumulator is in range 128 ... 255
    phy
@@ -305,7 +310,8 @@ end_env: ; jump here when done with all envelopes
    sta voi_modsourcesH, y
    lda voices::Voice::lfo::phaseL, x
    sta voi_modsourcesL, y
-   jmp @tri_done
+   ply
+   jmp @advance_lfos
 @tri_falling_positive:
    ; we are in the range %11000000 to %11111111
    ; transform to  range %00111111 to %00000000
@@ -315,9 +321,10 @@ end_env: ; jump here when done with all envelopes
    lda voices::Voice::lfo::phaseL, x
    eor #%11111111
    sta voi_modsourcesL, y
-@tri_done:
    ply
    jmp @advance_lfos
+
+
 
    ; square waveform
    ; modulation is maximal, if most significant phase bit is 0
@@ -341,7 +348,8 @@ end_env: ; jump here when done with all envelopes
    sta voi_modsourcesH, y
    lda #255
    sta voi_modsourcesL, y
-   jmp @squ_done
+   ply
+   jmp @advance_lfos
 @squ_high:
    phy
    ldy modsource_index
@@ -349,16 +357,143 @@ end_env: ; jump here when done with all envelopes
    sta voi_modsourcesH, y
    lda #255
    sta voi_modsourcesL, y
-@squ_done:
    ply
    jmp @advance_lfos
+
+
+   ; ramp up
+   ; signal needs to be rightshifted, since otherwise we would get too much amplitude
+@ramp_up:
+   plx
+   ; advance phase
+   lda voices::Voice::lfo::phaseL, x
+   clc
+   adc timbres::Timbre::lfo::rateL, y
+   sta voices::Voice::lfo::phaseL, x
+   lda voices::Voice::lfo::phaseH, x
+   adc timbres::Timbre::lfo::rateH, y
+   sta voices::Voice::lfo::phaseH, x
+   ; check high bit
+   bmi @ramp_up_negative
+@ramp_up_positive:
+   ; we are in range %00000000 to %01111111
+   ; need to rightshift once to get into the correct range 0 ... 63
+   phy
+   ldy modsource_index
+   clc
+   ror
+   sta voi_modsourcesH, y
+   lda voices::Voice::lfo::phaseL, x
+   ror
+   sta voi_modsourcesL, y
+   ply
+   jmp @advance_lfos
+@ramp_up_negative:
+   ; need to rightshift and invert and put sign
+   phy
+   ldy modsource_index
+   sec
+   ror
+   ; we are in range %11000000 to %11111111
+   ; transform to    %10111111 to %10000000
+   eor #%01111111
+   ;lda #0
+   sta voi_modsourcesH, y
+   lda voices::Voice::lfo::phaseL, x
+   ror
+   eor #%11111111
+   sta voi_modsourcesL, y
+   ply
+   jmp @advance_lfos
+
+   ; ramp down ... we basically need to invert the sign
+@ramp_down:
+   plx
+   ; advance phase
+   lda voices::Voice::lfo::phaseL, x
+   clc
+   adc timbres::Timbre::lfo::rateL, y
+   sta voices::Voice::lfo::phaseL, x
+   lda voices::Voice::lfo::phaseH, x
+   adc timbres::Timbre::lfo::rateH, y
+   sta voices::Voice::lfo::phaseH, x
+   ; check high bit
+   bmi @ramp_dn_negative
+@ramp_dn_positive:
+   ; we are in range %00000000 to %01111111
+   ; need to rightshift once to get into the correct range 0 ... 63
+   phy
+   ldy modsource_index
+   clc
+   ror
+   eor #%10000000
+   sta voi_modsourcesH, y
+   lda voices::Voice::lfo::phaseL, x
+   ror
+   sta voi_modsourcesL, y
+   ply
+   jmp @advance_lfos
+@ramp_dn_negative:
+   ; need to rightshift and invert and put sign
+   phy
+   ldy modsource_index
+   sec
+   ror
+   eor #%11111111
+   ;lda #0
+   sta voi_modsourcesH, y
+   lda voices::Voice::lfo::phaseL, x
+   ror
+   eor #%11111111
+   sta voi_modsourcesL, y
+   ply
+   jmp @advance_lfos
+
 
    ; Sample and Hold
    ; phaseL is a counter, which upon hitting 0 initiates the generation of a new random value
    ; phaseH is the seed as well as the random value itself (LFSR algorithm)
 @alg_snh:
    plx
-
+   ; countdown
+   lda voices::Voice::lfo::phaseL, x
+   bne @snh_constant
+@snh_random:
+   ; reset counter
+   lda timbres::Timbre::lfo::rateL, y
+   dec
+   sta voices::Voice::lfo::phaseL, x
+   ; very rudimentary RNG: 8 bit LFSR
+   lda voices::Voice::lfo::phaseH, x
+   sta bittest
+   phy
+   ldy #1
+   bbr0 bittest, :+
+   iny
+:  bbr2 bittest, :+
+   iny
+:  bbr3 bittest, :+
+   iny
+:  bbr4 bittest, :+
+   iny
+:  tya
+   ror   ; put least significant bit (i.e. parity) into carry flag
+   lda bittest
+   ror
+   sta voices::Voice::lfo::phaseH, x
+   jmp @snh_write
+   ; if just held constant
+@snh_constant:
+   dec
+   sta voices::Voice::lfo::phaseL, x
+   lda voices::Voice::lfo::phaseH, x
+   phy
+@snh_write:
+   ldy modsource_index
+   sta voi_modsourcesH, y
+   lda #0
+   sta voi_modsourcesL, y
+   ply
 
 @advance_lfos:
    ; advance counters
@@ -371,7 +506,7 @@ end_env: ; jump here when done with all envelopes
    adc #N_TIMBRES
    tay
    inc modsource_index
-   lda n_lfos
+   lda lfo_counter
    dec
    jmp @loop_lfos
 

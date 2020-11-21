@@ -383,11 +383,11 @@
    sta timbres::Timbre::env::decayH, x
    ; lfo 0
    ldx #(0*N_TIMBRES+patch_no)
-   lda #1
+   lda #4
    sta timbres::Timbre::lfo::wave, x
-   lda #14
+   lda #10
    sta timbres::Timbre::lfo::rateH, x
-   lda #8
+   lda #10
    sta timbres::Timbre::lfo::rateL, x
    lda #1
    sta timbres::Timbre::lfo::retrig, x
@@ -410,7 +410,7 @@
    sta timbres::Timbre::osc::track, x
    lda #3
    sta timbres::Timbre::osc::pitch_mod_sel, x
-   lda #(0 * 128 + 2 * 16  +  4)
+   lda #(0 * 128 + 0 * 16  +  2)
    sta timbres::Timbre::osc::pitch_mod_dep, x
 .endmacro
 
