@@ -234,7 +234,7 @@ SYNTH_MACROS_INC = 1
 
 
 
-; this is used for various modulation depth scalings of 16 bit modulation values
+; this is used for various modulation depth scalings of 16 bit modulation values (mainly pitch)
 ; modulation depth is assumed to be indexed by register Y
 ; modulation source is assumed to be indexed by register X
 ; result is added to the literal addesses
@@ -252,7 +252,7 @@ SYNTH_MACROS_INC = 1
     lda modsourceL, x
     sta mzpwb
     lda modsourceH, x
-    and #%0111111
+    and #%01111111
     cmp modsourceH, x
     sta mzpwb+1        ; 14 cycles
     ; get the modulation sign

@@ -640,19 +640,27 @@ next_osc:
    sta osc_pitch
    bra @donetrack
 @notrack:
+   ; modulation
+   ; source indexed by X
+   ; depth indexed by Y
    lda timbres::Timbre::osc::fine, y
    sta osc_fine
    lda timbres::Timbre::osc::pitch, y
    sta osc_pitch
 @donetrack:
    ; pitch mod source 1
-   ldx timbres::Timbre::osc::pitch_mod_sel, y
+   ldx timbres::Timbre::osc::pitch_mod_sel1, y
    bpl :+
-   jmp @skip_pitchmod
-:  ; source indexed by X
-   ; depth indexed by Y
-   SCALE5_16 voi_modsourcesL, voi_modsourcesH, timbres::Timbre::osc::pitch_mod_dep, osc_fine, osc_pitch
-@skip_pitchmod:
+   jmp @skip_pitchmod1
+:  SCALE5_16 voi_modsourcesL, voi_modsourcesH, timbres::Timbre::osc::pitch_mod_dep1, osc_fine, osc_pitch
+@skip_pitchmod1:
+   ; pitch mod source 2
+   ldx timbres::Timbre::osc::pitch_mod_sel2, y
+   bpl :+
+   jmp @skip_pitchmod2
+:  SCALE5_16 voi_modsourcesL, voi_modsourcesH, timbres::Timbre::osc::pitch_mod_dep2, osc_fine, osc_pitch
+@skip_pitchmod2:
+
    ; compute frequency
    phy
    COMPUTE_FREQUENCY osc_pitch,osc_fine,osc_freq
