@@ -617,8 +617,6 @@ next_osc:
    ; read amplifier
    ldx timbres::Timbre::osc::amp_sel, y
    lda voi_modsourcesH, x
-   clc
-   ror
    ; multiply with oscillator volume setting, input and output via register A
    VOLUME_SCALE5_8 timbres::Timbre::osc::volume
    ; do channel selection
@@ -666,9 +664,28 @@ next_osc:
    COMPUTE_FREQUENCY osc_pitch,osc_fine,osc_freq
    ply
 
+
    ; do oscillator waveform control
    lda timbres::Timbre::osc::waveform, y
    sta osc_wave
+   beq :+
+   jmp @skip_pwm
+:  ; pulse width modulation
+   ; load pulse width
+   lda timbres::Timbre::osc::pulse, y
+   clc
+   adc osc_wave
+   sta osc_wave
+   ; modulate pulse width
+   ldx timbres::Timbre::osc::pwm_sel, y
+   bpl :+
+   jmp @skip_pwm
+:  lda voi_modsourcesH, x
+   SCALE5_6 timbres::Timbre::osc::pwm_dep
+   clc
+   adc osc_wave
+   sta osc_wave
+@skip_pwm:
 
    ; do oscillator's PSG voice control
    ldx osc_offset

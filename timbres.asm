@@ -63,9 +63,8 @@
       ; waveform stuff
       waveform:         OSCILLATOR_TIMBRE_BYTE_FIELD    ; including pulse width (PSG format) (? maybe not)
       pulse:            OSCILLATOR_TIMBRE_BYTE_FIELD    ; pulse width
-      pwm_lfo_sel:      OSCILLATOR_TIMBRE_BYTE_FIELD    ; selects lfo to modulate pulse width
-      pwm_lfo_depH:     OSCILLATOR_TIMBRE_BYTE_FIELD    ; high byte of pwm modulation by lfo depth
-      pwm_lfo_depL:     OSCILLATOR_TIMBRE_BYTE_FIELD    ; low byte of pwm modulation by lfo depth
+      pwm_sel:          OSCILLATOR_TIMBRE_BYTE_FIELD    ; selects source to modulate pulse width
+      pwm_dep:          OSCILLATOR_TIMBRE_BYTE_FIELD    ; pwm modulation depth
       ; etc.
    .endscope
 .endscope

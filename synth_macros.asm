@@ -509,6 +509,8 @@ SYNTH_MACROS_INC = 1
 ; where %HHHH is the number of rightshifts to be applied to the volume signal
 ; and %LLL is the number of the sub-level
 .macro VOLUME_SCALE5_8 moddepth
+    ; initial rightshift to get correct amplitude
+    lsr
 
     ; initialize zero page 8 bit value
     sta mzpwb   ; only low byte is used  (3 cycles)
@@ -613,6 +615,149 @@ SYNTH_MACROS_INC = 1
 
     ; worst case overall: 20 + 24 + 72 + 3 = 119 cycles ... more than I hoped.
 .endmacro
+
+
+
+
+; This is used for modulation of the parameters that are only 6 bits wide,
+; namely volume and pulse width.
+; modulation depth is assumed to be indexed by register Y
+; modulation source is assumed to be in register A (and all flags from loading of A)
+; result is returned in register A
+; moddepth has the format  %0LLL0HHH
+; where %HHH is the number of rightshifts to be applied to the volume signal
+; and %LLL is the number of the sub-level
+.macro SCALE5_6 moddepth
+    ; with this sequence, we do several tasks at once:
+    ; We extract the sign from the modulation source and store it in mzpbf
+    ; We truncate the sign from the modulation source
+    ; and right shift it effectively once, because the amplitude of any modulation source is too high anyway
+    stz mzpbf
+    asl         ; push sign out
+    rol mzpbf   ; push sign into variable
+    lsr
+    lsr
+    ; initialize zero page 8 bit value
+    sta mzpwb   ; only low byte is used
+
+    ; do %0HHH rightshifts (highest bit is discarded, because 7 rightshifts is maximum)
+    ; TODO: check highest bit first ... (if that gives us any advantage)
+    .local @endH
+    .local @loopH
+    .local @skipH2
+    ; check bit 2, and do 4 RORs if it's set
+    lda moddepth, y
+    and #%00000100
+    beq @skipH2 ; or skip this part if it's clear
+    lda mzpwb
+    lsr
+    lsr
+    lsr
+    lsr
+    sta mzpwb
+@skipH2:
+    lda moddepth, y
+    and #%00000011
+    bne :+          ; if no bit is set, we are done
+    jmp @endH
+:   phx ; if we got here, we've got a nonzero number of rightshifts to be done in register A
+    tax
+    lda mzpwb
+@loopH:
+    lsr
+    dex
+    bne @loopH
+    plx
+    sta mzpwb   ; worst case: 7 rightshifts, makes 43 + 3*7 = 64 cycles (72 if we just loop naively ... almost not worth it)
+@endH:
+
+    ; do sublevel scaling
+    .local @endL
+    .local @tableL
+    .local @sublevel_1
+    .local @sublevel_2
+    .local @sublevel_3
+    .local @sublevel_4
+    ; select subroutine
+    lda moddepth, y
+    and #%01110000
+    beq :+
+    lsr
+    lsr
+    lsr
+    tax
+    jmp (@tableL-2, x)  ; if x=0, nothing has to be done. if x=2,4,6 or 8, jump to respective subroutine
+:   lda mzpwb
+    jmp @endL
+    ; 22 cycles
+@tableL:
+    .word @sublevel_1
+    .word @sublevel_2
+    .word @sublevel_3
+    .word @sublevel_4
+@sublevel_1:
+    ; 2^(1/5) ~= %1.001
+    lda mzpwb
+    lsr
+    lsr
+    lsr
+    adc mzpwb
+    jmp @endL  ; 15 cycles
+@sublevel_2:
+    ; 2^(2/5) ~= %1.01
+    ; refer to @sublevel_1 for code commentary
+    lda mzpwb
+    lsr
+    lsr
+    adc mzpwb
+    jmp @endL  ; 13 cycles
+@sublevel_3:
+    ; 2^(3/5) ~= %1.1
+    lda mzpwb
+    lsr
+    clc
+    adc mzpwb
+    jmp @endL  ; 13 cycles
+@sublevel_4:
+    ; 2^(4/5) ~= %1.11
+    lda mzpwb
+    lsr
+    sta mzpwb+1 ; save intermediate
+    lsr
+    clc
+    adc mzpwb+1 ; no clc after this ... if we get a carry, result is broken anyway
+    adc mzpwb   ; 22 cycles
+@endL:
+    ; result is in register A
+    sta mzpwb   ; save it
+
+    ; determine overall sign (mod source * mod depth)
+    lda moddepth, y
+    and #%10000000
+    beq :+
+    inc mzpbf
+:   ; now if lowest bit of mzpbf is even, sign is positive and if it's odd, sign is negative
+
+    ; now add/subtract scaling result to modulation destiny, according to sign
+    .local @minusS
+    .local @endS
+    lda mzpbf
+    ror
+    bcs @minusS
+    ; if we're here, sign is positive
+    lda mzpwb
+    bra @endS
+@minusS:
+    ; if we're here, sign is negative
+    lda mzpwb
+    eor #%11111111
+    inc
+@endS:
+
+
+.endmacro
+
+
 
 
 
