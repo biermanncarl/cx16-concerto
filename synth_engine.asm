@@ -669,23 +669,33 @@ next_osc:
    lda timbres::Timbre::osc::waveform, y
    sta osc_wave
    beq :+
-   jmp @skip_pwm
+   jmp @end_pwm
 :  ; pulse width modulation
    ; load pulse width
    lda timbres::Timbre::osc::pulse, y
-   clc
-   adc osc_wave
    sta osc_wave
    ; modulate pulse width
    ldx timbres::Timbre::osc::pwm_sel, y
    bpl :+
-   jmp @skip_pwm
+   jmp @end_pwm
 :  lda voi_modsourcesH, x
    SCALE5_6 timbres::Timbre::osc::pwm_dep
    clc
-   adc osc_wave
+   adc osc_wave   ; add static pulse width to mpdulation signal
+   ; clamp to valid range
+   cmp #63
+   bcs :+   ; if carry clear, we are in valid range
    sta osc_wave
-@skip_pwm:
+   jmp @end_pwm
+:  ; if carry set, we have to clamp range
+   ; if we're below 159, set to 63. if we're above 159, set to 0
+   cmp #159
+   bcc :+ ; if carry set, we set 0
+   stz osc_wave
+   jmp @end_pwm
+:  lda #63  ; if carry clear, we set 63
+   sta osc_wave
+@end_pwm:
 
    ; do oscillator's PSG voice control
    ldx osc_offset

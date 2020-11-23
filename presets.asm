@@ -420,11 +420,11 @@
    ldx #(0*N_TIMBRES+patch_no)
    lda #0
    sta timbres::Timbre::osc::waveform, x
-   lda #63
+   lda #50
    sta timbres::Timbre::osc::pulse, x
-   lda #128
+   lda #1
    sta timbres::Timbre::osc::pwm_sel, x
-   lda #(128)
+   lda #(0*128+4*16+1)
    sta timbres::Timbre::osc::pwm_dep, x
    lda #244
    sta timbres::Timbre::osc::pitch, x
