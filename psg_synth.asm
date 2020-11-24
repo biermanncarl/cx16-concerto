@@ -33,7 +33,19 @@ start:
    lda #$93
    jsr CHROUT
 
-   jsr gui::panels::draw_oscillator_panel
+   lda #gui::panels::osc::px
+   sta gui::panels::draw_x
+   lda #gui::panels::osc::py
+   sta gui::panels::draw_y
+   lda #gui::panels::osc::width
+   sta gui::panels::draw_width
+   lda #gui::panels::osc::height
+   sta gui::panels::draw_height
+   lda #6
+   sta gui::panels::draw_n_tabs
+   lda #3
+   sta gui::panels::draw_active
+   jsr gui::panels::draw_panel
 
    ; initialize mouse
    lda #1

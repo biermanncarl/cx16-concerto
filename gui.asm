@@ -2,7 +2,10 @@
 
 .scope gui
 
-
+; global GUI constants
+panel_frame_color = 1
+caption_color = 1
+background_color = 6
 
 
 ; actually used by DISPLAY_BYTE macro
@@ -28,9 +31,16 @@ gui_register2:      .byte 0
    .byte 0
 .endmacro
 
-; message strings
-
-
+.macro SET_VERA_XY svx, svy
+   stz VERA_ctrl
+   lda #$10
+   sta VERA_addr_bank
+   lda svy
+   sta VERA_addr_high
+   lda svx
+   asl
+   sta VERA_addr_low
+.endmacro
 
 ; displays the byte db_data at position db_x and db_y
 .macro DISPLAY_BYTE db_data, db_x, db_y
@@ -133,23 +143,276 @@ gui_register2:      .byte 0
 .endmacro
 
 
+
+; drawing variables
+cur_x: .byte 0
+cur_y: .byte 0
+color: .byte 0
+
+; helper function: set cursor
+set_cursor:
+   SET_VERA_XY cur_x, cur_y
+   rts
+
+
 ; ---------------
 ; - PANEL STUFF -
 ; ---------------
 
 .scope panels
-; locations and sizes of different panels
+; information about panels
 .scope osc
-   x = 15
-   y = 10
-   width = 33
-   height = 18
+px = 15
+py = 10
+width = 33
+height = 18
+caption:
+   STR_FORMAT "oscillator"
 .endscope 
 
-; subroutine that draws oscillator panel
-draw_oscillator_panel:
+
+
+
+
+
+; subroutine that draws panel
+; parameters
+draw_x: .byte 0
+draw_y: .byte 0
+draw_width: .byte 0
+draw_height: .byte 0
+draw_n_tabs: .byte 0  ; number of tabs
+draw_active: .byte 0  ; index of active tab
+;xlimit: .byte 0
+;ylimit: .byte 0
+
+draw_panel:
    ; draw frame
+   ; ----------
+   lda #(16*background_color + panel_frame_color)
+   sta color
+
+   ; top of frame
+   lda draw_x
+   sta cur_x
+   lda draw_y
+   sta cur_y
+   sei
+   jsr set_cursor
+   lda #85
+   sta VERA_data0
+   lda color
+   sta VERA_data0
+   ldx draw_width
+   dex
+   dex
+@loop_top:
+   lda #64
+   sta VERA_data0
+   lda color
+   sta VERA_data0
+   dex
+   bne @loop_top
+   lda #73
+   sta VERA_data0
+   lda color
+   sta VERA_data0
+   cli
+   ; bottom of frame
+   lda cur_y
+   clc
+   adc draw_height
+   sta cur_y
+   ldx draw_width
+   dex
+   dex
+   lda draw_n_tabs ; if 0 tabs, a simple frame is drawn
+   beq :+   ; if 1 or more tabs are present, the bottom side is drawn differently
+   lda cur_x
+   clc
+   adc #2
+   sta cur_x
+   dex
+   dex
+:  sei
+   jsr set_cursor
+   lda #74
+   sta VERA_data0
+   lda color
+   sta VERA_data0
+@loop_bottom:
+   lda #64
+   sta VERA_data0
+   lda color
+   sta VERA_data0
+   dex
+   bne @loop_bottom
+   lda #75
+   sta VERA_data0
+   lda color
+   sta VERA_data0
+   cli
+   ; right side of frame
+   lda draw_x
+   clc
+   adc draw_width
+   dec
+   sta cur_x
+   lda draw_y
+   inc
+   sta cur_y
+   ldx draw_height
+   dex
+   sei
+@loop_right:
+   jsr set_cursor
+   lda #66
+   sta VERA_data0
+   lda color
+   sta VERA_data0
+   inc cur_y
+   dex
+   bne @loop_right
+   cli
+   ; left side of frame
+   lda draw_x
+   ldx draw_n_tabs
+   beq :+
+   clc
+   adc #2
+:  sta cur_x
+   lda draw_y
+   inc
+   sta cur_y
+   ldx draw_height
+   dex
+   sei
+@loop_left:
+   jsr set_cursor
+   lda #66
+   sta VERA_data0
+   lda color
+   sta VERA_data0
+   inc cur_y
+   dex
+   bne @loop_left
+   cli
+
+   ; check for tabs
+   ldx draw_n_tabs
+   beq :+
+   jsr draw_tabs
+:  rts
+
+
+; draw tabs
+; independent routine for updating when another tab is selected
+draw_tabs:
+   ldx #(16*background_color + panel_frame_color)
+   stx color
+   lda draw_x
+   clc
+   adc #2
+   sta cur_x
+   lda draw_y
+   sta cur_y
+   sei
+   jsr set_cursor
+   lda #114
+   sta VERA_data0
+   lda color
+   sta VERA_data0
+   ; draw tabs
+   lda draw_x
+   sta cur_x
+   lda draw_y
+   inc
+   sta cur_y
+   ldy #0
+   ldx color
+   sei
+@loop_tabs:
+   jsr set_cursor
+   lda #66
+   sta VERA_data0
+   stx VERA_data0
+   tya
+   clc
+   adc #49
+   sta VERA_data0
+   stx VERA_data0
+   inc cur_y
+   jsr set_cursor
+   lda #107
+   sta VERA_data0
+   stx VERA_data0
+   lda #64
+   sta VERA_data0
+   stx VERA_data0
+   lda #115
+   sta VERA_data0
+   stx VERA_data0
+   inc cur_y
+   iny
+   cpy draw_n_tabs
+   bne @loop_tabs
+
+   dec cur_y
+   jsr set_cursor
+   lda #74
+   sta VERA_data0
+   cli
+
+   ; draw active tab
+   lda draw_active
+   dec
+   asl
+   clc
+   adc draw_y
+   sta cur_y
+   lda draw_x
+   sta cur_x
+   ldx color
+   sei
+   jsr set_cursor
+   lda #85
+   sta VERA_data0
+   stx VERA_data0
+   lda #64
+   sta VERA_data0
+   stx VERA_data0
+   lda #75
+   ldy draw_active
+   cpy #1
+   bne :+
+   lda #64
+:  sta VERA_data0
+   stx VERA_data0
+   inc cur_y
+   inc cur_y
+   jsr set_cursor
+   lda #74
+   sta VERA_data0
+   stx VERA_data0
+   lda #64
+   sta VERA_data0
+   stx VERA_data0
+   lda #73
+   sta VERA_data0
+   stx VERA_data0
+   dec cur_y
+   inc cur_x
+   inc cur_x
+   jsr set_cursor
+   lda #32
+   sta VERA_data0
+   cli 
+
    rts
+
+
+
+
 
 .endscope ; panels
 
