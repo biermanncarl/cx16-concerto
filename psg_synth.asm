@@ -49,9 +49,9 @@ start:
 @done_msg:
 
    ; initialize patch 0
-   ;PRESET_SNARE_DRUM_3 0
+   PRESET_KICK_DRUM_1 0
    ;PRESET_ONE_OSC_PATCH 0
-   PRESET_ONE_OSC_PATCH 0
+   ;PRESET_LEAD_2 0
 
 
    ; do other initializations

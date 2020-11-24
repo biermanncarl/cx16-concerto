@@ -59,6 +59,8 @@
       lrmid:            OSCILLATOR_TIMBRE_BYTE_FIELD    ; 0, 64, 128 or 192 for mute, L, R or center
       volume:           OSCILLATOR_TIMBRE_BYTE_FIELD    ; oscillator volume (! weird format)
       amp_sel:          OSCILLATOR_TIMBRE_BYTE_FIELD    ; amplifier select: gate, or one of the envelopes
+      vol_mod_sel:      OSCILLATOR_TIMBRE_BYTE_FIELD    ; volume modulation source
+      vol_mod_dep:      OSCILLATOR_TIMBRE_BYTE_FIELD    ; volume modulation depth (weird format)
 
       ; waveform stuff
       waveform:         OSCILLATOR_TIMBRE_BYTE_FIELD    ; including pulse width (PSG format) (? maybe not)

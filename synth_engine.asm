@@ -613,13 +613,37 @@ end_env: ; jump here when done with all envelopes
 
 next_osc:
 
+
    ; do oscillator volume control
    ; read amplifier
    ldx timbres::Timbre::osc::amp_sel, y
    lda voi_modsourcesH, x
+   lsr   ; put into range 0 ... 63
+   sta osc_volume
+   ; modulate volume
+   ldx timbres::Timbre::osc::vol_mod_sel, y
+   bpl :+
+   jmp @do_volume_knob
+:  lda voi_modsourcesH, x
+   SCALE5_6 timbres::Timbre::osc::vol_mod_dep
+   clc
+   adc osc_volume   ; add modulation to amp envelope
+   ; clamp to valid range
+   cmp #63
+   bcs :+   ; if carry clear, we are in valid range
+   bra @do_volume_knob
+:  ; if carry set, we have to clamp range
+   ; if we're below 159, set to 63. if we're above 159, set to 0
+   cmp #159
+   bcc :+ ; if carry set, we set 0
+   lda #0
+   bra @do_volume_knob
+:  lda #63  ; if carry clear, we set 63
+@do_volume_knob:
    ; multiply with oscillator volume setting, input and output via register A
    VOLUME_SCALE5_8 timbres::Timbre::osc::volume
    ; do channel selection
+@do_channel_selection:
    clc
    adc timbres::Timbre::osc::lrmid, y
    sta osc_volume
@@ -686,13 +710,13 @@ next_osc:
    cmp #63
    bcs :+   ; if carry clear, we are in valid range
    sta osc_wave
-   jmp @end_pwm
+   bra @end_pwm
 :  ; if carry set, we have to clamp range
    ; if we're below 159, set to 63. if we're above 159, set to 0
    cmp #159
    bcc :+ ; if carry set, we set 0
    stz osc_wave
-   jmp @end_pwm
+   bra @end_pwm
 :  lda #63  ; if carry clear, we set 63
    sta osc_wave
 @end_pwm:

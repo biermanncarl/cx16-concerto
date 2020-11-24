@@ -509,9 +509,6 @@ SYNTH_MACROS_INC = 1
 ; where %HHHH is the number of rightshifts to be applied to the volume signal
 ; and %LLL is the number of the sub-level
 .macro VOLUME_SCALE5_8 moddepth
-    ; initial rightshift to get correct amplitude
-    lsr
-
     ; initialize zero page 8 bit value
     sta mzpwb   ; only low byte is used  (3 cycles)
 
