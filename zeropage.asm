@@ -5,6 +5,9 @@
 
 ; my zero page words (main program)
 mzpwa:   .word 0
+; my zero page words (main program)
+mzpwd:   .word 0
+; need four main program ZP bytes in a row for mouse operation
 ; my zero page words (ISR)
 mzpwb:   .word 0
 ; my zero page words (ISR)

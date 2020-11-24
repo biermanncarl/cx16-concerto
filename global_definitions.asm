@@ -10,15 +10,6 @@ GLOBAL_DEFS_INC = 1
 .define MAX_LFOS_PER_VOICE 1
 
 
-; string constants
-message:
-   .byte $0D, "controls", $0D
-   .byte "--------", $0D, $0D
-   .byte "a,w,s,...   play notes", $0D
-   .byte "z,x         toggle octaves", $0D
-   .byte "q           quit", $0D
-end_message:
-
 ; keyboard variables
 Octave:
    .byte 60

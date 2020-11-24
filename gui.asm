@@ -1,4 +1,9 @@
-; for now, the code that is used to display stuff on the screen is in this file.
+; everything GUI related is in this file, until stuff gets too bulky for one file
+
+.scope gui
+
+
+
 
 ; actually used by DISPLAY_BYTE macro
 display_100s:       .byte 0
@@ -24,32 +29,14 @@ gui_register2:      .byte 0
 .endmacro
 
 ; message strings
-msg_freevoicelist:
-   STR_FORMAT "freevoicelist"
-msg_nfv:
-   STR_FORMAT "number of free voices"
-msg_ffv:
-   STR_FORMAT "first free voice"
-msg_lfv:
-   STR_FORMAT "last free voice"
 
-msg_usedvoicelist:
-   STR_FORMAT "usedvoicelist"
-msg_uvl_up:
-   STR_FORMAT "up"
-msg_uvl_dn:
-   STR_FORMAT "dn"
-msg_uvl_oldest:
-   STR_FORMAT "oldest"
-msg_uvl_youngest:
-   STR_FORMAT "youngest"
 
 
 ; displays the byte db_data at position db_x and db_y
 .macro DISPLAY_BYTE db_data, db_x, db_y
-.local @loop100s
-.local @loop10s
-.local @loop1s
+   .local @loop100s
+   .local @loop10s
+   .local @loop1s
 
    ; convert binary into decimal
    lda db_data
@@ -145,3 +132,26 @@ msg_uvl_youngest:
    cli
 .endmacro
 
+
+; ---------------
+; - PANEL STUFF -
+; ---------------
+
+.scope panels
+; locations and sizes of different panels
+.scope osc
+   x = 15
+   y = 10
+   width = 33
+   height = 18
+.endscope 
+
+; subroutine that draws oscillator panel
+draw_oscillator_panel:
+   ; draw frame
+   rts
+
+.endscope ; panels
+
+
+.endscope ; gui
