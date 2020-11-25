@@ -33,19 +33,9 @@ start:
    lda #$93
    jsr CHROUT
 
-   lda #gui::panels::osc::px
-   sta gui::panels::draw_x
-   lda #gui::panels::osc::py
-   sta gui::panels::draw_y
-   lda #gui::panels::osc::width
-   sta gui::panels::draw_width
-   lda #gui::panels::osc::height
-   sta gui::panels::draw_height
-   lda #6
-   sta gui::panels::draw_n_tabs
-   lda #3
-   sta gui::panels::draw_active
-   jsr gui::panels::draw_panel
+   jsr gui::panels::global::draw
+   jsr gui::panels::osc::draw
+   jsr gui::panels::env::draw
 
    ; initialize mouse
    lda #1

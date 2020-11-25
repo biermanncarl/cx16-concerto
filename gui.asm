@@ -148,11 +148,38 @@ gui_register2:      .byte 0
 cur_x: .byte 0
 cur_y: .byte 0
 color: .byte 0
+str_pointer = mzpwa
 
-; helper function: set cursor
+; UTILITY ROUTINES
+; ----------------
+; set cursor
 set_cursor:
    SET_VERA_XY cur_x, cur_y
    rts
+
+; displays the 0-terminated message at position cur_x|cur_y
+; message pointer is in str_pointer
+; color as in variable color
+print:
+   sei
+   ; set VERA address
+   jsr set_cursor
+
+   ; print message
+   ldx color
+   ldy #0
+@loop_msg:
+   lda (str_pointer),y
+   beq @done_msg
+   sta VERA_data0
+   stx VERA_data0
+   iny
+   bra @loop_msg
+@done_msg:
+   cli
+   rts
+
+
 
 
 ; ---------------
@@ -160,20 +187,6 @@ set_cursor:
 ; ---------------
 
 .scope panels
-; information about panels
-.scope osc
-px = 15
-py = 10
-width = 33
-height = 18
-caption:
-   STR_FORMAT "oscillator"
-.endscope 
-
-
-
-
-
 
 ; subroutine that draws panel
 ; parameters
@@ -410,6 +423,132 @@ draw_tabs:
 
    rts
 
+
+
+; SPECIFIC PANELS
+; ---------------
+
+.scope global
+px = 15
+py = 10
+width = 10
+height = 18
+caption:
+   STR_FORMAT "global"
+
+draw:
+   ; draw panel
+   lda #px
+   sta draw_x
+   lda #py
+   sta draw_y
+   lda #width
+   sta draw_width
+   lda #height
+   sta draw_height
+   lda #0
+   sta draw_n_tabs
+   lda #0
+   sta draw_active
+   jsr draw_panel
+   ; draw caption
+   lda #px
+   clc
+   adc #2
+   sta cur_x
+   lda #py
+   sta cur_y
+   lda #(<caption)
+   sta str_pointer
+   lda #(>caption)
+   sta str_pointer+1
+   lda #(16*background_color+caption_color)
+   sta color
+   jsr print
+   rts
+.endscope
+
+
+.scope osc
+px = global::px+global::width
+py = global::py
+width = 33
+height = 18
+caption:
+   STR_FORMAT "oscillators"
+
+draw:
+   ; draw panel
+   lda #px
+   sta draw_x
+   lda #py
+   sta draw_y
+   lda #width
+   sta draw_width
+   lda #height
+   sta draw_height
+   lda #MAX_OSCS_PER_VOICE
+   sta draw_n_tabs
+   lda #3
+   sta draw_active
+   jsr draw_panel
+   ; draw caption
+   lda #px
+   clc
+   adc #4
+   sta cur_x
+   lda #py
+   sta cur_y
+   lda #(<caption)
+   sta str_pointer
+   lda #(>caption)
+   sta str_pointer+1
+   lda #(16*background_color+caption_color)
+   sta color
+   jsr print
+   rts
+
+.endscope
+
+.scope env
+px = 15
+py = osc::py+osc::height+1
+width = 24
+height = 8
+caption:
+   STR_FORMAT "envelopes"
+
+draw:
+   ; draw panel
+   lda #px
+   sta draw_x
+   lda #py
+   sta draw_y
+   lda #width
+   sta draw_width
+   lda #height
+   sta draw_height
+   lda #MAX_ENVS_PER_VOICE
+   sta draw_n_tabs
+   lda #1
+   sta draw_active
+   jsr draw_panel
+   ; draw caption
+   lda #px
+   clc
+   adc #4
+   sta cur_x
+   lda #py
+   sta cur_y
+   lda #(<caption)
+   sta str_pointer
+   lda #(>caption)
+   sta str_pointer+1
+   lda #(16*background_color+caption_color)
+   sta color
+   jsr print
+   rts
+.endscope
 
 
 
