@@ -1,13 +1,19 @@
 .ifndef GLOBAL_DEFS_INC
 GLOBAL_DEFS_INC = 1
 
-; compiler level definitions
+; Synth engine definitions
 .define N_VOICES 16
 .define N_TIMBRES 8
 .define N_OSCILLATORS 16 ; total number of PSG voices, which correspond to oscillators
 .define MAX_OSCS_PER_VOICE 6
 .define MAX_ENVS_PER_VOICE 3
 .define MAX_LFOS_PER_VOICE 1
+
+; GUI definitions
+.define COLOR_BACKGROUND 11
+.define COLOR_FRAME 1
+.define COLOR_CAPTION 1
+.define N_PANELS 3   ; number of panels 
 
 
 ; keyboard variables
@@ -191,6 +197,12 @@ Note:
 ; lfo1: voice1 voice2 voice3 ... lfo2: voice1 voice2 voice3 ...
 .macro LFO_VOICE_BYTE_FIELD
    .repeat MAX_LFOS_PER_VOICE*N_VOICES
+      .byte 0
+   .endrep
+.endmacro
+
+.macro PANEL_BYTE_FIELD
+   .repeat N_PANELS
       .byte 0
    .endrep
 .endmacro

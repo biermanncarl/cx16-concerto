@@ -1,12 +1,7 @@
-; everything GUI related is in this file, until stuff gets too bulky for one file
+; basic utility functions for the GUI are found in this file
 
-.scope gui
 
-; global GUI constants
-panel_frame_color = 1
-caption_color = 1
-background_color = 11
-
+.scope guiutils
 
 ; actually used by DISPLAY_BYTE macro
 display_100s:       .byte 0
@@ -14,12 +9,8 @@ display_10s:        .byte 0
 display_1s:         .byte 0
 display_address:    .word 0
 
-; just some variables which can be used as parameters for displaying stuff
-gui_register0:      .byte 0
-gui_register1:      .byte 0
-gui_register2:      .byte 0
-
 ; compile time macro: converts an ascii string to a zero-terminated string that can be displayed directly
+; currently supports characters and spaces
 .macro STR_FORMAT stf_arg
    .repeat  .strlen(stf_arg), i
    .if (.strat(stf_arg, i)=32)
@@ -193,13 +184,8 @@ cls:
    jsr CHROUT
    rts
 
-; ---------------
-; - PANEL STUFF -
-; ---------------
 
-.scope panels
-
-; subroutine that draws panel
+; subroutine that draws a frame
 ; parameters
 draw_x: .byte 0
 draw_y: .byte 0
@@ -210,10 +196,8 @@ draw_active: .byte 0  ; index of active tab
 ;xlimit: .byte 0
 ;ylimit: .byte 0
 
-draw_panel:
-   ; draw frame
-   ; ----------
-   lda #(16*background_color + panel_frame_color)
+draw_frame:
+   lda #(16*COLOR_BACKGROUND + COLOR_FRAME)
    sta color
 
    ; top of frame
@@ -225,56 +209,51 @@ draw_panel:
    jsr set_cursor
    lda #85
    sta VERA_data0
-   lda color
-   sta VERA_data0
-   ldx draw_width
-   dex
-   dex
+   ldx color
+   stx VERA_data0
+   ldy draw_width
+   dey
+   dey
 @loop_top:
    lda #64
    sta VERA_data0
-   lda color
-   sta VERA_data0
-   dex
+   stx VERA_data0
+   dey
    bne @loop_top
    lda #73
    sta VERA_data0
-   lda color
-   sta VERA_data0
+   stx VERA_data0
    cli
    ; bottom of frame
    lda cur_y
    clc
    adc draw_height
    sta cur_y
-   ldx draw_width
-   dex
-   dex
+   ldy draw_width
+   dey
+   dey
    lda draw_n_tabs ; if 0 tabs, a simple frame is drawn
    beq :+   ; if 1 or more tabs are present, the bottom side is drawn differently
    lda cur_x
    clc
    adc #2
    sta cur_x
-   dex
-   dex
+   dey
+   dey
 :  sei
    jsr set_cursor
    lda #74
    sta VERA_data0
-   lda color
-   sta VERA_data0
+   stx VERA_data0
 @loop_bottom:
    lda #64
    sta VERA_data0
-   lda color
-   sta VERA_data0
-   dex
+   stx VERA_data0
+   dey
    bne @loop_bottom
    lda #75
    sta VERA_data0
-   lda color
-   sta VERA_data0
+   stx VERA_data0
    cli
    ; right side of frame
    lda draw_x
@@ -285,22 +264,21 @@ draw_panel:
    lda draw_y
    inc
    sta cur_y
-   ldx draw_height
-   dex
+   ldy draw_height
+   dey
    sei
 @loop_right:
    jsr set_cursor
    lda #66
    sta VERA_data0
-   lda color
-   sta VERA_data0
+   stx VERA_data0
    inc cur_y
-   dex
+   dey
    bne @loop_right
    cli
    ; left side of frame
    lda draw_x
-   ldx draw_n_tabs
+   ldy draw_n_tabs
    beq :+
    clc
    adc #2
@@ -308,22 +286,21 @@ draw_panel:
    lda draw_y
    inc
    sta cur_y
-   ldx draw_height
-   dex
+   ldy draw_height
+   dey
    sei
 @loop_left:
    jsr set_cursor
    lda #66
    sta VERA_data0
-   lda color
-   sta VERA_data0
+   stx VERA_data0
    inc cur_y
-   dex
+   dey
    bne @loop_left
    cli
 
    ; check for tabs
-   ldx draw_n_tabs
+   ldy draw_n_tabs
    beq :+
    jsr draw_tabs
 :  rts
@@ -332,7 +309,7 @@ draw_panel:
 ; draw tabs
 ; independent routine for updating when another tab is selected
 draw_tabs:
-   ldx #(16*background_color + panel_frame_color)
+   ldx #(16*COLOR_BACKGROUND + COLOR_FRAME)
    stx color
    lda draw_x
    clc
@@ -435,136 +412,6 @@ draw_tabs:
    rts
 
 
-
-; SPECIFIC PANELS
-; ---------------
-
-.scope global
-px = 15
-py = 10
-width = 10
-height = 18
-caption:
-   STR_FORMAT "global"
-
-draw:
-   ; draw panel
-   lda #px
-   sta draw_x
-   lda #py
-   sta draw_y
-   lda #width
-   sta draw_width
-   lda #height
-   sta draw_height
-   lda #0
-   sta draw_n_tabs
-   lda #0
-   sta draw_active
-   jsr draw_panel
-   ; draw caption
-   lda #px
-   clc
-   adc #2
-   sta cur_x
-   lda #py
-   sta cur_y
-   lda #(<caption)
-   sta str_pointer
-   lda #(>caption)
-   sta str_pointer+1
-   lda #(16*background_color+caption_color)
-   sta color
-   jsr print
-   rts
-.endscope
-
-
-.scope osc
-px = global::px+global::width
-py = global::py
-width = 33
-height = 18
-caption:
-   STR_FORMAT "oscillators"
-
-draw:
-   ; draw panel
-   lda #px
-   sta draw_x
-   lda #py
-   sta draw_y
-   lda #width
-   sta draw_width
-   lda #height
-   sta draw_height
-   lda #MAX_OSCS_PER_VOICE
-   sta draw_n_tabs
-   lda #3
-   sta draw_active
-   jsr draw_panel
-   ; draw caption
-   lda #px
-   clc
-   adc #4
-   sta cur_x
-   lda #py
-   sta cur_y
-   lda #(<caption)
-   sta str_pointer
-   lda #(>caption)
-   sta str_pointer+1
-   lda #(16*background_color+caption_color)
-   sta color
-   jsr print
-   rts
-
-.endscope
-
-.scope env
-px = 15
-py = osc::py+osc::height+1
-width = 24
-height = 8
-caption:
-   STR_FORMAT "envelopes"
-
-draw:
-   ; draw panel
-   lda #px
-   sta draw_x
-   lda #py
-   sta draw_y
-   lda #width
-   sta draw_width
-   lda #height
-   sta draw_height
-   lda #MAX_ENVS_PER_VOICE
-   sta draw_n_tabs
-   lda #1
-   sta draw_active
-   jsr draw_panel
-   ; draw caption
-   lda #px
-   clc
-   adc #4
-   sta cur_x
-   lda #py
-   sta cur_y
-   lda #(<caption)
-   sta str_pointer
-   lda #(>caption)
-   sta str_pointer+1
-   lda #(16*background_color+caption_color)
-   sta color
-   jsr print
-   rts
-.endscope
-
-
-
-
-.endscope ; panels
 
 
 .endscope ; gui

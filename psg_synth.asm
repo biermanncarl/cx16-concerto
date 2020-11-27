@@ -11,8 +11,6 @@
 
    jmp start
 
-; data
-.include "pitch_data.asm"
 ; variables/macros
 .include "global_definitions.asm"
 .include "synth_macros.asm"
@@ -21,7 +19,8 @@
 .include "voices.asm"
 .include "synth_engine.asm"
 .include "my_isr.asm"
-.include "gui.asm"
+.include "guiutils.asm"
+.include "panels.asm"
 .include "presets.asm"
 
 
@@ -29,11 +28,7 @@
 start:
    ; startup code
 
-   jsr gui::cls
-
-   jsr gui::panels::global::draw
-   jsr gui::panels::osc::draw
-   jsr gui::panels::env::draw
+   jsr panels::load_synth_gui
 
    ; initialize mouse
    lda #1
@@ -95,3 +90,9 @@ exit:
    ; The program gets corrupted in memory after returning to BASIC
    ; If running again, reLOAD the program!
 
+
+
+
+; data
+.segment "RODATA"
+.include "pitch_data.asm"

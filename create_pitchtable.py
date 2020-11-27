@@ -31,7 +31,6 @@ lsb = np.array(frequency_words-256*msb, dtype=int)
 
 
 myfile = open("pitch_data.asm","w")
-myfile.write('.segment "RODATA"\n')
 
 myfile.write('pitch_dataH:\n')
 for n in msb:

@@ -1,4 +1,3 @@
-.segment "RODATA"
 pitch_dataH:
    .byte 0
    .byte 0
