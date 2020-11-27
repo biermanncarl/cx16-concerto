@@ -106,6 +106,40 @@ draw_panels:
    rts
 
 
+; returns the panel number the mouse is currently over. Bit 7 set means none
+mouse_get_panel:
+   mouse_data = mzpwa
+   ; get mouse coordinates
+   ldx #mouse_data
+   jsr MOUSE_GET
+   ; determine position in characters (divide by 8)
+   lda mouse_data+1
+   lsr
+   ror mouse_data
+   lsr
+   ror mouse_data
+   lsr
+   ror mouse_data
+   ; (high byte is uninteresting, thus not storing it back)
+   lda mouse_data+3
+   lsr
+   ror mouse_data+2
+   lsr
+   ror mouse_data+2
+   lsr
+   ror mouse_data+2
+   ; draw something
+   lda mouse_data
+   sta guiutils::cur_x
+   lda mouse_data+2
+   sta guiutils::cur_y
+   jsr guiutils::set_cursor
+   lda #65
+   sta VERA_data0
+   rts
+
+
+
 ; PANEL SPECIFIC STUFF
 ; --------------------
 

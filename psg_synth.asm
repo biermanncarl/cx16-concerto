@@ -48,7 +48,7 @@ start:
 mainloop:
 
    ; GUI
-
+   jsr panels::mouse_get_panel
 
    ; clear voices that have been released
    jsr voices::do_stack_releases
