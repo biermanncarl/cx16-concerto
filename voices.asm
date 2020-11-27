@@ -390,6 +390,7 @@ play_note:
    phx
 @loop_lfos:
    ; figure out if lfo is retriggered. If yes, reset phase
+   ; TODO: if it's an SnH LFO, get a random initial phase from entropy_get (KERNAL routine) if not retriggered
    lda timbres::Timbre::lfo::retrig, y
    beq @advance_lfo
    ; set lfo phase

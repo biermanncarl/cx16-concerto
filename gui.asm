@@ -5,7 +5,7 @@
 ; global GUI constants
 panel_frame_color = 1
 caption_color = 1
-background_color = 6
+background_color = 11
 
 
 ; actually used by DISPLAY_BYTE macro
@@ -179,8 +179,19 @@ print:
    cli
    rts
 
+; clear screen in my own background color
+cls:
+   ; set background color in a dirty manner (we did not hear that from Greg King)
+   ; https://www.commanderx16.com/forum/index.php?/topic/469-change-background-color-using-vpoke/&do=findComment&comment=3084
+   lda #(11*16+1)
+   sta $376
 
-
+   ; actually, I'd like a dark green or something
+   ; TODO: set custom palette
+   ; do the screen clear
+   lda #$93
+   jsr CHROUT
+   rts
 
 ; ---------------
 ; - PANEL STUFF -

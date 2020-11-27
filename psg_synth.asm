@@ -29,9 +29,7 @@
 start:
    ; startup code
 
-   ; clear screen
-   lda #$93
-   jsr CHROUT
+   jsr gui::cls
 
    jsr gui::panels::global::draw
    jsr gui::panels::osc::draw
