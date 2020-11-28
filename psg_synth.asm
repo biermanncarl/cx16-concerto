@@ -21,6 +21,7 @@
 .include "my_isr.asm"
 .include "guiutils.asm"
 .include "panels.asm"
+.include "mouse.asm"
 .include "presets.asm"
 
 
@@ -30,10 +31,7 @@ start:
 
    jsr panels::load_synth_gui
 
-   ; initialize mouse
-   lda #1
-   ldx #1
-   jsr MOUSE_CONFIG
+   jsr mouse::mouse_init
 
    ; initialize patch 0
    PRESET_KICK_DRUM_2 0
@@ -48,7 +46,9 @@ start:
 mainloop:
 
    ; GUI
-   jsr panels::mouse_get_panel
+   jsr mouse::mouse_tick
+
+   DISPLAY_BYTE mouse::status,  30, 1
 
    ; clear voices that have been released
    jsr voices::do_stack_releases

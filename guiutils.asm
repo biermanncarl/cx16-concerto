@@ -49,7 +49,7 @@ display_address:    .word 0
    bcs @loop100s
    adc #100
    dex
-   stx display_100s
+   stx guiutils::display_100s
 
    ldx #48
 @loop10s:
@@ -59,7 +59,7 @@ display_address:    .word 0
    bcs @loop10s
    adc #10
    dex
-   stx display_10s
+   stx guiutils::display_10s
 
    ldx #48
 @loop1s:
@@ -69,7 +69,7 @@ display_address:    .word 0
    bcs @loop1s
    adc #1
    dex
-   stx display_1s
+   stx guiutils::display_1s
 
    sei
    ; set VERA address
@@ -84,15 +84,15 @@ display_address:    .word 0
    sta VERA_addr_low
 
    ; do output
-   lda display_100s
+   lda guiutils::display_100s
    sta VERA_data0
    lda #$21
    sta VERA_data0
-   lda display_10s
+   lda guiutils::display_10s
    sta VERA_data0
    lda #$21
    sta VERA_data0
-   lda display_1s
+   lda guiutils::display_1s
    sta VERA_data0
    lda #$21    ; set color
    sta VERA_data0
@@ -185,7 +185,7 @@ cls:
    rts
 
 
-; subroutine that draws a frame
+; subroutine that draws a frame (around a panel)
 ; parameters
 draw_x: .byte 0
 draw_y: .byte 0
