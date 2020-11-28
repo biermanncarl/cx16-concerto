@@ -34,7 +34,7 @@
    .endscope
    .scope env
       px = 15
-      py = osc::py+osc::hg+1
+      py = osc::py+osc::hg
       wd = 24
       hg = 8
       cp: STR_FORMAT "envelopes"

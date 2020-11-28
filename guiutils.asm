@@ -228,6 +228,7 @@ draw_frame:
    lda cur_y
    clc
    adc draw_height
+   dec
    sta cur_y
    ldy draw_width
    dey
@@ -266,6 +267,7 @@ draw_frame:
    sta cur_y
    ldy draw_height
    dey
+   dey
    sei
 @loop_right:
    jsr set_cursor
@@ -287,6 +289,7 @@ draw_frame:
    inc
    sta cur_y
    ldy draw_height
+   dey
    dey
    sei
 @loop_left:
