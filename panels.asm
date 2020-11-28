@@ -6,6 +6,7 @@
 ; However, they can be made visible/invisible and also their order can be changed.
 ; The order affects which panels appear on top and which receive mouse events first.
 
+
 ; Panel legend:
 ; 0: global settings
 ; 1: oscillator settings
@@ -106,36 +107,65 @@ draw_panels:
    rts
 
 
-; returns the panel number the mouse is currently over. Bit 7 set means none
+; returns the panel index the mouse is currently over. Bit 7 set means none
+; panel index returned in register A
 mouse_get_panel:
-   mouse_data = mzpwa
-   ; get mouse coordinates
-   ldx #mouse_data
-   jsr MOUSE_GET
+   ; grab those zero page variables for this routine
+   cx = mzpwa
+   cy = mzpwd
    ; determine position in characters (divide by 8)
-   lda mouse_data+1
+   lda ms_curr_x+1
    lsr
-   ror mouse_data
+   sta cx+1
+   lda ms_curr_x
+   ror
+   sta cx
+   lda cx+1
    lsr
-   ror mouse_data
+   ror cx
    lsr
-   ror mouse_data
+   ror cx
    ; (high byte is uninteresting, thus not storing it back)
-   lda mouse_data+3
+   lda ms_curr_y+1
    lsr
-   ror mouse_data+2
+   sta cy+1
+   lda ms_curr_y
+   ror
+   sta cy
+   lda cy+1
    lsr
-   ror mouse_data+2
+   ror cy
    lsr
-   ror mouse_data+2
-   ; draw something
-   lda mouse_data
-   sta guiutils::cur_x
-   lda mouse_data+2
-   sta guiutils::cur_y
-   jsr guiutils::set_cursor
-   lda #65
-   sta VERA_data0
+   ror cy
+   ; now check panels from top to bottom
+   lda stack::sp
+   tax
+@loop:
+   dex
+   bmi @end_loop
+   ldy stack::stack, x ; y will be panel's index
+   lda px, y
+   dec
+   cmp cx
+   bcs @loop ; cx is smaller than panel's x
+   clc
+   adc wd, y
+   cmp cx
+   bcc @loop ; cx is too big
+   lda py, y
+   dec
+   cmp cy
+   bcs @loop ; cy is smaller than panel's y
+   clc
+   adc hg, y
+   cmp cy
+   bcc @loop ; cy is too big
+   ; we're inside! return index
+   tya
+   rts
+@end_loop:
+   ; found no match
+   lda #255
    rts
 
 

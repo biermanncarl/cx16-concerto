@@ -165,6 +165,15 @@ msg_uvl_youngest:
 
 
 
+   ; draw something
+   lda cx
+   sta guiutils::cur_x
+   lda cy
+   sta guiutils::cur_y
+   jsr guiutils::set_cursor
+   lda #65
+   sta VERA_data0
+
 
 
 ; just parking this here

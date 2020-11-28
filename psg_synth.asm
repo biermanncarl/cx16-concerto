@@ -48,7 +48,7 @@ mainloop:
    ; GUI
    jsr mouse::mouse_tick
 
-   DISPLAY_BYTE mouse::status,  30, 1
+   DISPLAY_BYTE ms_curr_panel, 30, 1
 
    ; clear voices that have been released
    jsr voices::do_stack_releases

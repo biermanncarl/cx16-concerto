@@ -22,6 +22,23 @@ Octave:
 Note:
    .byte 0
 
+; mouse variables
+ms_status: .byte 0
+; reference values
+ms_ref_x: .word 0
+ms_ref_y: .word 0
+ms_ref_buttons: .byte 0
+ms_ref_panel: .byte 0
+ms_ref_component: .byte 0
+; current values
+ms_curr_x: .word 0
+ms_curr_y: .word 0
+ms_curr_buttons: .byte 0
+ms_curr_panel: .byte 0
+ms_curr_component: .byte 0
+
+
+
 ; utility macros
 .macro ADD16 add_a, add_b ; stores result in a, 26 cycles
    clc
