@@ -84,13 +84,18 @@ do_idle:
    ; check left
    lda ms_curr_buttons
    and #1
-   beq :+
+   beq :++
    ; left button held down
    lda #ms_hold_L
    sta ms_status
    jsr panels::mouse_get_panel
-   sta ms_curr_panel
-   jmp end_mouse_tick
+   sta ms_curr_panel ; store it into "current" (not "ref") because mouse_get_component expects it there
+   bmi :+
+   jsr panels::mouse_get_component
+   sta ms_ref_component
+   lda ms_curr_panel
+   sta ms_ref_panel ; now move it into "ref" to compare it when mouse button is released (to see if still the same component is being clicked)
+:  jmp end_mouse_tick
 :  ; check right
    lda ms_curr_buttons
    and #2
@@ -100,17 +105,41 @@ do_idle:
    sta ms_status
 :  jmp end_mouse_tick
 
-; left button is held down. (And center button hasn't been down)
+; left button is held down. (and no other button has been pressed)
 do_hold_L:
    ; check for any buttons pressed
    lda ms_curr_buttons
-   bne :+
+   bne @button_pressed
    ; no buttons pressed anymore --> left click
+   ; reset mouse status
    lda #ms_idle
    sta ms_status
-   nop ; TODO
+   ; and do click operation:
+   ; check if previous panel & component are the same. If yes, issue a click event.
+   jsr panels::mouse_get_panel
+   sta ms_curr_panel
+   bpl :+
+   jmp end_mouse_tick ; no panel clicked.
+:  ; a panel has been clicked.
+   ; still the same as on mouse-down?
+   cmp ms_ref_panel
+   beq :+
+   jmp end_mouse_tick ; not the same, but a different one
+:  ; yes, the same. check if also the same component
+   jsr panels::mouse_get_component
+   sta ms_curr_component
+   bpl :+
+   jmp end_mouse_tick ; no component being clicked
+:  ; yes, a component being clicked.
+   ; still the same as on mouse-down?
+   cmp ms_ref_component
+   beq :+
+   jmp end_mouse_tick ; not the same, but a different one
+:  ; yes, the same component as when the mouse button was pressed down.
+   ; NOW, issue a click event.
+   jsr panels::click_event
    jmp end_mouse_tick
-:  ; a button is pressed. check right one first
+@button_pressed:  ; a button is pressed. check right one first
    and #2
    beq :+
    ; right one is pressed. arm for reset
@@ -125,7 +154,7 @@ do_hold_L:
    nop ; TODO
 :  jmp end_mouse_tick
 
-; right button is held down. (And center button hasn't been down)
+; right button is held down. (and no other button has been pressed)
 do_hold_R:
    ; check for any buttons pressed
    lda ms_curr_buttons

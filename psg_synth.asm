@@ -34,10 +34,14 @@ start:
    jsr mouse::mouse_init
 
    ; initialize patch 0
-   PRESET_KICK_DRUM_2 0
+   ;PRESET_KICK_DRUM_2 0
    ;PRESET_ONE_OSC_PATCH 0
    ;PRESET_LEAD_2 0
-
+   PRESET_ONE_OSC_PATCH 0
+   PRESET_BRIGHT_PLUCK 1
+   PRESET_LEAD_2 2
+   PRESET_KICK_DRUM_2 3
+   PRESET_SNARE_DRUM_3 4
 
    ; do other initializations
    jsr voices::init_voicelist
@@ -49,6 +53,8 @@ mainloop:
    jsr mouse::mouse_tick
 
    DISPLAY_BYTE ms_curr_panel, 30, 1
+   DISPLAY_BYTE ms_curr_component, 35, 1
+   DISPLAY_BYTE ms_curr_data, 40, 1
 
    ; clear voices that have been released
    jsr voices::do_stack_releases
@@ -67,7 +73,8 @@ play_note:
    sta voices::note_pitch
    lda #127
    sta voices::note_velocity
-   stz voices::note_timbre
+   lda #1
+   sta voices::note_timbre
    jsr voices::play_note
 
 end_mainloop:

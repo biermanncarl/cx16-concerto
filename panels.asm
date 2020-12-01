@@ -12,8 +12,13 @@
 ; 1: oscillator settings
 ; 2: envelope settings
 
+; GUI control element legend:
+; 0: none (end of list)
+; 1: button, followed by x and y position (absolute), and width
+; 2: tab selector, followed by number of tabs
+
+
 ; PANEL DATA
-; might eventually get moved to the .RODATA section in a separate file
 .scope panels
 
    ; compiler variables for convenience
@@ -23,21 +28,35 @@
       py = 10
       wd = 10
       hg = 18
-      cp: STR_FORMAT "global"
+      cp: STR_FORMAT "global" ; caption of panel
+      ; component string of global panel
+      comps: .byte 0
    .endscope
    .scope osc
       px = global::px+global::wd
       py = global::py
       wd = 33
       hg = global::hg
-      cp: STR_FORMAT "oscillators"
+      cp: STR_FORMAT "oscillators" ; caption of panel
+      ; component string of oscillator panel
+      comps:
+         .byte 2, 6 ; tabselector
+         .byte 0
+      ; data specific to the oscillator panel
+      active_tab: .byte 0
    .endscope
    .scope env
       px = 15
       py = osc::py+osc::hg
       wd = 24
       hg = 8
-      cp: STR_FORMAT "envelopes"
+      cp: STR_FORMAT "envelopes" ; caption of panel
+      ; component string of envelope panel
+      comps:
+         .byte 2, 3 ; tab selector
+         .byte 0
+      ; data specific to the envelope panel
+      active_tab: .byte 0
    .endscope
 
    ; Actual Panel Data
@@ -52,10 +71,12 @@
    ; heights
    hg: .byte global::hg, osc::hg, env::hg
    ; drawing subroutines
-   ds: .word panels::draw_global, panels::draw_osc, panels::draw_env
+   ds: .word draw_global, draw_osc, draw_env
+   ; GUI component strings
+   comps: .word global::comps, osc::comps, env::comps
    ; mouse subroutines
-   ; TODO
-
+   ; click subroutines
+   cs: .word click_global, click_osc, click_env
 
 
 ; The Panel Stack
@@ -65,6 +86,9 @@
    stack: PANEL_BYTE_FIELD    ; the actual stack, containing the indices of the panels
    sp: .byte 0                ; stack pointer, counts how many elements are on the stack
 .endscope
+
+
+
 
 ; brings up the synth GUI
 load_synth_gui:
@@ -106,37 +130,51 @@ draw_panels:
    bne @loop
    rts
 
+; click event. looks in mouse variables which panel has been clicked and calls its routine
+click_event:
+   lda ms_curr_panel
+   asl
+   tax
+   ; want to emulate a jsr. need to push return address minus 1 to the stack
+@ret_addr1 = @ret_addr-1
+   lda #(>@ret_addr1)
+   pha
+   lda #(<@ret_addr1)
+   pha
+   jmp (cs,x)
+@ret_addr:
+   rts
 
 ; returns the panel index the mouse is currently over. Bit 7 set means none
 ; panel index returned in register A
 mouse_get_panel:
    ; grab those zero page variables for this routine
-   cx = mzpwa
-   cy = mzpwd
+   gp_cx = mzpwa
+   gp_cy = mzpwd
    ; determine position in characters (divide by 8)
    lda ms_curr_x+1
    lsr
-   sta cx+1
+   sta gp_cx+1
    lda ms_curr_x
    ror
-   sta cx
-   lda cx+1
+   sta gp_cx
+   lda gp_cx+1
    lsr
-   ror cx
+   ror gp_cx
    lsr
-   ror cx
+   ror gp_cx
    ; (high byte is uninteresting, thus not storing it back)
    lda ms_curr_y+1
    lsr
-   sta cy+1
+   sta gp_cy+1
    lda ms_curr_y
    ror
-   sta cy
-   lda cy+1
+   sta gp_cy
+   lda gp_cy+1
    lsr
-   ror cy
+   ror gp_cy
    lsr
-   ror cy
+   ror gp_cy
    ; now check panels from top to bottom
    lda stack::sp
    tax
@@ -146,20 +184,20 @@ mouse_get_panel:
    ldy stack::stack, x ; y will be panel's index
    lda px, y
    dec
-   cmp cx
-   bcs @loop ; cx is smaller than panel's x
+   cmp gp_cx
+   bcs @loop ; gp_cx is smaller than panel's x
    clc
    adc wd, y
-   cmp cx
-   bcc @loop ; cx is too big
+   cmp gp_cx
+   bcc @loop ; gp_cx is too big
    lda py, y
    dec
-   cmp cy
-   bcs @loop ; cy is smaller than panel's y
+   cmp gp_cy
+   bcs @loop ; gp_cy is smaller than panel's y
    clc
    adc hg, y
-   cmp cy
-   bcc @loop ; cy is too big
+   cmp gp_cy
+   bcc @loop ; gp_cy is too big
    ; we're inside! return index
    tya
    rts
@@ -167,6 +205,119 @@ mouse_get_panel:
    ; found no match
    lda #255
    rts
+
+
+
+; given the panel, where the mouse is currently at,
+; this subroutine finds which GUI component is being clicked
+mouse_get_component:
+   ; panel number in ms_curr_panel
+   ; mouse x and y coordinates in ms_curr_x and ms_curr_y
+   ; zero page variables:
+   gc_pointer = mzpwa
+   gc_cx = mzpwd     ; x and y in multiples of 4 (!) pixels to support half character grid
+   gc_cy = mzpwd+1
+   gc_counter = mzpba
+   ; determine position in multiples of 4 pixels (divide by 4)
+   lda ms_curr_x+1
+   lsr
+   sta gc_cx+1
+   lda ms_curr_x
+   ror
+   sta gc_cx
+   lda gc_cx+1
+   lsr
+   ror gc_cx
+   ; (high byte is uninteresting, thus not storing it back)
+   lda ms_curr_y+1
+   lsr
+   sta gc_cy+1
+   lda ms_curr_y
+   ror
+   sta gc_cy
+   lda gc_cy+1
+   lsr
+   ror gc_cy
+   ; copy pointer to component string to ZP
+   lda ms_curr_panel
+   asl
+   tax
+   lda comps, x
+   sta gc_pointer
+   lda comps+1, x
+   sta gc_pointer+1
+   ; iterate over gui elements
+   ldy #0
+   lda #255
+   sta gc_counter
+check_gui_loop:
+   ; increment control element identifier
+   inc gc_counter
+   ; look up which component type is next (type 0 is end of GUI component list)
+   lda (gc_pointer), y
+   iny
+   asl
+   tax
+   ; jump to according component check
+   jmp (@jmp_table, x)
+@jmp_table:
+   .word @end_gui
+   .word check_button
+   .word check_tab_selector
+@end_gui:
+   lda #255
+   rts
+; component checks
+; ----------------
+check_button:
+   ; check if mouse is over the button
+   iny
+   iny
+   iny
+   jmp check_gui_loop
+check_tab_selector:
+   ; check if mouse is over the tab selector area of the panel
+   ; check x direction first
+   ldx ms_curr_panel
+   lda px, x
+   asl ; multiply by 2 to be 4 pixel multiple
+   sec
+   sbc gc_cx ; now we have negative mouse offset, need to negate it
+   eor #255
+   ;inc ; would be cancelled by dec
+   ; now we got relative y position in 4 pixel multiples
+   ; subtract 1 for the top margin
+   ;dec ; cancelled by previous inc
+   ; now compare with tab selector width, which is 4
+   cmp #4
+   bcc :+ ; if carry clear, we are in
+   iny ; skip data byte in GUI component string before checking next GUI component
+   jmp check_gui_loop
+:  ; check y direction second
+   lda py, x
+   asl ; multiply by 2 to be 4 pixel multiple
+   sec
+   sbc gc_cy ; now we have negative mouse offset, need to negate it
+   eor #255
+   ;inc ; would be cancelled by dec
+   ; now we got relative y position in 4 pixel multiples
+   ; subtract 1 for the top margin, and then divide by 4, because that's the height of each tab selector
+   ;dec ; cancelled by previous inc
+   lsr
+   lsr
+   ; now we have the index of the tab clicked
+   ; compare it to number of tabs present
+   cmp (gc_pointer), y
+   iny
+   bcs :+ ; if carry set, no tab has been clicked
+   ; otherwise, tab has been selected
+   sta ms_curr_data
+   lda gc_counter
+   rts
+:  jmp check_gui_loop
+
+
+
 
 
 
@@ -216,7 +367,8 @@ draw_osc:
    sta guiutils::draw_height
    lda #MAX_OSCS_PER_VOICE
    sta guiutils::draw_n_tabs
-   lda #3
+   lda osc::active_tab
+   inc
    sta guiutils::draw_active
    jsr guiutils::draw_frame
    ; draw caption
@@ -247,7 +399,8 @@ draw_env:
    sta guiutils::draw_height
    lda #MAX_ENVS_PER_VOICE
    sta guiutils::draw_n_tabs
-   lda #1
+   lda env::active_tab
+   inc
    sta guiutils::draw_active
    jsr guiutils::draw_frame
    ; draw caption
@@ -266,5 +419,29 @@ draw_env:
    jsr guiutils::print
    rts
 
+
+click_global:
+   rts
+
+; oscillator panel being clicked
+click_osc:
+   ; tab selector ?
+   lda ms_curr_component
+   cmp #0
+   bne :+
+   lda ms_curr_data
+   sta osc::active_tab
+   jsr draw_osc
+:  rts
+
+click_env:
+   ; tab selector ?
+   lda ms_curr_component
+   cmp #0
+   bne :+
+   lda ms_curr_data
+   sta env::active_tab
+   jsr draw_env
+:  rts
 
 .endscope

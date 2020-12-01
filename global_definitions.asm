@@ -36,6 +36,7 @@ ms_curr_y: .word 0
 ms_curr_buttons: .byte 0
 ms_curr_panel: .byte 0
 ms_curr_component: .byte 0
+ms_curr_data: .byte 0 ; used to store the current tab selected
 
 
 
