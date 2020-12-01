@@ -49,7 +49,10 @@ display_address:    .word 0
    bcs @loop100s
    adc #100
    dex
-   stx guiutils::display_100s
+   cpx #48
+   bne :+
+   ldx #32
+:  stx guiutils::display_100s
 
    ldx #48
 @loop10s:
@@ -59,7 +62,10 @@ display_address:    .word 0
    bcs @loop10s
    adc #10
    dex
-   stx guiutils::display_10s
+   cpx #48
+   bne :+
+   ldx #32
+:  stx guiutils::display_10s
 
    ldx #48
 @loop1s:
@@ -135,18 +141,35 @@ display_address:    .word 0
 
 
 
-; drawing variables
-cur_x: .byte 0
-cur_y: .byte 0
-color: .byte 0
-str_pointer = mzpwa
+
 
 ; UTILITY ROUTINES
 ; ----------------
+
+; drawing parameters
+; "cursor" position
+cur_x: .byte 0
+cur_y: .byte 0
+; color
+color: .byte 0
+; string pointer
+str_pointer = mzpwa
+; draw a component at position and with dimensions:
+draw_x: .byte 0
+draw_y: .byte 0
+draw_width: .byte 0
+draw_height: .byte 0
+; additional drawing parameters
+draw_data1: .byte 0  ; e.g. number of tabs
+draw_data2: .byte 0  ; e.g. index of active tab
+
+
+
 ; set cursor
 set_cursor:
    SET_VERA_XY cur_x, cur_y
    rts
+
 
 ; displays the 0-terminated message at position cur_x|cur_y
 ; message pointer is in str_pointer
@@ -170,6 +193,57 @@ print:
    cli
    rts
 
+
+; prints a byte on screen (position as in VERA's address 0)
+; color as in register X
+; number as in register A
+print_byte_simple:
+   ; convert binary into decimal
+   ldy #48
+@loop100s:
+   iny
+   sec
+   sbc #100
+   bcs @loop100s
+   adc #100
+   dey
+   cpy #48
+   bne :+
+   ldy #32
+:  sty display_100s
+   ldy #48
+@loop10s:
+   iny
+   sec
+   sbc #10
+   bcs @loop10s
+   adc #10
+   dey
+   cpy #48
+   bne :+
+   ldy #32
+:  sty display_10s
+   ldy #48
+@loop1s:
+   iny
+   sec
+   sbc #1
+   bcs @loop1s
+   adc #1
+   dey
+   sty display_1s
+   ; do output
+   lda display_100s
+   sta VERA_data0
+   stx VERA_data0
+   lda display_10s
+   sta VERA_data0
+   stx VERA_data0
+   lda display_1s
+   sta VERA_data0
+   stx VERA_data0
+   rts
+
 ; clear screen in my own background color
 cls:
    ; set background color in a dirty manner (we did not hear that from Greg King)
@@ -185,17 +259,10 @@ cls:
    rts
 
 
-; subroutine that draws a frame (around a panel)
-; parameters
-draw_x: .byte 0
-draw_y: .byte 0
-draw_width: .byte 0
-draw_height: .byte 0
-draw_n_tabs: .byte 0  ; number of tabs
-draw_active: .byte 0  ; index of active tab
-;xlimit: .byte 0
-;ylimit: .byte 0
 
+; subroutine that draws a frame (around a panel)
+; data1 is number of tabs (0 if there are no tabs)
+; data2 is index of active tab (0 to N-1)
 draw_frame:
    lda #(16*COLOR_BACKGROUND + COLOR_FRAME)
    sta color
@@ -233,7 +300,7 @@ draw_frame:
    ldy draw_width
    dey
    dey
-   lda draw_n_tabs ; if 0 tabs, a simple frame is drawn
+   lda draw_data1 ; if 0 tabs, a simple frame is drawn
    beq :+   ; if 1 or more tabs are present, the bottom side is drawn differently
    lda cur_x
    clc
@@ -280,7 +347,7 @@ draw_frame:
    cli
    ; left side of frame
    lda draw_x
-   ldy draw_n_tabs
+   ldy draw_data1
    beq :+
    clc
    adc #2
@@ -303,7 +370,7 @@ draw_frame:
    cli
 
    ; check for tabs
-   ldy draw_n_tabs
+   ldy draw_data1
    beq :+
    jsr draw_tabs
 :  rts
@@ -358,7 +425,7 @@ draw_tabs:
    stx VERA_data0
    inc cur_y
    iny
-   cpy draw_n_tabs
+   cpy draw_data1
    bne @loop_tabs
 
    dec cur_y
@@ -368,7 +435,7 @@ draw_tabs:
    cli
 
    ; draw active tab
-   lda draw_active
+   lda draw_data2
    dec
    asl
    clc
@@ -386,7 +453,7 @@ draw_tabs:
    sta VERA_data0
    stx VERA_data0
    lda #75
-   ldy draw_active
+   ldy draw_data2
    cpy #1
    bne :+
    lda #64
@@ -413,6 +480,30 @@ draw_tabs:
    cli 
 
    rts
+
+; draw a number edit that has arrows
+; data1: number on display
+draw_arrowed_edit:
+   lda draw_x
+   sta cur_x
+   lda draw_y
+   sta cur_y
+   sei
+   jsr set_cursor
+   ldx #(16*COLOR_ARROWED_EDIT_BG + COLOR_ARROWED_EDIT_ARROWS)
+   lda #60 ; 62
+   sta VERA_data0
+   stx VERA_data0
+   lda draw_data1
+   ldx #(16*COLOR_ARROWED_EDIT_BG + COLOR_ARROWED_EDIT_FG)
+   jsr print_byte_simple
+   ldx #(16*COLOR_ARROWED_EDIT_BG + COLOR_ARROWED_EDIT_ARROWS)
+   lda #62
+   sta VERA_data0
+   stx VERA_data0
+   cli
+   rts
+
 
 
 

@@ -14,8 +14,10 @@
 
 ; GUI control element legend:
 ; 0: none (end of list)
-; 1: button, followed by x and y position (absolute), and width
+; 1: button, followed by x and y position (absolute), and width, and address of string
 ; 2: tab selector, followed by number of tabs
+; 3: arrowed edit, followed by x and y position (absolute)
+; 4: dragging edit
 
 
 ; PANEL DATA
@@ -29,8 +31,14 @@
       wd = 10
       hg = 18
       cp: STR_FORMAT "global" ; caption of panel
+      .scope pos ; positions of GUI elements
+         ts_x = px + 2
+         ts_y = py + 2
+      .endscope
       ; component string of global panel
-      comps: .byte 0
+      comps:
+         .byte 3, pos::ts_x, pos::ts_y ; arrowed edit (timbre selection for now)
+         .byte 0
    .endscope
    .scope osc
       px = global::px+global::wd
@@ -74,8 +82,8 @@
    ds: .word draw_global, draw_osc, draw_env
    ; GUI component strings
    comps: .word global::comps, osc::comps, env::comps
-   ; mouse subroutines
-   ; click subroutines
+   ; mouse subroutines:
+   ; mouse click subroutines
    cs: .word click_global, click_osc, click_env
 
 
@@ -109,7 +117,7 @@ draw_panels:
    counter = mzpba ; counter variable
    stz counter
 @loop:
-   ; TODO: clear area on screen
+   ; TODO: clear area on screen (but when exactly is it needed?)
    ; call drawing subroutine
    lda counter
    asl
@@ -264,17 +272,21 @@ check_gui_loop:
    .word @end_gui
    .word check_button
    .word check_tab_selector
+   .word check_arrowed_edit
 @end_gui:
    lda #255
    rts
-; component checks
-; ----------------
+
+; component checks (part of mouse_get_component_subroutine)
+; ---------------------------------------------------------
 check_button:
    ; check if mouse is over the button
    iny
    iny
    iny
    jmp check_gui_loop
+
+; which tab clicked is returned in ms_curr_data
 check_tab_selector:
    ; check if mouse is over the tab selector area of the panel
    ; check x direction first
@@ -316,6 +328,44 @@ check_tab_selector:
    rts
 :  jmp check_gui_loop
 
+; which arrow clicked is returned in ms_curr_data
+ca_which_arrow: .byte 0
+check_arrowed_edit:
+   stz ca_which_arrow
+   ; check if mouse is over the edit
+   ; check x direction
+   lda gc_cx
+   lsr ; we want cursor position in whole characters (8 pixel multiples), not half characters (4 pixel multiples)
+   sec
+   sbc (gc_pointer), y ; subtract edit's position. so all valid values are smaller than edit size
+   iny
+   cmp #5 ; size of arrowed edit
+   bcc :+
+   iny
+   jmp check_gui_loop
+:  ; correct x range. Now check for click on one of the arrows
+   cmp #0 ; arrow to the left
+   bne :+
+   lda #1
+   sta ca_which_arrow
+   bra :++
+:  cmp #4
+   bne :+
+   lda #2
+   sta ca_which_arrow
+:  ; check y direction
+   lda gc_cy
+   lsr
+   cmp (gc_pointer), y
+   beq :+ ; only if it's equal
+   iny
+   jmp check_gui_loop
+:  ; mouse is at correct height
+   lda ca_which_arrow
+   sta ms_curr_data
+   lda gc_counter
+   iny
+   rts
 
 
 
@@ -335,9 +385,9 @@ draw_global:
    lda #global::hg
    sta guiutils::draw_height
    lda #0
-   sta guiutils::draw_n_tabs
+   sta guiutils::draw_data1
    lda #0
-   sta guiutils::draw_active
+   sta guiutils::draw_data2
    jsr guiutils::draw_frame
    ; draw caption
    lda #global::px
@@ -353,6 +403,14 @@ draw_global:
    lda #(16*COLOR_BACKGROUND+COLOR_CAPTION)
    sta guiutils::color
    jsr guiutils::print
+   ; draw timbre selector
+   lda #global::pos::ts_x
+   sta guiutils::draw_x
+   lda #global::pos::ts_y
+   sta guiutils::draw_y
+   lda Timbre
+   sta guiutils::draw_data1
+   jsr guiutils::draw_arrowed_edit
    rts
 
 draw_osc:
@@ -366,10 +424,10 @@ draw_osc:
    lda #osc::hg
    sta guiutils::draw_height
    lda #MAX_OSCS_PER_VOICE
-   sta guiutils::draw_n_tabs
+   sta guiutils::draw_data1
    lda osc::active_tab
    inc
-   sta guiutils::draw_active
+   sta guiutils::draw_data2
    jsr guiutils::draw_frame
    ; draw caption
    lda #osc::px
@@ -398,10 +456,10 @@ draw_env:
    lda #env::hg
    sta guiutils::draw_height
    lda #MAX_ENVS_PER_VOICE
-   sta guiutils::draw_n_tabs
+   sta guiutils::draw_data1
    lda env::active_tab
    inc
-   sta guiutils::draw_active
+   sta guiutils::draw_data2
    jsr guiutils::draw_frame
    ; draw caption
    lda #env::px
@@ -421,6 +479,32 @@ draw_env:
 
 
 click_global:
+   lda ms_curr_component
+   cmp #0
+   beq @timbre_selector
+   rts
+@timbre_selector:
+   ; which direction?
+   lda ms_curr_data
+   bne :+
+   rts
+:  cmp #1
+   bne @right
+@left:
+   dec Timbre
+   bpl :+
+   lda #(N_TIMBRES - 1)
+   sta Timbre
+:  bra @update_timbre_select
+@right:
+   lda Timbre
+   inc
+   cmp #N_TIMBRES
+   bne :+
+   lda #0
+:  sta Timbre
+@update_timbre_select:
+   jsr draw_global
    rts
 
 ; oscillator panel being clicked
@@ -431,7 +515,7 @@ click_osc:
    bne :+
    lda ms_curr_data
    sta osc::active_tab
-   jsr draw_osc
+   jsr draw_osc ; TODO replace with draw_tabs to prevent flicker
 :  rts
 
 click_env:
@@ -441,7 +525,7 @@ click_env:
    bne :+
    lda ms_curr_data
    sta env::active_tab
-   jsr draw_env
+   jsr draw_env ; TODO replace with draw_tabs
 :  rts
 
 .endscope

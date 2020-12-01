@@ -3,16 +3,21 @@ GLOBAL_DEFS_INC = 1
 
 ; Synth engine definitions
 .define N_VOICES 16
-.define N_TIMBRES 8
+.define N_TIMBRES 32
 .define N_OSCILLATORS 16 ; total number of PSG voices, which correspond to oscillators
 .define MAX_OSCS_PER_VOICE 6
 .define MAX_ENVS_PER_VOICE 3
 .define MAX_LFOS_PER_VOICE 1
 
 ; GUI definitions
+; colors
 .define COLOR_BACKGROUND 11
 .define COLOR_FRAME 1
 .define COLOR_CAPTION 1
+.define COLOR_ARROWED_EDIT_BG 0
+.define COLOR_ARROWED_EDIT_FG 3
+.define COLOR_ARROWED_EDIT_ARROWS 1
+; others
 .define N_PANELS 3   ; number of panels 
 
 
@@ -20,6 +25,8 @@ GLOBAL_DEFS_INC = 1
 Octave:
    .byte 60
 Note:
+   .byte 0
+Timbre:
    .byte 0
 
 ; mouse variables

@@ -73,7 +73,7 @@ play_note:
    sta voices::note_pitch
    lda #127
    sta voices::note_velocity
-   lda #1
+   lda Timbre
    sta voices::note_timbre
    jsr voices::play_note
 
