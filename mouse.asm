@@ -88,11 +88,14 @@ do_idle:
    ; left button held down
    lda #ms_hold_L
    sta ms_status
-   jsr panels::mouse_get_panel
-   sta ms_curr_panel ; store it into "current" (not "ref") because mouse_get_component expects it there
+   jsr gui::mouse_get_panel
+   lda ms_curr_panel
    bmi :+
-   jsr panels::mouse_get_component
-   sta ms_ref_component
+   jsr gui::mouse_get_component
+   lda ms_curr_component_id
+   sta ms_ref_component_id
+   lda ms_curr_component_ofs
+   sta ms_ref_component_ofs
    lda ms_curr_panel
    sta ms_ref_panel ; now move it into "ref" to compare it when mouse button is released (to see if still the same component is being clicked)
 :  jmp end_mouse_tick
@@ -116,8 +119,8 @@ do_hold_L:
    sta ms_status
    ; and do click operation:
    ; check if previous panel & component are the same. If yes, issue a click event.
-   jsr panels::mouse_get_panel
-   sta ms_curr_panel
+   jsr gui::mouse_get_panel
+   lda ms_curr_panel
    bpl :+
    jmp end_mouse_tick ; no panel clicked.
 :  ; a panel has been clicked.
@@ -126,18 +129,18 @@ do_hold_L:
    beq :+
    jmp end_mouse_tick ; not the same, but a different one
 :  ; yes, the same. check if also the same component
-   jsr panels::mouse_get_component
-   sta ms_curr_component
+   jsr gui::mouse_get_component
+   lda ms_curr_component_id
    bpl :+
    jmp end_mouse_tick ; no component being clicked
 :  ; yes, a component being clicked.
    ; still the same as on mouse-down?
-   cmp ms_ref_component
+   cmp ms_ref_component_id
    beq :+
    jmp end_mouse_tick ; not the same, but a different one
 :  ; yes, the same component as when the mouse button was pressed down.
    ; NOW, issue a click event.
-   jsr panels::click_event
+   jsr gui::click_event
    jmp end_mouse_tick
 @button_pressed:  ; a button is pressed. check right one first
    and #2

@@ -17,6 +17,8 @@ GLOBAL_DEFS_INC = 1
 .define COLOR_ARROWED_EDIT_BG 0
 .define COLOR_ARROWED_EDIT_FG 3
 .define COLOR_ARROWED_EDIT_ARROWS 1
+; combined colors (foreground & background)
+.define CCOLOR_CAPTION 16*COLOR_BACKGROUND+COLOR_CAPTION
 ; others
 .define N_PANELS 3   ; number of panels 
 
@@ -36,13 +38,15 @@ ms_ref_x: .word 0
 ms_ref_y: .word 0
 ms_ref_buttons: .byte 0
 ms_ref_panel: .byte 0
-ms_ref_component: .byte 0
+ms_ref_component_id: .byte 0  ; component ID (from 0 to ...)
+ms_ref_component_ofs: .byte 0 ; component offset (in a panel's component string)
 ; current values
 ms_curr_x: .word 0
 ms_curr_y: .word 0
 ms_curr_buttons: .byte 0
 ms_curr_panel: .byte 0
-ms_curr_component: .byte 0
+ms_curr_component_id: .byte 0
+ms_curr_component_ofs: .byte 0
 ms_curr_data: .byte 0 ; used to store the current tab selected
 
 

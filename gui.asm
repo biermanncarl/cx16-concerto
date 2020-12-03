@@ -12,16 +12,28 @@
 ; 1: oscillator settings
 ; 2: envelope settings
 
+; Caption List data format:
+; first byte: color (foreground and background). If it's zero, it marks the end of the list.
+; second and third bytes: x and y position
+; fourth and fifth bytes: pointer to zero-terminated string.
+
 ; GUI control element legend:
 ; 0: none (end of list)
 ; 1: button, followed by x and y position (absolute), and width, and address of string
-; 2: tab selector, followed by number of tabs
-; 3: arrowed edit, followed by x and y position (absolute)
-; 4: dragging edit
+; 2: tab selector, followed by number of tabs, and active tab
+; 3: arrowed edit, followed by x and y position (absolute), min value, max value, value
+; 4: dragging edit, followed by x and y position (abs), options (flags), min value, max value, fine value, coarse value
+
+; arrowed edit flags options:
+; bit 0:
+; bit 1:
+; bit 2: 
+
+
 
 
 ; PANEL DATA
-.scope panels
+.scope gui
 
    ; compiler variables for convenience
    ; and panel data that will be accessed via pointers
@@ -30,41 +42,58 @@
       py = 10
       wd = 10
       hg = 18
-      cp: STR_FORMAT "global" ; caption of panel
       .scope pos ; positions of GUI elements
          ts_x = px + 2
-         ts_y = py + 2
+         ts_y = py + 3
       .endscope
       ; component string of global panel
       comps:
-         .byte 3, pos::ts_x, pos::ts_y ; arrowed edit (timbre selection for now)
+         .byte 3, pos::ts_x, pos::ts_y, 0, 4, 0 ; arrowed edit (timbre selection for now)
+         .byte 3, pos::ts_x, pos::ts_y+3, 0, 4, 1 ; arrowed edit (timbre selection for now)
          .byte 0
+      ; caption list of global panel
+      capts:
+         .byte CCOLOR_CAPTION, px+2, py
+         .word cp
+         .byte 0
+      cp: STR_FORMAT "global" ; caption of panel
    .endscope
    .scope osc
       px = global::px+global::wd
       py = global::py
       wd = 33
       hg = global::hg
-      cp: STR_FORMAT "oscillators" ; caption of panel
       ; component string of oscillator panel
       comps:
-         .byte 2, 6 ; tabselector
+         .byte 2, 6, 0 ; tabselector
+         ;.byte 4, px+2, py+2, 3 ; drag edit
+         .byte 0
+      ; caption list of oscillator panel
+      capts:
+         .byte CCOLOR_CAPTION, px+4, py
+         .word cp
          .byte 0
       ; data specific to the oscillator panel
       active_tab: .byte 0
+      cp: STR_FORMAT "oscillators" ; caption of panel
    .endscope
    .scope env
       px = 15
       py = osc::py+osc::hg
       wd = 24
       hg = 8
-      cp: STR_FORMAT "envelopes" ; caption of panel
       ; component string of envelope panel
       comps:
-         .byte 2, 3 ; tab selector
+         .byte 2, 3, 0 ; tab selector
+         .byte 0
+      ; caption list of envelope panel
+      capts:
+         .byte CCOLOR_CAPTION, px+4, py
+         .word cp
          .byte 0
       ; data specific to the envelope panel
       active_tab: .byte 0
+      cp: STR_FORMAT "envelopes" ; caption of panel
    .endscope
 
    ; Actual Panel Data
@@ -79,12 +108,16 @@
    ; heights
    hg: .byte global::hg, osc::hg, env::hg
    ; drawing subroutines
-   ds: .word draw_global, draw_osc, draw_env
+   drws: .word draw_global, draw_osc, draw_env
    ; GUI component strings
    comps: .word global::comps, osc::comps, env::comps
+   ; GUI captions
+   capts: .word global::capts, osc::capts, env::capts
    ; mouse subroutines:
    ; mouse click subroutines
    cs: .word click_global, click_osc, click_env
+   ; drag subroutines
+   drgs: .word drag_global, drag_osc, drag_env
 
 
 ; The Panel Stack
@@ -95,7 +128,9 @@
    sp: .byte 0                ; stack pointer, counts how many elements are on the stack
 .endscope
 
-
+; placeholder for unimplemented subroutines
+dummy_sr:
+   rts
 
 
 ; brings up the synth GUI
@@ -118,7 +153,7 @@ draw_panels:
    stz counter
 @loop:
    ; TODO: clear area on screen (but when exactly is it needed?)
-   ; call drawing subroutine
+   ; call panel-specific drawing subroutine
    lda counter
    asl
    tax
@@ -128,8 +163,14 @@ draw_panels:
    pha
    lda #(<@ret_addr1)
    pha
-   jmp (ds,x)
+   jmp (drws,x)
 @ret_addr:
+   ; draw GUI components
+   lda counter
+   jsr draw_components
+   ; draw captions
+   lda counter
+   jsr draw_captions
    ; advance in loop
    lda counter
    inc
@@ -138,7 +179,105 @@ draw_panels:
    bne @loop
    rts
 
+; draws all captions from the caption string of a panel
+; expects panel ID in register A
+draw_captions:
+   dcp_pointer = mzpwd
+   ; mzpwa is used by print subroutine,
+   ; and that's where we pass the pointers to our strings.
+   asl
+   tax
+   lda capts, x
+   sta dcp_pointer
+   lda capts+1, x
+   sta dcp_pointer+1
+   ldy #0
+@loop:
+   lda (dcp_pointer), y
+   beq @end_loop
+   sta guiutils::color
+   iny
+   lda (dcp_pointer), y
+   sta guiutils::cur_x
+   iny
+   lda (dcp_pointer), y
+   sta guiutils::cur_y
+   iny
+   lda (dcp_pointer), y
+   sta guiutils::str_pointer
+   iny
+   lda (dcp_pointer), y
+   sta guiutils::str_pointer+1
+   iny
+   phy
+   jsr guiutils::print
+   ply
+   jmp @loop
+@end_loop:
+   rts
+
+; goes through a GUI component string and draws all components in it
+; expects panel ID in register A
+draw_components:
+   dc_pointer = mzpwa
+   asl
+   tax
+   lda comps, x
+   sta dc_pointer
+   lda comps+1, x
+   sta dc_pointer+1
+   ldy #0
+@loop:
+@ret_addr:
+   lda (dc_pointer), y
+   beq @end_loop
+   iny
+   asl
+   tax
+   ; emulate a jsr
+@ret_addr1 = @ret_addr-1
+   lda #(>@ret_addr1)
+   pha
+   lda #(<@ret_addr1)
+   pha
+   jmp (@jmp_table-2,x) ;-2 because there's no drawing routine for "none" component
+@jmp_table:
+   .word dummy_sr  ; button
+   .word draw_tab_select  ; tab-select (no drawing routine, drawing is done in panel-specific routine)
+   .word draw_arrowed_edit  ; arrowed edit
+   .word dummy_sr  ; drag edit
+@end_loop:
+   rts
+
+; this is just a dummy, because tab selectors are drawn in panel's specific drawing routines
+draw_tab_select:
+   iny
+   iny
+   rts
+
+;expects GUI component string address in mzpwa, and offset (+1) in register Y
+draw_arrowed_edit:
+   lda (dc_pointer), y
+   iny
+   sta guiutils::draw_x
+   lda (dc_pointer), y
+   iny
+   sta guiutils::draw_y
+   iny
+   iny
+   lda (dc_pointer), y
+   iny
+   sta guiutils::draw_data1
+   phy
+   jsr guiutils::draw_arrowed_edit
+   ply
+   rts
+
+
+
+
 ; click event. looks in mouse variables which panel has been clicked and calls its routine
+; also looks which component has been clicked and calls according routine
 click_event:
    lda ms_curr_panel
    asl
@@ -150,6 +289,21 @@ click_event:
    lda #(<@ret_addr1)
    pha
    jmp (cs,x)
+@ret_addr:
+   rts
+
+; drag event. looks in mouse variables which panel's component has been dragged and calls its routine
+drag_event:
+   lda ms_ref_panel
+   asl
+   tax
+   ; want to emulate a jsr. need to push return address minus 1 to the stack
+@ret_addr1 = @ret_addr-1
+   lda #(>@ret_addr1)
+   pha
+   lda #(<@ret_addr1)
+   pha
+   jmp (drgs,x)
 @ret_addr:
    rts
 
@@ -208,10 +362,12 @@ mouse_get_panel:
    bcc @loop ; gp_cy is too big
    ; we're inside! return index
    tya
+   sta ms_curr_panel
    rts
 @end_loop:
    ; found no match
    lda #255
+   sta ms_curr_panel
    rts
 
 
@@ -304,6 +460,7 @@ check_tab_selector:
    cmp #4
    bcc :+ ; if carry clear, we are in
    iny ; skip data byte in GUI component string before checking next GUI component
+   iny
    jmp check_gui_loop
 :  ; check y direction second
    lda py, x
@@ -320,14 +477,21 @@ check_tab_selector:
    ; now we have the index of the tab clicked
    ; compare it to number of tabs present
    cmp (gc_pointer), y
-   iny
    bcs :+ ; if carry set, no tab has been clicked
    ; otherwise, tab has been selected
-   sta ms_curr_data
+   sta ms_curr_data ; store tab being clicked
+   tya ; determine component's offset
+   sec
+   sbc #1 ; correct?
+   sta ms_curr_component_ofs
    lda gc_counter
+   sta ms_curr_component_id
    rts
-:  jmp check_gui_loop
+:  iny
+   iny
+   jmp check_gui_loop
 
+; check arrowed edit for mouse click
 ; which arrow clicked is returned in ms_curr_data
 ca_which_arrow: .byte 0
 check_arrowed_edit:
@@ -339,8 +503,9 @@ check_arrowed_edit:
    sec
    sbc (gc_pointer), y ; subtract edit's position. so all valid values are smaller than edit size
    iny
-   cmp #5 ; size of arrowed edit
+   cmp #6 ; size of arrowed edit
    bcc :+
+   iny
    iny
    jmp check_gui_loop
 :  ; correct x range. Now check for click on one of the arrows
@@ -349,7 +514,7 @@ check_arrowed_edit:
    lda #1
    sta ca_which_arrow
    bra :++
-:  cmp #4
+:  cmp #5
    bne :+
    lda #2
    sta ca_which_arrow
@@ -359,11 +524,22 @@ check_arrowed_edit:
    cmp (gc_pointer), y
    beq :+ ; only if it's equal
    iny
+   iny
+   iny
+   iny
    jmp check_gui_loop
 :  ; mouse is at correct height
+   iny
+   iny
    lda ca_which_arrow
    sta ms_curr_data
+   tya ; determine offset in component-string
+   sec
+   sbc #4 ; correct?
+   sta ms_curr_component_ofs
    lda gc_counter
+   sta ms_curr_component_id
+   iny
    iny
    rts
 
@@ -389,28 +565,6 @@ draw_global:
    lda #0
    sta guiutils::draw_data2
    jsr guiutils::draw_frame
-   ; draw caption
-   lda #global::px
-   clc
-   adc #2
-   sta guiutils::cur_x
-   lda #global::py
-   sta guiutils::cur_y
-   lda #(<global::cp)
-   sta guiutils::str_pointer
-   lda #(>global::cp)
-   sta guiutils::str_pointer+1
-   lda #(16*COLOR_BACKGROUND+COLOR_CAPTION)
-   sta guiutils::color
-   jsr guiutils::print
-   ; draw timbre selector
-   lda #global::pos::ts_x
-   sta guiutils::draw_x
-   lda #global::pos::ts_y
-   sta guiutils::draw_y
-   lda Timbre
-   sta guiutils::draw_data1
-   jsr guiutils::draw_arrowed_edit
    rts
 
 draw_osc:
@@ -429,20 +583,6 @@ draw_osc:
    inc
    sta guiutils::draw_data2
    jsr guiutils::draw_frame
-   ; draw caption
-   lda #osc::px
-   clc
-   adc #4
-   sta guiutils::cur_x
-   lda #osc::py
-   sta guiutils::cur_y
-   lda #(<osc::cp)
-   sta guiutils::str_pointer
-   lda #(>osc::cp)
-   sta guiutils::str_pointer+1
-   lda #(16*COLOR_BACKGROUND+COLOR_CAPTION)
-   sta guiutils::color
-   jsr guiutils::print
    rts
 
 draw_env:
@@ -461,25 +601,11 @@ draw_env:
    inc
    sta guiutils::draw_data2
    jsr guiutils::draw_frame
-   ; draw caption
-   lda #env::px
-   clc
-   adc #4
-   sta guiutils::cur_x
-   lda #env::py
-   sta guiutils::cur_y
-   lda #(<env::cp)
-   sta guiutils::str_pointer
-   lda #(>env::cp)
-   sta guiutils::str_pointer+1
-   lda #(16*COLOR_BACKGROUND+COLOR_CAPTION)
-   sta guiutils::color
-   jsr guiutils::print
    rts
 
 
 click_global:
-   lda ms_curr_component
+   lda ms_curr_component_id
    cmp #0
    beq @timbre_selector
    rts
@@ -510,7 +636,7 @@ click_global:
 ; oscillator panel being clicked
 click_osc:
    ; tab selector ?
-   lda ms_curr_component
+   lda ms_curr_component_id
    cmp #0
    bne :+
    lda ms_curr_data
@@ -518,14 +644,27 @@ click_osc:
    jsr draw_osc ; TODO replace with draw_tabs to prevent flicker
 :  rts
 
+; envelope panel being clicked
 click_env:
    ; tab selector ?
-   lda ms_curr_component
+   lda ms_curr_component_id
    cmp #0
    bne :+
    lda ms_curr_data
    sta env::active_tab
    jsr draw_env ; TODO replace with draw_tabs
 :  rts
+
+; something on global panel being dragged
+drag_global:
+   rts
+
+; something on oscillator panel being dragged
+drag_osc:
+   rts
+
+; something on envelope panel being dragged
+drag_env:
+   rts
 
 .endscope

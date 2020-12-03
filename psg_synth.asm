@@ -20,7 +20,7 @@
 .include "synth_engine.asm"
 .include "my_isr.asm"
 .include "guiutils.asm"
-.include "panels.asm"
+.include "gui.asm"
 .include "mouse.asm"
 .include "presets.asm"
 
@@ -29,7 +29,7 @@
 start:
    ; startup code
 
-   jsr panels::load_synth_gui
+   jsr gui::load_synth_gui
 
    jsr mouse::mouse_init
 
@@ -53,7 +53,8 @@ mainloop:
    jsr mouse::mouse_tick
 
    DISPLAY_BYTE ms_curr_panel, 30, 1
-   DISPLAY_BYTE ms_curr_component, 35, 1
+   DISPLAY_BYTE ms_curr_component_id, 35, 1
+   DISPLAY_BYTE ms_curr_component_ofs, 35, 2
    DISPLAY_BYTE ms_curr_data, 40, 1
 
    ; clear voices that have been released

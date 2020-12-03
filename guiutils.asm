@@ -1,4 +1,6 @@
 ; basic utility functions for the GUI are found in this file
+; from more basic stuff like setting the VERA "screen cursor" to a specific location
+; to displaying more complex stuff like frames, edits, checkboxes etc.
 
 
 .scope guiutils
@@ -497,6 +499,9 @@ draw_arrowed_edit:
    lda draw_data1
    ldx #(16*COLOR_ARROWED_EDIT_BG + COLOR_ARROWED_EDIT_FG)
    jsr print_byte_simple
+   lda #32
+   sta VERA_data0
+   stx VERA_data0
    ldx #(16*COLOR_ARROWED_EDIT_BG + COLOR_ARROWED_EDIT_ARROWS)
    lda #62
    sta VERA_data0
@@ -505,7 +510,67 @@ draw_arrowed_edit:
    rts
 
 
-
-
+; draw a number edit for drag-edit
+; data1: number on display
+; data2: bit 0: coarse/fine available, bit1: coarse/fine switch, bit2: signed
+draw_drag_edit:
+   lda draw_x
+   sta cur_x
+   lda draw_y
+   sta cur_y
+   ldx #(16*COLOR_ARROWED_EDIT_BG + COLOR_ARROWED_EDIT_FG)
+   sei
+   jsr set_cursor
+   lda draw_data2
+   sta mzpba   ; mzpba used! (use something else for bit-testing if this clashes with something else)
+   bbs2 mzpba, @signed
+@unsigned:
+   lda #32
+   sta VERA_data0
+   stx VERA_data0
+   bra @check_fine_coarse
+@signed:
+   lda draw_data1
+   bmi @minus
+@plus:
+   lda #43
+   sta VERA_data0
+   stx VERA_data0
+   bra @check_fine_coarse
+@minus:
+   eor #%11111111
+   inc
+   sta draw_data1
+   lda #45
+   sta VERA_data0
+   stx VERA_data0
+@check_fine_coarse:
+   bbr0 mzpba, @no_coarse_fine ; fine/coarse ?
+   ; here we are doing fine/coarse
+   bbs1 mzpba, @fine ; doing fine?
+@coarse:
+   lda draw_data1
+   jsr print_byte_simple
+   lda #46
+   sta VERA_data0
+   stx VERA_data0
+   cli
+   rts
+@fine:
+   lda #46
+   sta VERA_data0
+   stx VERA_data0
+   lda draw_data1
+   jsr print_byte_simple
+   cli
+   rts
+@no_coarse_fine:
+   lda draw_data1
+   jsr print_byte_simple
+   lda #32
+   sta VERA_data0
+   stx VERA_data0
+   cli
+   rts
 
 .endscope ; gui
