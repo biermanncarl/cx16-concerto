@@ -380,6 +380,8 @@ draw_frame:
 
 ; draw tabs
 ; independent routine for updating when another tab is selected
+; data1 is number of tabs (0 if there are no tabs)
+; data2 is index of active tab (0 to N-1)
 draw_tabs:
    ldx #(16*COLOR_BACKGROUND + COLOR_FRAME)
    stx color
@@ -412,6 +414,9 @@ draw_tabs:
    tya
    clc
    adc #49
+   sta VERA_data0
+   stx VERA_data0
+   lda #66
    sta VERA_data0
    stx VERA_data0
    inc cur_y
@@ -480,7 +485,6 @@ draw_tabs:
    lda #32
    sta VERA_data0
    cli 
-
    rts
 
 ; draw a number edit that has arrows

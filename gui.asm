@@ -20,8 +20,8 @@
 ; GUI control element legend:
 ; 0: none (end of list)
 ; 1: button, followed by x and y position (absolute), and width, and address of string
-; 2: tab selector, followed by number of tabs, and active tab
-; 3: arrowed edit, followed by x and y position (absolute), min value, max value, value
+; 2: tab selector, followed by x and y position (abs), number of tabs, and active tab
+; 3: arrowed edit, followed by x and y position (abs), min value, max value, value
 ; 4: dragging edit, followed by x and y position (abs), options (flags), min value, max value, fine value, coarse value
 
 ; arrowed edit flags options:
@@ -65,7 +65,7 @@
       hg = global::hg
       ; component string of oscillator panel
       comps:
-         .byte 2, 6, 0 ; tabselector
+         .byte 2, px, py, 6, 0 ; tabselector
          ;.byte 4, px+2, py+2, 3 ; drag edit
          .byte 0
       ; caption list of oscillator panel
@@ -84,7 +84,7 @@
       hg = 8
       ; component string of envelope panel
       comps:
-         .byte 2, 3, 0 ; tab selector
+         .byte 2, px, py, 3, 0 ; tab selector
          .byte 0
       ; caption list of envelope panel
       capts:
@@ -96,7 +96,7 @@
       cp: STR_FORMAT "envelopes" ; caption of panel
    .endscope
 
-   ; Actual Panel Data
+   ; Panel Lookup tables
    ; Each label marks a list of values, one for each panel.
    ; These lists must have length N_PANELS.
    ; X positions
@@ -134,6 +134,7 @@ dummy_sr:
 
 
 ; brings up the synth GUI
+; puts all synth panels into GUI stack
 load_synth_gui:
    jsr guiutils::cls
    lda #3
@@ -144,11 +145,14 @@ load_synth_gui:
    sta stack::stack+1
    lda #2
    sta stack::stack+2
-   jsr draw_panels
+   jsr draw_gui
    rts
 
+
+
+
 ; reads through the stack and draws everything
-draw_panels:
+draw_gui:
    counter = mzpba ; counter variable
    stz counter
 @loop:
@@ -249,20 +253,34 @@ draw_components:
 @end_loop:
    rts
 
-; this is just a dummy, because tab selectors are drawn in panel's specific drawing routines
+; expects GUI component string address in mzpwa, and offset (+1) in register Y
 draw_tab_select:
+   lda (dc_pointer), y
+   sta guiutils::draw_x
    iny
+   lda (dc_pointer), y
+   sta guiutils::draw_y
    iny
+   lda (dc_pointer), y
+   sta guiutils::draw_data1
+   iny
+   lda (dc_pointer), y
+   inc
+   sta guiutils::draw_data2
+   iny
+   phy
+   jsr guiutils::draw_tabs
+   ply
    rts
 
-;expects GUI component string address in mzpwa, and offset (+1) in register Y
+; expects GUI component string address in mzpwa, and offset (+1) in register Y
 draw_arrowed_edit:
    lda (dc_pointer), y
-   iny
    sta guiutils::draw_x
-   lda (dc_pointer), y
    iny
+   lda (dc_pointer), y
    sta guiutils::draw_y
+   iny
    iny
    iny
    lda (dc_pointer), y
@@ -279,21 +297,84 @@ draw_arrowed_edit:
 ; click event. looks in mouse variables which panel has been clicked and calls its routine
 ; also looks which component has been clicked and calls according routine
 click_event:
+   ; call GUI component's click subroutine, to update it.
+   ; For that, we need the info about the component from the GUI component string
+   ; of the respective panel.
+   ce_pointer = mzpwa ; it is important that this is the same as dc_pointer, because this routine indirectly calls "their" subroutine, expecting this pointer at the same place
+   lda ms_curr_panel
+   asl
+   tax
+   lda comps, x
+   sta ce_pointer
+   lda comps+1, x
+   sta ce_pointer+1   ; put GUI component string pointer to ZP
+   ldy ms_curr_component_ofs ; load component's offset
+   lda (ce_pointer), y ; and get its type
+   asl
+   tax
+   ; want to emulate a jsr. need to push return address minus 1 to the stack
+@ret_addrA1 = @ret_addrA-1
+   lda #(>@ret_addrA1)
+   pha
+   lda #(<@ret_addrA1)
+   pha
+   jmp (@jmp_tbl-2,x) ; -2 because there is nothing to do for component type 0
+@jmp_tbl:
+   .word click_button
+   .word click_tab_select
+   .word click_arrowed_edit
+   .word click_drag_edit
+@ret_addrA:
+   ; call panel's click subroutine, which is part of the interface between GUI and internal data
    lda ms_curr_panel
    asl
    tax
    ; want to emulate a jsr. need to push return address minus 1 to the stack
-@ret_addr1 = @ret_addr-1
-   lda #(>@ret_addr1)
+@ret_addrB1 = @ret_addrB-1
+   lda #(>@ret_addrB1)
    pha
-   lda #(<@ret_addr1)
+   lda #(<@ret_addrB1)
    pha
    jmp (cs,x)
-@ret_addr:
+@ret_addrB:
    rts
+
+; GUI component's click subroutines
+; ---------------------------------
+; expect component string's pointer in ce_pointer on zero page,
+; and also the component's offset in ms_curr_component_ofs
+; and relevant click data (determined by the click detection) in ms_curr_data
+
+click_button:
+   rts
+
+click_tab_select:
+   ; put new tab into GUI component list
+   lda ms_curr_data
+   ldy ms_curr_component_ofs
+   iny
+   iny
+   iny
+   iny
+   sta (ce_pointer), y
+   ; and redraw it
+   ldy ms_curr_component_ofs
+   iny
+   jsr draw_tab_select
+   rts
+
+click_arrowed_edit:
+   rts
+
+click_drag_edit:
+   rts
+
+
 
 ; drag event. looks in mouse variables which panel's component has been dragged and calls its routine
 drag_event:
+   ; TODO: call component's drag subroutine, to update it.
+   ; call panel's drag subroutine, which is part of the interface between GUI and internal data
    lda ms_ref_panel
    asl
    tax
@@ -382,7 +463,7 @@ mouse_get_component:
    gc_cx = mzpwd     ; x and y in multiples of 4 (!) pixels to support half character grid
    gc_cy = mzpwd+1
    gc_counter = mzpba
-   ; determine position in multiples of 4 pixels (divide by 4)
+   ; determine mouse position in multiples of 4 pixels (divide by 4)
    lda ms_curr_x+1
    lsr
    sta gc_cx+1
@@ -430,7 +511,8 @@ check_gui_loop:
    .word check_tab_selector
    .word check_arrowed_edit
 @end_gui:
-   lda #255
+   lda #255 ; none found
+   sta ms_curr_component_id
    rts
 
 ; component checks (part of mouse_get_component_subroutine)
@@ -459,7 +541,9 @@ check_tab_selector:
    ; now compare with tab selector width, which is 4
    cmp #4
    bcc :+ ; if carry clear, we are in
-   iny ; skip data byte in GUI component string before checking next GUI component
+   iny ; skip data bytes in GUI component string before checking next GUI component
+   iny
+   iny
    iny
    jmp check_gui_loop
 :  ; check y direction second
@@ -476,13 +560,15 @@ check_tab_selector:
    lsr
    ; now we have the index of the tab clicked
    ; compare it to number of tabs present
+   iny
+   iny
    cmp (gc_pointer), y
    bcs :+ ; if carry set, no tab has been clicked
    ; otherwise, tab has been selected
    sta ms_curr_data ; store tab being clicked
    tya ; determine component's offset
    sec
-   sbc #1 ; correct?
+   sbc #3 ; correct?
    sta ms_curr_component_ofs
    lda gc_counter
    sta ms_curr_component_id
@@ -603,13 +689,14 @@ draw_env:
    jsr guiutils::draw_frame
    rts
 
-
+; click subroutine of the global settings panel
 click_global:
    lda ms_curr_component_id
    cmp #0
    beq @timbre_selector
    rts
 @timbre_selector:
+   ; read data from component string
    ; which direction?
    lda ms_curr_data
    bne :+
@@ -630,7 +717,6 @@ click_global:
    lda #0
 :  sta Timbre
 @update_timbre_select:
-   jsr draw_global
    rts
 
 ; oscillator panel being clicked
@@ -641,7 +727,6 @@ click_osc:
    bne :+
    lda ms_curr_data
    sta osc::active_tab
-   jsr draw_osc ; TODO replace with draw_tabs to prevent flicker
 :  rts
 
 ; envelope panel being clicked
@@ -652,7 +737,6 @@ click_env:
    bne :+
    lda ms_curr_data
    sta env::active_tab
-   jsr draw_env ; TODO replace with draw_tabs
 :  rts
 
 ; something on global panel being dragged
