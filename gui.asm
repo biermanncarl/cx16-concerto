@@ -364,6 +364,68 @@ click_tab_select:
    rts
 
 click_arrowed_edit:
+   cae_value = mzpba
+   ; check if one of the arrows has been clicked
+   lda ms_curr_data
+   bne :+
+   rts
+:  ; yes, one of the arrows has been clicked...
+   ; now, get value from edit
+   lda ms_curr_component_ofs
+   clc
+   adc #5
+   tay
+   lda (ce_pointer), y
+   sta cae_value
+   ; now, decide whether left or right was clicked
+   dey
+   lda ms_curr_data
+   cmp #1
+   bne @right
+@left:   ; decrement value
+   ; get minimal value
+   dey
+   lda (ce_pointer), y
+   cmp cae_value
+   bne :+
+   ; if we're here, we're sitting at the bottom of valid range, need to wrap around
+   ; need to get maximal value
+   iny
+   lda (ce_pointer), y
+   dey
+   inc ; increment it to cancel upcoming decrement
+   sta cae_value
+:  ; decrement
+   lda cae_value
+   dec
+   ; and store it back
+   iny
+   iny
+   sta (ce_pointer), y
+   bra @update
+@right:   ; increment value
+   ; get maximal value
+   lda (ce_pointer), y
+   cmp cae_value
+   bne :+
+   ; if we're here, we're sitting at the top of the valid range, need to wrap around
+   ; need to get minimal value
+   dey
+   lda (ce_pointer), y
+   iny
+   dec ; decrement it to cancel upcoming increment
+   sta cae_value
+:  ; increment
+   lda cae_value
+   inc
+   ; and store it back
+   iny
+   sta (ce_pointer), y
+   bra @update
+@update:
+   ldy ms_curr_component_ofs
+   iny
+   jsr draw_arrowed_edit
    rts
 
 click_drag_edit:
@@ -689,6 +751,10 @@ draw_env:
    jsr guiutils::draw_frame
    rts
 
+; panels' click subroutines
+; -------------------------
+; expect ce_pointer to contain the pointer to the corresponding GUI component string
+
 ; click subroutine of the global settings panel
 click_global:
    lda ms_curr_component_id
@@ -696,27 +762,13 @@ click_global:
    beq @timbre_selector
    rts
 @timbre_selector:
-   ; read data from component string
-   ; which direction?
-   lda ms_curr_data
-   bne :+
-   rts
-:  cmp #1
-   bne @right
-@left:
-   dec Timbre
-   bpl :+
-   lda #(N_TIMBRES - 1)
+   ; read data from component string and write it to the Timbre setting
+   lda ms_curr_component_ofs
+   clc
+   adc #5
+   tay
+   lda (ce_pointer), y
    sta Timbre
-:  bra @update_timbre_select
-@right:
-   lda Timbre
-   inc
-   cmp #N_TIMBRES
-   bne :+
-   lda #0
-:  sta Timbre
-@update_timbre_select:
    rts
 
 ; oscillator panel being clicked

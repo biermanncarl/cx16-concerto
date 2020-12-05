@@ -178,3 +178,28 @@ msg_uvl_youngest:
 
 ; just parking this here
 
+
+
+   lda my_switch  ; load the variable which tells us what to do
+   asl            ; multiply with 2, so we can index 16 bit addresses
+   tax            ; put it into indexing register
+   jmp (jmp_table, x)
+jmp_table:
+   .word subroutine_1
+   .word subroutine_2
+   .word subroutine_3
+return_here:
+   ; continue your program
+   ; ...
+
+subroutine_1:
+   ; do something 1
+   jmp return_here
+
+subroutine_2:
+   ; do something 2
+   jmp return_here
+
+subroutine_3:
+   ; do something 3
+   jmp return_here
