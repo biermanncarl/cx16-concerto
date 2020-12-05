@@ -11,6 +11,7 @@
 ; 0: global settings
 ; 1: oscillator settings
 ; 2: envelope settings
+; 3: synth navigation bar (snav)
 
 ; Caption List data format:
 ; first byte: color (foreground and background). If it's zero, it marks the end of the list.
@@ -24,10 +25,10 @@
 ; 3: arrowed edit, followed by x and y position (abs), min value, max value, value
 ; 4: dragging edit, followed by x and y position (abs), options (flags), min value, max value, fine value, coarse value
 
-; arrowed edit flags options:
-; bit 0:
-; bit 1:
-; bit 2: 
+; drag edit flags options:
+; bit 0: coarse/fine option enabled
+; bit 1: fine active
+; bit 2: signed
 
 
 
@@ -46,7 +47,7 @@
          ts_x = px + 2
          ts_y = py + 3
       .endscope
-      ; component string of global panel
+      ; GUI component string of global panel
       comps:
          .byte 3, pos::ts_x, pos::ts_y, 0, 4, 0 ; arrowed edit (timbre selection for now)
          .byte 3, pos::ts_x, pos::ts_y+3, 0, 4, 1 ; arrowed edit (timbre selection for now)
@@ -63,10 +64,10 @@
       py = global::py
       wd = 33
       hg = global::hg
-      ; component string of oscillator panel
+      ; GUI component string of oscillator panel
       comps:
          .byte 2, px, py, 6, 0 ; tabselector
-         ;.byte 4, px+2, py+2, 3 ; drag edit
+         ;.byte 4, px+2, py+2, 255, 0, 255, 0, 0 ; drag edit
          .byte 0
       ; caption list of oscillator panel
       capts:
@@ -82,7 +83,7 @@
       py = osc::py+osc::hg
       wd = 24
       hg = 8
-      ; component string of envelope panel
+      ; GUI component string of envelope panel
       comps:
          .byte 2, px, py, 3, 0 ; tab selector
          .byte 0
@@ -95,29 +96,47 @@
       active_tab: .byte 0
       cp: STR_FORMAT "envelopes" ; caption of panel
    .endscope
+   .scope snav
+      px = 0
+      py = 0
+      wd = 80
+      hg = 4
+      ; GUI component string of envelope panel
+      comps:
+         .byte 3, 11, 1, 0, 4, 0 ; arrowed edit (timbre selection)
+         .byte 0
+      ; caption list of envelope panel
+      capts:
+         .byte CCOLOR_CAPTION, 1, 1
+         .word cp
+         .byte 0
+      ; data specific to the envelope panel
+      active_tab: .byte 0
+      cp: STR_FORMAT "timbre" ; caption of panel
+   .endscope
 
    ; Panel Lookup tables
    ; Each label marks a list of values, one for each panel.
    ; These lists must have length N_PANELS.
    ; X positions
-   px: .byte global::px, osc::px, env::px
+   px: .byte global::px, osc::px, env::px, snav::px
    ; Y positions
-   py: .byte global::py, osc::py, env::py
+   py: .byte global::py, osc::py, env::py, snav::py
    ; widths
-   wd: .byte global::wd, osc::wd, env::wd
+   wd: .byte global::wd, osc::wd, env::wd, snav::wd
    ; heights
-   hg: .byte global::hg, osc::hg, env::hg
+   hg: .byte global::hg, osc::hg, env::hg, snav::hg
    ; drawing subroutines
-   drws: .word draw_global, draw_osc, draw_env
+   drws: .word draw_global, draw_osc, draw_env, draw_snav
    ; GUI component strings
-   comps: .word global::comps, osc::comps, env::comps
+   comps: .word global::comps, osc::comps, env::comps, snav::comps
    ; GUI captions
-   capts: .word global::capts, osc::capts, env::capts
+   capts: .word global::capts, osc::capts, env::capts, snav::capts
    ; mouse subroutines:
    ; mouse click subroutines
-   cs: .word click_global, click_osc, click_env
+   cs: .word click_global, click_osc, click_env, click_snav
    ; drag subroutines
-   drgs: .word drag_global, drag_osc, drag_env
+   drgs: .word drag_global, drag_osc, drag_env, drag_snav
 
 
 ; The Panel Stack
@@ -137,7 +156,7 @@ dummy_sr:
 ; puts all synth panels into GUI stack
 load_synth_gui:
    jsr guiutils::cls
-   lda #3
+   lda #4
    sta stack::sp
    lda #0
    sta stack::stack
@@ -145,6 +164,8 @@ load_synth_gui:
    sta stack::stack+1
    lda #2
    sta stack::stack+2
+   lda #3
+   sta stack::stack+3
    jsr draw_gui
    rts
 
@@ -253,7 +274,10 @@ draw_components:
 @end_loop:
    rts
 
-; expects GUI component string address in mzpwa, and offset (+1) in register Y
+; GUI components' drawing routines
+; --------------------------------
+; expect GUI component string address in dc_pointer, and offset (+1) in register Y
+
 draw_tab_select:
    lda (dc_pointer), y
    sta guiutils::draw_x
@@ -290,7 +314,6 @@ draw_arrowed_edit:
    jsr guiutils::draw_arrowed_edit
    ply
    rts
-
 
 
 
@@ -451,7 +474,7 @@ drag_event:
    rts
 
 ; returns the panel index the mouse is currently over. Bit 7 set means none
-; panel index returned in register A
+; panel index returned in ms_curr_panel
 mouse_get_panel:
    ; grab those zero page variables for this routine
    gp_cx = mzpwa
@@ -487,20 +510,26 @@ mouse_get_panel:
    dex
    bmi @end_loop
    ldy stack::stack, x ; y will be panel's index
+   ;lda px, y
+   ;dec
+   ;cmp gp_cx
+   ;bcs @loop ; gp_cx is smaller than panel's x
+   lda gp_cx
+   cmp px, y
+   bcc @loop ; gp_cx is smaller than panel's x
    lda px, y
-   dec
-   cmp gp_cx
-   bcs @loop ; gp_cx is smaller than panel's x
    clc
    adc wd, y
+   dec
    cmp gp_cx
    bcc @loop ; gp_cx is too big
+   lda gp_cy
+   cmp py, y
+   bcc @loop ; gp_cy is smaller than panel's y
    lda py, y
-   dec
-   cmp gp_cy
-   bcs @loop ; gp_cy is smaller than panel's y
    clc
    adc hg, y
+   dec
    cmp gp_cy
    bcc @loop ; gp_cy is too big
    ; we're inside! return index
@@ -579,6 +608,11 @@ check_gui_loop:
 
 ; component checks (part of mouse_get_component_subroutine)
 ; ---------------------------------------------------------
+; expect ms_curr_panel and gc_pointer to be set, also gc_cx and gc_cy for mouse positions
+; and register Y
+; return ms_curr_component_id, ms_curr_component_ofs and ms_curr_data
+; ms_curr_component_ofs and ms_curr_data are not returned if ms_curr_component's bit 7 is set
+
 check_button:
    ; check if mouse is over the button
    iny
@@ -650,11 +684,13 @@ check_arrowed_edit:
    lsr ; we want cursor position in whole characters (8 pixel multiples), not half characters (4 pixel multiples)
    sec
    sbc (gc_pointer), y ; subtract edit's position. so all valid values are smaller than edit size
-   iny
+   iny ; X
    cmp #6 ; size of arrowed edit
    bcc :+
-   iny
-   iny
+   iny ; Y
+   iny ; min
+   iny ; max
+   iny ; val
    jmp check_gui_loop
 :  ; correct x range. Now check for click on one of the arrows
    cmp #0 ; arrow to the left
@@ -671,14 +707,14 @@ check_arrowed_edit:
    lsr
    cmp (gc_pointer), y
    beq :+ ; only if it's equal
-   iny
-   iny
-   iny
-   iny
+   iny ; Y
+   iny ; min
+   iny ; max
+   iny ; val
    jmp check_gui_loop
 :  ; mouse is at correct height
-   iny
-   iny
+   iny ; Y
+   iny ; min
    lda ca_which_arrow
    sta ms_curr_data
    tya ; determine offset in component-string
@@ -687,8 +723,8 @@ check_arrowed_edit:
    sta ms_curr_component_ofs
    lda gc_counter
    sta ms_curr_component_id
-   iny
-   iny
+   iny ; max
+   iny ; val
    rts
 
 
@@ -751,24 +787,21 @@ draw_env:
    jsr guiutils::draw_frame
    rts
 
+draw_snav:
+   ; TODO
+   rts
+
 ; panels' click subroutines
 ; -------------------------
 ; expect ce_pointer to contain the pointer to the corresponding GUI component string
+; and mouse variables set according to the click action, that is
+; ms_curr_component_id
+; ms_curr_component_ofs
+; ms_curr_panel
+; ms_curr_data
 
 ; click subroutine of the global settings panel
 click_global:
-   lda ms_curr_component_id
-   cmp #0
-   beq @timbre_selector
-   rts
-@timbre_selector:
-   ; read data from component string and write it to the Timbre setting
-   lda ms_curr_component_ofs
-   clc
-   adc #5
-   tay
-   lda (ce_pointer), y
-   sta Timbre
    rts
 
 ; oscillator panel being clicked
@@ -791,6 +824,21 @@ click_env:
    sta env::active_tab
 :  rts
 
+click_snav:
+   lda ms_curr_component_id
+   cmp #0
+   beq @timbre_selector
+   rts
+@timbre_selector:
+   ; read data from component string and write it to the Timbre setting
+   lda ms_curr_component_ofs
+   clc
+   adc #5
+   tay
+   lda (ce_pointer), y
+   sta Timbre
+   rts
+
 ; something on global panel being dragged
 drag_global:
    rts
@@ -801,6 +849,9 @@ drag_osc:
 
 ; something on envelope panel being dragged
 drag_env:
+   rts
+
+drag_snav:
    rts
 
 .endscope

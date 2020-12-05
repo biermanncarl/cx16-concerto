@@ -52,10 +52,10 @@ mainloop:
    ; GUI
    jsr mouse::mouse_tick
 
-   DISPLAY_BYTE ms_curr_panel, 30, 1
-   DISPLAY_BYTE ms_curr_component_id, 35, 1
-   DISPLAY_BYTE ms_curr_component_ofs, 35, 3
-   DISPLAY_BYTE ms_curr_data, 40, 1
+   DISPLAY_BYTE ms_curr_panel, 30, 58
+   DISPLAY_BYTE ms_curr_component_id, 35, 58
+   DISPLAY_BYTE ms_curr_component_ofs, 35, 56
+   DISPLAY_BYTE ms_curr_data, 40, 58
 
    ; clear voices that have been released
    jsr voices::do_stack_releases

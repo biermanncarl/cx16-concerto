@@ -20,7 +20,7 @@ GLOBAL_DEFS_INC = 1
 ; combined colors (foreground & background)
 .define CCOLOR_CAPTION 16*COLOR_BACKGROUND+COLOR_CAPTION
 ; others
-.define N_PANELS 3   ; number of panels 
+.define N_PANELS 4   ; number of panels 
 
 
 ; keyboard variables
