@@ -424,7 +424,7 @@
    ; set mono & porta rate
    lda #30
    sta timbres::Timbre::porta_r, x
-   lda #0
+   lda #1
    sta timbres::Timbre::mono, x
    sta timbres::Timbre::retrig, x
    ; env 0
@@ -449,9 +449,9 @@
    sta timbres::Timbre::env::decayH, x
    ; lfo 0
    ldx #(0*N_TIMBRES+patch_no)
-   lda #4
+   lda #0
    sta timbres::Timbre::lfo::wave, x
-   lda #10
+   lda #14
    sta timbres::Timbre::lfo::rateH, x
    lda #10
    sta timbres::Timbre::lfo::rateL, x
@@ -464,13 +464,13 @@
    ldx #(0*N_TIMBRES+patch_no)
    lda #0
    sta timbres::Timbre::osc::waveform, x
-   lda #50
+   lda #20
    sta timbres::Timbre::osc::pulse, x
    lda #1
    sta timbres::Timbre::osc::pwm_sel, x
-   lda #(0*128+4*16+1)
+   lda #(1*128+0*16+3)
    sta timbres::Timbre::osc::pwm_dep, x
-   lda #244
+   lda #0
    sta timbres::Timbre::osc::pitch, x
    lda #0
    sta timbres::Timbre::osc::fine, x
@@ -484,9 +484,9 @@
    sta timbres::Timbre::osc::vol_mod_dep, x
    lda #1
    sta timbres::Timbre::osc::track, x
-   lda #128
-   sta timbres::Timbre::osc::pitch_mod_sel1, x
    lda #3
+   sta timbres::Timbre::osc::pitch_mod_sel1, x
+   lda #(2*16+8)
    sta timbres::Timbre::osc::pitch_mod_dep1, x
    lda #128
    sta timbres::Timbre::osc::pitch_mod_sel2, x
