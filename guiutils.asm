@@ -223,7 +223,11 @@ print_byte_simple:
    dey
    cpy #48
    bne :+
-   ldy #32
+   ; digit is zero. now it depends on 100s digit, whether it's space or 0
+   ldy display_100s
+   cpy #32
+   beq :+
+   ldy #48
 :  sty display_10s
    ldy #48
 @loop1s:

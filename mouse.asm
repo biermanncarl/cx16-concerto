@@ -50,7 +50,18 @@ mouse_init:
 ; and handles all mouse input. It interprets the mouse data and turns it into messages
 ; that are sent to the GUI components (or rather, decides which GUI subroutines are called).
 mouse_tick:
-   ; get mouse data
+   ; move previous position to ref (only if status is not 0)
+   lda ms_status
+   beq :+
+   lda ms_curr_x
+   sta ms_ref_x
+   lda ms_curr_x+1
+   lda ms_ref_x+1
+   lda ms_curr_y
+   sta ms_ref_y
+   lda ms_curr_y+1
+   lda ms_ref_y+1
+:  ; get mouse data
    mouse_data = mzpwa
    ldx #mouse_data
    jsr MOUSE_GET
@@ -84,10 +95,21 @@ do_idle:
    ; check left
    lda ms_curr_buttons
    and #1
-   beq :++
+   beq :+
    ; left button held down
    lda #ms_hold_L
    sta ms_status
+   jmp @mouse_down_checks
+:  ; check right
+   lda ms_curr_buttons
+   and #2
+   beq :+
+   ; right button held down
+   lda #ms_hold_R
+   sta ms_status
+   jmp @mouse_down_checks
+:  jmp end_mouse_tick
+@mouse_down_checks:
    jsr gui::mouse_get_panel
    lda ms_curr_panel
    bmi :+
@@ -98,15 +120,11 @@ do_idle:
    sta ms_ref_component_ofs
    lda ms_curr_panel
    sta ms_ref_panel ; now move it into "ref" to compare it when mouse button is released (to see if still the same component is being clicked)
-:  jmp end_mouse_tick
-:  ; check right
-   lda ms_curr_buttons
-   and #2
-   beq :+
-   ; left button held down
-   lda #ms_hold_R
-   sta ms_status
-:  jmp end_mouse_tick
+                    ; and for dragging stuff
+   jmp end_mouse_tick
+:  lda #255
+   sta ms_ref_panel
+   jmp end_mouse_tick
 
 ; left button is held down. (and no other button has been pressed)
 do_hold_L:
@@ -154,7 +172,10 @@ do_hold_L:
    and #1
    beq :+
    ; left one is still being pressed. do dragging
-   nop ; TODO
+   ; left mouse button dragging = 0 in ms_curr_data
+   lda #0
+   sta ms_curr_data
+   jmp do_dragging
 :  jmp end_mouse_tick
 
 ; right button is held down. (and no other button has been pressed)
@@ -178,7 +199,25 @@ do_hold_R:
    and #2
    beq :+
    ; right one is still being pressed. do fine dragging
-   nop ; TODO
+   ; right mouse button dragging = 1 in ms_curr_data
+   lda #1
+   sta ms_curr_data
+   jmp do_dragging
+:  jmp end_mouse_tick
+
+do_dragging:
+   ; check if there is actually a component being dragged
+   lda ms_ref_panel
+   bmi :+
+   lda ms_ref_component_id
+   bmi :+
+   ; get Y difference to last frame
+   ; we assume it's smaller than 127, so we ignore the high byte xD
+   lda ms_ref_y
+   sec
+   sbc ms_curr_y
+   sta ms_curr_data2
+   jsr gui::drag_event
 :  jmp end_mouse_tick
 
 ; waiting for buttons to be released to reset a parameter

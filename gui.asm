@@ -69,7 +69,7 @@
       ; GUI component string of oscillator panel
       comps:
          .byte 2, px, py, 6, 0 ; tabselector
-         .byte 4, px+4, py+2, %00000111, 0, 255, 0, 0 ; drag edit
+         .byte 4, px+4, py+2, %00000101, 0, 255, 0, 0 ; drag edit
          .byte 0
       ; caption list of oscillator panel
       capts:
@@ -490,29 +490,100 @@ click_drag_edit:
 
 
 ; drag event. looks in mouse variables which panel's component has been dragged and calls its routine
+; expects L/R information in ms_curr_data (0 for left drag, 1 for right drag)
+; and dragging distance in ms_curr_data2
 drag_event:
-   ; TODO: call component's drag subroutine, to update it.
+   ; call GUI component's drag subroutine, to update it.
+   ; For that, we need the info about the component from the GUI component string
+   ; of the respective panel.
+   de_pointer = mzpwa ; it is important that this is the same as dc_pointer, because this routine indirectly calls "their" subroutine, expecting this pointer at the same place
+   lda ms_ref_panel
+   asl
+   tax
+   lda comps, x
+   sta de_pointer
+   lda comps+1, x
+   sta de_pointer+1   ; put GUI component string pointer to ZP
+   ldy ms_ref_component_ofs ; load component's offset
+   lda (de_pointer), y ; and get its type
+   asl
+   tax
+   ; want to emulate a jsr. need to push return address minus 1 to the stack
+@ret_addrA1 = @ret_addrA-1
+   lda #(>@ret_addrA1)
+   pha
+   lda #(<@ret_addrA1)
+   pha
+   jmp (@jmp_tbl-2,x) ; -2 because there is nothing to do for component type 0
+   ;jmp @ret_addrA
+@jmp_tbl:
+   .word dummy_sr
+   .word dummy_sr
+   .word dummy_sr
+   .word drag_drag_edit
+@ret_addrA:
    ; call panel's drag subroutine, which is part of the interface between GUI and internal data
    lda ms_ref_panel
    asl
    tax
    ; want to emulate a jsr. need to push return address minus 1 to the stack
-@ret_addr1 = @ret_addr-1
-   lda #(>@ret_addr1)
+@ret_addrB1 = @ret_addrB-1
+   lda #(>@ret_addrB1)
    pha
-   lda #(<@ret_addr1)
+   lda #(<@ret_addrB1)
    pha
    jmp (drgs,x)
-@ret_addr:
+@ret_addrB:
    rts
 
 ; GUI component's drag subroutines
 ; ---------------------------------
 ; expect component string's pointer in de_pointer on zero page,
 ; and also the component's offset in ms_ref_component_ofs (not curr!)
-; and drag distance compared to previous frame in ms_curr_data
+; and whether dragging is done with left or right mouse button in ms_curr_data (left=0, right=1)
+; and drag distance compared to previous frame in ms_curr_data2
 
-
+drag_drag_edit:
+   ldy ms_ref_component_ofs
+   iny
+   iny
+   iny
+   lda ms_curr_data
+   beq @left_drag
+   jmp @right_drag
+@left_drag:
+   ; set coarse drag mode
+   lda (de_pointer), y
+   and #%11111101
+   sta (de_pointer), y
+   ; increment
+   iny
+   iny
+   iny
+   lda (de_pointer), y
+   clc
+   adc ms_curr_data2
+   sta (de_pointer), y
+   bra @update_gui
+@right_drag:
+   ; set fine drag mode
+   lda (de_pointer), y
+   ora #%00000010
+   sta (de_pointer), y
+   ; increment
+   iny
+   iny
+   iny
+   iny
+   lda (de_pointer), y
+   clc
+   adc ms_curr_data2
+   sta (de_pointer), y
+@update_gui:
+   ldy ms_ref_component_ofs
+   iny
+   jsr draw_drag_edit
+   rts
 
 
 
@@ -806,7 +877,7 @@ check_drag_edit:
    bbs0 cde_bittest, :+
    inc
 :  ; signed?
-   bbs1 cde_bittest, :+
+   bbs2 cde_bittest, :+
    inc
 :  cmp #5 ; maximal size of drag edit with all options enabled
    bcc :+

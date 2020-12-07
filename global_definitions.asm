@@ -47,7 +47,8 @@ ms_curr_buttons: .byte 0
 ms_curr_panel: .byte 0
 ms_curr_component_id: .byte 0
 ms_curr_component_ofs: .byte 0
-ms_curr_data: .byte 0 ; used to store the current tab selected
+ms_curr_data: .byte 0 ; used to store the current tab selected, which arrow is clicked etc.
+ms_curr_data2: .byte 0 ; used to store dragging distance (y direction)
 
 
 
