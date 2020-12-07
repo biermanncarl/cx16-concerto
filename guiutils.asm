@@ -518,6 +518,7 @@ draw_arrowed_edit:
 ; data1: number on display
 ; data2: bit 0: coarse/fine available, bit1: coarse/fine switch, bit2: signed
 draw_drag_edit:
+   dde_bittest = mzpbg ; mzpbg used! (use something else for bit-testing if this clashes with something else)
    lda draw_x
    sta cur_x
    lda draw_y
@@ -526,12 +527,13 @@ draw_drag_edit:
    sei
    jsr set_cursor
    lda draw_data2
-   sta mzpba   ; mzpba used! (use something else for bit-testing if this clashes with something else)
-   bbs2 mzpba, @signed
+   sta dde_bittest   
+   bbs2 dde_bittest, @signed
 @unsigned:
-   lda #32
-   sta VERA_data0
-   stx VERA_data0
+   ; this additional spacebar was intended to keep all option the same size. But I want usigned edits to appear smaller, so commenting this out
+   ;lda #32
+   ;sta VERA_data0
+   ;stx VERA_data0
    bra @check_fine_coarse
 @signed:
    lda draw_data1
@@ -549,9 +551,9 @@ draw_drag_edit:
    sta VERA_data0
    stx VERA_data0
 @check_fine_coarse:
-   bbr0 mzpba, @no_coarse_fine ; fine/coarse ?
+   bbr0 dde_bittest, @no_coarse_fine ; fine/coarse ?
    ; here we are doing fine/coarse
-   bbs1 mzpba, @fine ; doing fine?
+   bbs1 dde_bittest, @fine ; doing fine?
 @coarse:
    lda draw_data1
    jsr print_byte_simple
@@ -571,9 +573,9 @@ draw_drag_edit:
 @no_coarse_fine:
    lda draw_data1
    jsr print_byte_simple
-   lda #32
-   sta VERA_data0
-   stx VERA_data0
+   ;lda #32          ; Here too: no additional space, if no fine mode available -> Edit will be smaller
+   ;sta VERA_data0
+   ;stx VERA_data0
    cli
    rts
 

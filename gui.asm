@@ -23,12 +23,14 @@
 ; 1: button, followed by x and y position (absolute), and width, and address of string
 ; 2: tab selector, followed by x and y position (abs), number of tabs, and active tab
 ; 3: arrowed edit, followed by x and y position (abs), min value, max value, value
-; 4: dragging edit, followed by x and y position (abs), options (flags), min value, max value, fine value, coarse value
+; 4: dragging edit, followed by x and y position (abs), options (flags), min value, max value, coarse value, fine value
 
 ; drag edit flags options:
 ; bit 0: coarse/fine option enabled
 ; bit 1: fine active
 ; bit 2: signed
+; options irrelevant for drawing the component:
+; bit 7: zero forbidden (for signed scale5 values)
 
 
 
@@ -67,7 +69,7 @@
       ; GUI component string of oscillator panel
       comps:
          .byte 2, px, py, 6, 0 ; tabselector
-         ;.byte 4, px+2, py+2, 255, 0, 255, 0, 0 ; drag edit
+         .byte 4, px+4, py+2, %00000111, 0, 255, 0, 0 ; drag edit
          .byte 0
       ; caption list of oscillator panel
       capts:
@@ -270,13 +272,14 @@ draw_components:
    .word dummy_sr  ; button
    .word draw_tab_select  ; tab-select (no drawing routine, drawing is done in panel-specific routine)
    .word draw_arrowed_edit  ; arrowed edit
-   .word dummy_sr  ; drag edit
+   .word draw_drag_edit ; drag edit
 @end_loop:
    rts
 
 ; GUI components' drawing routines
 ; --------------------------------
 ; expect GUI component string address in dc_pointer, and offset (+1) in register Y
+; and are expected to advance register Y to the start of the next component
 
 draw_tab_select:
    lda (dc_pointer), y
@@ -297,7 +300,6 @@ draw_tab_select:
    ply
    rts
 
-; expects GUI component string address in mzpwa, and offset (+1) in register Y
 draw_arrowed_edit:
    lda (dc_pointer), y
    sta guiutils::draw_x
@@ -315,6 +317,37 @@ draw_arrowed_edit:
    ply
    rts
 
+; 4: dragging edit, followed by x and y position (abs), options (flags), min value, max value, coarse value, fine value
+draw_drag_edit:
+   lda (dc_pointer), y
+   sta guiutils::draw_x
+   iny
+   lda (dc_pointer), y
+   sta guiutils::draw_y
+   iny
+   lda (dc_pointer), y
+   and #%01111111    ; get rid of drawing-irrelevant bits
+   sta guiutils::draw_data2
+   ; select fine or coarse value:
+   lda (dc_pointer), y
+   iny
+   iny
+   iny
+   and #%00000010
+   beq :+
+   ; fine
+   iny
+   lda (dc_pointer), y
+   bra :++
+:  ; coarse
+   lda (dc_pointer), y
+   iny
+:  sta guiutils::draw_data1
+   iny
+   phy
+   jsr guiutils::draw_drag_edit
+   ply
+   rts
 
 
 ; click event. looks in mouse variables which panel has been clicked and calls its routine
@@ -473,6 +506,19 @@ drag_event:
 @ret_addr:
    rts
 
+; GUI component's drag subroutines
+; ---------------------------------
+; expect component string's pointer in de_pointer on zero page,
+; and also the component's offset in ms_ref_component_ofs (not curr!)
+; and drag distance compared to previous frame in ms_curr_data
+
+
+
+
+
+
+
+
 ; returns the panel index the mouse is currently over. Bit 7 set means none
 ; panel index returned in ms_curr_panel
 mouse_get_panel:
@@ -601,6 +647,7 @@ check_gui_loop:
    .word check_button
    .word check_tab_selector
    .word check_arrowed_edit
+   .word check_drag_edit
 @end_gui:
    lda #255 ; none found
    sta ms_curr_component_id
@@ -609,9 +656,15 @@ check_gui_loop:
 ; component checks (part of mouse_get_component_subroutine)
 ; ---------------------------------------------------------
 ; expect ms_curr_panel and gc_pointer to be set, also gc_cx and gc_cy for mouse positions
-; and register Y
-; return ms_curr_component_id, ms_curr_component_ofs and ms_curr_data
+; and register Y to be at the first "data" position of the component (one past the identifier byte).
+; The return procedure is as follows:
+; If a click has been registered, the variables 
+; ms_curr_component_id, ms_curr_component_ofs and ms_curr_data
+; have to be set, and RTS called to exit the check.
+; If no click has been registered, JMP check_gui_loop is called to continue checking.
 ; ms_curr_component_ofs and ms_curr_data are not returned if ms_curr_component's bit 7 is set
+; The checks are expected to advance the Y register to the start of the next component, in the case
+; that there was no click detected, so the checks can continue with the next component.
 
 check_button:
    ; check if mouse is over the button
@@ -723,10 +776,63 @@ check_arrowed_edit:
    sta ms_curr_component_ofs
    lda gc_counter
    sta ms_curr_component_id
-   iny ; max
-   iny ; val
    rts
 
+; check drag edit for mouse click
+check_drag_edit:
+   cde_bittest = mzpbg
+   ; this is basically an "mouse is inside box" check
+   ; with variable width
+   ; get edit's options
+   iny
+   iny
+   lda (gc_pointer), y
+   dey
+   dey
+   sta cde_bittest
+   ; check x direction
+   lda gc_cx
+   lsr
+   sec
+   sbc (gc_pointer), y
+   iny
+   ; now A must be smaller than the edit's width,
+   ; which is, however, dependent on the edit's options.
+   ; We first check if it's smaller than the maximally possible width.
+   cmp #5
+   bcs @exit_from_y
+   ; Now we increase A if a smaller option is active, thus making it "harder" to be inside
+   ; coarse/fine switch?
+   bbs0 cde_bittest, :+
+   inc
+:  ; signed?
+   bbs1 cde_bittest, :+
+   inc
+:  cmp #5 ; maximal size of drag edit with all options enabled
+   bcc :+
+   ; we're out
+@exit_from_y:
+   iny
+   iny
+   iny
+   iny
+   iny
+   iny
+   jmp check_gui_loop
+:  ; we're in
+   ; check y direction
+   lda gc_cy
+   lsr
+   cmp (gc_pointer), y
+   bne @exit_from_y
+   ; we're in
+   tya
+   dec
+   dec
+   sta ms_curr_component_ofs
+   lda gc_counter
+   sta ms_curr_component_id
+   rts
 
 
 

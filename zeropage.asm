@@ -27,3 +27,5 @@ mzpbe:   .byte 0
 mzpbf:   .byte 0
 ; my zero page bytes (ISR)
 mzpbg:   .byte 0
+; my zero page bytes (main program)
+mzpbh:   .byte 0
