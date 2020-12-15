@@ -39,9 +39,9 @@ start:
    ;PRESET_LEAD_2 0
    PRESET_ONE_OSC_PATCH 0
    PRESET_BRIGHT_PLUCK 1
-   PRESET_LEAD_2 2
-   PRESET_KICK_DRUM_2 3
-   PRESET_SNARE_DRUM_3 4
+   PRESET_KEY_1 2
+   PRESET_KICK_DRUM_3 3
+   PRESET_SNARE_DRUM_5 4
 
    ; do other initializations
    jsr voices::init_voicelist

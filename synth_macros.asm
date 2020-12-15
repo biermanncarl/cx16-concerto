@@ -510,24 +510,22 @@ SYNTH_MACROS_INC = 1
 ; and %LLL is the number of the sub-level
 .macro VOLUME_SCALE5_8 moddepth
     ; initialize zero page 8 bit value
-    sta mzpwb   ; only low byte is used  (3 cycles)
+    sta mzpwb   ; only low byte is used  (3 cycles) (except for the very end)
 
     ; do %0HHH rightshifts (highest bit is discarded, because 7 rightshifts is maximum)
     ; TODO: check highest bit first ... (if that gives us any advantage)
     .local @endH
     .local @loopH
     .local @skipH2
-    clc ; do a clc so every branch below can assume carry is cleared
-    ; check bit 2, and do 4 RORs if it's set
     lda moddepth, y
     and #%00000100
     beq @skipH2 ; or skip this part if it's clear
     lda mzpwb
     and #%11110000
-    ror
-    ror
-    ror
-    ror
+    lsr
+    lsr
+    lsr
+    lsr
     sta mzpwb
 @skipH2:
     lda moddepth, y
@@ -538,8 +536,7 @@ SYNTH_MACROS_INC = 1
     tax
     lda mzpwb
 @loopH:
-    ror
-    clc ; doing clc after, because we assume it's cleared and we leave it clear (just as we do with toilets)
+    lsr
     dex
     bne @loopH
     plx
@@ -557,10 +554,9 @@ SYNTH_MACROS_INC = 1
     lda moddepth, y
     and #%01110000
     beq :+
-    clc
-    ror
-    ror
-    ror
+    lsr
+    lsr
+    lsr
     tax
     jmp (@tableL-2, x)  ; if x=0, nothing has to be done. if x=2,4,6 or 8, jump to respective subroutine
 :   lda mzpwb
@@ -574,36 +570,34 @@ SYNTH_MACROS_INC = 1
 @sublevel_1:
     ; 2^(1/5) ~= %1.001
     lda mzpwb
-    and #%11111000  ; saves 3 clc=4 cycles, adds 2 cycles --> saves 4 cycles
-    ; no clc is needed in the beginning, since the select subroutine code guarantees it's cleared
-    ror
-    ror
-    ror
+    lsr
+    lsr
+    lsr
+    clc
     adc mzpwb
     jmp @endL  ; 17 cycles
 @sublevel_2:
     ; 2^(2/5) ~= %1.01
     ; refer to @sublevel_1 for code commentary
     lda mzpwb
-    and #%11111100
-    ror
-    ror
+    lsr
+    lsr
+    clc
     adc mzpwb
     jmp @endL  ; 15 cycles
 @sublevel_3:
     ; 2^(3/5) ~= %1.1
     lda mzpwb
-    ror
+    lsr
     clc
     adc mzpwb
     jmp @endL  ; 13 cycles
 @sublevel_4:
     ; 2^(4/5) ~= %1.11
     lda mzpwb
-    ror
+    lsr
     sta mzpwb+1 ; save intermediate
-    clc
-    ror
+    lsr
     clc
     adc mzpwb+1 ; no clc after this ... if we get a carry, result is broken anyway
     adc mzpwb   ; 20 cycles
