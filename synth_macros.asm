@@ -61,8 +61,8 @@ SYNTH_MACROS_INC = 1
 ; mutes PSG voice with index stored in register X
 .macro VERA_MUTE_VOICE_X
     lda #$11
-	sta VERA_addr_bank
-	lda #$F9
+    sta VERA_addr_bank
+    lda #$F9
 	sta VERA_addr_high
     txa
     asl
@@ -107,7 +107,16 @@ SYNTH_MACROS_INC = 1
 ; computes the frequency of a given pitch+fine combo
 ; may have to redo it with indirect mode for more flexibility later
 ; Pitch Computation Variables
+; TODO: replace some CLC-ROR by LSR
 .macro COMPUTE_FREQUENCY cf_pitch, cf_fine, cf_output ; done in ISR
+   .local @skip_bit0
+   .local @skip_bit1
+   .local @skip_bit2
+   .local @skip_bit3
+   .local @skip_bit4
+   .local @skip_bit5
+   .local @skip_bit6
+   .local @skip_bit7
    ldx cf_pitch
    ; copy lower frequency to output
    lda pitch_dataL,x
@@ -231,6 +240,77 @@ SYNTH_MACROS_INC = 1
 .endmacro
 
 
+; This macro multiplies the value in the accumulator with a value in memory.
+; The result will be right-shifted 7 times,
+; meaning that multiplicating with 128 is actually multiplicating with 1.
+; The result is returned in the accumulator.
+.macro SCALE_U8 su8_value
+   .local @skip_bit0
+   .local @skip_bit1
+   .local @skip_bit2
+   .local @skip_bit3
+   .local @skip_bit4
+   .local @skip_bit5
+   .local @skip_bit6
+   .local @skip_bit7
+   ; ZP variables available for multiplication:
+   ; mzpwb, mzpbf
+   sta mzpwb   ; this will hold the right-shifted value
+   lda su8_value
+   sta mzpbf   ; this is used for bit-testing
+   lda #0
+
+   bbr7 mzpbf, @skip_bit7
+   clc
+   adc mzpwb
+@skip_bit7:
+   lsr mzpwb
+
+   bbr6 mzpbf, @skip_bit6
+   clc
+   adc mzpwb
+@skip_bit6:
+   lsr mzpwb
+
+   bbr5 mzpbf, @skip_bit5
+   clc
+   adc mzpwb
+@skip_bit5:
+   lsr mzpwb
+
+   bbr4 mzpbf, @skip_bit4
+   clc
+   adc mzpwb
+@skip_bit4:
+   lsr mzpwb
+
+   bbr3 mzpbf, @skip_bit3
+   clc
+   adc mzpwb
+@skip_bit3:
+   lsr mzpwb
+
+   bbr2 mzpbf, @skip_bit2
+   clc
+   adc mzpwb
+@skip_bit2:
+   lsr mzpwb
+
+   bbr1 mzpbf, @skip_bit1
+   clc
+   adc mzpwb
+@skip_bit1:
+   lsr mzpwb
+
+   bbr0 mzpbf, @skip_bit0
+   clc
+   adc mzpwb
+@skip_bit0:
+   ; worst case: 103 cycles.
+   ; this is actually much better than I hoped for.
+   ; Computing with 8 bits is really fast compared to 16 bits!
+   ; This renders the Scale5 technique way less useful than I initially thought.
+.endmacro
 
 
 

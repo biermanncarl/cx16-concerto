@@ -6,6 +6,7 @@
 
 voi_pitch:     .byte 0
 voi_fine:      .byte 0
+voi_volume:    .byte 0
 osc_pitch:     .byte 0
 osc_fine:      .byte 0
 osc_freq:      .word 0
@@ -13,6 +14,41 @@ osc_volume:    .byte 0
 osc_wave:      .byte 0
 osc_pw:        .byte 0
 osc_panmute:   .byte 0
+
+
+
+; MODULATION DEPTH NUMBER FORMAT
+; ------------------------------
+; Modulation depths have different formats.
+; Some are signed or unsigned binary numbers.
+; However, there is one special format termed Scale5, which is
+; intended to be a cheap approximation of exponential
+; scaling.
+; An ordinary binary number N and a Scale5 number
+; are multiplied the following way.
+; The Scale5 number format is as follows. The 8 bits are assigned as
+; SLLLHHHH
+; S is the sign of the modulation depth
+; HHHH (sometimes only 0HHH) is a binary number indicating how many
+; times N gets right shifted.
+; LLL is a binary number that must assume a value from 0 to 4.
+; It is one of five sub-levels between powers of 2.
+; Since the right shifts can only produce divisions with powers of 2,
+; these sub-levels are intended to fill in the gaps between powers of 2
+; as evenly as possible.
+; Beware: HHHH denotes how much N is scaled DOWN
+; LLL denotes how much N is scaled UP (but only just below the next power of 2)
+; I know ... a bit complicated. Sorry pals.
+; Believe me, it's faster than plain 8 bit multiplication.
+; Basically, you can multiply with one of the five binary numbers
+; %1.000
+; %1.001
+; %1.010
+; %1.100
+; %1.110
+; and right shift the result up to 7 or 15 right shifts. (only in practice, the right shift is done first)
+; These values are chosen to be distributed relatively evenly on an exponential scale.
+
 
 ; MODULATION SOURCE NUMBER FORMAT
 ; -------------------------------
@@ -610,6 +646,8 @@ end_env: ; jump here when done with all envelopes
    stz osc_counter
    lda voice_index
    sta osc_offset
+   lda voices::Voice::volume, x
+   sta voi_volume
 
 next_osc:
 
@@ -623,7 +661,7 @@ next_osc:
    ; modulate volume
    ldx timbres::Timbre::osc::vol_mod_sel, y
    bpl :+
-   jmp @do_volume_knob
+   jmp @do_volume_knobs
 :  lda voi_modsourcesH, x
    SCALE5_6 timbres::Timbre::osc::vol_mod_dep
    clc
@@ -631,17 +669,19 @@ next_osc:
    ; clamp to valid range
    cmp #63
    bcs :+   ; if carry clear, we are in valid range
-   bra @do_volume_knob
+   bra @do_volume_knobs
 :  ; if carry set, we have to clamp range
    ; if we're below 159, set to 63. if we're above 159, set to 0
    cmp #159
    bcc :+ ; if carry set, we set 0
    lda #0
-   bra @do_volume_knob
+   bra @do_volume_knobs
 :  lda #63  ; if carry clear, we set 63
-@do_volume_knob:
+@do_volume_knobs:
    ; multiply with oscillator volume setting, input and output via register A
    VOLUME_SCALE5_8 timbres::Timbre::osc::volume
+   ; multiply with voice's volume
+   SCALE_U8 voi_volume
    ; do channel selection
 @do_channel_selection:
    clc

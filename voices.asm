@@ -10,7 +10,7 @@ note_timbre:
    .byte 0
 note_pitch:
    .byte 0
-note_velocity:
+note_volume:
    .byte 0
 
 ; internal data for synth
@@ -19,7 +19,7 @@ note_velocity:
 
    ; general
    pitch:     VOICE_BYTE_FIELD
-   velocity:  VOICE_BYTE_FIELD
+   volume:    VOICE_BYTE_FIELD   ; voice's volume can be modified in real time. 128 is full volume, everything below is more quiet.
    timbre:    VOICE_BYTE_FIELD   ; which synth patch to use
 
    ; envelopes
@@ -268,7 +268,7 @@ rts
 
 
 
-; plays a note. needs info for pitch, velocity and timbre
+; plays a note. needs info for pitch, volume and timbre
 ; in this subroutine, register X usually contains the index of the voice
 play_note:
    ; do resource investigation/acquisition
@@ -418,8 +418,8 @@ play_note:
    ; other stuff
    lda note_pitch
    sta Voice::pitch, x
-   lda note_velocity
-   sta Voice::velocity, x
+   lda note_volume
+   sta Voice::volume, x
    lda note_timbre
    sta Voice::timbre, x
 
