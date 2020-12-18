@@ -18,6 +18,7 @@
 .include "timbres.asm"
 .include "voices.asm"
 .include "synth_engine.asm"
+.include "player.asm"
 .include "my_isr.asm"
 .include "guiutils.asm"
 .include "gui.asm"

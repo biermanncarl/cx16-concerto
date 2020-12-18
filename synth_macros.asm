@@ -240,84 +240,6 @@ SYNTH_MACROS_INC = 1
 .endmacro
 
 
-; This macro multiplies the value in the accumulator with a value in memory.
-; The result will be right-shifted 7 times,
-; meaning that multiplying with 128 is actually multiplying with 1.
-; The result is returned in the accumulator.
-; Index denotes, whether the memory held value is indexed by X (1), by Y (2), or not at all (0)
-.macro SCALE_U8 su8_value, index
-   .local @skip_bit0
-   .local @skip_bit1
-   .local @skip_bit2
-   .local @skip_bit3
-   .local @skip_bit4
-   .local @skip_bit5
-   .local @skip_bit6
-   .local @skip_bit7
-   ; ZP variables available for multiplication:
-   ; mzpwb, mzpbf
-   sta mzpwb   ; this will hold the right-shifted value
-   .if(index=0)
-      lda su8_value
-   .endif
-   .if(index=1)
-      lda su8_value, x
-   .endif
-   .if(index=2)
-      lda su8_value, y
-   .endif
-   sta mzpbf   ; this is used for bit-testing
-   lda #0
-
-   bbr7 mzpbf, @skip_bit7
-   clc
-   adc mzpwb
-@skip_bit7:
-   lsr mzpwb
-
-   bbr6 mzpbf, @skip_bit6
-   clc
-   adc mzpwb
-@skip_bit6:
-   lsr mzpwb
-
-   bbr5 mzpbf, @skip_bit5
-   clc
-   adc mzpwb
-@skip_bit5:
-   lsr mzpwb
-
-   bbr4 mzpbf, @skip_bit4
-   clc
-   adc mzpwb
-@skip_bit4:
-   lsr mzpwb
-
-   bbr3 mzpbf, @skip_bit3
-   clc
-   adc mzpwb
-@skip_bit3:
-   lsr mzpwb
-
-   bbr2 mzpbf, @skip_bit2
-   clc
-   adc mzpwb
-@skip_bit2:
-   lsr mzpwb
-
-   bbr1 mzpbf, @skip_bit1
-   clc
-   adc mzpwb
-@skip_bit1:
-   lsr mzpwb
-
-   bbr0 mzpbf, @skip_bit0
-   clc
-   adc mzpwb
-@skip_bit0:
-   ; worst case: 103 cycles. best case: 71 cycles. Average: 87 cycles.
-.endmacro
-
 
 ; This macro multiplies the value in the accumulator with a value in memory.
 ; Only the 7 lowest bits of the memory value are considered.
@@ -771,6 +693,87 @@ SYNTH_MACROS_INC = 1
 @endS:
     ; 35 cycles
     ; worst case overall: 35 + 64 + 24 + 107 + 14 = 244 cycles ... much more than I hoped. (even more now with proper sign handling)
+.endmacro
+
+
+
+
+; This macro multiplies the value in the accumulator with a value in memory.
+; The result will be right-shifted 7 times,
+; meaning that multiplying with 128 is actually multiplying with 1.
+; The result is returned in the accumulator.
+; Index denotes, whether the memory held value is indexed by X (1), by Y (2), or not at all (0)
+.macro SCALE_U8 su8_value, index
+   .local @skip_bit0
+   .local @skip_bit1
+   .local @skip_bit2
+   .local @skip_bit3
+   .local @skip_bit4
+   .local @skip_bit5
+   .local @skip_bit6
+   .local @skip_bit7
+   ; ZP variables available for multiplication:
+   ; mzpwb, mzpbf
+   sta mzpwb   ; this will hold the right-shifted value
+   .if(index=0)
+      lda su8_value
+   .endif
+   .if(index=1)
+      lda su8_value, x
+   .endif
+   .if(index=2)
+      lda su8_value, y
+   .endif
+   sta mzpbf   ; this is used for bit-testing
+   lda #0
+
+   bbr7 mzpbf, @skip_bit7
+   clc
+   adc mzpwb
+@skip_bit7:
+   lsr mzpwb
+
+   bbr6 mzpbf, @skip_bit6
+   clc
+   adc mzpwb
+@skip_bit6:
+   lsr mzpwb
+
+   bbr5 mzpbf, @skip_bit5
+   clc
+   adc mzpwb
+@skip_bit5:
+   lsr mzpwb
+
+   bbr4 mzpbf, @skip_bit4
+   clc
+   adc mzpwb
+@skip_bit4:
+   lsr mzpwb
+
+   bbr3 mzpbf, @skip_bit3
+   clc
+   adc mzpwb
+@skip_bit3:
+   lsr mzpwb
+
+   bbr2 mzpbf, @skip_bit2
+   clc
+   adc mzpwb
+@skip_bit2:
+   lsr mzpwb
+
+   bbr1 mzpbf, @skip_bit1
+   clc
+   adc mzpwb
+@skip_bit1:
+   lsr mzpwb
+
+   bbr0 mzpbf, @skip_bit0
+   clc
+   adc mzpwb
+@skip_bit0:
+   ; worst case: 103 cycles. best case: 71 cycles. Average: 87 cycles.
 .endmacro
 
 

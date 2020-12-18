@@ -113,7 +113,7 @@ do_fillup:
 
    ; now do all PSG control
 do_psg_control:
-
+   jsr player::player_tick
    jsr synth_engine::synth_tick
 
 end_aflow:
