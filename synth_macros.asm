@@ -306,10 +306,10 @@ SYNTH_MACROS_INC = 1
    clc
    adc mzpwb
 @skip_bit0:
-   ; worst case: 103 cycles.
+   ; worst case: 103 cycles. best case: 71 cycles. Average: 87 cycles.
    ; this is actually much better than I hoped for.
    ; Computing with 8 bits is really fast compared to 16 bits!
-   ; This renders the Scale5 technique way less useful than I initially thought.
+   ; This renders the Scale5 approach less useful.
 .endmacro
 
 
@@ -601,7 +601,6 @@ SYNTH_MACROS_INC = 1
     and #%00000100
     beq @skipH2 ; or skip this part if it's clear
     lda mzpwb
-    and #%11110000
     lsr
     lsr
     lsr
@@ -620,7 +619,13 @@ SYNTH_MACROS_INC = 1
     dex
     bne @loopH
     plx
-    sta mzpwb   ; worst case: 7 rightshifts, makes 45 + 3*9 = 72 cycles  (naive approach without bit 2 checking would be 84 ... almost not worth it to check it separately)
+    sta mzpwb
+    ; worst case: 7 rightshifts, 66 cycles  (naive approach without bit 2 checking would be 72 ... almost not worth it to check it separately)
+    ; complex approach
+    ; cycle counts for all 8 cases: 7->66, 6->59, 5->52, 4->34, 3->51, 2->44, 1->37, 0->23  Average: 46
+    ; naive approach
+    ; cycle counts for all 8 cases: 7->72, 6->55, 5->48, 4->40, 3->34, 2->27, 1->20, 0->14  Average: 39
+    ; and since bigger modulations are more often used, the naive approach is better.
 @endH:
 
     ; do sublevel scaling
@@ -638,7 +643,7 @@ SYNTH_MACROS_INC = 1
     lsr
     lsr
     tax
-    jmp (@tableL-2, x)  ; if x=0, nothing has to be done. if x=2,4,6 or 8, jump to respective subroutine
+    jmp (@tableL-2, x)  ; if x=0, nothing has to be done. if x=2,4,6 or 8, jump to respective subroutine --- 22 cycles
 :   lda mzpwb
     jmp @endL
     ; 24 cycles
@@ -680,11 +685,14 @@ SYNTH_MACROS_INC = 1
     lsr
     clc
     adc mzpwb+1 ; no clc after this ... if we get a carry, result is broken anyway
-    adc mzpwb   ; 20 cycles
+    adc mzpwb   ; 18 cycles
 @endL:
-    ; result is in register A
+    ; worst case L: 40 cycles.
+    ; average: 4->40, 3->35, 2->37, 1->39, 0->15  Average: 33
+    ; worst case overall: 112 cycles (with naive approach)
+    ; average overall: 72 (with naive approach)
 
-    ; worst case overall: 20 + 24 + 72 + 3 = 119 cycles ... more than I hoped.
+    ; result is in register A
 .endmacro
 
 
