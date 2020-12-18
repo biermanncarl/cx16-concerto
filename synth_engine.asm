@@ -663,7 +663,7 @@ next_osc:
    bpl :+
    jmp @do_volume_knobs
 :  lda voi_modsourcesH, x
-   SCALE5_6 timbres::Timbre::osc::vol_mod_dep
+   SCALE_S6 timbres::Timbre::osc::vol_mod_dep, 2
    clc
    adc osc_volume   ; add modulation to amp envelope
    ; clamp to valid range
@@ -679,9 +679,9 @@ next_osc:
 :  lda #63  ; if carry clear, we set 63
 @do_volume_knobs:
    ; multiply with oscillator volume setting, input and output via register A
-   VOLUME_SCALE5_8 timbres::Timbre::osc::volume
+   SCALE_U7 timbres::Timbre::osc::volume, 2
    ; multiply with voice's volume
-   SCALE_U8 voi_volume
+   SCALE_U7 voi_volume, 0
    ; do channel selection
 @do_channel_selection:
    clc
@@ -743,7 +743,7 @@ next_osc:
    bpl :+
    jmp @end_pwm
 :  lda voi_modsourcesH, x
-   SCALE5_6 timbres::Timbre::osc::pwm_dep
+   SCALE_S6 timbres::Timbre::osc::pwm_dep, 2
    clc
    adc osc_wave   ; add static pulse width to mpdulation signal
    ; clamp to valid range

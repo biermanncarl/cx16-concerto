@@ -44,6 +44,8 @@
    sta timbres::Timbre::osc::lrmid, x
    lda #0
    sta timbres::Timbre::osc::amp_sel, x
+   lda #64
+   sta timbres::Timbre::osc::volume, x
    lda #128
    sta timbres::Timbre::osc::vol_mod_sel, x
    lda #(0)
@@ -66,6 +68,8 @@
    sta timbres::Timbre::osc::lrmid, x
    lda #0
    sta timbres::Timbre::osc::amp_sel, x
+   lda #64
+   sta timbres::Timbre::osc::volume, x
    lda #128
    sta timbres::Timbre::osc::vol_mod_sel, x
    lda #(0)
@@ -88,6 +92,8 @@
    sta timbres::Timbre::osc::lrmid, x
    lda #0
    sta timbres::Timbre::osc::amp_sel, x
+   lda #64
+   sta timbres::Timbre::osc::volume, x
    lda #128
    sta timbres::Timbre::osc::vol_mod_sel, x
    lda #(0)
@@ -638,11 +644,11 @@
    sta timbres::Timbre::osc::lrmid, x
    lda #2
    sta timbres::Timbre::osc::amp_sel, x
-   lda #(0 * 16 + 0)
+   lda #64
    sta timbres::Timbre::osc::volume, x
    lda #0
    sta timbres::Timbre::osc::vol_mod_sel, x
-   lda #(2)
+   lda #(16)
    sta timbres::Timbre::osc::vol_mod_dep, x
    lda #0
    sta timbres::Timbre::osc::track, x
@@ -662,7 +668,7 @@
    sta timbres::Timbre::osc::pitch, x
    lda #0
    sta timbres::Timbre::osc::fine, x
-   lda #(0 * 16 + 0)
+   lda #64
    sta timbres::Timbre::osc::volume, x
    lda #192
    sta timbres::Timbre::osc::lrmid, x
@@ -670,7 +676,7 @@
    sta timbres::Timbre::osc::amp_sel, x
    lda #2
    sta timbres::Timbre::osc::vol_mod_sel, x
-   lda #(128+16*2+2)
+   lda #(128+20)
    sta timbres::Timbre::osc::vol_mod_dep, x
    lda #0
    sta timbres::Timbre::osc::track, x
@@ -698,7 +704,7 @@
    sta timbres::Timbre::osc::lrmid, x
    lda #1
    sta timbres::Timbre::osc::amp_sel, x
-   lda #(0 * 16 + 0)
+   lda #64
    sta timbres::Timbre::osc::volume, x
    lda #128
    sta timbres::Timbre::osc::vol_mod_sel, x
@@ -803,11 +809,11 @@
    ldx #(0*N_TIMBRES+patch_no)
    lda #0
    sta timbres::Timbre::osc::waveform, x
-   lda #20
+   lda #30
    sta timbres::Timbre::osc::pulse, x
    lda #1
    sta timbres::Timbre::osc::pwm_sel, x
-   lda #(1*128+0*16+3)
+   lda #(1*128+20)
    sta timbres::Timbre::osc::pwm_dep, x
    lda #0
    sta timbres::Timbre::osc::pitch, x
@@ -817,6 +823,8 @@
    sta timbres::Timbre::osc::lrmid, x
    lda #0
    sta timbres::Timbre::osc::amp_sel, x
+   lda #64
+   sta timbres::Timbre::osc::volume, x
    lda #128
    sta timbres::Timbre::osc::vol_mod_sel, x
    lda #(0)
@@ -876,7 +884,7 @@
    sta timbres::Timbre::osc::pitch, x
    lda #0
    sta timbres::Timbre::osc::fine, x
-   lda #(0 * 16 + 0)
+   lda #128
    sta timbres::Timbre::osc::volume, x
    lda #192
    sta timbres::Timbre::osc::lrmid, x
@@ -900,7 +908,7 @@
    sta timbres::Timbre::osc::pitch, x
    lda #0
    sta timbres::Timbre::osc::fine, x
-   lda #(2 * 16 + 1)
+   lda #80
    sta timbres::Timbre::osc::volume, x
    lda #192
    sta timbres::Timbre::osc::lrmid, x
@@ -924,7 +932,7 @@
    sta timbres::Timbre::osc::pitch, x
    lda #0
    sta timbres::Timbre::osc::fine, x
-   lda #(2 * 16 + 2)
+   lda #40
    sta timbres::Timbre::osc::volume, x
    lda #192
    sta timbres::Timbre::osc::lrmid, x
@@ -1118,7 +1126,7 @@
    sta timbres::Timbre::osc::pulse, x
    lda #128
    sta timbres::Timbre::osc::pwm_sel, x
-   lda #(128+2*16+2)
+   lda #(128*0+0)
    sta timbres::Timbre::osc::pwm_dep, x
    lda #0
    sta timbres::Timbre::osc::pitch, x
@@ -1128,11 +1136,11 @@
    sta timbres::Timbre::osc::lrmid, x
    lda #0
    sta timbres::Timbre::osc::amp_sel, x
-   lda #(0)
+   lda #64
    sta timbres::Timbre::osc::volume, x
    lda #3
    sta timbres::Timbre::osc::vol_mod_sel, x
-   lda #(16*0+2)
+   lda #(16)
    sta timbres::Timbre::osc::vol_mod_dep, x
    lda #1
    sta timbres::Timbre::osc::track, x
@@ -1162,7 +1170,7 @@
    sta timbres::Timbre::osc::lrmid, x
    lda #1
    sta timbres::Timbre::osc::amp_sel, x
-   lda #(16*0+1)
+   lda #32
    sta timbres::Timbre::osc::volume, x
    lda #128
    sta timbres::Timbre::osc::vol_mod_sel, x
@@ -1483,7 +1491,7 @@
    sta timbres::Timbre::osc::pitch, x
    lda #0
    sta timbres::Timbre::osc::fine, x
-   lda #(0+0)
+   lda #64
    sta timbres::Timbre::osc::volume, x
    lda #192
    sta timbres::Timbre::osc::lrmid, x
@@ -1491,7 +1499,7 @@
    sta timbres::Timbre::osc::amp_sel, x
    lda #0
    sta timbres::Timbre::osc::vol_mod_sel, x
-   lda #(1)
+   lda #(32)
    sta timbres::Timbre::osc::vol_mod_dep, x
    lda #0
    sta timbres::Timbre::osc::track, x
@@ -1511,7 +1519,7 @@
    sta timbres::Timbre::osc::pitch, x
    lda #0
    sta timbres::Timbre::osc::fine, x
-   lda #(3 * 16 + 1)
+   lda #48
    sta timbres::Timbre::osc::volume, x
    lda #192
    sta timbres::Timbre::osc::lrmid, x
@@ -1541,7 +1549,7 @@
    sta timbres::Timbre::osc::pitch, x
    lda #0
    sta timbres::Timbre::osc::fine, x
-   lda #(16*0+1)
+   lda #32
    sta timbres::Timbre::osc::volume, x
    lda #192
    sta timbres::Timbre::osc::lrmid, x
@@ -1549,7 +1557,7 @@
    sta timbres::Timbre::osc::amp_sel, x
    lda #1
    sta timbres::Timbre::osc::vol_mod_sel, x
-   lda #(128+3)
+   lda #(128+8)
    sta timbres::Timbre::osc::vol_mod_dep, x
    lda #0
    sta timbres::Timbre::osc::track, x

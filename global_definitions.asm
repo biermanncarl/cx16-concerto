@@ -29,7 +29,7 @@ Octave:
 Note:
    .byte 0
 Timbre:
-   .byte 3
+   .byte 0
 
 ; mouse variables
 ms_status: .byte 0

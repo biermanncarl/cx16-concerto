@@ -242,9 +242,10 @@ SYNTH_MACROS_INC = 1
 
 ; This macro multiplies the value in the accumulator with a value in memory.
 ; The result will be right-shifted 7 times,
-; meaning that multiplicating with 128 is actually multiplicating with 1.
+; meaning that multiplying with 128 is actually multiplying with 1.
 ; The result is returned in the accumulator.
-.macro SCALE_U8 su8_value
+; Index denotes, whether the memory held value is indexed by X (1), by Y (2), or not at all (0)
+.macro SCALE_U8 su8_value, index
    .local @skip_bit0
    .local @skip_bit1
    .local @skip_bit2
@@ -256,7 +257,15 @@ SYNTH_MACROS_INC = 1
    ; ZP variables available for multiplication:
    ; mzpwb, mzpbf
    sta mzpwb   ; this will hold the right-shifted value
-   lda su8_value
+   .if(index=0)
+      lda su8_value
+   .endif
+   .if(index=1)
+      lda su8_value, x
+   .endif
+   .if(index=2)
+      lda su8_value, y
+   .endif
    sta mzpbf   ; this is used for bit-testing
    lda #0
 
@@ -307,9 +316,196 @@ SYNTH_MACROS_INC = 1
    adc mzpwb
 @skip_bit0:
    ; worst case: 103 cycles. best case: 71 cycles. Average: 87 cycles.
-   ; this is actually much better than I hoped for.
-   ; Computing with 8 bits is really fast compared to 16 bits!
-   ; This renders the Scale5 approach less useful.
+.endmacro
+
+
+; This macro multiplies the value in the accumulator with a value in memory.
+; Only the 7 lowest bits of the memory value are considered.
+; The result will be right-shifted 6 times,
+; meaning that multiplying with 64 is actually multiplying with 1.
+; The result is returned in the accumulator.
+; Index denotes, whether the memory held value is indexed by X (1), by Y (2), or not at all (0)
+.macro SCALE_U7 su7_value, index
+   .local @skip_bit0
+   .local @skip_bit1
+   .local @skip_bit2
+   .local @skip_bit3
+   .local @skip_bit4
+   .local @skip_bit5
+   .local @skip_bit6
+   ; ZP variables available for multiplication:
+   ; mzpwb, mzpbf
+   sta mzpwb   ; this will hold the right-shifted value
+   .if(index=0)
+      lda su7_value
+   .endif
+   .if(index=1)
+      lda su7_value, x
+   .endif
+   .if(index=2)
+      lda su7_value, y
+   .endif
+   sta mzpbf   ; this is used for bit-testing
+   lda #0
+
+   bbr6 mzpbf, @skip_bit6
+   clc
+   adc mzpwb
+@skip_bit6:
+   lsr mzpwb
+
+   bbr5 mzpbf, @skip_bit5
+   clc
+   adc mzpwb
+@skip_bit5:
+   lsr mzpwb
+
+   bbr4 mzpbf, @skip_bit4
+   clc
+   adc mzpwb
+@skip_bit4:
+   lsr mzpwb
+
+   bbr3 mzpbf, @skip_bit3
+   clc
+   adc mzpwb
+@skip_bit3:
+   lsr mzpwb
+
+   bbr2 mzpbf, @skip_bit2
+   clc
+   adc mzpwb
+@skip_bit2:
+   lsr mzpwb
+
+   bbr1 mzpbf, @skip_bit1
+   clc
+   adc mzpwb
+@skip_bit1:
+   lsr mzpwb
+
+   bbr0 mzpbf, @skip_bit0
+   clc
+   adc mzpwb
+@skip_bit0:
+   ; worst case: 91 cycles. best case: 63 cycles. Average: 77 cycles.
+.endmacro
+
+
+
+; This is used for modulation of the parameters that are only 6 bits wide,
+; namely volume and pulse width.
+; modulation depth is assumed to be indexed by register Y
+; modulation source is assumed to be in register A (and all flags from loading of A)
+; result is returned in register A
+.macro SCALE_S6 moddepth, index
+    ; with this sequence, we do several tasks at once:
+    ; We extract the sign from the modulation source and store it in mzpbf
+    ; We truncate the sign from the modulation source
+    ; and right shift it effectively once, because the amplitude of any modulation source is too high anyway
+    stz mzpwc+1
+    asl         ; push sign out
+    rol mzpwc+1   ; push sign into variable
+    lsr
+    lsr
+    ; initialize zero page 8 bit value
+    sta mzpwc   ; only low byte is used
+
+   .local @skip_bit0
+   .local @skip_bit1
+   .local @skip_bit2
+   .local @skip_bit3
+   .local @skip_bit4
+   .local @skip_bit5
+   .local @skip_bit6
+   ; ZP variables available for multiplication:
+   ; mzpwb, mzpbf
+   sta mzpwb   ; this will hold the right-shifted value
+   .if(index=0)
+      lda moddepth
+   .endif
+   .if(index=1)
+      lda moddepth, x
+   .endif
+   .if(index=2)
+      lda moddepth, y
+   .endif
+   sta mzpbf   ; this is used for bit-testing
+   lda #0
+
+   bbr6 mzpbf, @skip_bit6
+   clc
+   adc mzpwb
+@skip_bit6:
+   lsr mzpwb
+
+   bbr5 mzpbf, @skip_bit5
+   clc
+   adc mzpwb
+@skip_bit5:
+   lsr mzpwb
+
+   bbr4 mzpbf, @skip_bit4
+   clc
+   adc mzpwb
+@skip_bit4:
+   lsr mzpwb
+
+   bbr3 mzpbf, @skip_bit3
+   clc
+   adc mzpwb
+@skip_bit3:
+   lsr mzpwb
+
+   bbr2 mzpbf, @skip_bit2
+   clc
+   adc mzpwb
+@skip_bit2:
+   lsr mzpwb
+
+   bbr1 mzpbf, @skip_bit1
+   clc
+   adc mzpwb
+@skip_bit1:
+   lsr mzpwb
+
+   bbr0 mzpbf, @skip_bit0
+   clc
+   adc mzpwb
+@skip_bit0:
+    ; result is in register A
+    sta mzpwb   ; save it
+
+    ; determine overall sign (mod source * mod depth)
+   .if(index=0)
+      lda moddepth
+   .endif
+   .if(index=1)
+      lda moddepth, x
+   .endif
+   .if(index=2)
+      lda moddepth, y
+   .endif
+    and #%10000000
+    beq :+
+    inc mzpwc+1
+:   ; now if lowest bit of mzpbf is even, sign is positive and if it's odd, sign is negative
+
+    ; now add/subtract scaling result to modulation destiny, according to sign
+    .local @minusS
+    .local @endS
+    lda mzpwc+1
+    ror
+    bcs @minusS
+    ; if we're here, sign is positive
+    lda mzpwb
+    bra @endS
+@minusS:
+    ; if we're here, sign is negative
+    lda mzpwb
+    eor #%11111111
+    inc
+@endS:
 .endmacro
 
 
@@ -576,267 +772,6 @@ SYNTH_MACROS_INC = 1
     ; 35 cycles
     ; worst case overall: 35 + 64 + 24 + 107 + 14 = 244 cycles ... much more than I hoped. (even more now with proper sign handling)
 .endmacro
-
-
-
-
-; this is used for volume scaling
-; modulation depth is assumed to be indexed by register Y
-; value to be scaled is assumed to be in register A
-; result is returned in register A
-; volume is moddepth
-; moddepth has the format  %0LLL0HHH
-; where %HHHH is the number of rightshifts to be applied to the volume signal
-; and %LLL is the number of the sub-level
-.macro VOLUME_SCALE5_8 moddepth
-    ; initialize zero page 8 bit value
-    sta mzpwb   ; only low byte is used  (3 cycles) (except for the very end)
-
-    ; do %0HHH rightshifts (highest bit is discarded, because 7 rightshifts is maximum)
-    ; TODO: check highest bit first ... (if that gives us any advantage)
-    .local @endH
-    .local @loopH
-    .local @skipH2
-    lda moddepth, y
-    and #%00000100
-    beq @skipH2 ; or skip this part if it's clear
-    lda mzpwb
-    lsr
-    lsr
-    lsr
-    lsr
-    sta mzpwb
-@skipH2:
-    lda moddepth, y
-    and #%00000011
-    bne :+          ; if no bit is set, we are done
-    jmp @endH
-:   phx ; if we got here, we've got a nonzero number of rightshifts to be done in register A
-    tax
-    lda mzpwb
-@loopH:
-    lsr
-    dex
-    bne @loopH
-    plx
-    sta mzpwb
-    ; worst case: 7 rightshifts, 66 cycles  (naive approach without bit 2 checking would be 72 ... almost not worth it to check it separately)
-    ; complex approach
-    ; cycle counts for all 8 cases: 7->66, 6->59, 5->52, 4->34, 3->51, 2->44, 1->37, 0->23  Average: 46
-    ; naive approach
-    ; cycle counts for all 8 cases: 7->72, 6->55, 5->48, 4->40, 3->34, 2->27, 1->20, 0->14  Average: 39
-    ; and since bigger modulations are more often used, the naive approach is better.
-@endH:
-
-    ; do sublevel scaling
-    .local @endL
-    .local @tableL
-    .local @sublevel_1
-    .local @sublevel_2
-    .local @sublevel_3
-    .local @sublevel_4
-    ; select subroutine
-    lda moddepth, y
-    and #%01110000
-    beq :+
-    lsr
-    lsr
-    lsr
-    tax
-    jmp (@tableL-2, x)  ; if x=0, nothing has to be done. if x=2,4,6 or 8, jump to respective subroutine --- 22 cycles
-:   lda mzpwb
-    jmp @endL
-    ; 24 cycles
-@tableL:
-    .word @sublevel_1
-    .word @sublevel_2
-    .word @sublevel_3
-    .word @sublevel_4
-@sublevel_1:
-    ; 2^(1/5) ~= %1.001
-    lda mzpwb
-    lsr
-    lsr
-    lsr
-    clc
-    adc mzpwb
-    jmp @endL  ; 17 cycles
-@sublevel_2:
-    ; 2^(2/5) ~= %1.01
-    ; refer to @sublevel_1 for code commentary
-    lda mzpwb
-    lsr
-    lsr
-    clc
-    adc mzpwb
-    jmp @endL  ; 15 cycles
-@sublevel_3:
-    ; 2^(3/5) ~= %1.1
-    lda mzpwb
-    lsr
-    clc
-    adc mzpwb
-    jmp @endL  ; 13 cycles
-@sublevel_4:
-    ; 2^(4/5) ~= %1.11
-    lda mzpwb
-    lsr
-    sta mzpwb+1 ; save intermediate
-    lsr
-    clc
-    adc mzpwb+1 ; no clc after this ... if we get a carry, result is broken anyway
-    adc mzpwb   ; 18 cycles
-@endL:
-    ; worst case L: 40 cycles.
-    ; average: 4->40, 3->35, 2->37, 1->39, 0->15  Average: 33
-    ; worst case overall: 112 cycles (with naive approach)
-    ; average overall: 72 (with naive approach)
-
-    ; result is in register A
-.endmacro
-
-
-
-
-; This is used for modulation of the parameters that are only 6 bits wide,
-; namely volume and pulse width.
-; modulation depth is assumed to be indexed by register Y
-; modulation source is assumed to be in register A (and all flags from loading of A)
-; result is returned in register A
-; moddepth has the format  %0LLL0HHH
-; where %HHH is the number of rightshifts to be applied to the volume signal
-; and %LLL is the number of the sub-level
-.macro SCALE5_6 moddepth
-    ; with this sequence, we do several tasks at once:
-    ; We extract the sign from the modulation source and store it in mzpbf
-    ; We truncate the sign from the modulation source
-    ; and right shift it effectively once, because the amplitude of any modulation source is too high anyway
-    stz mzpbf
-    asl         ; push sign out
-    rol mzpbf   ; push sign into variable
-    lsr
-    lsr
-    ; initialize zero page 8 bit value
-    sta mzpwb   ; only low byte is used
-
-    ; do %0HHH rightshifts (highest bit is discarded, because 7 rightshifts is maximum)
-    ; TODO: check highest bit first ... (if that gives us any advantage)
-    .local @endH
-    .local @loopH
-    .local @skipH2
-    ; check bit 2, and do 4 RORs if it's set
-    lda moddepth, y
-    and #%00000100
-    beq @skipH2 ; or skip this part if it's clear
-    lda mzpwb
-    lsr
-    lsr
-    lsr
-    lsr
-    sta mzpwb
-@skipH2:
-    lda moddepth, y
-    and #%00000011
-    bne :+          ; if no bit is set, we are done
-    jmp @endH
-:   phx ; if we got here, we've got a nonzero number of rightshifts to be done in register A
-    tax
-    lda mzpwb
-@loopH:
-    lsr
-    dex
-    bne @loopH
-    plx
-    sta mzpwb   ; worst case: 7 rightshifts, makes 43 + 3*7 = 64 cycles (72 if we just loop naively ... almost not worth it)
-@endH:
-
-    ; do sublevel scaling
-    .local @endL
-    .local @tableL
-    .local @sublevel_1
-    .local @sublevel_2
-    .local @sublevel_3
-    .local @sublevel_4
-    ; select subroutine
-    lda moddepth, y
-    and #%01110000
-    beq :+
-    lsr
-    lsr
-    lsr
-    tax
-    jmp (@tableL-2, x)  ; if x=0, nothing has to be done. if x=2,4,6 or 8, jump to respective subroutine
-:   lda mzpwb
-    jmp @endL
-    ; 22 cycles
-@tableL:
-    .word @sublevel_1
-    .word @sublevel_2
-    .word @sublevel_3
-    .word @sublevel_4
-@sublevel_1:
-    ; 2^(1/5) ~= %1.001
-    lda mzpwb
-    lsr
-    lsr
-    lsr
-    adc mzpwb
-    jmp @endL  ; 15 cycles
-@sublevel_2:
-    ; 2^(2/5) ~= %1.01
-    ; refer to @sublevel_1 for code commentary
-    lda mzpwb
-    lsr
-    lsr
-    adc mzpwb
-    jmp @endL  ; 13 cycles
-@sublevel_3:
-    ; 2^(3/5) ~= %1.1
-    lda mzpwb
-    lsr
-    clc
-    adc mzpwb
-    jmp @endL  ; 13 cycles
-@sublevel_4:
-    ; 2^(4/5) ~= %1.11
-    lda mzpwb
-    lsr
-    sta mzpwb+1 ; save intermediate
-    lsr
-    clc
-    adc mzpwb+1 ; no clc after this ... if we get a carry, result is broken anyway
-    adc mzpwb   ; 22 cycles
-@endL:
-    ; result is in register A
-    sta mzpwb   ; save it
-
-    ; determine overall sign (mod source * mod depth)
-    lda moddepth, y
-    and #%10000000
-    beq :+
-    inc mzpbf
-:   ; now if lowest bit of mzpbf is even, sign is positive and if it's odd, sign is negative
-
-    ; now add/subtract scaling result to modulation destiny, according to sign
-    .local @minusS
-    .local @endS
-    lda mzpbf
-    ror
-    bcs @minusS
-    ; if we're here, sign is positive
-    lda mzpwb
-    bra @endS
-@minusS:
-    ; if we're here, sign is negative
-    lda mzpwb
-    eor #%11111111
-    inc
-@endS:
-
-
-.endmacro
-
-
 
 
 
