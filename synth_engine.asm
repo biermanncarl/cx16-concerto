@@ -52,7 +52,7 @@ osc_panmute:   .byte 0
 
 ; MODULATION SOURCE NUMBER FORMAT
 ; -------------------------------
-; Modulation sources consist of two bytes:
+; Modulation sources are always standard binary and consist of two bytes:
 ; A high byte and a low byte
 ; There are unipolar and bipolar sources.
 ; The low byte can have any desired value
