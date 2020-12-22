@@ -19,12 +19,6 @@ event_pointer: .byte 0
 ; 3 - stop note -- 1 byte channel -- (1 byte soft or hard ending, i.e. with or without release phase)
 ; more to come
 events:
-   ; FOTF
-   .byte    2,    0,    3,    40,   64
-   .byte    1,    20,   0,    0,    0
-   .byte    3,    0,    0,    0,    0
-   .byte    1,    20,   0,    0,    0
-   .byte    0
    ; 1 bar
    .byte    2,    0,    3,    40,   64
    .byte    2,    1,    1,    36,   60
@@ -143,8 +137,11 @@ player_play_note:
 
 ; stop note event. TODO: distinguish soft and hard note stops (soft aka. put notes into release phase)
 player_stop_note:
+   ; first check if note is active
    ldx events+1, y
+   lda voices::Voice::active, x
+   beq :+
    jsr voices::stop_note
-   jmp do_events
+:  jmp do_events
 
 .endscope

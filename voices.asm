@@ -217,8 +217,8 @@ rts
 ; Plays a note. needs info for channel, timbre, pitch and volume.
 ; Can be called from within the ISR and the main program.
 ; Zero-Page variables used in this routine are the ones belonging to the ISR.
-; However, by SEI-CLI, it is prevented that they get messed up by the ISR, if the main program
-; calls this function.
+; However, by calling SEI-CLI, it is prevented that they get messed up by the ISR, if the main program
+; calls this function. (If calling this from the main program, you MUST do SEI before! And CLI after)
 ; In this subroutine, register X usually contains the index of the voice.
 ; What exactly does this routine do?
 ; If no note is currently active on the channel, it plays a new note with retriggering envelopes,
@@ -228,7 +228,6 @@ rts
 ; If it's the same timbre, retrigger and portamento are applied as specified in the timbre settings.
 ; If it's a different timbre, the old note is replaced entirely (just as if there was no note).
 play_note:
-   sei ; both main program and ISR are allowed to play notes. We don't want interference.
    ldx note_channel
    ldy note_timbre
    ; check if there is an active note on the channel
@@ -268,7 +267,6 @@ play_note:
    lda #1
    sta Voice::active,x
 @skip_play:
-   cli
 rts
 
 ; This subroutine is used in play_note in the case that a note with the same timbre as played is

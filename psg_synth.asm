@@ -64,6 +64,7 @@ mainloop:
    ; keyboard polling
 .include "keyboard_polling.asm"
 
+
 play_note:
 
    ; determine MIDI note
@@ -80,7 +81,9 @@ play_note:
    sta voices::note_timbre
    lda #15
    sta voices::note_channel
+   sei
    jsr voices::play_note
+   cli
 
 end_mainloop:
 
