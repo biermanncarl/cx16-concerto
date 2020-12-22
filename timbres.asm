@@ -19,7 +19,7 @@
    n_oscs:  TIMBRE_BYTE_FIELD         ; how many oscillators are used
    n_envs:  TIMBRE_BYTE_FIELD         ; how many envelopes are used
    n_lfos:  TIMBRE_BYTE_FIELD
-   mono:    TIMBRE_BYTE_FIELD         ; monophonic on/off
+   porta:   TIMBRE_BYTE_FIELD         ; portamento on/off
    porta_r: TIMBRE_BYTE_FIELD         ; portamento rate
    retrig:  TIMBRE_BYTE_FIELD         ; when monophonic, will envelopes be retriggered? (could be combined with mono variable)
 

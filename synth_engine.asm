@@ -192,28 +192,7 @@ env_finish:
    ; therefore, the voice data offset in X can be safely discarded, as it is no longer needed
    ; deactivate voice
    ldx voice_index
-   stz voices::Voice::active, x
-   ; and register for voice release
-   txa
-   ldx voices::Voicemap::rvsp
-   sta voices::Voicemap::releasevoicestack, x
-   inc voices::Voicemap::rvsp
-   ; mute every oscillator
-   ldx timbres::Timbre::n_oscs, y   ; that was the last use of the timbre index in Y, can now be used for other stuff
-   ldy voice_index   ; acts as offset to access PSG indices
-@loop:
-   lda voices::Voice::osc_psg_map, y
-   VERA_MUTE_VOICE_A
-   tya
-   clc
-   adc #N_VOICES
-   tay
-   dex
-   bne @loop
-   ; everything that needs to be done when the voice is deactivated
-   ; must be done here
-   ; (although it might not be the only place that can trigger
-   ; a voice deactivation in the future ... thinking of voice stealing)
+   jsr voices::stop_note
    ldx voice_index
    jmp next_voice
 

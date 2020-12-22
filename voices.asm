@@ -6,6 +6,8 @@
 .scope voices
 
 ; Interface. these variables have to be set before a play command
+note_channel:
+   .byte 0
 note_timbre:
    .byte 0
 note_pitch:
@@ -13,7 +15,9 @@ note_pitch:
 note_volume:
    .byte 0
 
-; internal data for synth
+; These data fields correspond to the monophonic voices of all the 16 channels.
+; Each voice can be active or inactive.
+; Active voices can be overridden by new play events.
 .scope Voice
    active:    VOICE_BYTE_FIELD   ; on/off
 
@@ -35,7 +39,7 @@ note_volume:
       phaseH:  LFO_VOICE_BYTE_FIELD
    .endscope
 
-   ; PSG voices (oscillator to PSG voice mapping) (unused ATM)
+   ; PSG voices (synth oscillator to PSG oscillator mapping)
    osc_psg_map:   OSCILLATOR_VOICE_BYTE_FIELD
 
    ; portamento
@@ -49,70 +53,30 @@ note_volume:
 .endscope
 
 
-.scope Voicemap
-   ; information about which voices are free,
-   ; which ones are played monophonically etc.
-
-   ; ringlist of available voices
-   freevoicelist:    VOICE_BYTE_FIELD
-   ffv:  .byte 0  ; index of entry in ringlist, which denotes the first free voice
-   lfv:  .byte 0  ; index of entry in ringlist, which points one past the last free voice
-   nfv:  .byte 0  ; number of free voices
-   ; when a voice is used, the ffv is advanced
-   ; when a voice is finished, its index is stored at index lfv. Then lfv is advanced.
-   ; If ffv and lfv are equal, either all voices are free, or there are no more
-   ; free voices.
-   ; These two cases can be distinguished via the nfv (number of free voices) variables
-
-   ; bidirectional list of voices currently used. The oldest voice is the first one in
-   ; the list. The newest one is last. If a voice has finished playing, it is removed.
-   ; This data structure enables voice stealing from the oldest voices, as well as
-   ; searching all active voices (in case of a note-off event).
-   usedvoicesup:     VOICE_BYTE_FIELD  ; pointer to the next younger voice, bit 7 set means none
-   usedvoicesdn:     VOICE_BYTE_FIELD  ; pointer to the next older voice
-   uvf:  .byte 0  ; oldest used voice. bit 7 is set if none used
-   uvl:  .byte 0  ; youngest used voice. bit 7 is set if none used
-
-   ; table which contains information which timbre is currently played by which voice,
-   ; in case it is a monophonic timbre.
-   ; if bit 7 is set, timbre is currently played
-   ; bits 0 to 6 indicate voice number
-   monovoicetable:   VOICE_BYTE_FIELD
-
-   ; stack for voice release routine
-   ; This stack is filled with a "job" every time a note has finished playing (from inside
-   ; the ISR). This is convenient for one-shot notes that only have a note-on event and
-   ; no note-off event, where the synth can determine if a voice has finished.
-   ; The actual voice release is done by the main program, which also handles
-   ; the voice acquisition. This is safer and prevents bad interference, for example
-   ; a voice release from the ISR at the same time as a new note is being played in the
-   ; main program. This could screw up the freevoicelist badly.
-   ; In the ISR, a finished voice is only deactivated and a message pushed to this stack.
-   releasevoicestack:   VOICE_BYTE_FIELD
-   rvsp: .byte 0  ; stack pointer, points one past last message
-.endscope
-
 .scope Oscmap
    ; information about which oscillators are free
+
+   ; ringlist of available PSG oscillators
+   ; freeosclist contains the VERA numbers of all the PSG oscillators.
+   ; In the beginning, they will be in there like 0, 1, 2, ... , 14, 15
+   ; but get scrambled during runtime, because oscillators will be used and
+   ; released in "random" order.
+   ; Think of freeosclist as an array of indices
+   ; freeosclist[ffo] contains the VERA index of the first currently available oscillator
+   ; freeosclist[lfo-1] contains the VERA index of the last currently available oscillator
+   ; that means, if lfo=ffo, there are either no oscillators free to use,
+   ; or all oscillators are free (because of cyclic indexing).
    freeosclist:   OSCILLATOR_BYTE_FIELD
    ffo:  .byte 0  ; index of entry in ringlist, which denotes the first free oscillator
    lfo:  .byte 0  ; index of entry in ringlist, which points one past the last free oscillator
    nfo:  .byte 0  ; number of free oscillators
-   ; similar mechanics like for the freevoicelist ... see there
+   ; when an oscillator is used, the ffo is advanced
+   ; when an oscillator is finished, its index is stored at index lfo. Then lfo is advanced.
+   ; If ffo and lfo are equal, either all voices are free, or there are no more
+   ; free voices.
+   ; These two cases can be distinguished via the nfo (number of free oscillators) variable
 .endscope
 
-; other variables used by voices.asm
-;distance:
-;   .byte 0
-
-.macro ADVANCE_FVL_POINTER adv_fvl_ptr
-   lda adv_fvl_ptr
-   ina
-   cmp #(N_VOICES)
-   bcc :+
-   lda #0
-:  sta adv_fvl_ptr
-.endmacro
 
 .macro ADVANCE_FOL_POINTER adv_fol_ptr
    lda adv_fol_ptr
@@ -123,7 +87,14 @@ note_volume:
 :  sta adv_fol_ptr
 .endmacro
 
+; In this macro, the slide distance is multiplied by the portamento (base-)rate.
+; The result is the effective portamento rate.
+; It guarantees that the portamento time is constant regardless of how far
+; two notes are apart.
+; Expects voice index in X, timbre index in Y, slide distance in mzpbb
 .macro MUL8x8_PORTA ; uses ZP variables in the process
+   mp_slide_distance = mzpbb ; must be the same as in "continue_note"!
+   mp_return_value = mzpwb
    ; the idea is that portamento is finished in a constant time
    ; that means, rate must be higher, the larger the porta distance is
    ; This is achieved by multiplying the "base rate" by the porta distance
@@ -132,90 +103,90 @@ note_volume:
    ; mzpwa stores the porta rate. It needs a 16 bit variable because it is left shifted
    ; throughout the multiplication
    lda timbres::Timbre::porta_r, y
-   sta mzpwa+1
-   stz mzpwa
+   sta mp_return_value+1
+   stz mp_return_value
    stz Voice::porta::rateL, x
    stz Voice::porta::rateH, x
 
    ; multiplication
-   bbr0 mzpba, :+
-   lda mzpwa+1
+   bbr0 mp_slide_distance, :+
+   lda mp_return_value+1
    sta Voice::porta::rateL, x
 :  clc
-   rol mzpwa+1
-   rol mzpwa
-   bbr1 mzpba, :+
+   rol mp_return_value+1
+   rol mp_return_value
+   bbr1 mp_slide_distance, :+
    clc
-   lda mzpwa+1
+   lda mp_return_value+1
    adc Voice::porta::rateL, x
    sta Voice::porta::rateL, x
-   lda mzpwa
+   lda mp_return_value
    adc Voice::porta::rateH, x
    sta Voice::porta::rateH, x
 :  clc
-   rol mzpwa+1
-   rol mzpwa
-   bbr2 mzpba, :+
+   rol mp_return_value+1
+   rol mp_return_value
+   bbr2 mp_slide_distance, :+
    clc
-   lda mzpwa+1
+   lda mp_return_value+1
    adc Voice::porta::rateL, x
    sta Voice::porta::rateL, x
-   lda mzpwa
+   lda mp_return_value
    adc Voice::porta::rateH, x
    sta Voice::porta::rateH, x
 :  clc
-   rol mzpwa+1
-   rol mzpwa
-   bbr3 mzpba, :+
+   rol mp_return_value+1
+   rol mp_return_value
+   bbr3 mp_slide_distance, :+
    clc
-   lda mzpwa+1
+   lda mp_return_value+1
    adc Voice::porta::rateL, x
    sta Voice::porta::rateL, x
-   lda mzpwa
+   lda mp_return_value
    adc Voice::porta::rateH, x
    sta Voice::porta::rateH, x
 :  clc
-   rol mzpwa+1
-   rol mzpwa
-   bbr4 mzpba, :+
+   rol mp_return_value+1
+   rol mp_return_value
+   bbr4 mp_slide_distance, :+
    clc
-   lda mzpwa+1
+   lda mp_return_value+1
    adc Voice::porta::rateL, x
    sta Voice::porta::rateL, x
-   lda mzpwa
+   lda mp_return_value
    adc Voice::porta::rateH, x
    sta Voice::porta::rateH, x
 :  clc
-   rol mzpwa+1
-   rol mzpwa
-   bbr5 mzpba, :+
+   rol mp_return_value+1
+   rol mp_return_value
+   bbr5 mp_slide_distance, :+
    clc
-   lda mzpwa+1
+   lda mp_return_value+1
    adc Voice::porta::rateL, x
    sta Voice::porta::rateL, x
-   lda mzpwa
+   lda mp_return_value
    adc Voice::porta::rateH, x
    sta Voice::porta::rateH, x
 :  clc
-   rol mzpwa+1
-   rol mzpwa
-   bbr6 mzpba, :+
+   rol mp_return_value+1
+   rol mp_return_value
+   bbr6 mp_slide_distance, :+
    clc
-   lda mzpwa+1
+   lda mp_return_value+1
    adc Voice::porta::rateL, x
    sta Voice::porta::rateL, x
-   lda mzpwa
+   lda mp_return_value
    adc Voice::porta::rateH, x
    sta Voice::porta::rateH, x
 :  clc
-   rol mzpwa+1
-   rol mzpwa
-   bbr7 mzpba, @end_macro
+   rol mp_return_value+1
+   rol mp_return_value
+   bbr7 mp_slide_distance, @end_macro
    clc
-   lda mzpwa+1
+   lda mp_return_value+1
    adc Voice::porta::rateL, x
    sta Voice::porta::rateL, x
-   lda mzpwa
+   lda mp_return_value
    adc Voice::porta::rateH, x
    sta Voice::porta::rateH, x
 @end_macro:
@@ -226,32 +197,7 @@ note_volume:
 
 ; Puts all the Voicemap & Oscmap variables into a state ready to receive
 ; play_note commands.
-init_voicelist:
-   ; init freevoicelist, used-voices-list, and monovoicetable at the same time
-   ; and while we're in this loop, deactivate all voices
-   ldx #(N_VOICES-1)
-@loop_voi:
-   txa
-   sta Voicemap::freevoicelist, x
-   lda #255
-   sta Voicemap::usedvoicesup, x ; none
-   sta Voicemap::usedvoicesdn, x ; none
-   sta Voicemap::monovoicetable, x ; none
-   stz Voice::active, x
-   dex
-   bpl @loop_voi
-
-   stz Voicemap::ffv
-   stz Voicemap::lfv ; first and last free voice are set to 0
-   lda #N_VOICES
-   sta Voicemap::nfv ; all voices are free
-   lda #255
-   sta Voicemap::uvf ; first used voice is none
-   sta Voicemap::uvl ; last used voice is none
-
-   ; release-voices stack
-   stz Voicemap::rvsp    ; the actual stack doesn't need to be initialized.
-
+init_voices:
    ; init free-oscillator-list
    ldx #(N_OSCILLATORS-1)
 @loop_osc:
@@ -268,39 +214,76 @@ rts
 
 
 
-; plays a note. needs info for pitch, volume and timbre
-; in this subroutine, register X usually contains the index of the voice
+; Plays a note. needs info for channel, timbre, pitch and volume.
+; Can be called from within the ISR and the main program.
+; Zero-Page variables used in this routine are the ones belonging to the ISR.
+; However, by SEI-CLI, it is prevented that they get messed up by the ISR, if the main program
+; calls this function.
+; In this subroutine, register X usually contains the index of the voice.
+; What exactly does this routine do?
+; If no note is currently active on the channel, it plays a new note with retriggering envelopes,
+; and retriggering LFOs as specified in the timbre settings, provided there are enough oscillators
+; available.
+; If a note is currently active on the channel, the action depends on whether it is the same timbre or not.
+; If it's the same timbre, retrigger and portamento are applied as specified in the timbre settings.
+; If it's a different timbre, the old note is replaced entirely (just as if there was no note).
 play_note:
-   ; do resource investigation/acquisition
-
-   ; check if mono patch
+   sei ; both main program and ISR are allowed to play notes. We don't want interference.
+   ldx note_channel
    ldy note_timbre
-   lda timbres::Timbre::mono, y
-   bne :+
-   jmp @poly_voice_acquisition
+   ; check if there is an active note on the channel
+   lda Voice::active, x
+   beq @new_note
+@existing_note:
+   ; check if it's the same timbre
+   lda Voice::timbre, x
+   cmp note_timbre
+   beq @same_timbre
+@different_timbre:
+   jsr stop_note
+   ldx note_channel
+   ldy note_timbre
+   bra @new_note
+@same_timbre:
+   jsr continue_note
+   bra @common_stuff
+@new_note:
+   jsr start_note
+   ; check if starting note was successful (unsuccessful if there weren't enough oscillators available)
+   beq @skip_play
+   ldx note_channel
+   ldy note_timbre
+   jsr retrigger_note
+@common_stuff:
+   ; the stuff that is always done.
+   ldx note_channel
+   lda note_pitch
+   sta Voice::pitch, x
+   lda note_volume
+   sta Voice::volume, x
+   lda note_timbre
+   sta Voice::timbre, x
 
-:  ; check if mono voice still playing. if yes, replace it
-   ldx Voicemap::monovoicetable, y
-   bpl @reuse_mono_voice
+   ; activate note (should be the last thing done!)
+   lda #1
+   sta Voice::active,x
+@skip_play:
+   cli
+rts
 
-@get_new_mono_voice:
-   jsr get_voice
-   ldy note_timbre   ; restore, has been disrupted by get_voice
-   cpx #0   ; this just checks whether bit 7 of X is set or not
-   bpl :+
-   jmp @skip_play
-:  ; update monovoicetable
-   txa
-   sta Voicemap::monovoicetable, y
-
-   ; deactivate porta (? maybe add other bend-modes later)
-   lda #0
-   sta Voice::porta::active, x
-   jmp @non_mono_dependent_setup
-
-@reuse_mono_voice:   ; reuse voice, setup portamento etc.
-   ; deactivate voice to prevent PSG voice updates (while updating stuff) for smoother sound
-   ;stz Voice::active, x ; doesn't do the trick
+; This subroutine is used in play_note in the case that a note with the same timbre as played is
+; still active on the channel. It does all the stuff specific to that case.
+; expects channel index in X, timbre index in Y
+; doesn't preserve X and Y
+continue_note:
+   cn_slide_distance = mzpbb
+   ; check if porta active
+   lda timbres::Timbre::porta, y
+   bne @setup_porta
+@no_porta:
+   stz Voice::porta::active, x
+   jmp cn_check_retrigger
+@setup_porta:
    ; portamento stuff (must come before voice's pitch is replaced!)
    ldy #2
    lda note_pitch
@@ -309,14 +292,12 @@ play_note:
    bcs :+
    ; aimed lower
    ; must invert accumulator for correct portamento rate determination
-   sta mzpba   ; here: contains slide distance
-   lda #0
-   sec
-   sbc mzpba
-   sta mzpba
+   eor #%11111111
+   inc
+   sta cn_slide_distance
    bra :++
 :  ; aimed higher
-   sta mzpba
+   sta cn_slide_distance
    ldy #1
 :  tya
    sta Voice::porta::active, x ; up or down
@@ -327,39 +308,34 @@ play_note:
    stz Voice::porta::posL, x
    lda Voice::pitch, x
    sta Voice::porta::posH, x
+cn_check_retrigger:
    ; retrigger or continue?
    lda timbres::Timbre::retrig, y
    bne :+
-   jmp @set_pitch
-:  jmp @reset_envelopes
+   rts
+:  jsr retrigger_note
+rts
 
-@poly_voice_acquisition:
-   jsr get_voice
-   ldy note_timbre   ; restore, has been disrupted by get_voice
-   ; check if we got a valid voice
-   cpx #0   ; this just checks whether bit 7 of X is set or not
-   bpl :+
-   jmp @skip_play
-:  ; deactivate voice first, so the ISR won't play an "unfinished" voice
-   stz Voice::active,x
-
-
-@non_mono_dependent_setup:
-@reset_envelopes:
+; retriggers note (envelopes and LFOs). This subroutine is called in play_note.
+; expects channel index in X and timbre index in Y
+; doesn't preserve X and Y
+retrigger_note:
    ; initialize envelopes
    ; x: starts as voice index, becomes env1, env2, env3 sublattice offset by addition of N_VOICES
-   ; mzpba: is set to n_envs
+   ; ZP variable: is set to n_envs
    ; y: counter (and timbre index before that)
+   rn_number = mzpbb
    phx
+   phy
    lda timbres::Timbre::n_envs, y
-   sta mzpba
+   sta rn_number
    ldy #0
 @loop_envs:
    ; set envelope levels/phases to 0 (phase is both)
    stz Voice::env::phaseL, x
    stz Voice::env::phaseH, x
    ; figure out if envelope is active. If yes, set step to 1, if not set it to 0
-   cpy mzpba ;   if index<n_envs, env is active, i.e. if carry clear (that means, y<mzpba)
+   cpy rn_number ;   if index<n_envs, env is active, i.e. if carry clear (that means, y<mzpba)
    bcc :+
    stz Voice::env::step, x
    bra :++
@@ -375,19 +351,15 @@ play_note:
    bne @loop_envs
 
    ; restore x and y
+   ply
    plx
-   ldy note_timbre
-   
+
    ; initialize LFOs
    ; x: starts as voice index, becomes lfo1, lfo2, lfo3 sublattice offset by addition of N_VOICES
-   ; mzpba: is set to n_lfos
    ; y: starts as timbre index, becomes lfo1, lfo2, lfo3 sublattice offset by addition of N_TIMBRES
 @reset_lfos:
    lda timbres::Timbre::n_lfos, y
    beq @skip_lfos   ; for now we skip only if there are NO LFOs active. should be fine tho, because initializing unused stuff doesn't hurt
-   sta mzpba
-   ldy #0
-   phx
 @loop_lfos:
    ; figure out if lfo is retriggered. If yes, reset phase
    ; TODO: if it's an SnH LFO, get a random initial phase from entropy_get (KERNAL routine) if not retriggered
@@ -410,69 +382,25 @@ play_note:
    cpx #(MAX_LFOS_PER_VOICE*N_VOICES) ; a bit wonky ... but should do.
    bcc @loop_envs
 
-   plx
-   ldy note_timbre
 @skip_lfos:
-
-@set_pitch:
-   ; other stuff
-   lda note_pitch
-   sta Voice::pitch, x
-   lda note_volume
-   sta Voice::volume, x
-   lda note_timbre
-   sta Voice::timbre, x
-
-   ; activate note (should be the last thing done!)
-   lda #1
-   sta Voice::active,x
-@skip_play:
 rts
 
-; looks for a voice of given timbre and pitch and stops it
-; this is practically a note-off
-; note-offs are not strictly necessary, if an instrument is
-; auto-finishing
-stop_note:
-   nop ; TODO
-rts
-
-; looks for all voices of a given instrument and stops them
-stop_instrument:
-   nop ; TODO
-rts
-
-; acquires a new voice and returns voice index in register X
-; Number of oscillators needed is assumed to be according to note_timbre
-; this is NOT a note-on.
-; note-on events need further setting up of the voice
-; if unsuccessful, bit 7 of X is set (indicating NONE)
-get_voice:
-   ; check if there are enough oscillators
-   ldy note_timbre
+; checks if there are enough oscillators available
+; and, in that case, reserves them for the neq voice.
+; expects channel index in X, timbre index in Y
+; returns A=1 if successful, A=0 otherwise (zero flag set accordingly)
+; doesn't preserve X and Y
+start_note:
+   stn_loop_counter = mzpbb
    lda Oscmap::nfo
    cmp timbres::Timbre::n_oscs, y ; carry is set if nfo>=non (number of oscillators needed)
    bcs :+
-   jmp @unsuccessful    ; if there's no oscillator left, don't play ... or steal a voice (TODO)
-
-:  ; check how many voices are free (this is redundant if every voice uses at least one oscillator)
-   lda Voicemap::nfv
-   beq @unsuccessful    ; if there's no voice left, don't play ... or steal a voice (TODO)
-
-   ; get voice from and update free voices ringlist
-   ldy Voicemap::ffv
-   ldx Voicemap::freevoicelist, y  ; index of acquired voice is in X
-   ADVANCE_FVL_POINTER Voicemap::ffv
-   dec Voicemap::nfv
-
+   jmp @unsuccessful    ; if there's no oscillator left, don't play
    ; get oscillators from and update free oscillators ringlist
    ; x: offset in voice data
    ; y: offset in freeosclist (but first, it is timbre index)
-   ; mzpba: loop counter
-   phx
-   ldy note_timbre
-   lda timbres::Timbre::n_oscs, y
-   sta mzpba
+:  lda timbres::Timbre::n_oscs, y
+   sta stn_loop_counter
 @loop_osc:
    ; get oscillator from list and put it into voice data
    ldy Oscmap::ffo
@@ -485,59 +413,41 @@ get_voice:
    tax
    ADVANCE_FOL_POINTER Oscmap::ffo
    dec Oscmap::nfo
-   dec mzpba
+   dec stn_loop_counter
    bne @loop_osc
 
-   plx
-
-
-   ; append to used voices list
-   lda #255
-   sta Voicemap::usedvoicesup, x ; set next voice to none
-   ldy Voicemap::uvl ; look for last voice
-   stx Voicemap::uvl ; and replace last voice before evaluating last voice
-   bmi @we_are_first ; branch if last voice is none
-   txa ; if last voice existed, just do the links in both directions
-   sta Voicemap::usedvoicesup, y
-   tya
-   sta Voicemap::usedvoicesdn, x
-
-rts
-@we_are_first: ; if last voice didn't exist, setup start and end pointers, and set down link to none
-   stx Voicemap::uvf
-   stx Voicemap::uvl
-   sta Voicemap::usedvoicesdn, x
-rts
+   lda #1
+   rts
 @unsuccessful:
-   ldx #255
+   lda #0
 rts
 
-; takes index of voice to be released in register A and does all the buereaucracy
-; to check out the voice
-; this is NOT a note-off, because note-offs still need to be translated from
-; Pitch&Timbre to Voice index
-release_voice:
-   tax
-   ; update freevoicelist
-   ldy Voicemap::lfv
-   sta Voicemap::freevoicelist, y
-   ADVANCE_FVL_POINTER Voicemap::lfv
-   inc Voicemap::nfv
-
+; This subroutine deactivates the voice on a given channel and
+; releases the oscillators occupied by it, so that they can be used by other notes.
+; (and also mutes the PSG voices)
+; This subroutine can be called from within the ISR, or from the main program.
+; To ensure that the variables used by this function aren't messed up by the ISR,
+; SEI has to be done before this function is called in the main program.
+; This subroutine does not check if the note is actually playing!
+; It needs to be guaranteed by the context where it is called.
+; X: channel of note
+; doesn't preserve X and Y
+stop_note:
    ; update freeosclist
    ; get oscillators from voice and put them back into free oscillators ringlist
    ; x: offset in voice data
    ; y: offset in freeosclist (but first, it is timbre index)
-   ; mzpba: loop counter
-   phx
+   spn_loop_counter = mzpbe ; e and not b because it is also called from within synth_tick
    ldy Voice::timbre, x
+   stz Voice::active, x
    lda timbres::Timbre::n_oscs, y
-   sta mzpba
+   sta spn_loop_counter
 @loop_osc:
    ; get oscillator from voice and put it into ringlist
    ldy Oscmap::lfo
    lda Voice::osc_psg_map, x
    sta Oscmap::freeosclist, y
+   VERA_MUTE_VOICE_A
    ; advance indices
    txa
    clc
@@ -545,62 +455,16 @@ release_voice:
    tax
    ADVANCE_FOL_POINTER Oscmap::lfo
    inc Oscmap::nfo
-   dec mzpba
+   dec spn_loop_counter
    bne @loop_osc
-
-   plx
-
-
-   ; update monovoicelist
-   ldy Voice::timbre, x
-   lda #255
-   sta Voicemap::monovoicetable, y   ; set to "not playing" (bit 7 set)
-
-   ; update bidirectional used voice list
-   ; link previous one to next one
-   ldy Voicemap::usedvoicesdn, x
-   bmi @prev_is_none
-   lda Voicemap::usedvoicesup, x
-   sta Voicemap::usedvoicesup, y
-   bra @continue1
-@prev_is_none:
-   lda Voicemap::usedvoicesup, x
-   sta Voicemap::uvf    ; replace index of oldest voice
-@continue1:
-   ; link next one to previous one
-   ldy Voicemap::usedvoicesup, x
-   bmi @next_is_none
-   lda Voicemap::usedvoicesdn, x
-   sta Voicemap::usedvoicesdn, y
-   bra @continue2
-@next_is_none:
-   lda Voicemap::usedvoicesdn, x
-   sta Voicemap::uvl    ; replace index of youngest voice
-@continue2:
-
 rts
 
-; does all the release commands put on the release stack by the ISR
-do_stack_releases:
-   ; read and update release-voice-stack
-   sei   ; don't allow interference as long as there must not be interference
-   ldx Voicemap::rvsp
-   beq @end_do_stack_releases
-   dex
-   lda Voicemap::releasevoicestack, x
-   stx Voicemap::rvsp
-   cli   ; that's all we need. Our ISR won't mess up the freevoicelist & freeosclist
 
-   phx
-   jsr release_voice
-   plx ; x holds the "stack pointer" and indicates whether we have reached the bottom
-
-   bne do_stack_releases
-
-@end_do_stack_releases:
-   cli
+; Puts a note into its release phase.
+; TODO
+release_note:
+   nop
 rts
-
 
 
 
@@ -608,10 +472,10 @@ rts
 panic:
    ldx #(N_VOICES-1)
 @loop:
-   stz Voice::active, x
+   jsr stop_note
    dex
    bpl @loop
-   jsr init_voicelist
+   jsr init_voices
 rts
 
 

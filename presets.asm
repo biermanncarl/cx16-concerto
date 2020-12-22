@@ -9,7 +9,7 @@
    lda #30
    sta timbres::Timbre::porta_r, x
    lda #1
-   sta timbres::Timbre::mono, x
+   sta timbres::Timbre::porta, x
    sta timbres::Timbre::retrig, x
    ; env 0
    ldx #(0*N_TIMBRES+patch_no)
@@ -582,7 +582,9 @@
    lda #20
    sta timbres::Timbre::porta_r, x
    lda #0
-   sta timbres::Timbre::mono, x
+   sta timbres::Timbre::porta, x
+   lda #1
+   sta timbres::Timbre::retrig, x
    ; env 0
    ldx #(0*N_TIMBRES+patch_no)
    lda #0
@@ -770,7 +772,7 @@
    lda #30
    sta timbres::Timbre::porta_r, x
    lda #1
-   sta timbres::Timbre::mono, x
+   sta timbres::Timbre::porta, x
    sta timbres::Timbre::retrig, x
    ; env 0
    ldx #(0*N_TIMBRES+patch_no)
@@ -1083,7 +1085,8 @@
    lda #30
    sta timbres::Timbre::porta_r, x
    lda #0
-   sta timbres::Timbre::mono, x
+   sta timbres::Timbre::porta, x
+   lda #1
    sta timbres::Timbre::retrig, x
    ; env 0
    ldx #(0*N_TIMBRES+patch_no)
@@ -1437,7 +1440,9 @@
    lda #20
    sta timbres::Timbre::porta_r, x
    lda #0
-   sta timbres::Timbre::mono, x
+   sta timbres::Timbre::porta, x
+   lda #1
+   sta timbres::Timbre::retrig, x
    ; env 0
    ldx #(0*N_TIMBRES+patch_no)
    lda #0

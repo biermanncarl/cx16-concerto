@@ -45,7 +45,7 @@ start:
    PRESET_SNARE_DRUM_5 4
 
    ; do other initializations
-   jsr voices::init_voicelist
+   jsr voices::init_voices
    jsr my_isr::launch_isr
    ; main loop ... wait until "Q" is pressed.
 mainloop:
@@ -53,18 +53,19 @@ mainloop:
    ; GUI
    jsr mouse::mouse_tick
 
+
+
    DISPLAY_BYTE ms_curr_panel, 30, 58
    DISPLAY_BYTE ms_curr_component_id, 35, 58
    DISPLAY_BYTE ms_curr_component_ofs, 35, 56
    DISPLAY_BYTE ms_curr_data, 40, 58
 
-   ; clear voices that have been released
-   jsr voices::do_stack_releases
 
    ; keyboard polling
 .include "keyboard_polling.asm"
 
 play_note:
+
    ; determine MIDI note
    sta Note
    lda Octave
@@ -77,6 +78,8 @@ play_note:
    sta voices::note_volume
    lda Timbre
    sta voices::note_timbre
+   lda #15
+   sta voices::note_channel
    jsr voices::play_note
 
 end_mainloop:
@@ -85,6 +88,7 @@ end_mainloop:
 
 
 exit:
+   jsr voices::panic
    jsr my_isr::shutdown_isr
 
    ; TODO: properly shutdown all PSG voices (panic)

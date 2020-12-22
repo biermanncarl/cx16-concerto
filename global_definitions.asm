@@ -31,6 +31,9 @@ Note:
 Timbre:
    .byte 0
 
+; debug variable
+debug_a: .byte 0
+
 ; mouse variables
 ms_status: .byte 0
 ; reference values

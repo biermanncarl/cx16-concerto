@@ -120,22 +120,26 @@ msg_uvl_youngest:
    DISPLAY_LABEL msg_lfv, 52, 12
    DISPLAY_BYTE voices::Voicemap::lfv, 52, 13
 
-   DISPLAY_BYTE voices::Voicemap::freevoicelist+00,  2, 15
-   DISPLAY_BYTE voices::Voicemap::freevoicelist+01,  6, 15
-   DISPLAY_BYTE voices::Voicemap::freevoicelist+02, 10, 15
-   DISPLAY_BYTE voices::Voicemap::freevoicelist+03, 14, 15
-   DISPLAY_BYTE voices::Voicemap::freevoicelist+04, 18, 15
-   DISPLAY_BYTE voices::Voicemap::freevoicelist+05, 22, 15
-   DISPLAY_BYTE voices::Voicemap::freevoicelist+06, 26, 15
-   DISPLAY_BYTE voices::Voicemap::freevoicelist+07, 30, 15
-   DISPLAY_BYTE voices::Voicemap::freevoicelist+08, 34, 15
-   DISPLAY_BYTE voices::Voicemap::freevoicelist+09, 38, 15
-   DISPLAY_BYTE voices::Voicemap::freevoicelist+10, 42, 15
-   DISPLAY_BYTE voices::Voicemap::freevoicelist+11, 46, 15
-   DISPLAY_BYTE voices::Voicemap::freevoicelist+12, 50, 15
-   DISPLAY_BYTE voices::Voicemap::freevoicelist+13, 54, 15
-   DISPLAY_BYTE voices::Voicemap::freevoicelist+14, 58, 15
-   DISPLAY_BYTE voices::Voicemap::freevoicelist+15, 62, 15
+   DISPLAY_BYTE voices::Oscmap::freeosclist+00,  2, 15
+   DISPLAY_BYTE voices::Oscmap::freeosclist+01,  6, 15
+   DISPLAY_BYTE voices::Oscmap::freeosclist+02, 10, 15
+   DISPLAY_BYTE voices::Oscmap::freeosclist+03, 14, 15
+   DISPLAY_BYTE voices::Oscmap::freeosclist+04, 18, 15
+   DISPLAY_BYTE voices::Oscmap::freeosclist+05, 22, 15
+   DISPLAY_BYTE voices::Oscmap::freeosclist+06, 26, 15
+   DISPLAY_BYTE voices::Oscmap::freeosclist+07, 30, 15
+   DISPLAY_BYTE voices::Oscmap::freeosclist+08, 34, 15
+   DISPLAY_BYTE voices::Oscmap::freeosclist+09, 38, 15
+   DISPLAY_BYTE voices::Oscmap::freeosclist+10, 42, 15
+   DISPLAY_BYTE voices::Oscmap::freeosclist+11, 46, 15
+   DISPLAY_BYTE voices::Oscmap::freeosclist+12, 50, 15
+   DISPLAY_BYTE voices::Oscmap::freeosclist+13, 54, 15
+   DISPLAY_BYTE voices::Oscmap::freeosclist+14, 58, 15
+   DISPLAY_BYTE voices::Oscmap::freeosclist+15, 62, 15
+
+   DISPLAY_BYTE voices::Oscmap::ffo,  2, 17
+   DISPLAY_BYTE voices::Oscmap::lfo,  6, 17
+   DISPLAY_BYTE voices::Oscmap::nfo, 10, 17
 
    DISPLAY_LABEL msg_usedvoicelist, 2, 18
    DISPLAY_LABEL msg_uvl_oldest, 2, 20
