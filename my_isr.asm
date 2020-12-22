@@ -9,6 +9,8 @@
 
 default_isr:
    .word $0000
+isr_running:
+   .byte 0
 
 ; subroutine for launching the ISR
 launch_isr:
@@ -111,10 +113,19 @@ do_fillup:
    ;sta VERA_audio_data
    ;sta VERA_audio_data
 
+   ; safety check, if my ISR is already running. If so, skip sound engine tick.
+   lda isr_running
+   beq do_psg_control
+isr_choke:
+   jmp end_aflow
+
    ; now do all PSG control
 do_psg_control:
+   lda #1
+   sta isr_running
    jsr player::player_tick
    jsr synth_engine::synth_tick
+   stz isr_running
 
 end_aflow:
    ; call default interrupt handler

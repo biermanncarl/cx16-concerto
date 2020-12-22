@@ -144,7 +144,7 @@ player_play_note:
 ; stop note event. TODO: distinguish soft and hard note stops (soft aka. put notes into release phase)
 player_stop_note:
    ldx events+1, y
-   ;jsr voices::stop_note
+   jsr voices::stop_note
    jmp do_events
 
 .endscope
