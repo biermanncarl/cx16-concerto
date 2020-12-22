@@ -1,13 +1,6 @@
 ; This file manages the synth patches.
 ; The patch data will be read by the synth engine as well as the GUI.
-; For some parameters, there are conflicts about representations of
-; parameters that are easy to use by the synth engine, and easy to
-; use by the GUI/user.
-; The synth engine friendly version will always be present. (e.g.
-; envelope rates instead of times - Yamaha DX7 style ...
-; or fine tuning only up instead of up and down).
-; The schemes on which parameters are presented in which way to the user
-; still have to be decided.
+
 
 .scope timbres
 
@@ -69,13 +62,6 @@
       ; etc.
    .endscope
 .endscope
-
-
-; Subroutines that will be implemented here are e.g.
-;   * for updating the whole preinterpreted patch (e.g. when loading a preset)
-;   * for updating parts of the preinterpreted patch, e.g. an oscillator
-;   * or envelopes
-;   * ...
 
 
 .endscope
