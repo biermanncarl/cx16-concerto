@@ -21,6 +21,12 @@
    sta timbres::Timbre::env::decayL, x
    lda #1
    sta timbres::Timbre::env::decayH, x
+   lda #0
+   sta timbres::Timbre::env::sustain, x
+   lda #0
+   sta timbres::Timbre::env::releaseL, x
+   lda #64
+   sta timbres::Timbre::env::releaseH, x
    ; env 1
    ldx #(1*N_TIMBRES+patch_no)
    lda #0
@@ -31,6 +37,12 @@
    sta timbres::Timbre::env::decayL, x
    lda #6
    sta timbres::Timbre::env::decayH, x
+   lda #0
+   sta timbres::Timbre::env::sustain, x
+   lda #0
+   sta timbres::Timbre::env::releaseL, x
+   lda #64
+   sta timbres::Timbre::env::releaseH, x
    ; set oscillator parameters
    ; oscillator 0
    ldx #(0*N_TIMBRES+patch_no)
@@ -595,6 +607,12 @@
    sta timbres::Timbre::env::decayL, x
    lda #5
    sta timbres::Timbre::env::decayH, x
+   lda #0
+   sta timbres::Timbre::env::sustain, x
+   lda #0
+   sta timbres::Timbre::env::releaseL, x
+   lda #64
+   sta timbres::Timbre::env::releaseH, x
    ; env 1
    ldx #(1*N_TIMBRES+patch_no)
    lda #128
@@ -605,6 +623,12 @@
    sta timbres::Timbre::env::decayL, x
    lda #35
    sta timbres::Timbre::env::decayH, x
+   lda #0
+   sta timbres::Timbre::env::sustain, x
+   lda #0
+   sta timbres::Timbre::env::releaseL, x
+   lda #64
+   sta timbres::Timbre::env::releaseH, x
    ; env 2
    ldx #(2*N_TIMBRES+patch_no)
    lda #0
@@ -615,6 +639,12 @@
    sta timbres::Timbre::env::decayL, x
    lda #16
    sta timbres::Timbre::env::decayH, x
+   lda #0
+   sta timbres::Timbre::env::sustain, x
+   lda #0
+   sta timbres::Timbre::env::releaseL, x
+   lda #64
+   sta timbres::Timbre::env::releaseH, x
    ; lfo 0
    ldx #(0*N_TIMBRES+patch_no)
    lda #0
@@ -780,10 +810,16 @@
    sta timbres::Timbre::env::attackL, x
    lda #127
    sta timbres::Timbre::env::attackH, x
-   lda #128
-   sta timbres::Timbre::env::decayL, x
    lda #0
+   sta timbres::Timbre::env::decayL, x
+   lda #2
    sta timbres::Timbre::env::decayH, x
+   lda #60
+   sta timbres::Timbre::env::sustain, x
+   lda #0
+   sta timbres::Timbre::env::releaseL, x
+   lda #2
+   sta timbres::Timbre::env::releaseH, x
    ; env 1
    ldx #(1*N_TIMBRES+patch_no)
    lda #0
@@ -794,6 +830,12 @@
    sta timbres::Timbre::env::decayL, x
    lda #3
    sta timbres::Timbre::env::decayH, x
+   lda #0
+   sta timbres::Timbre::env::sustain, x
+   lda #0
+   sta timbres::Timbre::env::releaseL, x
+   lda #2
+   sta timbres::Timbre::env::releaseH, x
    ; lfo 0
    ldx #(0*N_TIMBRES+patch_no)
    lda #0
@@ -1098,6 +1140,12 @@
    sta timbres::Timbre::env::decayL, x
    lda #0
    sta timbres::Timbre::env::decayH, x
+   lda #0
+   sta timbres::Timbre::env::sustain, x
+   lda #0
+   sta timbres::Timbre::env::releaseL, x
+   lda #64
+   sta timbres::Timbre::env::releaseH, x
    ; env 1
    ldx #(1*N_TIMBRES+patch_no)
    lda #0
@@ -1108,6 +1156,12 @@
    sta timbres::Timbre::env::decayL, x
    lda #4
    sta timbres::Timbre::env::decayH, x
+   lda #0
+   sta timbres::Timbre::env::sustain, x
+   lda #0
+   sta timbres::Timbre::env::releaseL, x
+   lda #64
+   sta timbres::Timbre::env::releaseH, x
    ; lfo 0
    ldx #(0*N_TIMBRES+patch_no)
    lda #0
@@ -1453,6 +1507,12 @@
    sta timbres::Timbre::env::decayL, x
    lda #3
    sta timbres::Timbre::env::decayH, x
+   lda #0
+   sta timbres::Timbre::env::sustain, x
+   lda #0
+   sta timbres::Timbre::env::releaseL, x
+   lda #64
+   sta timbres::Timbre::env::releaseH, x
    ; env 1
    ldx #(1*N_TIMBRES+patch_no)
    lda #0
@@ -1463,6 +1523,12 @@
    sta timbres::Timbre::env::decayL, x
    lda #10
    sta timbres::Timbre::env::decayH, x
+   lda #0
+   sta timbres::Timbre::env::sustain, x
+   lda #0
+   sta timbres::Timbre::env::releaseL, x
+   lda #64
+   sta timbres::Timbre::env::releaseH, x
    ; env 2
    ldx #(2*N_TIMBRES+patch_no)
    lda #0
@@ -1473,6 +1539,12 @@
    sta timbres::Timbre::env::decayL, x
    lda #36
    sta timbres::Timbre::env::decayH, x
+   lda #0
+   sta timbres::Timbre::env::sustain, x
+   lda #0
+   sta timbres::Timbre::env::releaseL, x
+   lda #64
+   sta timbres::Timbre::env::releaseH, x
    ; lfo 0
    ldx #(0*N_TIMBRES+patch_no)
    lda #0

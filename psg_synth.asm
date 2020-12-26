@@ -14,6 +14,7 @@
 ; variables/macros
 .include "global_definitions.asm"
 .include "synth_macros.asm"
+.include "loops.asm"
 ; sub modules
 .include "timbres.asm"
 .include "voices.asm"

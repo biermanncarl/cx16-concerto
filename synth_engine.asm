@@ -117,6 +117,15 @@ next_voice:
    ; step = 0 means inactive (either not started or already finished) 
    ; When the envelope is inactive, phase has to be 0 for reference,
    ; since the envelope amplitude is in "phase".
+   ; (If phase weren't 0 when the envelope is inactive, it would yield a nonzero modulation
+   ; to everything the envelope is assigned to)
+   
+   ; step legend:
+   ; 0 - inactive
+   ; 1 - attack phase
+   ; 2 - decay phase
+   ; 3 - sustain phase
+   ; 4 - release phase
 
    ; load timbre index into register Y ... this will function as the indexing 
    ; offset to access the correct envelope data.
@@ -139,11 +148,18 @@ next_env:
    lda voices::Voice::env::step, x ; get current envelope stage
    bne :+   ; step = 0 means inactive
    jmp advance_env
-:  cmp #1
-   beq env_do_attack ; step = 1 means attack stage
-   bra env_do_decay  ; if none of the previous is true, jump to last stage
-
+:  ; choose envelope stage
+   asl ; could save two cycles per envelope if we set the steps to only even numbers.
+   phx
+   tax
+   jmp (@jmp_tbl-2, x)
+@jmp_tbl:
+   .word env_do_attack
+   .word env_do_decay
+   .word env_do_sustain
+   .word env_do_release
 env_do_attack:
+   plx
    ; add attack rate to phase
    clc
    lda timbres::Timbre::env::attackL, y
@@ -160,8 +176,9 @@ env_do_attack:
    lda #127
    sta voices::Voice::env::phaseH, x
    stz voices::Voice::env::phaseL, x
-   bra advance_env
+   jmp advance_env
 env_do_decay:
+   plx
    ; subtract decay rate from phase
    sec
    lda voices::Voice::env::phaseL, x
@@ -170,10 +187,39 @@ env_do_decay:
    lda voices::Voice::env::phaseH, x
    sbc timbres::Timbre::env::decayH, y
    sta voices::Voice::env::phaseH, x
-   ; high byte still in accumulator after subtraction
-   bcc env_finish       ; if overflow occured during subtraction of high byte means we're finished
-                        ; because we would have reached a negative value
-   bra advance_env
+   ; high byte still in accumulator after subtraction, and flags set according to subtraction
+   ; first thing that needs to be checked, is for overflow during subtraction (especially for low sustain levels and/or high decay rates)
+   bcc @transition_into_sustain
+   ; compare to sustain level and check if we've arrived.
+   cmp timbres::Timbre::env::sustain, y
+   bcs advance_env
+   ; advance to sustain stage. Set sustain level.
+@transition_into_sustain:
+   inc voices::Voice::env::step, x
+   lda timbres::Timbre::env::sustain, y
+   sta voices::Voice::env::phaseH, x
+   stz voices::Voice::env::phaseL, x
+   jmp advance_env
+env_do_sustain:
+   plx
+   ; literally do nothing. Correct phase should be set by end of decay (see above).
+   ; Release phase will not be triggered from within the synth engine, but from outside,
+   ; i.e. by note-off events.
+   jmp advance_env
+env_do_release:
+   plx
+   ; subtract release rate from phase
+   sec
+   lda voices::Voice::env::phaseL, x
+   sbc timbres::Timbre::env::releaseL, y
+   sta voices::Voice::env::phaseL, x
+   lda voices::Voice::env::phaseH, x
+   sbc timbres::Timbre::env::releaseH, y
+   sta voices::Voice::env::phaseH, x
+   ; high byte still in accumulator after subtraction, and flags set according to subtraction
+   ; finish up envelope if overflow during subtraction (which indicates we've crossed zero)
+   bcc env_finish
+   jmp advance_env
 env_finish:
    ; set step and phase to 0
    ; check if we're in envelope 0 (the master envelope), which upon finishing deactivates the voice
@@ -212,7 +258,7 @@ advance_env: ; load phase into modsource and go to next envelope
    clc
    adc #N_TIMBRES
    tay
-   ;advance index for Voice data
+   ; advance index for Voice data
    txa
    clc ; actually redundant, could be left away
    adc #N_VOICES

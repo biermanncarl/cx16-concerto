@@ -18,10 +18,13 @@
 
    ; envelope rates (not times!)
    .scope env
-      attackL: ENVELOPE_TIMBRE_BYTE_FIELD
-      attackH: ENVELOPE_TIMBRE_BYTE_FIELD
-      decayL:  ENVELOPE_TIMBRE_BYTE_FIELD
-      decayH:  ENVELOPE_TIMBRE_BYTE_FIELD
+      attackL:  ENVELOPE_TIMBRE_BYTE_FIELD
+      attackH:  ENVELOPE_TIMBRE_BYTE_FIELD
+      decayL:   ENVELOPE_TIMBRE_BYTE_FIELD
+      decayH:   ENVELOPE_TIMBRE_BYTE_FIELD
+      sustain:  ENVELOPE_TIMBRE_BYTE_FIELD
+      releaseL: ENVELOPE_TIMBRE_BYTE_FIELD
+      releaseH: ENVELOPE_TIMBRE_BYTE_FIELD
    .endscope
 
    ; lfo stuff

@@ -16,49 +16,10 @@ event_pointer: .byte 0
 ; 0 - end of data stream
 ; 1 - wait -- 2 bytes wait length -- 2 bytes unused
 ; 2 - play note -- 1 byte channel -- 1 byte instrument -- 1 byte pitch -- 1 byte volume
-; 3 - stop note -- 1 byte channel -- (1 byte soft or hard ending, i.e. with or without release phase)
+; 3 - stop note -- 1 byte channel -- 1 byte soft or hard ending -- 2 bytes unused (ending: 0 with release, 1 hard ending)
 ; more to come
 events:
-   ; 1 bar
-   .byte    2,    0,    3,    40,   64
-   .byte    2,    1,    1,    36,   60
-   .byte    1,    20,   0,    0,    0
-   .byte    3,    0,    0,    0,    0
-   .byte    1,    20,   0,    0,    0
-   .byte    2,    0,    4,    40,   64
-   .byte    1,    20,   0,    0,    0
-   .byte    2,    1,    1,    36,   60
-   .byte    3,    0,    0,    0,    0
-   .byte    1,    40,   0,    0,    0
-   .byte    2,    0,    3,    40,   64
-   .byte    1,    20,   0,    0,    0
-   .byte    3,    0,    0,    0,    0
-   .byte    2,    0,    4,    40,   64
-   .byte    2,    1,    1,    44,   60
-   .byte    1,    20,   0,    0,    0
-   .byte    3,    0,    0,    0,    0
-   .byte    1,    20,   0,    0,    0
-   ; 1 bar
-   .byte    2,    0,    3,    40,   64
-   .byte    2,    1,    1,    43,   60
-   .byte    1,    20,   0,    0,    0
-   .byte    3,    0,    0,    0,    0
-   .byte    1,    20,   0,    0,    0
-   .byte    2,    0,    4,    40,   64
-   .byte    1,    20,   0,    0,    0
-   .byte    2,    1,    1,    43,   60
-   .byte    3,    0,    0,    0,    0
-   .byte    1,    40,   0,    0,    0
-   .byte    2,    0,    3,    40,   64
-   .byte    1,    20,   0,    0,    0
-   .byte    3,    0,    0,    0,    0
-   .byte    2,    0,    4,    40,   64
-   .byte    2,    1,    1,    37,   60
-   .byte    1,    20,   0,    0,    0
-   .byte    3,    0,    0,    0,    0
-   .byte    1,    20,   0,    0,    0
-   ; end of loop
-   .byte    0
+POLY_SUS_RELEASE
 
 player_tick:
    lda time
@@ -137,11 +98,19 @@ player_play_note:
 
 ; stop note event. TODO: distinguish soft and hard note stops (soft aka. put notes into release phase)
 player_stop_note:
-   ; first check if note is active
+   ; load channel number
    ldx events+1, y
+   ; first check if note is active
    lda voices::Voice::active, x
-   beq :+
+   beq do_events ; don't do anything if note is inactive
+   ; then check for soft or hard ending
+   lda events+2, y
+   beq @soft_ending
+@hard_ending:
    jsr voices::stop_note
-:  jmp do_events
+   jmp do_events
+@soft_ending:
+   jsr voices::release_note
+   jmp do_events
 
 .endscope

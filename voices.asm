@@ -459,9 +459,26 @@ rts
 
 
 ; Puts a note into its release phase.
-; TODO
+; Basically just puts every envelope into the decay phase.
+; expects channel of note in X
+; doesn't preserve X and Y
 release_note:
-   nop
+   rln_env_counter = mzpbb
+   ; load timbre number
+   ldy Voice::timbre, x
+   ; number of active envelopes
+   lda timbres::Timbre::n_envs, y
+   sta rln_env_counter
+@loop_env:
+   lda #4
+   sta Voice::env::step, x
+   ; advance indices
+   txa
+   clc
+   adc #N_VOICES
+   tax
+   dec rln_env_counter
+   bne @loop_env
 rts
 
 
