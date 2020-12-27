@@ -202,9 +202,14 @@ env_do_decay:
    jmp advance_env
 env_do_sustain:
    plx
-   ; literally do nothing. Correct phase should be set by end of decay (see above).
+   ; We don't need to do anything. Correct phase should be set by end of decay (see above).
    ; Release phase will not be triggered from within the synth engine, but from outside,
    ; i.e. by note-off events.
+   ; HOWEVER, since we want real-time feedback if the parameter changes,
+   ; we do set the phase to the sustain level in every tick.
+   lda timbres::Timbre::env::sustain, y
+   sta voices::Voice::env::phaseH, x
+   stz voices::Voice::env::phaseL, x
    jmp advance_env
 env_do_release:
    plx
