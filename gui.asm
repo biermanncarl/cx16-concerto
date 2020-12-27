@@ -166,7 +166,7 @@
    sp: .byte 0                ; stack pointer, counts how many elements are on the stack
 .endscope
 
-; placeholder for unimplemented subroutines
+; placeholder for unimplemented/unnecessary subroutines
 dummy_sr:
    rts
 
@@ -334,7 +334,6 @@ draw_arrowed_edit:
    ply
    rts
 
-; 4: dragging edit, followed by x and y position (abs), options (flags), min value, max value, coarse value, fine value
 draw_drag_edit:
    lda (dc_pointer), y
    sta guiutils::draw_x
@@ -560,7 +559,6 @@ drag_event:
 ; and whether dragging is done with left or right mouse button in ms_curr_data (left=0, right=1)
 ; and drag distance compared to previous frame in ms_curr_data2
 
-; 4: dragging edit, followed by x and y position (abs), options (flags), min value, max value, coarse value, fine value
 drag_drag_edit:
    ; first check if drag edit has fine editing enabled
    ldy ms_ref_component_ofs
@@ -1084,17 +1082,91 @@ click_snav:
    sta Timbre
    rts
 
+
+; panels' drag subroutines
+; -------------------------
+; expect de_pointer to contain the pointer to the corresponding GUI component string
+; and mouse variables set according to the drag action, that is
+; ms_ref_component_id
+; ms_ref_component_ofs
+; ms_curr_panel
+; ms_curr_data and ms_curr_data2
+
+
 ; something on global panel being dragged
 drag_global:
    rts
+
 
 ; something on oscillator panel being dragged
 drag_osc:
    rts
 
+
 ; something on envelope panel being dragged
 drag_env:
+   ; first, determine the offset of the envelope in the Timbre data
+   lda Timbre ; may be replaced later
+   ldx env::active_tab ; envelope number
+@loop:
+   cpx #0
+   beq @end_loop
+   clc
+   adc #N_TIMBRES
+   dex
+   bra @loop
+@end_loop:
+   tax ; envelope index is in x
+   ; prepare drag edit readout
+   lda ms_ref_component_ofs
+   clc
+   adc #6
+   tay ; drag edit's coarse value offset is in Y
+   ; now determine which component has been dragged
+   phx
+   lda ms_ref_component_id
+   asl
+   tax
+   jmp (@jmp_tbl, x)
+@jmp_tbl:
+   .word @skip
+   .word @attack
+   .word @decay
+   .word @sustain
+   .word @release
+@attack:
+   plx
+   lda (de_pointer), y
+   sta timbres::Timbre::env::attackH, x
+   iny
+   lda (de_pointer), y
+   sta timbres::Timbre::env::attackL, x
    rts
+@decay:
+   plx
+   lda (de_pointer), y
+   sta timbres::Timbre::env::decayH, x
+   iny
+   lda (de_pointer), y
+   sta timbres::Timbre::env::decayL, x
+   rts
+@sustain:
+   plx
+   lda (de_pointer), y
+   sta timbres::Timbre::env::sustain, x
+   rts
+@release:
+   plx
+   lda (de_pointer), y
+   sta timbres::Timbre::env::releaseH, x
+   iny
+   lda (de_pointer), y
+   sta timbres::Timbre::env::releaseL, x
+   rts
+@skip:
+   plx
+   rts
+
 
 drag_snav:
    rts

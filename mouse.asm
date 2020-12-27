@@ -14,6 +14,7 @@
 ; is non-trivial. Which button-press-history leads to which events?
 ; The following scheme answers this question
 
+; The mouse is a finite-state machine.
 ; On program start, and always when no mouse button is pressed, the mouse is
 ; in the so-called "idle" state.
 ; When the left or right button is pressed, the mouse will be set into 
@@ -21,7 +22,7 @@
 ; In these states, the mouse will wait for either all mouse buttons to be released
 ; or for the other button to be pressed.
 ; If the other button is pressed while still holding down, the state of the mouse
-; is changed.
+; is changed to one of the "reset" states, which wait for all buttons to be released.
 
 .scope mouse
 
