@@ -44,6 +44,7 @@ start:
    PRESET_KEY_1 2
    PRESET_KICK_DRUM_3 3
    PRESET_SNARE_DRUM_5 4
+   PRESET_PAD_1 5
 
    ; do other initializations
    jsr voices::init_voices

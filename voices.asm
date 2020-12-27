@@ -459,7 +459,7 @@ rts
 
 
 ; Puts a note into its release phase.
-; Basically just puts every envelope into the decay phase.
+; Basically just puts every envelope into the release phase.
 ; expects channel of note in X
 ; doesn't preserve X and Y
 release_note:

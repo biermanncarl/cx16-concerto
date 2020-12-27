@@ -123,6 +123,8 @@
    lda #14
    jmp play_note
 @keyboard_space:
+   ldx #15
+   jsr voices::release_note
 
    jmp end_mainloop
 @keyboard_z:
