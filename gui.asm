@@ -35,8 +35,9 @@
 
 
 
-; PANEL DATA
+
 .scope gui
+   ; PANEL DATA
 
    ; compiler variables for convenience
    ; and panel data that will be accessed via pointers
@@ -88,15 +89,31 @@
       ; GUI component string of envelope panel
       comps:
          .byte 2, px, py, 3, 0 ; tab selector
+         .byte 4, px+4 , py+3, %00000001, 0, 127, 0, 0 ; drag edit - attack
+         .byte 4, px+9 , py+3, %00000001, 0, 127, 0, 0 ; drag edit - decay
+         .byte 4, px+14, py+3, %00000000, 0, 127, 0, 0 ; drag edit - sustain
+         .byte 4, px+18, py+3, %00000001, 0, 127, 0, 0 ; drag edit - release
          .byte 0
       ; caption list of envelope panel
       capts:
          .byte CCOLOR_CAPTION, px+4, py
          .word cp
+         .byte CCOLOR_CAPTION, px+4, py+2
+         .word lb_attack
+         .byte CCOLOR_CAPTION, px+9, py+2
+         .word lb_decay
+         .byte CCOLOR_CAPTION, px+14, py+2
+         .word lb_sustain
+         .byte CCOLOR_CAPTION, px+18, py+2
+         .word lb_release
          .byte 0
       ; data specific to the envelope panel
       active_tab: .byte 0
       cp: STR_FORMAT "envelopes" ; caption of panel
+      lb_attack: STR_FORMAT "att"
+      lb_decay: STR_FORMAT "dec"
+      lb_sustain: STR_FORMAT "sus"
+      lb_release: STR_FORMAT "rel"
    .endscope
    .scope snav
       px = 0
