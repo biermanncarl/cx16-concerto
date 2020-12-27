@@ -591,7 +591,7 @@ drag_drag_edit:
    sbc (de_pointer), y ; now we have the distance to the upper border in the accumulator
    sec
    sbc ms_curr_data2 ; if this overflowed, we are crossing the border
-   bmi @coarse_up_overflow
+   bcc @coarse_up_overflow
 @coarse_up_normal:
    lda (de_pointer), y
    clc
@@ -615,7 +615,7 @@ drag_drag_edit:
    sbc (de_pointer), y ; now we have the distance to the min value in the accumulator
    clc
    adc ms_curr_data2 ; if the result is negative, we are crossing the border
-   bmi @coarse_down_overflow
+   bcc @coarse_down_overflow
 @coarse_down_normal:
    iny
    iny
@@ -631,20 +631,56 @@ drag_drag_edit:
    iny
    sta (de_pointer), y
    bra @update_gui
+; 4: dragging edit, followed by x and y position (abs), options (flags), min value, max value, coarse value, fine value
 @fine_drag:
    ; set fine drag mode
    lda (de_pointer), y
    ora #%00000010
    sta (de_pointer), y
-   ; increment
+   ; prepare the increment
    iny
    iny
    iny
    iny
+   ; check if dragging up or down
+   lda ms_curr_data2
+   bmi @fine_drag_down
+@fine_drag_up:
+   ; check if adding the increment crosses the border
+   lda #255 ; load max value, and then subtract current value from it
+   sec
+   sbc (de_pointer), y ; now we have the distance to the upper border in the accumulator
+   sec
+   sbc ms_curr_data2 ; if this overflowed, we are crossing the border
+   bcc @fine_up_overflow
+@fine_up_normal:
    lda (de_pointer), y
    clc
    adc ms_curr_data2
    sta (de_pointer), y
+   bra @update_gui
+@fine_up_overflow:
+   ; on overflow, simply put the maximal value into the edit
+   lda #255
+   sta (de_pointer), y
+   bra @update_gui
+@fine_drag_down:
+   ; check if adding the increment crosses the min value
+   lda (de_pointer), y ; load current value
+   clc
+   adc ms_curr_data2 ; if overflow occurs, we are crossing the border
+   bcc @fine_down_overflow
+@fine_down_normal:
+   lda (de_pointer), y
+   clc
+   adc ms_curr_data2
+   sta (de_pointer), y
+   bra @update_gui
+@fine_down_overflow:
+   ; if overflow occurs, simply put minimal value into edit
+   lda #0
+   sta (de_pointer), y
+   bra @update_gui
 @update_gui:
    ldy ms_ref_component_ofs
    iny
