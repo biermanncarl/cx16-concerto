@@ -29,13 +29,8 @@
 
 
 start:
-   ; startup code
 
-   jsr gui::load_synth_gui
-
-   jsr mouse::mouse_init
-
-   ; initialize patch 0
+   ; initialize patches
    ;PRESET_KICK_DRUM_2 0
    ;PRESET_ONE_OSC_PATCH 0
    ;PRESET_LEAD_2 0
@@ -45,6 +40,11 @@ start:
    PRESET_KICK_DRUM_3 3
    PRESET_SNARE_DRUM_5 4
    PRESET_PAD_1 5
+
+
+   ; startup code
+   jsr gui::load_synth_gui
+   jsr mouse::mouse_init
 
    ; do other initializations
    jsr voices::init_voices
@@ -61,6 +61,8 @@ mainloop:
    DISPLAY_BYTE ms_curr_component_id, 35, 58
    DISPLAY_BYTE ms_curr_component_ofs, 35, 56
    DISPLAY_BYTE ms_curr_data, 40, 58
+
+   DISPLAY_BYTE gui::hg+3, 70, 58
 
 
    ; keyboard polling

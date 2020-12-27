@@ -4,7 +4,7 @@
 ; They behave a bit like windows.
 ; The look and behaviour of all panels are hard coded.
 ; However, they can be made visible/invisible and also their order can be changed.
-; The order affects which panels appear on top and which receive mouse events first.
+; The order affects which panels appear on top and thus also receive mouse events first.
 
 
 ; Panel legend:
@@ -24,6 +24,10 @@
 ; 2: tab selector, followed by x and y position (abs), number of tabs, and active tab
 ; 3: arrowed edit, followed by x and y position (abs), min value, max value, value
 ; 4: dragging edit, followed by x and y position (abs), options (flags), min value, max value, coarse value, fine value
+button_data_size = 1
+tab_selector_data_size = 5
+arrowed_edit_data_size = 6
+drag_edit_data_size = 8
 
 ; drag edit flags options:
 ; bit 0: coarse/fine option enabled
@@ -156,6 +160,8 @@
    cs: .word click_global, click_osc, click_env, click_snav
    ; drag subroutines
    drgs: .word drag_global, drag_osc, drag_env, drag_snav
+   ; refresh subroutines
+   rfs: .word refresh_global, refresh_osc, refresh_env, refresh_snav
 
 
 ; The Panel Stack
@@ -186,6 +192,7 @@ load_synth_gui:
    lda #3
    sta stack::stack+3
    jsr draw_gui
+   jsr refresh_gui
    rts
 
 
@@ -193,12 +200,13 @@ load_synth_gui:
 
 ; reads through the stack and draws everything
 draw_gui:
-   counter = mzpba ; counter variable
-   stz counter
+   dg_counter = mzpba ; counter variable
+   stz dg_counter
 @loop:
    ; TODO: clear area on screen (but when exactly is it needed?)
    ; call panel-specific drawing subroutine
-   lda counter
+   ldy dg_counter
+   lda stack::stack, y
    asl
    tax
    ; want to emulate a jsr. need to push return address minus 1 to the stack
@@ -210,16 +218,18 @@ draw_gui:
    jmp (drws,x)
 @ret_addr:
    ; draw GUI components
-   lda counter
+   ldy dg_counter
+   lda stack::stack, y
    jsr draw_components
    ; draw captions
-   lda counter
+   ldy dg_counter
+   lda stack::stack, y
    jsr draw_captions
    ; advance in loop
-   lda counter
+   lda dg_counter
    inc
    cmp stack::sp
-   sta counter
+   sta dg_counter
    bne @loop
    rts
 
@@ -688,6 +698,34 @@ drag_drag_edit:
    rts
 
 
+; goes through the stack of active GUI panels and refreshes every one of them
+refresh_gui:
+   rfg_counter = mzpba ; counter variable
+   stz rfg_counter
+@loop:
+   ; call panel-specific drawing subroutine
+   ldy rfg_counter
+   lda stack::stack, y
+   asl
+   tax
+   ; want to emulate a jsr. need to push return address minus 1 to the stack
+@ret_addr1 = @ret_addr-1
+   lda #(>@ret_addr1)
+   pha
+   lda #(<@ret_addr1)
+   pha
+   jmp (rfs,x)
+@ret_addr:
+   ; advance in loop
+   lda rfg_counter
+   inc
+   cmp stack::sp
+   sta rfg_counter
+   bne @loop
+   rts
+
+
+
 
 
 
@@ -1101,6 +1139,7 @@ click_env:
    bne :+
    lda ms_curr_data
    sta env::active_tab
+   jsr refresh_env
 :  rts
 
 click_snav:
@@ -1116,6 +1155,7 @@ click_snav:
    tay
    lda (ce_pointer), y
    sta Timbre
+   jsr refresh_gui
    rts
 
 
@@ -1172,31 +1212,31 @@ drag_env:
    .word @release
 @attack:
    plx
-   lda (de_pointer), y
+   lda env::comps, y
    sta timbres::Timbre::env::attackH, x
    iny
-   lda (de_pointer), y
+   lda env::comps, y
    sta timbres::Timbre::env::attackL, x
    rts
 @decay:
    plx
-   lda (de_pointer), y
+   lda env::comps, y
    sta timbres::Timbre::env::decayH, x
    iny
-   lda (de_pointer), y
+   lda env::comps, y
    sta timbres::Timbre::env::decayL, x
    rts
 @sustain:
    plx
-   lda (de_pointer), y
+   lda env::comps, y
    sta timbres::Timbre::env::sustain, x
    rts
 @release:
    plx
-   lda (de_pointer), y
+   lda env::comps, y
    sta timbres::Timbre::env::releaseH, x
    iny
-   lda (de_pointer), y
+   lda env::comps, y
    sta timbres::Timbre::env::releaseL, x
    rts
 @skip:
@@ -1205,6 +1245,77 @@ drag_env:
 
 
 drag_snav:
+   rts
+
+
+; panels' refresh subroutines
+; ---------------------------
+; These update the data that is shown in the control elements incase the underlying
+; data has changed.
+; E.g. when switching tabs, or when changing the timbre.
+; Note that these subroutines only refresh certain components, while leaving others
+; as they are, e.g. tab-selectors are not affected (in fact, they affect the other components)
+
+refresh_global:
+   rts
+
+refresh_osc:
+   rts
+
+refresh_env:
+   ; first, determine the offset of the envelope in the Timbre data
+   lda Timbre ; may be replaced later
+   ldx env::active_tab ; envelope number
+@loop:
+   cpx #0
+   beq @end_loop
+   clc
+   adc #N_TIMBRES
+   dex
+   bra @loop
+@end_loop:
+   tax ; envelope index is in x
+   ; read ADSR data from Timbre and load it into edits
+   ; attack edit
+   ldy #(tab_selector_data_size + 6)
+   lda timbres::Timbre::env::attackH, x
+   sta env::comps, y
+   iny
+   lda timbres::Timbre::env::attackL, x
+   sta env::comps, y
+   ; decay edit
+   tya
+   clc
+   adc #(drag_edit_data_size-1)
+   tay
+   lda timbres::Timbre::env::decayH, x
+   sta env::comps, y
+   iny
+   lda timbres::Timbre::env::decayL, x
+   sta env::comps, y
+   ; sustain edit
+   tya
+   clc
+   adc #(drag_edit_data_size-1)
+   tay
+   lda timbres::Timbre::env::sustain, x
+   sta env::comps, y
+   ; release edit
+   tya
+   clc
+   adc #(drag_edit_data_size)
+   tay
+   lda timbres::Timbre::env::releaseH, x
+   sta env::comps, y
+   iny
+   lda timbres::Timbre::env::releaseL, x
+   sta env::comps, y
+   ; redraw components
+   lda #2
+   jsr draw_components
+   rts
+
+refresh_snav:
    rts
 
 .endscope
