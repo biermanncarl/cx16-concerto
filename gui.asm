@@ -560,21 +560,65 @@ drag_event:
 ; and whether dragging is done with left or right mouse button in ms_curr_data (left=0, right=1)
 ; and drag distance compared to previous frame in ms_curr_data2
 
+; 4: dragging edit, followed by x and y position (abs), options (flags), min value, max value, coarse value, fine value
 drag_drag_edit:
+   ; first check if drag edit has fine editing enabled
    ldy ms_ref_component_ofs
    iny
    iny
    iny
+   lda (de_pointer), y
+   and #%00000001
+   beq @coarse_drag  ; if there is no fine editing enabled, we jump straight to coarse editing
+   ; check mouse for fine or coarse dragging mode
    lda ms_curr_data
-   beq @left_drag
-   jmp @right_drag
-@left_drag:
+   beq @coarse_drag
+   jmp @fine_drag
+@coarse_drag:
    ; set coarse drag mode
    lda (de_pointer), y
    and #%11111101
    sta (de_pointer), y
-   ; increment
+   ; prepare the increment
    iny
+   iny
+   ; check if dragging up or down
+   lda ms_curr_data2
+   bmi @coarse_drag_down
+@coarse_drag_up:
+   ; check if adding the increment crosses the border
+   lda (de_pointer), y ; load max value, and then subtract current value from it
+   iny
+   sec
+   sbc (de_pointer), y ; now we have the distance to the upper border in the accumulator
+   sec
+   sbc ms_curr_data2 ; if this overflowed, we are crossing the border
+   bmi @coarse_up_overflow
+@coarse_up_normal:
+   lda (de_pointer), y
+   clc
+   adc ms_curr_data2
+   sta (de_pointer), y
+   bra @update_gui
+@coarse_up_overflow:
+   ; on overflow, simply put the maximal value into the edit
+   dey
+   lda (de_pointer), y
+   iny
+   sta (de_pointer), y
+   bra @update_gui
+@coarse_drag_down:
+   ; check if adding the increment crosses the min value
+   iny
+   lda (de_pointer), y ; load current value, and then subtract min value from it
+   dey
+   dey
+   sec
+   sbc (de_pointer), y ; now we have the distance to the min value in the accumulator
+   clc
+   adc ms_curr_data2 ; if the result is negative, we are crossing the border
+   bmi @coarse_down_overflow
+@coarse_down_normal:
    iny
    iny
    lda (de_pointer), y
@@ -582,7 +626,14 @@ drag_drag_edit:
    adc ms_curr_data2
    sta (de_pointer), y
    bra @update_gui
-@right_drag:
+@coarse_down_overflow:
+   ; if overflow occurs, simply put minimal value into edit
+   lda (de_pointer), y
+   iny
+   iny
+   sta (de_pointer), y
+   bra @update_gui
+@fine_drag:
    ; set fine drag mode
    lda (de_pointer), y
    ora #%00000010
