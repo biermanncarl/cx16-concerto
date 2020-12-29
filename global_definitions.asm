@@ -19,6 +19,8 @@ GLOBAL_DEFS_INC = 1
 .define COLOR_ARROWED_EDIT_ARROWS 1
 ; combined colors (foreground & background)
 .define CCOLOR_CAPTION 16*COLOR_BACKGROUND+COLOR_CAPTION
+.define CCOLOR_CHECKBOX_CLEAR 16*COLOR_CAPTION + COLOR_BACKGROUND
+.define CCOLOR_CHECKBOX_TICK 16*COLOR_CAPTION + 0
 ; others
 .define N_PANELS 4   ; number of panels 
 

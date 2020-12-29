@@ -62,7 +62,7 @@ mainloop:
    DISPLAY_BYTE ms_curr_component_ofs, 35, 56
    DISPLAY_BYTE ms_curr_data, 40, 58
 
-   DISPLAY_BYTE gui::hg+3, 70, 58
+   DISPLAY_BYTE ms_curr_component_ofs, 70, 58
 
 
    ; keyboard polling

@@ -24,10 +24,12 @@
 ; 2: tab selector, followed by x and y position (abs), number of tabs, and active tab
 ; 3: arrowed edit, followed by x and y position (abs), min value, max value, value
 ; 4: dragging edit, followed by x and y position (abs), options (flags), min value, max value, coarse value, fine value
+; 5: checkbox, followed by x and y position (abs), width, checked boolean
 button_data_size = 1
 tab_selector_data_size = 5
 arrowed_edit_data_size = 6
 drag_edit_data_size = 8
+checkbox_data_size = 5
 
 ; drag edit flags options:
 ; bit 0: coarse/fine option enabled
@@ -75,15 +77,19 @@ drag_edit_data_size = 8
       comps:
          .byte 2, px, py, 6, 0 ; tabselector
          .byte 4, px+4, py+2, %00000101, 0, 255, 0, 0 ; drag edit
+         .byte 5, px+4, py+4, 10, 0 ; checkbox
          .byte 0
       ; caption list of oscillator panel
       capts:
          .byte CCOLOR_CAPTION, px+4, py
          .word cp
+         .byte CCOLOR_CAPTION, px+6, py+4
+         .word test_lb
          .byte 0
       ; data specific to the oscillator panel
       active_tab: .byte 0
       cp: STR_FORMAT "oscillators" ; caption of panel
+      test_lb: STR_FORMAT "checkbox"
    .endscope
    .scope env
       px = 15
@@ -300,6 +306,7 @@ draw_components:
    .word draw_tab_select  ; tab-select (no drawing routine, drawing is done in panel-specific routine)
    .word draw_arrowed_edit  ; arrowed edit
    .word draw_drag_edit ; drag edit
+   .word draw_checkbox
 @end_loop:
    rts
 
@@ -375,6 +382,23 @@ draw_drag_edit:
    ply
    rts
 
+draw_checkbox:
+   lda (dc_pointer), y
+   sta guiutils::draw_x
+   iny
+   lda (dc_pointer), y
+   sta guiutils::draw_y
+   iny
+   iny
+   lda (dc_pointer), y
+   sta guiutils::draw_data1
+   phy
+   jsr guiutils::draw_checkbox
+   ply
+   iny
+   rts
+
+
 
 ; click event. looks in mouse variables which panel has been clicked and calls its routine
 ; also looks which component has been clicked and calls according routine
@@ -406,6 +430,7 @@ click_event:
    .word click_tab_select
    .word click_arrowed_edit
    .word click_drag_edit
+   .word click_checkbox
 @ret_addrA:
    ; call panel's click subroutine, which is part of the interface between GUI and internal data
    lda ms_curr_panel
@@ -513,6 +538,27 @@ click_arrowed_edit:
 click_drag_edit:
    rts
 
+click_checkbox:
+   ldy ms_curr_component_ofs
+   iny
+   iny
+   iny
+   iny
+   lda (ce_pointer), y
+   beq @tick
+@untick:
+   lda #0
+   sta (ce_pointer), y
+   bra @update
+@tick:
+   lda #1
+   sta (ce_pointer), y
+@update:
+   ldy ms_curr_component_ofs
+   iny
+   jsr draw_checkbox
+   rts
+
 
 
 ; drag event. looks in mouse variables which panel's component has been dragged and calls its routine
@@ -547,6 +593,7 @@ drag_event:
    .word dummy_sr
    .word dummy_sr
    .word drag_drag_edit
+   .word dummy_sr
 @ret_addrA:
    ; call panel's drag subroutine, which is part of the interface between GUI and internal data
    lda ms_ref_panel
@@ -859,12 +906,13 @@ check_gui_loop:
    .word check_tab_selector
    .word check_arrowed_edit
    .word check_drag_edit
+   .word check_checkbox
 @end_gui:
    lda #255 ; none found
    sta ms_curr_component_id
    rts
 
-; component checks (part of mouse_get_component_subroutine)
+; component checks (part of mouse_get_component subroutine)
 ; ---------------------------------------------------------
 ; expect ms_curr_panel and gc_pointer to be set, also gc_cx and gc_cy for mouse positions
 ; and register Y to be at the first "data" position of the component (one past the identifier byte).
@@ -1022,10 +1070,53 @@ check_drag_edit:
 :  cmp #5 ; maximal size of drag edit with all options enabled
    bcc :+
    ; we're out
-@exit_from_y:
+@exit_from_y:   ; from y refers to the Y register being at the position of the y coordinate of the component's position
    iny
    iny
    iny
+   iny
+   iny
+   iny
+   jmp check_gui_loop
+:  ; we're in
+   ; check y direction
+   lda gc_cy
+   lsr
+   cmp (gc_pointer), y
+   bne @exit_from_y
+   ; we're in
+   tya
+   dec
+   dec
+   sta ms_curr_component_ofs
+   lda gc_counter
+   sta ms_curr_component_id
+   rts
+
+; 5: checkbox, followed by x and y position (abs), width, checked boolean
+check_checkbox:
+   ccb_width = mzpbg
+   ; this is basically an "mouse is inside box" check
+   ; with variable width
+   ; get the width of the checkbox
+   iny
+   iny
+   lda (gc_pointer), y
+   sta ccb_width
+   dey
+   dey
+   ; check x direction
+   lda gc_cx
+   lsr
+   sec
+   sbc (gc_pointer), y ; now we have the distance of the mouse pointer to the left side of the checkbox
+   iny
+   ; now A must be smaller than the checkbox' width.
+   cmp ccb_width
+   bcs @exit_from_y
+   bra :+
+   ; we're out
+@exit_from_y:   ; from y refers to the Y register being at the position of the y coordinate of the component's position data
    iny
    iny
    iny

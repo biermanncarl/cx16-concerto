@@ -267,6 +267,8 @@ cls:
 
 
 ; subroutine that draws a frame (around a panel)
+; x, y position in draw_x and draw_y
+; width and height in draw_width and draw_height
 ; data1 is number of tabs (0 if there are no tabs)
 ; data2 is index of active tab (0 to N-1)
 draw_frame:
@@ -383,6 +385,7 @@ draw_frame:
 
 
 ; draw tabs
+; x, y position in draw_x and draw_y
 ; independent routine for updating when another tab is selected
 ; data1 is number of tabs (0 if there are no tabs)
 ; data2 is index of active tab (0 to N-1)
@@ -492,6 +495,7 @@ draw_tabs:
    rts
 
 ; draw a number edit that has arrows
+; x, y position in draw_x and draw_y
 ; data1: number on display
 draw_arrowed_edit:
    lda draw_x
@@ -519,6 +523,7 @@ draw_arrowed_edit:
 
 
 ; draw a number edit for drag-edit
+; x, y position in draw_x and draw_y
 ; data1: number on display
 ; data2: bit 0: coarse/fine available, bit1: coarse/fine switch, bit2: signed
 draw_drag_edit:
@@ -582,5 +587,33 @@ draw_drag_edit:
    ;stx VERA_data0
    cli
    rts
+
+; draws a checkbox
+; x, y position in draw_x and draw_y
+; checked in draw_data1
+draw_checkbox:
+   lda draw_x
+   sta cur_x
+   lda draw_y
+   sta cur_y
+   sei
+   jsr set_cursor
+   lda draw_data1
+   beq @notick
+@tick:
+   lda #86
+   sta VERA_data0
+   lda #CCOLOR_CHECKBOX_TICK
+   sta VERA_data0
+   bra @done
+@notick:
+   lda #81
+   sta VERA_data0
+   lda #CCOLOR_CHECKBOX_CLEAR
+   sta VERA_data0
+@done:
+   cli
+   rts
+
 
 .endscope ; gui
