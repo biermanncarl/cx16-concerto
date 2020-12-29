@@ -50,23 +50,28 @@ checkbox_data_size = 5
    .scope global
       px = 15
       py = 10
-      wd = 10
+      wd = 12
       hg = 18
-      .scope pos ; positions of GUI elements
-         ts_x = px + 2
-         ts_y = py + 3
-      .endscope
+
       ; GUI component string of global panel
       comps:
-         .byte 3, pos::ts_x, pos::ts_y, 0, 4, 0 ; arrowed edit (timbre selection for now)
-         .byte 3, pos::ts_x, pos::ts_y+3, 0, 4, 1 ; arrowed edit (timbre selection for now)
+         .byte 3, px+2, py+3, 0, 4, 0 ; currently unused
+         .byte 3, px+2, py+6, 0, 4, 1 ; currently unused
+         .byte 5, px+2, py+10, 8, 0 ; porta checkbox
+         .byte 4, px+2, py+12, %00000000, 0, 255, 0, 0 ; porta rate edit
          .byte 0
       ; caption list of global panel
       capts:
          .byte CCOLOR_CAPTION, px+2, py
          .word cp
+         .byte CCOLOR_CAPTION, px+5, py+10 ; porta checkbox label
+         .word pa
+         .byte CCOLOR_CAPTION, px+6, py+12 ; porta rate label
+         .word pr
          .byte 0
       cp: STR_FORMAT "global" ; caption of panel
+      pr: STR_FORMAT "rate" ; portamento rate label
+      pa: STR_FORMAT "porta" ; portamento activate label
    .endscope
    .scope osc
       px = global::px+global::wd
