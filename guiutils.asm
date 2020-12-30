@@ -254,7 +254,7 @@ print_byte_simple:
 cls:
    ; set background color in a dirty manner (we did not hear that from Greg King)
    ; https://www.commanderx16.com/forum/index.php?/topic/469-change-background-color-using-vpoke/&do=findComment&comment=3084
-   lda #(11*16+1)
+   lda #(COLOR_BACKGROUND*16+COLOR_CAPTION)
    sta $376
 
    ; actually, I'd like a dark green or something
@@ -264,7 +264,92 @@ cls:
    jsr CHROUT
    rts
 
+; clears the standard layer
+; color in Y
+; layer in A (0 for standard layer, 1 for secondary layer)
+cls_line:   .byte 0
 
+clear_layer:
+   sei
+   ; use VERA's port 0
+   stz VERA_ctrl
+   ; set stride & bank
+   lda #$10
+   sta VERA_addr_bank
+   ;loop over the whole screen
+   lda #59
+   sta cls_line
+@loop1:
+   ldx #80
+   ; set VERA writing address
+   lda cls_line
+   sta VERA_addr_high
+   stz VERA_addr_low
+   lda #32
+@loop2:
+   sta VERA_data0
+   sty VERA_data0
+   dex
+   bne @loop2
+   dec cls_line
+   bpl @loop1
+   cli
+   rts
+
+; clears secondary layer
+; color in Y
+cls_secondary_layer:
+   sei
+   ; use VERA's port 0
+   stz VERA_ctrl
+   ; set stride & bank
+   lda #$10
+   sta VERA_addr_bank
+   ;loop over the whole screen
+   lda #59
+   sta cls_line
+@loop1:
+   ldx #80
+   ; set VERA writing address
+   lda cls_line
+   clc
+   adc #(secondary_layer_mapbase*2)
+   sta VERA_addr_high
+   stz VERA_addr_low
+   lda #32
+@loop2:
+   sta VERA_data0
+   sty VERA_data0
+   dex
+   bne @loop2
+   dec cls_line
+   bpl @loop1
+   cli
+   rts
+
+; sets an additional text layer on top of the standard text layer
+setup_secondary_layer:
+   sei
+   ; copy settings from Layer1
+   lda VERA_L1_tilebase
+   sta VERA_L0_tilebase
+   lda VERA_L1_config
+   sta VERA_L0_config
+   ; initialize with zeros
+   stz VERA_L0_hscroll_h
+   stz VERA_L0_hscroll_l
+   stz VERA_L0_vscroll_h
+   stz VERA_L0_vscroll_l
+   ; set mapbases (swap standard layer to the back)
+   lda #secondary_layer_mapbase
+   sta VERA_L1_mapbase
+   stz VERA_L0_mapbase
+   ; activate Layer0
+   lda VERA_dc_video
+   ora #%00010000
+   sta VERA_dc_video
+   cli
+   rts
 
 ; subroutine that draws a frame (around a panel)
 ; x, y position in draw_x and draw_y

@@ -191,7 +191,8 @@ dummy_sr:
 ; brings up the synth GUI
 ; puts all synth panels into GUI stack
 load_synth_gui:
-   jsr guiutils::cls
+   ldy #(16*COLOR_BACKGROUND+COLOR_CAPTION)
+   jsr guiutils::cls_standard_layer
    lda #4
    sta stack::sp
    lda #0

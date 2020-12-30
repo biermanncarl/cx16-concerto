@@ -24,6 +24,8 @@ GLOBAL_DEFS_INC = 1
 ; others
 .define N_PANELS 4   ; number of panels 
 
+; Memory definitions
+.define secondary_layer_mapbase 64 ; 32 would be ideal, but the mouse sprite is in the middle of that block by default (why?) so I need to move elsewhere
 
 ; keyboard variables
 Octave:

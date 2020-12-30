@@ -4,6 +4,27 @@
 
 
 
+
+
+   ; read byte from screen
+   sei
+   stz VERA_ctrl
+   lda #$10
+   sta VERA_addr_bank
+   lda #2 ; y position
+   sta VERA_addr_high
+   lda #75 ; x position
+   asl
+   sta VERA_addr_low
+   lda VERA_data0
+   cli
+   sta debug_a
+
+   DISPLAY_BYTE debug_a, 70, 58
+
+
+
+
 ; this snippet is a draft from the SCALE5_16 macro
 ; it is supposed to rightshift a 16 bit register by N times (N: 0..15)
 ; the naive approach can be horribly slow if N is large

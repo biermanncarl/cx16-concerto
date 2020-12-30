@@ -31,9 +31,7 @@
 start:
 
    ; initialize patches
-   ;PRESET_KICK_DRUM_2 0
-   ;PRESET_ONE_OSC_PATCH 0
-   ;PRESET_LEAD_2 0
+
    PRESET_ONE_OSC_PATCH 0
    PRESET_BRIGHT_PLUCK 1
    PRESET_KEY_1 2
@@ -44,9 +42,10 @@ start:
 
    ; startup code
    jsr gui::load_synth_gui
+   jsr guiutils::setup_secondary_layer
+   ldy #(16*0)
+   jsr guiutils::cls_secondary_layer
    jsr mouse::mouse_init
-
-   ; do other initializations
    jsr voices::init_voices
    jsr my_isr::launch_isr
    ; main loop ... wait until "Q" is pressed.
@@ -62,8 +61,13 @@ mainloop:
    DISPLAY_BYTE ms_curr_component_ofs, 35, 56
    DISPLAY_BYTE ms_curr_data, 40, 58
 
-   DISPLAY_BYTE ms_curr_component_ofs, 70, 58
+   lda VERA_dc_video
+   sta debug_a
+   DISPLAY_BYTE debug_a, 75, 2
 
+   lda VERA_L1_tilebase
+   sta debug_a
+   DISPLAY_BYTE debug_a, 75, 4
 
    ; keyboard polling
 .include "keyboard_polling.asm"
