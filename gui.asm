@@ -197,7 +197,7 @@ dummy_data_size = 1
       hg = 60
       ; GUI component string of panel
       comps:
-         .byte 7 ; dummy component
+         .byte 7 ; dummy component, to catch click events (without it, the panel wouldn't receive any click events!)
          .byte 0
       ; caption list of the panel
       capts:
@@ -209,7 +209,8 @@ dummy_data_size = 1
       box_y: .byte 0
       box_width: .byte 0
       box_height: .byte 0
-      ; width and height are directly
+      lb_addr: .word 0 ; address and offset of the listbox that was causing the popup
+      lb_ofs: .byte 0 ; offset is the offset of the actual value to be changed (selection of the listbox)
    .endscope
 
    ; Panel Lookup tables
@@ -657,8 +658,8 @@ click_checkbox:
 
 click_listbox:
    ; bring up popup panel
-   ; TODO: later we would need to calculate the popup position based on listbox position
-   ; and possibly oversized popup (so that it would range beyond the screen)
+   ; TODO: later we would need to calculate the popup position based on the listbox position
+   ; and a possibly oversized popup (so that it would range beyond the screen)
    ; We'll deal with that as soon as this becomes an issue.
    ; For now, we'll just directly place it where we want it.
    ldy ms_curr_component_ofs
@@ -682,6 +683,13 @@ click_listbox:
    iny
    lda (ce_pointer), y
    sta listbox_popup::strlist+1
+   iny
+   tya
+   sta listbox_popup::lb_ofs
+   lda ce_pointer
+   sta listbox_popup::lb_addr
+   lda ce_pointer+1
+   sta listbox_popup::lb_addr+1
    ; now do the GUI stack stuff
    ldx stack::sp
    lda #4
@@ -1313,6 +1321,13 @@ check_listbox:
 
 ; dummy always registers a click event, regardless of where the mouse is. Useful for popups.
 check_dummy:
+   ; get mouse coordinates (in 8 pixel multiples) and put them into data
+   lda gc_cx
+   lsr
+   sta ms_curr_data
+   lda gc_cy
+   lsr
+   sta ms_curr_data2
    dey
    tya
    sta ms_curr_component_ofs
@@ -1452,12 +1467,38 @@ click_snav:
    rts
 
 click_lb_popup:
+   clbp_pointer = mzpwa ; mzpwa is already used in the click_event routine, but once we get to this point, it should have served its purpose, so we can reuse it here.
    ; TODO: determine selection (or skip if none was selected)
+   ; mouse coordinates are in ms_curr_data and ms_curr_data2 (been put there by the dummy GUI component)
+   ; check if we're in correct x range
+   lda ms_curr_data
+   sec
+   sbc listbox_popup::box_x
+   cmp listbox_popup::box_width
+   bcs @close_popup
+   ; we're inside!
+   ; check if we're in correct y range
+   lda ms_curr_data2
+   sec
+   sbc listbox_popup::box_y
+   cmp listbox_popup::box_height
+   bcs @close_popup
+   ; we're inside!
+   ; now the accumulator holds the new selection index. Put it back into the listbox.
+   pha
+   lda listbox_popup::lb_addr
+   sta clbp_pointer
+   lda listbox_popup::lb_addr+1
+   sta clbp_pointer+1
+   ldy listbox_popup::lb_ofs
+   pla
+   sta (clbp_pointer), y
+@close_popup:
    ; one thing that always happens, is that the popup is closed upon clicking.
    ; close popup
    dec stack::sp
    ; redraw gui
-   jsr guiutils::cls
+   jsr guiutils::cls ; TODO: replace by local clear with background color
    jsr draw_gui
    rts
 
