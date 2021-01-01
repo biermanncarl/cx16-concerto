@@ -4,6 +4,35 @@
 
 
 
+; primitive listbox behaviour. just skip through the list
+click_listbox:
+   ; TODO: make popup happen
+   lda ms_curr_component_ofs
+   clc
+   adc #7
+   tay
+   lda (ce_pointer), y
+   inc
+   dey
+   dey
+   dey
+   cmp (ce_pointer), y
+   bcc :+
+   lda #0
+:  iny
+   iny
+   iny
+   sta (ce_pointer), y
+@update:
+   ldy ms_curr_component_ofs
+   iny
+   jsr draw_listbox
+
+   rts
+
+
+
+
 ; this snippet is a draft from the SCALE5_16 macro
 ; it is supposed to rightshift a 16 bit register by N times (N: 0..15)
 ; the naive approach can be horribly slow if N is large

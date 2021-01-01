@@ -22,8 +22,8 @@
 ; 4: popup panel for listboxes
 
 ; Each panel has multiple byte strings hard coded. Those byte strings define elements shown on the GUI.
-;   * one string that defines all interactive components, such as checkboxes, listboxes etc.
-;     It is often called "comps" or something similar.
+;   * one string that defines all interactive GUI components, such as checkboxes, listboxes etc.
+;     It is often called "comps", "component string" or something similar.
 ;     In many subroutines, this component string is given as a zero page pointer together with an offset.
 ;     Those component strings can inherently only be 256 bytes or shorter.
 ;   * one string that defines all static labels displaying text. Those are not interactive.
@@ -56,12 +56,14 @@
 ; 4: dragging edit, followed by x and y position (abs), options (flags), min value, max value, coarse value, fine value
 ; 5: checkbox, followed by x and y position (abs), width, checked boolean
 ; 6: listbox, followed by x and y position (abs), width, length of stringlist, stringlist pointer (16 bit), selection index
+; 7: dummy component, no other data. always registers a click event, so that a panel never misses a click (for popups).
 button_data_size = 1
 tab_selector_data_size = 5
 arrowed_edit_data_size = 6
 drag_edit_data_size = 8
 checkbox_data_size = 5
-listbox_data_size=8
+listbox_data_size = 8
+dummy_data_size = 1
 
 ; drag edit flags options:
 ; bit 0: coarse/fine option enabled
@@ -128,7 +130,8 @@ listbox_data_size=8
       active_tab: .byte 0
       cp: STR_FORMAT "oscillators" ; caption of panel
       test_lb: STR_FORMAT "checkbox"
-      modsources_lb:
+      ; stringlist for modsource listboxes
+      modsources_lb: 
          STR_FORMAT "env1"
          STR_FORMAT "env2"
          STR_FORMAT "env3"
@@ -194,16 +197,19 @@ listbox_data_size=8
       hg = 60
       ; GUI component string of panel
       comps:
+         .byte 7 ; dummy component
          .byte 0
       ; caption list of the panel
       capts:
          .byte 0
       ; data specific to the listbox-popup panel
+      ; this is the position where the popup is actually drawn
       strlist: .word 0
       box_x: .byte 0
       box_y: .byte 0
-      box_width:  .byte 0
+      box_width: .byte 0
       box_height: .byte 0
+      ; width and height are directly
    .endscope
 
    ; Panel Lookup tables
@@ -237,7 +243,7 @@ dummy_sr:
 
 
 ; brings up the synth GUI
-; puts all synth panels into GUI stack
+; puts all synth related panels into GUI stack
 load_synth_gui:
    jsr guiutils::cls
    lda #4
@@ -263,7 +269,7 @@ draw_gui:
    stz dg_counter
 @loop:
    ; TODO: clear area on screen (but when exactly is it needed?)
-   ; call panel-specific drawing subroutine
+   ; call panel-specific drawing subroutines
    ldy dg_counter
    lda stack::stack, y
    asl
@@ -353,6 +359,7 @@ draw_components:
    .word draw_drag_edit ; drag edit
    .word draw_checkbox
    .word draw_listbox
+   .word dummy_sr  ; since Y is already one past the component's start address, dummy_sr already does all that is expected! :DD
 @end_loop:
    rts
 
@@ -488,10 +495,10 @@ draw_listbox:
    lda dlb_strp+1
    adc #0
    sta guiutils::str_pointer+1
-   ; safety first: copy plain str pointer
    jsr guiutils::draw_listbox
    ply
    rts
+
 
 
 
@@ -503,13 +510,14 @@ click_event:
    ; For that, we need the info about the component from the GUI component string
    ; of the respective panel.
    ce_pointer = mzpwa ; it is important that this is the same as dc_pointer, because this routine indirectly calls "their" subroutine, expecting this pointer at the same place
+   ; put GUI component string pointer to ZP
    lda ms_curr_panel
    asl
    tax
    lda comps, x
    sta ce_pointer
    lda comps+1, x
-   sta ce_pointer+1   ; put GUI component string pointer to ZP
+   sta ce_pointer+1
    ldy ms_curr_component_ofs ; load component's offset
    lda (ce_pointer), y ; and get its type
    asl
@@ -519,9 +527,10 @@ click_event:
    .word click_button
    .word click_tab_select
    .word click_arrowed_edit
-   .word click_drag_edit
+   .word dummy_sr ; drag edit - no click event necessary
    .word click_checkbox
    .word click_listbox
+   .word dummy_sr ; dummy component
 @ret_addrA:
    ; call panel's click subroutine, which is part of the interface between GUI and internal data
    lda ms_curr_panel
@@ -600,7 +609,7 @@ click_arrowed_edit:
    iny
    iny
    sta (ce_pointer), y
-   bra @update
+   bra @update_gui
 @right:   ; increment value
    ; get maximal value
    lda (ce_pointer), y
@@ -619,14 +628,10 @@ click_arrowed_edit:
    ; and store it back
    iny
    sta (ce_pointer), y
-   bra @update
-@update:
+@update_gui:
    ldy ms_curr_component_ofs
    iny
    jsr draw_arrowed_edit
-   rts
-
-click_drag_edit:
    rts
 
 click_checkbox:
@@ -640,38 +645,50 @@ click_checkbox:
 @untick:
    lda #0
    sta (ce_pointer), y
-   bra @update
+   bra @update_gui
 @tick:
    lda #1
    sta (ce_pointer), y
-@update:
+@update_gui:
    ldy ms_curr_component_ofs
    iny
    jsr draw_checkbox
    rts
 
 click_listbox:
-   ; TODO: make popup happen
-   lda ms_curr_component_ofs
-   clc
-   adc #7
-   tay
-   lda (ce_pointer), y
-   inc
-   dey
-   dey
-   dey
-   cmp (ce_pointer), y
-   bcc :+
-   lda #0
-:  iny
-   iny
-   iny
-   sta (ce_pointer), y
-@update:
+   ; bring up popup panel
+   ; TODO: later we would need to calculate the popup position based on listbox position
+   ; and possibly oversized popup (so that it would range beyond the screen)
+   ; We'll deal with that as soon as this becomes an issue.
+   ; For now, we'll just directly place it where we want it.
    ldy ms_curr_component_ofs
    iny
-   jsr draw_listbox
+   lda (ce_pointer), y
+   sta listbox_popup::box_x
+   iny
+   lda (ce_pointer), y
+   inc ; we'll see where exactly we want the popup (TODO)
+   sta listbox_popup::box_y
+   ; load additional info into popup panel data
+   iny 
+   lda (ce_pointer), y
+   sta listbox_popup::box_width
+   iny 
+   lda (ce_pointer), y
+   sta listbox_popup::box_height
+   iny
+   lda (ce_pointer), y
+   sta listbox_popup::strlist
+   iny
+   lda (ce_pointer), y
+   sta listbox_popup::strlist+1
+   ; now do the GUI stack stuff
+   ldx stack::sp
+   lda #4
+   sta stack::stack, x
+   inc stack::sp
+@update_gui:
+   jsr draw_lb_popup
    rts
 
 
@@ -700,6 +717,7 @@ drag_event:
    .word dummy_sr
    .word dummy_sr
    .word drag_drag_edit
+   .word dummy_sr
    .word dummy_sr
    .word dummy_sr
 @ret_addrA:
@@ -1016,6 +1034,7 @@ check_gui_loop:
    .word check_drag_edit
    .word check_checkbox
    .word check_listbox
+   .word check_dummy
 @end_gui:
    lda #255 ; none found
    sta ms_curr_component_id
@@ -1292,6 +1311,15 @@ check_listbox:
    sta ms_curr_component_id
    rts
 
+; dummy always registers a click event, regardless of where the mouse is. Useful for popups.
+check_dummy:
+   dey
+   tya
+   sta ms_curr_component_ofs
+   lda gc_counter
+   sta ms_curr_component_id
+   rts
+
 
 
 ; PANEL SPECIFIC STUFF
@@ -1355,7 +1383,20 @@ draw_snav:
    rts
 
 draw_lb_popup:
-   ; TODO
+   dlbp_pointer = mzpwd
+   lda listbox_popup::box_x
+   sta guiutils::draw_x
+   lda listbox_popup::box_y
+   sta guiutils::draw_y
+   lda listbox_popup::box_width
+   sta guiutils::draw_width
+   lda listbox_popup::box_height
+   sta guiutils::draw_height
+   lda listbox_popup::strlist
+   sta guiutils::str_pointer
+   lda listbox_popup::strlist+1
+   sta guiutils::str_pointer+1
+   jsr guiutils::draw_lb_popup
    rts
 
 
@@ -1411,7 +1452,13 @@ click_snav:
    rts
 
 click_lb_popup:
-   ; TODO
+   ; TODO: determine selection (or skip if none was selected)
+   ; one thing that always happens, is that the popup is closed upon clicking.
+   ; close popup
+   dec stack::sp
+   ; redraw gui
+   jsr guiutils::cls
+   jsr draw_gui
    rts
 
 

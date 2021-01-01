@@ -603,33 +603,18 @@ draw_checkbox:
    cli
    rts
 
-; draws a listbox
-; x, y position in draw_x and draw_y
-; width in draw_width
-; label pointer in str_pointer
-draw_listbox:
-   lda draw_x
-   sta cur_x
-   lda draw_y
-   sta cur_y
-   sei
-   jsr set_cursor
-   lda #90
-   sta VERA_data0
-   ldx #(COLOR_LISTBOX_BG*16+COLOR_LISTBOX_ARROW)
-   stx VERA_data0
-   lda #32
-   sta VERA_data0
-   stx VERA_data0
-   ldy #0
-   ; prepare width counter
-   ldx draw_width
-   dex ; (for extra characters on the left hand side of the listbox, but just one because of the way we determine the length of the padding)
+
+; prints a string with padding up to specified width -- quite specific, is used in listbox drawing
+; assumes that the VERA address is already set accordingly
+; (str_pointer), y   is where printing continues, incrementing Y along the way
+; color according to the variable color
+; X: overall width plus 1
+print_with_padding:
 @loop1: ; printing loop. assumes that the string length is less or equal than the listbox width minus 2
    lda (str_pointer), y
    beq @end_loop1
    sta VERA_data0
-   lda #(COLOR_LISTBOX_BG*16+COLOR_LISTBOX_FG)
+   lda color
    sta VERA_data0
    dex
    iny
@@ -641,15 +626,71 @@ draw_listbox:
    beq @end_loop2
    lda #32
    sta VERA_data0
-   lda #(COLOR_LISTBOX_BG*16)
+   lda color
    sta VERA_data0
    bra @loop2
 @end_loop2:
-   cli
    rts
 
 
+; draws a listbox
+; x, y position in draw_x and draw_y
+; width in draw_width
+; label pointer in str_pointer
+draw_listbox:
+   lda draw_x
+   sta cur_x
+   lda draw_y
+   sta cur_y
+   sei
+   jsr set_cursor
+   lda #90 ; listbox "bullet"
+   sta VERA_data0
+   ldx #(COLOR_LISTBOX_BG*16+COLOR_LISTBOX_ARROW)
+   stx VERA_data0
+   lda #32
+   sta VERA_data0
+   stx VERA_data0
+   ldy #0
+   ; prepare width counter
+   ldx draw_width
+   dex ; (for extra characters on the left hand side of the listbox, but just one because of the way we determine the length of the padding)
+   lda #(COLOR_LISTBOX_BG*16+COLOR_LISTBOX_FG)
+   sta color
+   jsr print_with_padding
+   cli
+   rts
 
+; draws the listbox popup
+; x, y position in draw_x and draw_y
+; width in draw_width, height in draw_height (also marks number of strings)
+; pointer to stringlist in str_pointer
+draw_lb_popup:
+   dlbp_line_counter = mzpbg
+   lda draw_x
+   sta cur_x
+   lda draw_y
+   sta cur_y
+   ldy #0
+   lda draw_height
+   sta dlbp_line_counter
+   lda #(16*COLOR_LISTBOX_POPUP_BG+COLOR_LISTBOX_POPUP_FG)
+   sta color
+   sei
+@line_loop:
+   jsr set_cursor
+   ldx draw_width
+   inx
+   jsr print_with_padding
+   ; advance indices
+   inc cur_y
+   iny
+   lda dlbp_line_counter
+   dec
+   sta dlbp_line_counter
+   bne @line_loop
+   cli
+   rts
 
 
 
