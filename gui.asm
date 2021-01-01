@@ -34,7 +34,7 @@
 ; Caption List data format:
 ; first byte: color (foreground and background). If it's zero, it marks the end of the list.
 ; second and third bytes: x and y position
-; fourth and fifth bytes: pointer to zero-terminated string.
+; fourth and fifth bytes: pointer to a zero-terminated PETSCII string (thus, the symbol "@" cannot be represented)
 
 ; GUI control element legend with component string format
 ; 0: none (end of list)
@@ -205,19 +205,10 @@ listbox_data_size=8
    wd: .byte global::wd, osc::wd, env::wd, snav::wd
    ; heights
    hg: .byte global::hg, osc::hg, env::hg, snav::hg
-   ; drawing subroutines
-   drws: .word draw_global, draw_osc, draw_env, draw_snav
    ; GUI component strings
    comps: .word global::comps, osc::comps, env::comps, snav::comps
    ; GUI captions
    capts: .word global::capts, osc::capts, env::capts, snav::capts
-   ; mouse subroutines:
-   ; mouse click subroutines
-   cs: .word click_global, click_osc, click_env, click_snav
-   ; drag subroutines
-   drgs: .word drag_global, drag_osc, drag_env, drag_snav
-   ; refresh subroutines
-   rfs: .word refresh_global, refresh_osc, refresh_env, refresh_snav
 
 
 ; The Panel Stack
@@ -265,13 +256,13 @@ draw_gui:
    lda stack::stack, y
    asl
    tax
-   ; want to emulate a jsr. need to push return address minus 1 to the stack
-@ret_addr1 = @ret_addr-1
-   lda #(>@ret_addr1)
-   pha
-   lda #(<@ret_addr1)
-   pha
-   jmp (drws,x)
+   INDEXED_JSR @jmp_tbl, @ret_addr
+@jmp_tbl:
+   .word draw_global
+   .word draw_osc
+   .word draw_env
+   .word draw_snav
+   .word draw_lb_popup
 @ret_addr:
    ; draw GUI components
    ldy dg_counter
@@ -342,14 +333,8 @@ draw_components:
    iny
    asl
    tax
-   ; emulate a jsr
-@ret_addr1 = @ret_addr-1
-   lda #(>@ret_addr1)
-   pha
-   lda #(<@ret_addr1)
-   pha
-   jmp (@jmp_table-2,x) ;-2 because there's no drawing routine for "none" component
-@jmp_table:
+   INDEXED_JSR (@jmp_tbl-2), @ret_addr ;-2 because there's no drawing routine for "none" component
+@jmp_tbl:
    .word dummy_sr  ; button
    .word draw_tab_select  ; tab-select (no drawing routine, drawing is done in panel-specific routine)
    .word draw_arrowed_edit  ; arrowed edit
@@ -517,14 +502,8 @@ click_event:
    lda (ce_pointer), y ; and get its type
    asl
    tax
-   ; want to emulate a jsr. need to push return address minus 1 to the stack
-@ret_addrA1 = @ret_addrA-1
-   lda #(>@ret_addrA1)
-   pha
-   lda #(<@ret_addrA1)
-   pha
-   jmp (@jmp_tbl-2,x) ; -2 because there is nothing to do for component type 0
-@jmp_tbl:
+   INDEXED_JSR (@jmp_tblA-2), @ret_addrA ; -2 because there is nothing to do for component type 0
+@jmp_tblA:
    .word click_button
    .word click_tab_select
    .word click_arrowed_edit
@@ -536,13 +515,13 @@ click_event:
    lda ms_curr_panel
    asl
    tax
-   ; want to emulate a jsr. need to push return address minus 1 to the stack
-@ret_addrB1 = @ret_addrB-1
-   lda #(>@ret_addrB1)
-   pha
-   lda #(<@ret_addrB1)
-   pha
-   jmp (cs,x)
+   INDEXED_JSR (@jmp_tblB), @ret_addrB
+@jmp_tblB:
+   .word click_global
+   .word click_osc
+   .word click_env
+   .word click_snav
+   .word click_lb_popup
 @ret_addrB:
    rts
 
@@ -703,15 +682,8 @@ drag_event:
    lda (de_pointer), y ; and get its type
    asl
    tax
-   ; want to emulate a jsr. need to push return address minus 1 to the stack
-@ret_addrA1 = @ret_addrA-1
-   lda #(>@ret_addrA1)
-   pha
-   lda #(<@ret_addrA1)
-   pha
-   jmp (@jmp_tbl-2,x) ; -2 because there is nothing to do for component type 0
-   ;jmp @ret_addrA
-@jmp_tbl:
+   INDEXED_JSR @jmp_tblA-2, @ret_addrA ; -2 because there's nothing needed for none component type (0)
+@jmp_tblA:
    .word dummy_sr
    .word dummy_sr
    .word dummy_sr
@@ -723,13 +695,13 @@ drag_event:
    lda ms_ref_panel
    asl
    tax
-   ; want to emulate a jsr. need to push return address minus 1 to the stack
-@ret_addrB1 = @ret_addrB-1
-   lda #(>@ret_addrB1)
-   pha
-   lda #(<@ret_addrB1)
-   pha
-   jmp (drgs,x)
+   INDEXED_JSR @jmp_tblB, @ret_addrB
+@jmp_tblB:
+   .word drag_global
+   .word drag_osc
+   .word drag_env
+   .word drag_snav
+   .word dummy_sr ; listbox popup
 @ret_addrB:
    rts
 
@@ -879,13 +851,13 @@ refresh_gui:
    lda stack::stack, y
    asl
    tax
-   ; want to emulate a jsr. need to push return address minus 1 to the stack
-@ret_addr1 = @ret_addr-1
-   lda #(>@ret_addr1)
-   pha
-   lda #(<@ret_addr1)
-   pha
-   jmp (rfs,x)
+   INDEXED_JSR @jmp_tbl, @ret_addr
+@jmp_tbl:
+   .word refresh_global
+   .word refresh_osc
+   .word refresh_env
+   .word refresh_snav
+   .word dummy_sr   ; listbox popup ... popups don't need to be refreshed
 @ret_addr:
    ; advance in loop
    lda rfg_counter
@@ -1370,6 +1342,12 @@ draw_snav:
    ; TODO
    rts
 
+draw_lb_popup:
+   ; TODO
+   rts
+
+
+
 ; panels' click subroutines
 ; -------------------------
 ; expect ce_pointer to contain the pointer to the corresponding GUI component string
@@ -1419,6 +1397,11 @@ click_snav:
    sta Timbre
    jsr refresh_gui
    rts
+
+click_lb_popup:
+   ; TODO
+   rts
+
 
 
 ; panels' drag subroutines

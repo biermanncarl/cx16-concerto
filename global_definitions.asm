@@ -84,6 +84,15 @@ ms_curr_data2: .byte 0 ; used to store dragging distance (y direction)
    .byte 0
 .endmacro
 
+; performs an indexed JSR. Paramters are the jump table address and the desired return address.
+.macro INDEXED_JSR ej_jmp_tbl, ej_return
+   lda #(>(ej_return-1))
+   pha
+   lda #(<(ej_return-1))
+   pha
+   jmp (ej_jmp_tbl,x)
+.endmacro
+
 .macro ADD16 add_a, add_b ; stores result in a, 26 cycles
    clc
    lda add_b
