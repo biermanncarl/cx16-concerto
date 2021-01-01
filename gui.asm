@@ -12,6 +12,7 @@
 ; 1: oscillator settings
 ; 2: envelope settings
 ; 3: synth navigation bar (snav)
+; 4: popup panel for listboxes
 
 ; Caption List data format:
 ; first byte: color (foreground and background). If it's zero, it marks the end of the list.
@@ -25,11 +26,13 @@
 ; 3: arrowed edit, followed by x and y position (abs), min value, max value, value
 ; 4: dragging edit, followed by x and y position (abs), options (flags), min value, max value, coarse value, fine value
 ; 5: checkbox, followed by x and y position (abs), width, checked boolean
+; 6: listbox, followed by x and y position (abs), width, length of stringlist, stringlist pointer (16 bit), selection index
 button_data_size = 1
 tab_selector_data_size = 5
 arrowed_edit_data_size = 6
 drag_edit_data_size = 8
 checkbox_data_size = 5
+listbox_data_size=8
 
 ; drag edit flags options:
 ; bit 0: coarse/fine option enabled
@@ -83,6 +86,7 @@ checkbox_data_size = 5
          .byte 2, px, py, 6, 0 ; tabselector
          .byte 4, px+4, py+2, %00000101, 0, 255, 0, 0 ; drag edit
          .byte 5, px+4, py+4, 10, 0 ; checkbox
+         .byte 6, px+4, py+6, 8, 4, (<modsources_lb), (>modsources_lb), 1 ; listbox
          .byte 0
       ; caption list of oscillator panel
       capts:
@@ -95,6 +99,11 @@ checkbox_data_size = 5
       active_tab: .byte 0
       cp: STR_FORMAT "oscillators" ; caption of panel
       test_lb: STR_FORMAT "checkbox"
+      modsources_lb:
+         STR_FORMAT "env1"
+         STR_FORMAT "env2"
+         STR_FORMAT "env3"
+         STR_FORMAT "lfo1"
    .endscope
    .scope env
       px = 15
@@ -130,23 +139,42 @@ checkbox_data_size = 5
       lb_sustain: STR_FORMAT "sus"
       lb_release: STR_FORMAT "rel"
    .endscope
-   .scope snav
+   .scope snav ; synth navigation/tool bar
       px = 0
       py = 0
       wd = 80
       hg = 4
-      ; GUI component string of envelope panel
+      ; GUI component string of the panel
       comps:
          .byte 3, 11, 1, 0, 4, 0 ; arrowed edit (timbre selection)
          .byte 0
-      ; caption list of envelope panel
+      ; caption list of the panel
       capts:
          .byte CCOLOR_CAPTION, 1, 1
          .word cp
          .byte 0
-      ; data specific to the envelope panel
+      ; data specific to the synth-navigation panel
       active_tab: .byte 0
       cp: STR_FORMAT "timbre" ; caption of panel
+   .endscope
+   .scope listbox_popup
+      ; popup blocks the whole screen, therefore this panel is "fullscreen" (for click detection)
+      px = 0
+      py = 0
+      wd = 80
+      hg = 60
+      ; GUI component string of panel
+      comps:
+         .byte 0
+      ; caption list of the panel
+      capts:
+         .byte 0
+      ; data specific to the listbox-popup panel
+      strlist: .word 0
+      box_x: .byte 0
+      box_y: .byte 0
+      box_width:  .byte 0
+      box_height: .byte 0
    .endscope
 
    ; Panel Lookup tables
@@ -247,9 +275,7 @@ draw_gui:
 ; draws all captions from the caption string of a panel
 ; expects panel ID in register A
 draw_captions:
-   dcp_pointer = mzpwd
-   ; mzpwa is used by print subroutine,
-   ; and that's where we pass the pointers to our strings.
+   dcp_pointer = mzpwa
    asl
    tax
    lda capts, x
@@ -312,6 +338,7 @@ draw_components:
    .word draw_arrowed_edit  ; arrowed edit
    .word draw_drag_edit ; drag edit
    .word draw_checkbox
+   .word draw_listbox
 @end_loop:
    rts
 
@@ -403,6 +430,56 @@ draw_checkbox:
    iny
    rts
 
+draw_listbox:
+   dlb_strp = guiutils::str_pointer
+   lda (dc_pointer), y
+   sta guiutils::draw_x
+   iny
+   lda (dc_pointer), y
+   sta guiutils::draw_y
+   iny
+   lda (dc_pointer), y
+   sta guiutils::draw_width
+   iny
+   iny
+   ; now determine the label of the selected option
+   lda (dc_pointer), y
+   sta dlb_strp
+   iny
+   lda (dc_pointer), y
+   sta dlb_strp+1
+   iny
+   lda (dc_pointer), y  ; put index of selected option in X
+   tax
+   iny
+   phy
+   ldy #0
+   ; advance as long as X > 0
+@loop:
+   dex
+   bmi @end_loop
+@loop2:
+   iny  ; having iny before reading the byte cannot cope with empty strings! It assumes the string has at least length 1
+   lda (dlb_strp), y
+   bne @loop2
+   iny
+   bra @loop
+@end_loop:
+   ; now (dlb_strp+y) is the starting address of selected label
+   ; compute starting address and store put it into the string pointer
+   tya
+   clc
+   adc dlb_strp
+   sta guiutils::str_pointer
+   lda dlb_strp+1
+   adc #0
+   sta guiutils::str_pointer+1
+   ; safety first: copy plain str pointer
+   jsr guiutils::draw_listbox
+   ply
+   rts
+
+
 
 
 ; click event. looks in mouse variables which panel has been clicked and calls its routine
@@ -436,6 +513,7 @@ click_event:
    .word click_arrowed_edit
    .word click_drag_edit
    .word click_checkbox
+   .word click_listbox
 @ret_addrA:
    ; call panel's click subroutine, which is part of the interface between GUI and internal data
    lda ms_curr_panel
@@ -564,6 +642,29 @@ click_checkbox:
    jsr draw_checkbox
    rts
 
+click_listbox:
+   ; TODO: make popup happen
+   lda ms_curr_component_ofs
+   clc
+   adc #7
+   tay
+   lda (ce_pointer), y
+   inc
+   dey
+   dey
+   dey
+   cmp (ce_pointer), y
+   bcc :+
+   lda #0
+:  iny
+   iny
+   iny
+   sta (ce_pointer), y
+@update:
+   ldy ms_curr_component_ofs
+   iny
+   jsr draw_listbox
+   rts
 
 
 ; drag event. looks in mouse variables which panel's component has been dragged and calls its routine
@@ -598,6 +699,7 @@ drag_event:
    .word dummy_sr
    .word dummy_sr
    .word drag_drag_edit
+   .word dummy_sr
    .word dummy_sr
 @ret_addrA:
    ; call panel's drag subroutine, which is part of the interface between GUI and internal data
@@ -912,6 +1014,7 @@ check_gui_loop:
    .word check_arrowed_edit
    .word check_drag_edit
    .word check_checkbox
+   .word check_listbox
 @end_gui:
    lda #255 ; none found
    sta ms_curr_component_id
@@ -1075,7 +1178,7 @@ check_drag_edit:
 :  cmp #5 ; maximal size of drag edit with all options enabled
    bcc :+
    ; we're out
-@exit_from_y:   ; from y refers to the Y register being at the position of the y coordinate of the component's position
+@exit_from_y:   ; "from y" refers to the Y register being at the position of the y coordinate of the component's position
    iny
    iny
    iny
@@ -1098,7 +1201,6 @@ check_drag_edit:
    sta ms_curr_component_id
    rts
 
-; 5: checkbox, followed by x and y position (abs), width, checked boolean
 check_checkbox:
    ccb_width = mzpbg
    ; this is basically an "mouse is inside box" check
@@ -1121,7 +1223,7 @@ check_checkbox:
    bcs @exit_from_y
    bra :+
    ; we're out
-@exit_from_y:   ; from y refers to the Y register being at the position of the y coordinate of the component's position data
+@exit_from_y:   ; "from y" refers to the Y register being at the position of the y coordinate of the component's position data
    iny
    iny
    iny
@@ -1141,6 +1243,53 @@ check_checkbox:
    sta ms_curr_component_id
    rts
 
+; listbox check is identical to checkbox check, apart from the number of INYs needed at the end
+; actually, we should reuse this code!
+; need some sort of universal "mouse is on line Y and within X range" test
+check_listbox:
+   clb_width = mzpbg
+   ; this is basically an "mouse is inside box" check
+   ; with variable width
+   ; get the width of the listbox
+   iny
+   iny
+   lda (gc_pointer), y
+   sta clb_width
+   dey
+   dey
+   ; check x direction
+   lda gc_cx
+   lsr
+   sec
+   sbc (gc_pointer), y ; now we have the distance of the mouse pointer to the left side of the checkbox
+   iny
+   ; now A must be smaller than the checkbox' width.
+   cmp clb_width
+   bcs @exit_from_y
+   bra :+
+   ; we're out
+@exit_from_y:   ; "from y" refers to the Y register being at the position of the y coordinate of the component's position data
+   iny
+   iny
+   iny
+   iny
+   iny
+   iny
+   jmp check_gui_loop
+:  ; we're in
+   ; check y direction
+   lda gc_cy
+   lsr
+   cmp (gc_pointer), y
+   bne @exit_from_y
+   ; we're in
+   tya
+   dec
+   dec
+   sta ms_curr_component_ofs
+   lda gc_counter
+   sta ms_curr_component_id
+   rts
 
 
 

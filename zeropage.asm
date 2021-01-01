@@ -7,7 +7,9 @@
 mzpwa:   .word 0
 ; my zero page words (main program)
 mzpwd:   .word 0
-; need four main program ZP bytes in a row for mouse operation
+; (need four main program ZP bytes in a row for mouse operation)
+; my zero page words (main program)
+mzpwe:   .word 0   ; this is used mainly as a pointer for string operations
 ; my zero page words (ISR)
 mzpwb:   .word 0
 ; my zero page words (ISR)

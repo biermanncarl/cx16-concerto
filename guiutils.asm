@@ -11,19 +11,6 @@ display_10s:        .byte 0
 display_1s:         .byte 0
 display_address:    .word 0
 
-; compile time macro: converts an ascii string to a zero-terminated string that can be displayed directly
-; currently supports characters and spaces
-.macro STR_FORMAT stf_arg
-   .repeat  .strlen(stf_arg), i
-   .if (.strat(stf_arg, i)=32)
-      .byte 32
-   .else
-      .byte .strat(stf_arg, i)-64
-   .endif
-   .endrepeat
-   .byte 0
-.endmacro
-
 .macro SET_VERA_XY svx, svy
    stz VERA_ctrl
    lda #$10
@@ -155,7 +142,7 @@ cur_y: .byte 0
 ; color
 color: .byte 0
 ; string pointer
-str_pointer = mzpwa
+str_pointer = mzpwe
 ; draw a component at position and with dimensions:
 draw_x: .byte 0
 draw_y: .byte 0
@@ -422,7 +409,8 @@ draw_tabs:
    clc
    adc #49
    sta VERA_data0
-   stx VERA_data0
+   lda #(COLOR_BACKGROUND*16+COLOR_TABS)
+   sta VERA_data0
    lda #66
    sta VERA_data0
    stx VERA_data0
@@ -614,6 +602,55 @@ draw_checkbox:
 @done:
    cli
    rts
+
+; draws a listbox
+; x, y position in draw_x and draw_y
+; width in draw_width
+; label pointer in str_pointer
+draw_listbox:
+   lda draw_x
+   sta cur_x
+   lda draw_y
+   sta cur_y
+   sei
+   jsr set_cursor
+   lda #90
+   sta VERA_data0
+   ldx #(COLOR_LISTBOX_BG*16+COLOR_LISTBOX_ARROW)
+   stx VERA_data0
+   lda #32
+   sta VERA_data0
+   stx VERA_data0
+   ldy #0
+   ; prepare width counter
+   ldx draw_width
+   dex ; (for extra characters on the left hand side of the listbox, but just one because of the way we determine the length of the padding)
+@loop1: ; printing loop. assumes that the string length is less or equal than the listbox width minus 2
+   lda (str_pointer), y
+   beq @end_loop1
+   sta VERA_data0
+   lda #(COLOR_LISTBOX_BG*16+COLOR_LISTBOX_FG)
+   sta VERA_data0
+   dex
+   iny
+   bra @loop1
+@end_loop1:
+   ; do padding at the end of the listbox if necessary
+@loop2:
+   dex
+   beq @end_loop2
+   lda #32
+   sta VERA_data0
+   lda #(COLOR_LISTBOX_BG*16)
+   sta VERA_data0
+   bra @loop2
+@end_loop2:
+   cli
+   rts
+
+
+
+
 
 
 .endscope ; gui
