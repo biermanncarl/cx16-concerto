@@ -30,6 +30,18 @@
 ;     It is often called "captions" or something similar.
 ;     It too can only be 256 bytes or shorter. However, this doesn't include the captions themselves,
 ;     but only pointers to them.
+; Also, some curcial data like position and size and the addresses of aforementioned data blocks are
+; stored in arrays that can be accessed via the panel's index.
+
+; The data blocks that contain the data about the GUI components are partially regarded as constant,
+; and partially as variable.
+; Technically, everything about a component could be changed at runtime. However, e.g. for drag edits,
+; only the shown value and the display state (fine or coarse) are intended to be changed at runtime.
+
+; Every panel and every component type have a number of "methods", e.g. every panel and every component
+; has a "draw" method. Those methods are registered in various jump-tables across the code, so
+; higher-level drawing and event handlers know what to do with each panel and each component.
+
 
 ; Caption List data format:
 ; first byte: color (foreground and background). If it's zero, it marks the end of the list.
@@ -198,17 +210,17 @@ listbox_data_size=8
    ; Each label marks a list of values, one for each panel.
    ; These lists must have length N_PANELS.
    ; X positions
-   px: .byte global::px, osc::px, env::px, snav::px
+   px: .byte global::px, osc::px, env::px, snav::px, listbox_popup::px
    ; Y positions
-   py: .byte global::py, osc::py, env::py, snav::py
+   py: .byte global::py, osc::py, env::py, snav::py, listbox_popup::py
    ; widths
-   wd: .byte global::wd, osc::wd, env::wd, snav::wd
+   wd: .byte global::wd, osc::wd, env::wd, snav::wd, listbox_popup::wd
    ; heights
-   hg: .byte global::hg, osc::hg, env::hg, snav::hg
+   hg: .byte global::hg, osc::hg, env::hg, snav::hg, listbox_popup::hg
    ; GUI component strings
-   comps: .word global::comps, osc::comps, env::comps, snav::comps
+   comps: .word global::comps, osc::comps, env::comps, snav::comps, listbox_popup::comps
    ; GUI captions
-   capts: .word global::capts, osc::capts, env::capts, snav::capts
+   capts: .word global::capts, osc::capts, env::capts, snav::capts, listbox_popup::capts
 
 
 ; The Panel Stack
