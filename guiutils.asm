@@ -692,6 +692,35 @@ draw_lb_popup:
    cli
    rts
 
+; clears the area on the screen where the listbox was before.
+; x, y position in draw_x and draw_y
+; width in draw_width, height in draw_height
+clear_lb_popup:
+   lda draw_x
+   sta cur_x
+   lda draw_y
+   sta cur_y
+   ldy draw_height
+   lda #(16*COLOR_BACKGROUND)
+   sta color
+   sei
+@line_loop:
+   jsr set_cursor
+   ldx draw_width
+@column_loop:
+   lda #32
+   sta VERA_data0
+   lda color
+   sta VERA_data0
+   dex
+   bne @column_loop
+   ; advance indices
+   inc cur_y
+   dey
+   bne @line_loop
+   cli
+   rts
+
 
 
 .endscope ; gui

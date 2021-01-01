@@ -1497,8 +1497,17 @@ click_lb_popup:
    ; one thing that always happens, is that the popup is closed upon clicking.
    ; close popup
    dec stack::sp
+   ; clear area where the popup has been before
+   lda listbox_popup::box_x
+   sta guiutils::draw_x
+   lda listbox_popup::box_y
+   sta guiutils::draw_y
+   lda listbox_popup::box_width
+   sta guiutils::draw_width
+   lda listbox_popup::box_height
+   sta guiutils::draw_height
+   jsr guiutils::clear_lb_popup
    ; redraw gui
-   jsr guiutils::cls ; TODO: replace by local clear with background color
    jsr draw_gui
    rts
 
