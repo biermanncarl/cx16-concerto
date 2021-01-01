@@ -1,11 +1,18 @@
-; This file contains stuff related to panels on the GUI.
+; This file contains most of the GUI relevant code at the moment.
+; It is called mainly by the mouse.asm driver, and sends commands to the guiutils.asm
+; to output GUI elements.
+; The appearance and behaviour of the GUI is also hard coded in this file.
+; The interconnection between the GUI and the timbre (and later perhaps song) data
+; is currently also done in this file.
+
 ; Panels are rectangular areas on the screen that contain basic GUI elements
-; like buttons, checkboxes etc.
+; like listboxes, checkboxes etc.
 ; They behave a bit like windows.
 ; The look and behaviour of all panels are hard coded.
-; However, they can be made visible/invisible and also their order can be changed.
+; However, panels can be made visible/invisible individually, and also their order can be changed.
 ; The order affects which panels appear on top and thus also receive mouse events first.
-
+; This is used to be able to dynamically swap out parts of the GUI, or do things like popup menus.
+; The tool for that is a "panel stack" that defines which panels are shown in which order.
 
 ; Panel legend:
 ; 0: global settings
@@ -14,12 +21,22 @@
 ; 3: synth navigation bar (snav)
 ; 4: popup panel for listboxes
 
+; Each panel has multiple byte strings hard coded. Those byte strings define elements shown on the GUI.
+;   * one string that defines all interactive components, such as checkboxes, listboxes etc.
+;     It is often called "comps" or something similar.
+;     In many subroutines, this component string is given as a zero page pointer together with an offset.
+;     Those component strings can inherently only be 256 bytes or shorter.
+;   * one string that defines all static labels displaying text. Those are not interactive.
+;     It is often called "captions" or something similar.
+;     It too can only be 256 bytes or shorter. However, this doesn't include the captions themselves,
+;     but only pointers to them.
+
 ; Caption List data format:
 ; first byte: color (foreground and background). If it's zero, it marks the end of the list.
 ; second and third bytes: x and y position
 ; fourth and fifth bytes: pointer to zero-terminated string.
 
-; GUI control element legend:
+; GUI control element legend with component string format
 ; 0: none (end of list)
 ; 1: button, followed by x and y position (absolute), and width, and address of string
 ; 2: tab selector, followed by x and y position (abs), number of tabs, and active tab
