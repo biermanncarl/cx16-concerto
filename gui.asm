@@ -115,22 +115,28 @@ dummy_data_size = 1
       ; GUI component string of oscillator panel
       comps:
          .byte 2, px, py, 6, 0 ; tabselector
-         .byte 4, px+4, py+2, %00000101, 0, 255, 0, 0 ; drag edit
-         .byte 5, px+4, py+4, 10, 0 ; checkbox
-         .byte 6, px+4, py+6, 8, 4, (<modsources_lb), (>modsources_lb), 1 ; listbox
+         .byte 6, px+4, py+3, 6, 4, (<waveforms_lb), (>waveforms_lb), 1 ; listbox
+         .byte 4, px+4, py+12, %00000101, 0, 255, 0, 0 ; drag edit
+         .byte 5, px+4, py+14, 10, 0 ; checkbox
+         .byte 6, px+4, py+16, 8, 4, (<modsources_lb), (>modsources_lb), 1 ; listbox
          .byte 0
       ; caption list of oscillator panel
       capts:
          .byte CCOLOR_CAPTION, px+4, py
          .word cp
-         .byte CCOLOR_CAPTION, px+6, py+4
-         .word test_lb
+         .byte CCOLOR_CAPTION, px+4, py+2
+         .word waveform_lb
          .byte 0
       ; data specific to the oscillator panel
       active_tab: .byte 0
       cp: STR_FORMAT "oscillators" ; caption of panel
-      test_lb: STR_FORMAT "checkbox"
+      waveform_lb: STR_FORMAT "waveform"
       ; stringlist for modsource listboxes
+      waveforms_lb:
+         STR_FORMAT "pul"
+         STR_FORMAT "saw"
+         STR_FORMAT "tri"
+         STR_FORMAT "noi"
       modsources_lb: 
          STR_FORMAT "env1"
          STR_FORMAT "env2"
@@ -1431,13 +1437,53 @@ click_global:
 
 ; oscillator panel being clicked
 click_osc:
+   ; first, determine the offset of the oscillator in the Timbre data
+   lda Timbre ; may be replaced later
+   ldx osc::active_tab ; envelope number
+@loop:
+   cpx #0
+   beq @end_loop
+   clc
+   adc #N_OSCILLATORS
+   dex
+   bra @loop
+@end_loop:
+   tax ; oscillator index is in x
+   ; prepare component readout
+   lda ms_ref_component_ofs
+   clc
+   adc #4
+   tay ; there's no component type where the data is before this index
+   ; now determine which component has been dragged
+   phx
+   lda ms_ref_component_id
+   asl
+   tax
+   jmp (@jmp_tbl, x)
+@jmp_tbl:
+   .word @tab_slector
+   .word @waveform
    ; tab selector ?
-   lda ms_curr_component_id
-   cmp #0
-   bne :+
+@tab_slector:
+   plx
    lda ms_curr_data
    sta osc::active_tab
-:  rts
+   rts
+@waveform:
+   plx
+   iny
+   iny
+   iny
+   lda osc::comps, y
+   clc
+   ror
+   ror
+   ror
+   sta timbres::Timbre::osc::waveform, x
+   iny
+   lda env::comps, y
+   sta timbres::Timbre::env::attackL, x
+   rts
 
 ; envelope panel being clicked
 click_env:
@@ -1498,6 +1544,7 @@ click_lb_popup:
    ; close popup
    dec stack::sp
    ; clear area where the popup has been before
+   ; jsr guiutils::cls ; would be the cheap solution
    lda listbox_popup::box_x
    sta guiutils::draw_x
    lda listbox_popup::box_y
