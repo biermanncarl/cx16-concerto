@@ -61,6 +61,7 @@ ms_curr_component_id: .byte 0
 ms_curr_component_ofs: .byte 0
 ms_curr_data: .byte 0 ; used to store the current tab selected, which arrow is clicked etc.
 ms_curr_data2: .byte 0 ; used to store dragging distance (y direction)
+ms_gui_write: .byte 0 ; used to determine whether or not an action has caused a value was changed.
 
 
 

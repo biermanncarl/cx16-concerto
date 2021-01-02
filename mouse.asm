@@ -210,8 +210,12 @@ do_dragging:
    ; check if there is actually a component being dragged
    lda ms_ref_panel
    bmi :+
+   sta ms_curr_panel
    lda ms_ref_component_id
    bmi :+
+   sta ms_curr_component_id
+   lda ms_ref_component_ofs
+   sta ms_curr_component_ofs
    ; get Y difference to last frame
    ; we assume it's smaller than 127, so we ignore the high byte xD
    lda ms_ref_y

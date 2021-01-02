@@ -215,8 +215,10 @@ dummy_data_size = 1
       box_y: .byte 0
       box_width: .byte 0
       box_height: .byte 0
+      lb_panel: .byte 0 ; panel index of the listbox, so the popup knows which writing-function to call when done.
       lb_addr: .word 0 ; address and offset of the listbox that was causing the popup
-      lb_ofs: .byte 0 ; offset is the offset of the actual value to be changed (selection of the listbox)
+      lb_ofs: .byte 0
+      lb_id: .byte 0
    .endscope
 
    ; Panel Lookup tables
@@ -518,6 +520,7 @@ click_event:
    ; of the respective panel.
    ce_pointer = mzpwa ; it is important that this is the same as dc_pointer, because this routine indirectly calls "their" subroutine, expecting this pointer at the same place
    ; put GUI component string pointer to ZP
+   stz ms_gui_write
    lda ms_curr_panel
    asl
    tax
@@ -537,21 +540,19 @@ click_event:
    .word dummy_sr ; drag edit - no click event necessary
    .word click_checkbox
    .word click_listbox
-   .word dummy_sr ; dummy component
+   .word click_dummy
 @ret_addrA:
-   ; call panel's click subroutine, which is part of the interface between GUI and internal data
+   ; check if component wants an update
+   lda ms_gui_write
+   bne :+
+   rts
+:  ; call panel's writing subroutine, which is part of the interface between GUI and internal data
    lda ms_curr_panel
    asl
    tax
-   INDEXED_JSR (@jmp_tblB), @ret_addrB
-@jmp_tblB:
-   .word click_global
-   .word click_osc
-   .word click_env
-   .word click_snav
-   .word click_lb_popup
+   INDEXED_JSR panel_write_subroutines, @ret_addrB
 @ret_addrB:
-   rts
+   rts  ; we could actually leave the jsr away and just jmp to the subroutine... but I'll leave it for now. Optimizations later...
 
 ; GUI component's click subroutines
 ; ---------------------------------
@@ -563,6 +564,7 @@ click_button:
    rts
 
 click_tab_select:
+   inc ms_gui_write
    ; put new tab into GUI component list
    lda ms_curr_data
    ldy ms_curr_component_ofs
@@ -584,6 +586,7 @@ click_arrowed_edit:
    bne :+
    rts
 :  ; yes, one of the arrows has been clicked...
+   inc ms_gui_write ; register a change on the GUI
    ; now, get value from edit
    lda ms_curr_component_ofs
    clc
@@ -642,6 +645,7 @@ click_arrowed_edit:
    rts
 
 click_checkbox:
+   inc ms_gui_write ; register a change on the GUI
    ldy ms_curr_component_ofs
    iny
    iny
@@ -663,6 +667,8 @@ click_checkbox:
    rts
 
 click_listbox:
+   ; we don't activate ms_gui_write, because the first click on the listbox
+   ; doesn't change any actual data,
    ; bring up popup panel
    ; TODO: later we would need to calculate the popup position based on the listbox position
    ; and a possibly oversized popup (so that it would range beyond the screen)
@@ -689,13 +695,16 @@ click_listbox:
    iny
    lda (ce_pointer), y
    sta listbox_popup::strlist+1
-   iny
-   tya
+   lda ms_curr_component_ofs
    sta listbox_popup::lb_ofs
    lda ce_pointer
    sta listbox_popup::lb_addr
    lda ce_pointer+1
    sta listbox_popup::lb_addr+1
+   lda ms_ref_component_id
+   sta listbox_popup::lb_id
+   lda ms_curr_panel
+   sta listbox_popup::lb_panel
    ; now do the GUI stack stuff
    ldx stack::sp
    lda #4
@@ -703,6 +712,10 @@ click_listbox:
    inc stack::sp
 @update_gui:
    jsr draw_lb_popup
+   rts
+
+click_dummy:
+   inc ms_gui_write
    rts
 
 
@@ -714,14 +727,15 @@ drag_event:
    ; For that, we need the info about the component from the GUI component string
    ; of the respective panel.
    de_pointer = mzpwa ; it is important that this is the same as dc_pointer, because this routine indirectly calls "their" subroutine, expecting this pointer at the same place
-   lda ms_ref_panel
+   stz ms_gui_write
+   lda ms_curr_panel
    asl
    tax
    lda comps, x
    sta de_pointer
    lda comps+1, x
    sta de_pointer+1   ; put GUI component string pointer to ZP
-   ldy ms_ref_component_ofs ; load component's offset
+   ldy ms_curr_component_ofs ; load component's offset
    lda (de_pointer), y ; and get its type
    asl
    tax
@@ -735,19 +749,17 @@ drag_event:
    .word dummy_sr
    .word dummy_sr
 @ret_addrA:
-   ; call panel's drag subroutine, which is part of the interface between GUI and internal data
-   lda ms_ref_panel
+   ; check if component wants an update
+   lda ms_gui_write
+   bne :+
+   rts
+:  ; call panel's drag subroutine, which is part of the interface between GUI and internal data
+   lda ms_curr_panel
    asl
    tax
-   INDEXED_JSR @jmp_tblB, @ret_addrB
-@jmp_tblB:
-   .word drag_global
-   .word drag_osc
-   .word drag_env
-   .word drag_snav
-   .word dummy_sr ; listbox popup
+   INDEXED_JSR panel_write_subroutines, @ret_addrB
 @ret_addrB:
-   rts
+   rts  ; we could leave that away and just jmp to the subroutines instead of jsr, but optimizations later.
 
 ; GUI component's drag subroutines
 ; ---------------------------------
@@ -757,6 +769,7 @@ drag_event:
 ; and drag distance compared to previous frame in ms_curr_data2
 
 drag_drag_edit:
+   inc ms_gui_write
    ; first check if drag edit has fine editing enabled
    ldy ms_ref_component_ofs
    iny
@@ -1346,6 +1359,12 @@ check_dummy:
 ; PANEL SPECIFIC STUFF
 ; --------------------
 
+; panel drawing subroutines
+; -------------------------
+; These subroutines draw stuff that is very specific to each panel, and is not covered
+; by the component and label lists.
+; They don't depend on anything other than the individual panel variables.
+
 draw_global:
    ; draw panel
    lda #global::px
@@ -1422,21 +1441,33 @@ draw_lb_popup:
 
 
 
-; panels' click subroutines
-; -------------------------
-; expect ce_pointer to contain the pointer to the corresponding GUI component string
-; and mouse variables set according to the click action, that is
-; ms_curr_component_id
-; ms_curr_component_ofs
-; ms_curr_panel
-; ms_curr_data
 
-; click subroutine of the global settings panel
-click_global:
+
+
+; panels' write subroutines
+; -------------------------
+; These subroutines are called when a GUI component has been changed by the user.
+; It reads the value from the component and writes it into the timbre (or later song) data.
+; They expect wr_pointer to contain the pointer to the corresponding GUI component string
+; and the mouse variables set according to the action, that is
+; ms_ref_component_id
+; ms_ref_component_ofs
+
+; jump table
+panel_write_subroutines:
+   .word write_global
+   .word write_osc
+   .word write_env
+   .word write_snav
+   .word write_lb_popup
+
+
+; subroutine of the global settings panel
+write_global:
    rts
 
-; oscillator panel being clicked
-click_osc:
+; oscillator panel being changed
+write_osc:
    ; first, determine the offset of the oscillator in the Timbre data
    lda Timbre ; may be replaced later
    ldx osc::active_tab ; envelope number
@@ -1450,20 +1481,25 @@ click_osc:
 @end_loop:
    tax ; oscillator index is in x
    ; prepare component readout
-   lda ms_ref_component_ofs
+   lda ms_curr_component_ofs
    clc
    adc #4
    tay ; there's no component type where the data is before this index
    ; now determine which component has been dragged
    phx
-   lda ms_ref_component_id
+   lda ms_curr_component_id
    asl
    tax
    jmp (@jmp_tbl, x)
 @jmp_tbl:
    .word @tab_slector
    .word @waveform
-   ; tab selector ?
+   .word dummy_sr ; need plx to work properly
+   .word dummy_sr
+   .word dummy_sr
+   .word dummy_sr
+   .word dummy_sr
+   .word dummy_sr
 @tab_slector:
    plx
    lda ms_curr_data
@@ -1485,103 +1521,8 @@ click_osc:
    sta timbres::Timbre::env::attackL, x
    rts
 
-; envelope panel being clicked
-click_env:
-   ; tab selector ?
-   lda ms_curr_component_id
-   cmp #0
-   bne :+
-   lda ms_curr_data
-   sta env::active_tab
-   jsr refresh_env
-:  rts
-
-click_snav:
-   lda ms_curr_component_id
-   cmp #0
-   beq @timbre_selector
-   rts
-@timbre_selector:
-   ; read data from component string and write it to the Timbre setting
-   lda ms_curr_component_ofs
-   clc
-   adc #5
-   tay
-   lda (ce_pointer), y
-   sta Timbre
-   jsr refresh_gui
-   rts
-
-click_lb_popup:
-   clbp_pointer = mzpwa ; mzpwa is already used in the click_event routine, but once we get to this point, it should have served its purpose, so we can reuse it here.
-   ; TODO: determine selection (or skip if none was selected)
-   ; mouse coordinates are in ms_curr_data and ms_curr_data2 (been put there by the dummy GUI component)
-   ; check if we're in correct x range
-   lda ms_curr_data
-   sec
-   sbc listbox_popup::box_x
-   cmp listbox_popup::box_width
-   bcs @close_popup
-   ; we're inside!
-   ; check if we're in correct y range
-   lda ms_curr_data2
-   sec
-   sbc listbox_popup::box_y
-   cmp listbox_popup::box_height
-   bcs @close_popup
-   ; we're inside!
-   ; now the accumulator holds the new selection index. Put it back into the listbox.
-   pha
-   lda listbox_popup::lb_addr
-   sta clbp_pointer
-   lda listbox_popup::lb_addr+1
-   sta clbp_pointer+1
-   ldy listbox_popup::lb_ofs
-   pla
-   sta (clbp_pointer), y
-@close_popup:
-   ; one thing that always happens, is that the popup is closed upon clicking.
-   ; close popup
-   dec stack::sp
-   ; clear area where the popup has been before
-   ; jsr guiutils::cls ; would be the cheap solution
-   lda listbox_popup::box_x
-   sta guiutils::draw_x
-   lda listbox_popup::box_y
-   sta guiutils::draw_y
-   lda listbox_popup::box_width
-   sta guiutils::draw_width
-   lda listbox_popup::box_height
-   sta guiutils::draw_height
-   jsr guiutils::clear_lb_popup
-   ; redraw gui
-   jsr draw_gui
-   rts
-
-
-
-; panels' drag subroutines
-; -------------------------
-; expect de_pointer to contain the pointer to the corresponding GUI component string
-; and mouse variables set according to the drag action, that is
-; ms_ref_component_id
-; ms_ref_component_ofs
-; ms_curr_panel
-; ms_curr_data and ms_curr_data2
-
-
-; something on global panel being dragged
-drag_global:
-   rts
-
-
-; something on oscillator panel being dragged
-drag_osc:
-   rts
-
-
-; something on envelope panel being dragged
-drag_env:
+; something on envelope panel being changed
+write_env:
    ; first, determine the offset of the envelope in the Timbre data
    lda Timbre ; may be replaced later
    ldx env::active_tab ; envelope number
@@ -1595,22 +1536,28 @@ drag_env:
 @end_loop:
    tax ; envelope index is in x
    ; prepare drag edit readout
-   lda ms_ref_component_ofs
+   lda ms_curr_component_ofs
    clc
-   adc #6
+   adc #6 ; 6 because most of the control elements are drag edits anyway
    tay ; drag edit's coarse value offset is in Y
    ; now determine which component has been dragged
    phx
-   lda ms_ref_component_id
+   lda ms_curr_component_id
    asl
    tax
    jmp (@jmp_tbl, x)
 @jmp_tbl:
-   .word @skip
+   .word @tab_select
    .word @attack
    .word @decay
    .word @sustain
    .word @release
+@tab_select:
+   plx
+   lda ms_curr_data
+   sta env::active_tab
+   jsr refresh_env
+   rts
 @attack:
    plx
    lda env::comps, y
@@ -1645,8 +1592,86 @@ drag_env:
    rts
 
 
-drag_snav:
+write_snav:
+   lda ms_curr_component_id
+   cmp #0
+   beq @timbre_selector
    rts
+@timbre_selector:
+   ; read data from component string and write it to the Timbre setting
+   lda ms_curr_component_ofs
+   clc
+   adc #5
+   tay
+   lda (ce_pointer), y
+   sta Timbre
+   jsr refresh_gui
+   rts
+
+
+; since there is only the dummy component on the popup,
+; this subroutine is only called upon a click on the 
+write_lb_popup:
+   clbp_pointer = mzpwa ; mzpwa is already used in the click_event routine, but once we get to this point, it should have served its purpose, so we can reuse it here.
+   ; TODO: determine selection (or skip if none was selected)
+   ; mouse coordinates are in ms_curr_data and ms_curr_data2 (been put there by the dummy GUI component)
+   ; check if we're in correct x range
+   lda ms_curr_data
+   sec
+   sbc listbox_popup::box_x
+   cmp listbox_popup::box_width
+   bcs @close_popup
+   ; we're inside!
+   ; check if we're in correct y range
+   lda ms_curr_data2
+   sec
+   sbc listbox_popup::box_y
+   cmp listbox_popup::box_height
+   bcs @close_popup
+   ; we're inside!
+   ; now the accumulator holds the new selection index. Put it back into the listbox.
+   pha
+   lda listbox_popup::lb_addr
+   sta clbp_pointer
+   lda listbox_popup::lb_addr+1
+   sta clbp_pointer+1
+   lda listbox_popup::lb_ofs
+   clc
+   adc #7
+   tay
+   pla
+   sta (clbp_pointer), y
+@close_popup:
+   ; one thing that always happens, is that the popup is closed upon clicking.
+   ; close popup
+   dec stack::sp
+   ; clear area where the popup has been before
+   ; jsr guiutils::cls ; would be the cheap solution
+   lda listbox_popup::box_x
+   sta guiutils::draw_x
+   lda listbox_popup::box_y
+   sta guiutils::draw_y
+   lda listbox_popup::box_width
+   sta guiutils::draw_width
+   lda listbox_popup::box_height
+   sta guiutils::draw_height
+   jsr guiutils::clear_lb_popup
+   ; call writing function of panel
+   lda listbox_popup::lb_ofs
+   sta ms_curr_component_ofs
+   lda listbox_popup::lb_id
+   sta ms_curr_component_id
+   lda listbox_popup::lb_panel
+   asl
+   tax
+   INDEXED_JSR panel_write_subroutines, @ret_addr
+@ret_addr:
+   ; redraw gui
+   jsr draw_gui
+   rts
+
+
+
 
 
 ; panels' refresh subroutines
