@@ -46,8 +46,10 @@
    ; set oscillator parameters
    ; oscillator 0
    ldx #(0*N_TIMBRES+patch_no)
-   lda #0+44
+   lda #0
    sta timbres::Timbre::osc::waveform, x
+   lda #44
+   sta timbres::Timbre::osc::pulse, x
    lda #244
    sta timbres::Timbre::osc::pitch, x
    lda #0

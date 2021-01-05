@@ -85,7 +85,7 @@ dummy_data_size = 1
       px = 15
       py = 10
       wd = 12
-      hg = 18
+      hg = 24
 
       ; GUI component string of global panel
       comps:
@@ -112,36 +112,111 @@ dummy_data_size = 1
       py = global::py
       wd = 33
       hg = global::hg
+      ; other labels
+      modsecx = px + 4
+      modsecy = py + 16
+      pitsecx = px + 4
+      pitsecy = py + 9
+      pwsecx = px + 18
+      pwsecy = py + 4
+      wfsecx = px + 4
+      wfsecy = py + 2
+      ampsecx = px + 22
+      ampsecy = pitsecy
       ; GUI component string of oscillator panel
       comps:
          .byte 2, px, py, 6, 0 ; tabselector
-         .byte 6, px+4, py+3, 6, 4, (<waveforms_lb), (>waveforms_lb), 1 ; listbox
-         .byte 4, px+4, py+12, %00000101, 0, 255, 0, 0 ; drag edit
-         .byte 5, px+4, py+14, 10, 0 ; checkbox
-         .byte 6, px+4, py+16, 8, 4, (<modsources_lb), (>modsources_lb), 1 ; listbox
+         .byte 6, wfsecx, wfsecy+2, 8, 4, (<waveforms_lb), (>waveforms_lb), 0 ; waveform listbox
+         .byte 5, wfsecx+2, wfsecy+4, 7, 0 ; waveform modulate by wavetable checkbox
+         .byte 6, ampsecx, ampsecy+1, 8, N_TOT_MODSOURCES, (<modsources_lb), (>modsources_lb), 0 ; amp listbox
+         .byte 4, pwsecx, pwsecy+2, %00000000, 0, 63, 0, 0 ; pulse width drag edit
+         .byte 5, pwsecx+5, pwsecy+2, 7, 0 ; pulse width modulate by wavetable checkbox
+         .byte 4, ampsecx, ampsecy+4, %00000000, 0, 63, 0, 0 ; volume drag edit
+         .byte 6, ampsecx+4, ampsecy+4, 5, 4, (<channel_select_lb), (>channel_select_lb), 0 ; channel listbox
+         .byte 4, pitsecx+3, pitsecy+2, %00000100, 0, 255, 0, 0 ; semitone edit ... signed range TODO
+         .byte 4, pitsecx+3, pitsecy+4, %00000100, 0, 255, 0, 0 ; fine tune edit ... signed range TODO
+         .byte 5, pitsecx+8, pitsecy+2, 7, 0 ; pitch tracking checkbox
+         .byte 5, pitsecx+8, pitsecy+4, 7, 0 ; pitch modulate by wavetable checkbox
+         .byte 6, modsecx+7, modsecy+2, 8, N_TOT_MODSOURCES+1, (<modsources_none_option_lb), (>modsources_none_option_lb), 0 ; pitch mod select 1
+         .byte 6, modsecx+7, modsecy+3, 8, N_TOT_MODSOURCES+1, (<modsources_none_option_lb), (>modsources_none_option_lb), 0 ; pitch mod select 2
+         .byte 6, modsecx+7, modsecy+4, 8, N_TOT_MODSOURCES+1, (<modsources_none_option_lb), (>modsources_none_option_lb), 0 ; pw mod select
+         .byte 6, modsecx+7, modsecy+5, 8, N_TOT_MODSOURCES+1, (<modsources_none_option_lb), (>modsources_none_option_lb), 0 ; volume mod select
+         .byte 4, modsecx+15, modsecy+2, %00000100, 0, 255, 0, 0 ; drag edit - pitch mod depth 1 range TODO
+         .byte 4, modsecx+15, modsecy+3, %00000100, 0, 255, 0, 0 ; drag edit - pitch mod depth 2 range TODO
+         .byte 4, modsecx+15, modsecy+4, %00000100, 0, 255, 0, 0 ; drag edit - pw mod depth range
+         .byte 4, modsecx+15, modsecy+5, %00000100, 0, 255, 0, 0 ; drag edit - volume mod depth range
          .byte 0
       ; caption list of oscillator panel
       capts:
          .byte CCOLOR_CAPTION, px+4, py
          .word cp
-         .byte CCOLOR_CAPTION, px+4, py+2
+         .byte CCOLOR_CAPTION, wfsecx, wfsecy
          .word waveform_lb
+         .byte CCOLOR_CAPTION, wfsecx+4, wfsecy+4
+         .word wvtbl_lb
+         .byte CCOLOR_CAPTION, pwsecx, pwsecy
+         .word pulsewidth_lb
+         .byte CCOLOR_CAPTION, pwsecx+7, pwsecy+2
+         .word wvtbl_lb
+         .byte CCOLOR_CAPTION, ampsecx, ampsecy
+         .word amp_lb
+         .byte CCOLOR_CAPTION, ampsecx, ampsecy+3
+         .word vol_lb
+         .byte CCOLOR_CAPTION, ampsecx+5, ampsecy+3
+         .word channel_lb
+         .byte CCOLOR_CAPTION, pitsecx, pitsecy
+         .word pitch_lb
+         .byte CCOLOR_CAPTION, pitsecx, pitsecy+2
+         .word semi_lb
+         .byte CCOLOR_CAPTION, pitsecx, pitsecy+4
+         .word fine_lb
+         .byte CCOLOR_CAPTION, pitsecx+10, pitsecy+2
+         .word track_lb
+         .byte CCOLOR_CAPTION, pitsecx+10, pitsecy+4
+         .word wvtbl_lb
+         .byte CCOLOR_CAPTION, modsecx, modsecy
+         .word modulation_lb
+         .byte CCOLOR_CAPTION, modsecx, modsecy+2
+         .word pitch_lb
+         .byte CCOLOR_CAPTION, modsecx, modsecy+4
+         .word pw_lb
+         .byte CCOLOR_CAPTION, modsecx, modsecy+5
+         .word vol_lb
          .byte 0
       ; data specific to the oscillator panel
       active_tab: .byte 0
       cp: STR_FORMAT "oscillators" ; caption of panel
       waveform_lb: STR_FORMAT "waveform"
+      wavetable_lb: STR_FORMAT "wavetable"
+      amp_lb: STR_FORMAT "amp env"
+      pulsewidth_lb: STR_FORMAT "pulse width"
+      pw_lb: STR_FORMAT "pw"
+      vol_lb: STR_FORMAT "vol"
+      pitch_lb: STR_FORMAT "pitch"
+      semi_lb: STR_FORMAT "st"
+      fine_lb: STR_FORMAT "fn"
+      track_lb: STR_FORMAT "track"
+      wvtbl_lb: STR_FORMAT "wvtbl"
+      modulation_lb: STR_FORMAT "modulation"
+      channel_lb: .byte 12, 47, 18, 0
       ; stringlist for modsource listboxes
       waveforms_lb:
-         STR_FORMAT "pul"
+         STR_FORMAT "pulse"
          STR_FORMAT "saw"
          STR_FORMAT "tri"
-         STR_FORMAT "noi"
+         STR_FORMAT "noise"
+      modsources_none_option_lb:
+         .byte 32, 45, 45, 0
       modsources_lb: 
          STR_FORMAT "env1"
          STR_FORMAT "env2"
          STR_FORMAT "env3"
-         STR_FORMAT "lfo1"
+         STR_FORMAT "lfo"
+      channel_select_lb:
+         .byte 32, 45, 0
+         STR_FORMAT " l"
+         STR_FORMAT " r"
+         .byte 12, 43, 18, 0
    .endscope
    .scope env
       px = 15
@@ -1461,6 +1536,9 @@ panel_write_subroutines:
    .word write_snav
    .word write_lb_popup
 
+dummy_plx:
+   plx
+   rts
 
 ; subroutine of the global settings panel
 write_global:
@@ -1475,7 +1553,7 @@ write_osc:
    cpx #0
    beq @end_loop
    clc
-   adc #N_OSCILLATORS
+   adc #N_TIMBRES
    dex
    bra @loop
 @end_loop:
@@ -1494,16 +1572,29 @@ write_osc:
 @jmp_tbl:
    .word @tab_slector
    .word @waveform
-   .word dummy_sr ; need plx to work properly
-   .word dummy_sr
-   .word dummy_sr
-   .word dummy_sr
-   .word dummy_sr
-   .word dummy_sr
+   .word dummy_plx
+   .word dummy_plx
+   .word dummy_plx
+   .word dummy_plx
+   .word dummy_plx
+   .word dummy_plx
+   .word dummy_plx
+   .word dummy_plx
+   .word dummy_plx
+   .word dummy_plx
+   .word dummy_plx
+   .word dummy_plx
+   .word dummy_plx
+   .word dummy_plx
+   .word dummy_plx
+   .word dummy_plx
+   .word dummy_plx
+   .word dummy_plx
 @tab_slector:
    plx
    lda ms_curr_data
    sta osc::active_tab
+   jsr refresh_osc
    rts
 @waveform:
    plx
@@ -1686,6 +1777,29 @@ refresh_global:
    rts
 
 refresh_osc:
+   ; first, determine the offset of the oscillator in the Timbre data
+   lda Timbre ; may be replaced later
+   ldx osc::active_tab ; envelope number
+@loop:
+   cpx #0
+   beq @end_loop
+   clc
+   adc #N_TIMBRES
+   dex
+   bra @loop
+@end_loop:
+   tax ; oscillator index is in x
+   ; read Timbre data and load it into GUI components
+   lda timbres::Timbre::osc::waveform, x
+   clc
+   rol
+   rol
+   rol
+   ldy #(tab_selector_data_size+listbox_data_size-1)
+   sta osc::comps, y
+   ; redraw components
+   lda #1
+   jsr draw_components
    rts
 
 refresh_env:

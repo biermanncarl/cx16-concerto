@@ -8,6 +8,7 @@ GLOBAL_DEFS_INC = 1
 .define MAX_OSCS_PER_VOICE 6
 .define MAX_ENVS_PER_VOICE 3
 .define MAX_LFOS_PER_VOICE 1
+.define N_TOT_MODSOURCES MAX_ENVS_PER_VOICE+MAX_LFOS_PER_VOICE
 
 ; GUI definitions
 ; colors
@@ -30,6 +31,7 @@ GLOBAL_DEFS_INC = 1
 .define CCOLOR_CHECKBOX_TICK 16*COLOR_CHECKBOX + 0
 ; others
 .define N_PANELS 5   ; number of panels 
+
 
 
 ; keyboard variables
