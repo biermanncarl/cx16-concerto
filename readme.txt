@@ -20,15 +20,15 @@ know, because they may at first be irritating to experienced synth users.
     Envelope 1 has reached level 0 during the release phase (i.e. after a note-off
     event), the whole voice will be turned off. Essentially, Envelope 1 controls
     how long the voice will be audible.
+  * Activate oscillators and envelopes. This is done in the "Global" area, where you
+    can specify how many envelopes and oscillators you need. Oscillators 1 to N will
+    be active. If you temporarily need to mute oscillators, you can do so with the
+    L/R selection drop-down.
   * Pitch modulation. Since here we are dealing with a 16-bit modulation, there are
     some optimizations to save precious CPU cycles. As a consequence, the modulation
     depth is only a qualitative representation (higher number gives more modulation)
     and also can't be zero. To deactivate pitch modulation, unselect the modulation
     source.
-  * Activate oscillators and envelopes. This is done in the "Global" area, where you
-    can specify how many envelopes and oscillators you need. Oscillators 1 to N will
-    be active. If you temporarily need to mute oscillators, you can do so with the
-    L/R selection drop-down.
   * There are hard and soft note-offs. Soft note-offs put the voice into the release
     phase. Hard note-offs turn the voice off immediately. A hard note-off can also
     be used during the release phase (after a soft note-off).

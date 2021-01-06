@@ -665,7 +665,7 @@ end_env: ; jump here when done with all envelopes
    ; ---------------
 
    ; x: offset for envelope/lfo data access, and multi purpose indexing register
-   ; y: offset for oscillator timbre data access ... starting at timbre index, increased by N_TIMBRES
+   ; y: offset for oscillator timbre data access ... starting at timbre index, increased by N_TIMBRES for each oscillator
    ; osc_counter: keeps track of which oscillator we're processing
    ; n_oscs: number of oscillators to be processed
    ; during the PSG voice stuff, x and y are doing different stuff
