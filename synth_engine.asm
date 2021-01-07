@@ -20,8 +20,16 @@ osc_panmute:   .byte 0
 ; MODULATION DEPTH NUMBER FORMAT
 ; ------------------------------
 ; Modulation depths have different formats.
-; Some are signed or unsigned binary numbers.
-; However, there is one special format termed Scale5, which is
+; PWM and volume modulation are adjusted by a number of the following format:
+; SMMMMMMM
+; where S is the sign of the modulation, and MMMMMMM is a 7 bit value defining
+; the magnitude of the modulation depth. 64 aka 1000000 is full modulation
+; depth, i.e. the modulation source is added to the destination with a 
+; prefactor of 1. However, you can go up to 127 aka 1111111 (on your own risk!)
+
+; Pitch modulation depth is defined by a different format that saves some CPU
+; cycles (because it is a 16 bit modulation it's worth it).
+; That format is termed Scale5, which is
 ; intended to be a cheap approximation of exponential
 ; scaling.
 ; An ordinary binary number N and a Scale5 number
@@ -29,7 +37,7 @@ osc_panmute:   .byte 0
 ; The Scale5 number format is as follows. The 8 bits are assigned as
 ; SLLLHHHH
 ; S is the sign of the modulation depth
-; HHHH (sometimes only 0HHH) is a binary number indicating how many
+; HHHH is a binary number indicating how many
 ; times N gets right shifted.
 ; LLL is a binary number that must assume a value from 0 to 4.
 ; It is one of five sub-levels between powers of 2.
@@ -46,13 +54,13 @@ osc_panmute:   .byte 0
 ; %1.010
 ; %1.100
 ; %1.110
-; and right shift the result up to 7 or 15 right shifts. (only in practice, the right shift is done first)
+; and right shift the result up to 15 times. (only in practice, the right shift is done first)
 ; These values are chosen to be distributed relatively evenly on an exponential scale.
 
 
 ; MODULATION SOURCE NUMBER FORMAT
 ; -------------------------------
-; Modulation sources are always standard binary and consist of two bytes:
+; Modulation sources are always binary and consist of two bytes:
 ; A high byte and a low byte
 ; There are unipolar and bipolar sources.
 ; The low byte can have any desired value
