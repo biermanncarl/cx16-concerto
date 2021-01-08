@@ -88,24 +88,50 @@ dummy_data_size = 1
       hg = 24
 
       ; GUI component string of global panel
+      ; TODO components:
+      ; Number of oscillators
+      ; number of envelopes
+      ; LFO active
+      ; retrigger activate (default on!)
+      ; portamento activate
+      ; portamento rate
+      ; volume
+      ; Wavetable activate?
+      ; Wavetbale edit button
       comps:
-         .byte 3, px+2, py+3, 0, 4, 0 ; currently unused
-         .byte 3, px+2, py+6, 0, 4, 1 ; currently unused
-         .byte 5, px+2, py+10, 8, 0 ; porta checkbox
-         .byte 4, px+2, py+12, %00000000, 0, 255, 0, 0 ; porta rate edit
+         .byte 3, px+3, py+3, 1, 6, 1 ; number of oscillators
+         .byte 3, px+3, py+6, 1, 3, 1 ; number of envelopes
+         .byte 5, px+2, py+8, 8, 1 ; LFO activate checkbox
+         .byte 5, px+2, py+12, 8, 1 ; retrigger checkbox
+         .byte 5, px+2, py+14, 8, 0 ; porta checkbox
+         .byte 4, px+2, py+16, %00000000, 0, 255, 0, 0 ; porta rate edit
          .byte 0
       ; caption list of global panel
       capts:
          .byte CCOLOR_CAPTION, px+2, py
          .word cp
-         .byte CCOLOR_CAPTION, px+5, py+10 ; porta checkbox label
-         .word pa
-         .byte CCOLOR_CAPTION, px+6, py+12 ; porta rate label
-         .word pr
+         .byte (COLOR_IMPORTANT_CAPTION+16*COLOR_BACKGROUND), px+2, py+2 ; number of oscillators label
+         .word nosc_lb
+         .byte (COLOR_IMPORTANT_CAPTION+16*COLOR_BACKGROUND), px+2, py+5 ; number of envelopes label
+         .word nenv_lb
+         .byte (COLOR_IMPORTANT_CAPTION+16*COLOR_BACKGROUND), px+4, py+8 ; number of envelopes label
+         .word lfoa_lb
+         .byte CCOLOR_CAPTION, px+4, py+12 ; porta checkbox label
+         .word retr_lb
+         .byte CCOLOR_CAPTION, px+5, py+14 ; porta checkbox label
+         .word porta_active_lb
+         .byte CCOLOR_CAPTION, px+6, py+16 ; porta rate label
+         .word porta_rate_lb
+         .byte CCOLOR_CAPTION, px+2, py+21 ; wavetable edit button placeholder
+         .word wavetable_lb
          .byte 0
       cp: STR_FORMAT "global" ; caption of panel
-      pr: STR_FORMAT "rate" ; portamento rate label
-      pa: STR_FORMAT "porta" ; portamento activate label
+      nosc_lb: STR_FORMAT "n. oscs"
+      nenv_lb: STR_FORMAT "n. envs"
+      lfoa_lb: STR_FORMAT "lfo"
+      retr_lb: STR_FORMAT "retrig"
+      porta_rate_lb: STR_FORMAT "rate" ; portamento rate label
+      porta_active_lb: STR_FORMAT "porta" ; portamento activate label
    .endscope
    .scope osc
       px = global::px+global::wd
@@ -124,6 +150,7 @@ dummy_data_size = 1
       ampsecx = px + 22
       ampsecy = pitsecy
       ; GUI component string of oscillator panel
+      ; TODO: forgot wavetable checkbox for volume (do I want it though?)
       comps:
          .byte 2, px, py, 6, 0 ; tabselector
          .byte 6, wfsecx, wfsecy+2, 8, 4, (<waveforms_lb), (>waveforms_lb), 0 ; waveform listbox
@@ -187,11 +214,9 @@ dummy_data_size = 1
       active_tab: .byte 0
       cp: STR_FORMAT "oscillators" ; caption of panel
       waveform_lb: STR_FORMAT "waveform"
-      wavetable_lb: STR_FORMAT "wavetable"
       amp_lb: STR_FORMAT "amp env"
       pulsewidth_lb: STR_FORMAT "pulse width"
       pw_lb: STR_FORMAT "pw"
-      vol_lb: STR_FORMAT "vol"
       pitch_lb: STR_FORMAT "pitch"
       semi_lb: STR_FORMAT "st"
       fine_lb: STR_FORMAT "fn"
@@ -259,7 +284,7 @@ dummy_data_size = 1
       hg = 4
       ; GUI component string of the panel
       comps:
-         .byte 3, 11, 1, 0, 4, 0 ; arrowed edit (timbre selection)
+         .byte 3, 11, 1, 0, 6, 0 ; arrowed edit (timbre selection)
          .byte 0
       ; caption list of the panel
       capts:
@@ -295,6 +320,10 @@ dummy_data_size = 1
       lb_ofs: .byte 0
       lb_id: .byte 0
    .endscope
+
+   ; Recurring Labels
+   vol_lb: STR_FORMAT "vol"
+   wavetable_lb: STR_FORMAT "wavetable"
 
    ; Panel Lookup tables
    ; Each label marks a list of values, one for each panel.
@@ -1660,6 +1689,58 @@ dummy_plx:
 
 ; subroutine of the global settings panel
 write_global:
+   ldx Timbre ; may be replaced later
+   lda ms_curr_component_ofs
+   clc
+   adc #4
+   tay ; there's no component type where the data is before this index
+   ; now determine which component has been dragged
+   phx
+   lda ms_curr_component_id
+   asl
+   tax
+   jmp (@jmp_tbl, x)
+@jmp_tbl:
+   .word @n_oscs
+   .word @n_envs
+   .word @n_lfos
+   .word @retr_activate
+   .word @porta_activate
+   .word @porta_rate
+@n_oscs:
+   plx
+   iny
+   lda global::comps, y
+   sta timbres::Timbre::n_oscs, x
+   ; TODO: do panic stop all voices
+   rts
+@n_envs:
+   plx
+   iny
+   lda global::comps, y
+   sta timbres::Timbre::n_envs, x
+   rts
+@n_lfos:
+   plx
+   lda global::comps, y
+   sta timbres::Timbre::n_lfos, x
+   rts
+@retr_activate:
+   plx
+   lda global::comps, y
+   sta timbres::Timbre::retrig, x
+   rts
+@porta_activate:
+   plx
+   lda global::comps, y
+   sta timbres::Timbre::porta, x
+   rts
+@porta_rate:
+   plx
+   iny
+   iny
+   lda global::comps, y
+   sta timbres::Timbre::porta_r, x
    rts
 
 
@@ -1682,7 +1763,7 @@ write_osc:
    clc
    adc #4
    tay ; there's no component type where the data is before this index
-   ; now determine which component has been dragged
+   ; now determine which component has been changed
    phx
    lda ms_curr_component_id
    asl
@@ -2030,7 +2111,36 @@ write_lb_popup:
 ; Note that these subroutines only refresh certain components, while leaving others
 ; as they are, e.g. tab-selectors are not affected (in fact, they affect the other components)
 
+
 refresh_global:
+   ldx Timbre ; may be replaced later
+   ; number of oscillators
+   lda timbres::Timbre::n_oscs, x
+   ldy #(0*checkbox_data_size+0*drag_edit_data_size+1*arrowed_edit_data_size-1)
+   sta global::comps, y
+   ; number of envelopes
+   lda timbres::Timbre::n_envs, x
+   ldy #(0*checkbox_data_size+0*drag_edit_data_size+2*arrowed_edit_data_size-1)
+   sta global::comps, y
+   ; LFO activate checkbox
+   lda timbres::Timbre::n_lfos, x
+   ldy #(1*checkbox_data_size+0*drag_edit_data_size+2*arrowed_edit_data_size-1)
+   sta global::comps, y
+   ; retrigger checkbox
+   lda timbres::Timbre::retrig, x
+   ldy #(2*checkbox_data_size+0*drag_edit_data_size+2*arrowed_edit_data_size-1)
+   sta global::comps, y
+   ; porta activate checkbox
+   lda timbres::Timbre::porta, x
+   ldy #(3*checkbox_data_size+0*drag_edit_data_size+2*arrowed_edit_data_size-1)
+   sta global::comps, y
+   ; porta rate edit
+   lda timbres::Timbre::porta_r, x
+   ldy #(3*checkbox_data_size+1*drag_edit_data_size+2*arrowed_edit_data_size-2)
+   sta global::comps, y
+   ; redraw components
+   lda #0
+   jsr draw_components
    rts
 
 refresh_osc:

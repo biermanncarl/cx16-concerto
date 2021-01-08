@@ -39,7 +39,8 @@ start:
    PRESET_KEY_1 2
    PRESET_KICK_DRUM_3 3
    PRESET_SNARE_DRUM_5 4
-   PRESET_PAD_1 5
+   PRESET_FAT_PLUCK 5
+   PRESET_PAD_1 6
 
 
    ; startup code

@@ -121,6 +121,132 @@
 .endmacro
 
 
+.macro PRESET_FAT_PLUCK patch_no
+   ; global parameters
+   ldx #patch_no
+   lda #3
+   sta timbres::Timbre::n_oscs, x
+   lda #2
+   sta timbres::Timbre::n_envs, x
+   ; set mono & porta rate
+   lda #30
+   sta timbres::Timbre::porta_r, x
+   lda #1
+   sta timbres::Timbre::porta, x
+   sta timbres::Timbre::retrig, x
+   ; env 0
+   ldx #(0*N_TIMBRES+patch_no)
+   lda #0
+   sta timbres::Timbre::env::attackL, x
+   lda #127
+   sta timbres::Timbre::env::attackH, x
+   lda #128
+   sta timbres::Timbre::env::decayL, x
+   lda #1
+   sta timbres::Timbre::env::decayH, x
+   lda #0
+   sta timbres::Timbre::env::sustain, x
+   lda #0
+   sta timbres::Timbre::env::releaseL, x
+   lda #64
+   sta timbres::Timbre::env::releaseH, x
+   ; env 1
+   ldx #(1*N_TIMBRES+patch_no)
+   lda #0
+   sta timbres::Timbre::env::attackL, x
+   lda #127
+   sta timbres::Timbre::env::attackH, x
+   lda #0
+   sta timbres::Timbre::env::decayL, x
+   lda #6
+   sta timbres::Timbre::env::decayH, x
+   lda #0
+   sta timbres::Timbre::env::sustain, x
+   lda #0
+   sta timbres::Timbre::env::releaseL, x
+   lda #64
+   sta timbres::Timbre::env::releaseH, x
+   ; set oscillator parameters
+   ; oscillator 0
+   ldx #(0*N_TIMBRES+patch_no)
+   lda #0
+   sta timbres::Timbre::osc::waveform, x
+   lda #41
+   sta timbres::Timbre::osc::pulse, x
+   lda #256-24
+   sta timbres::Timbre::osc::pitch, x
+   lda #0
+   sta timbres::Timbre::osc::fine, x
+   lda #192
+   sta timbres::Timbre::osc::lrmid, x
+   lda #0
+   sta timbres::Timbre::osc::amp_sel, x
+   lda #64
+   sta timbres::Timbre::osc::volume, x
+   lda #0
+   sta timbres::Timbre::osc::vol_mod_sel, x
+   lda #18
+   sta timbres::Timbre::osc::vol_mod_dep, x
+   lda #0
+   sta timbres::Timbre::osc::pwm_sel, x
+   lda #28
+   sta timbres::Timbre::osc::pwm_dep, x
+   lda #1
+   sta timbres::Timbre::osc::track, x
+   lda #128
+   sta timbres::Timbre::osc::pitch_mod_sel1, x
+   lda #128
+   sta timbres::Timbre::osc::pitch_mod_sel2, x
+   ; oscillator 1
+   ldx #(1*N_TIMBRES+patch_no)
+   lda #64
+   sta timbres::Timbre::osc::waveform, x
+   lda #255-12
+   sta timbres::Timbre::osc::pitch, x
+   lda #236
+   sta timbres::Timbre::osc::fine, x
+   lda #128
+   sta timbres::Timbre::osc::lrmid, x
+   lda #0
+   sta timbres::Timbre::osc::amp_sel, x
+   lda #56
+   sta timbres::Timbre::osc::volume, x
+   lda #128
+   sta timbres::Timbre::osc::vol_mod_sel, x
+   lda #(0)
+   sta timbres::Timbre::osc::vol_mod_dep, x
+   lda #1
+   sta timbres::Timbre::osc::track, x
+   lda #128
+   sta timbres::Timbre::osc::pitch_mod_sel1, x
+   lda #128
+   sta timbres::Timbre::osc::pitch_mod_sel2, x
+   ; oscillator 2
+   ldx #(2*N_TIMBRES+patch_no)
+   lda #64
+   sta timbres::Timbre::osc::waveform, x
+   lda #256-12
+   sta timbres::Timbre::osc::pitch, x
+   lda #20
+   sta timbres::Timbre::osc::fine, x
+   lda #64
+   sta timbres::Timbre::osc::lrmid, x
+   lda #0
+   sta timbres::Timbre::osc::amp_sel, x
+   lda #56
+   sta timbres::Timbre::osc::volume, x
+   lda #128
+   sta timbres::Timbre::osc::vol_mod_sel, x
+   lda #(0)
+   sta timbres::Timbre::osc::vol_mod_dep, x
+   lda #1
+   sta timbres::Timbre::osc::track, x
+   lda #128
+   sta timbres::Timbre::osc::pitch_mod_sel1, x
+   lda #128
+   sta timbres::Timbre::osc::pitch_mod_sel2, x
+.endmacro
+
 
 .macro PRESET_SNARE_DRUM_1 patch_no
    ; global parameters
@@ -1270,9 +1396,9 @@
    sta timbres::Timbre::env::attackL, x
    lda #4
    sta timbres::Timbre::env::attackH, x
-   lda #128
+   lda #127
    sta timbres::Timbre::env::decayL, x
-   lda #0
+   lda #1
    sta timbres::Timbre::env::decayH, x
    lda #63
    sta timbres::Timbre::env::sustain, x
