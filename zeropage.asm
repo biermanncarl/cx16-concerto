@@ -14,6 +14,8 @@ mzpwe:   .word 0   ; this is used mainly as a pointer for string operations
 mzpwb:   .word 0
 ; my zero page words (ISR)
 mzpwc:   .word 0
+; my zero page words (ISR)
+mzpwf:   .word 0
 
 ; my zero page bytes (main program)
 mzpba:   .byte 0

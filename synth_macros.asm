@@ -453,12 +453,14 @@ SYNTH_MACROS_INC = 1
     and #%01111111
     cmp modsourceH, x
     sta mzpwb+1        ; 14 cycles
-    ; get the modulation sign
+    ; from now on, the mod source isn't directly accessed anymore, so we can discard X
+    ; store the modulation sign
     beq :+
     inc mzpbf
 :
 
     ; do %HHHH rightshifts
+    ; cycle counting needs to be redone, because initially, I forgot about LSR, so I CLCed before each ROR
     ; instead of the naive approach of looping over rightshifting a 16 bit variable
     ; we are taking a more efficient approach of testing each bit
     ; of the %HHHH value and perform suitable actions
@@ -474,7 +476,7 @@ SYNTH_MACROS_INC = 1
     and #%00001000
     beq @skipH3
     ; 8 rightshifts = copy high byte to low byte, set high byte to 0
-    ; the subsequent rightshifting can be done entirely inside accumulator
+    ; the subsequent rightshifting can be done entirely inside accumulator, no memory access needed
     lda moddepth, y
     and #%00000111
     bne :+          ; if no other bit is set, we just move the bytes and are done
@@ -482,15 +484,13 @@ SYNTH_MACROS_INC = 1
     sta mzpwb
     stz mzpwb+1
     jmp @endH
-:   phx ; if we got here, we've got a nonzero number of rightshifts to be done in register A
+:   ; if we got here, we've got a nonzero number of rightshifts to be done in register A
     tax
     lda mzpwb+1
 @loopH:
-    clc
-    ror
+    lsr
     dex
     bne @loopH
-    plx
     sta mzpwb
     stz mzpwb+1
     jmp @endH    ; worst case if bit 3 is set: 15 rightshifts, makes 9*7 + 35 cycles = 98 cycles
@@ -499,19 +499,14 @@ SYNTH_MACROS_INC = 1
     lda moddepth, y
     and #%00000100
     beq @skipH2
-    ; as we are doing 4 rightshifts, a little trickery is useful to prevent us from
-    ; doing CLC every time:
-    ; we take the low byte into the accumulator and AND it with %11110000 -> 2 cycles instead of 6
     lda mzpwb
-    and #%11110000
-    clc
-    ror mzpwb+1
+    lsr mzpwb+1
     ror
-    ror mzpwb+1
+    lsr mzpwb+1
     ror
-    ror mzpwb+1
+    lsr mzpwb+1
     ror
-    ror mzpwb+1
+    lsr mzpwb+1
     ror
     sta mzpwb
 @skipH2:
@@ -520,11 +515,9 @@ SYNTH_MACROS_INC = 1
     and #%00000010
     beq @skipH1
     lda mzpwb
-    clc
-    ror mzpwb+1
+    lsr mzpwb+1
     ror
-    clc
-    ror mzpwb+1
+    lsr mzpwb+1
     ror
     sta mzpwb
 @skipH1:
@@ -532,8 +525,7 @@ SYNTH_MACROS_INC = 1
     lda moddepth, y
     and #%00000001
     beq @skipH0
-    clc
-    ror mzpwb+1
+    lsr mzpwb+1
     ror mzpwb
 @skipH0:    ; worst case if bit 3 is not set: 107 cycles.
 @endH:
@@ -569,19 +561,16 @@ SYNTH_MACROS_INC = 1
     ; 2^(1/5) ~= %1.001
     ; do first ROR while copying to mzpwc
     lda mzpwb+1
-    clc
-    ror
+    lsr
     sta mzpwc+1
     lda mzpwb
     ror
     sta mzpwc
     ; then do remaining RORS with high byte in accumulator and low byte in memory
     lda mzpwc+1
-    clc
-    ror
+    lsr
     ror mzpwc
-    clc
-    ror
+    lsr
     ; but last low byte ROR already in accumulator, since we are going to do addition with it
     sta mzpwc+1
     lda mzpwc
@@ -597,15 +586,13 @@ SYNTH_MACROS_INC = 1
     ; 2^(2/5) ~= %1.01
     ; do first ROR while copying to mzpwc
     lda mzpwb+1
-    clc
-    ror
+    lsr
     sta mzpwc+1
     lda mzpwb
     ror
     sta mzpwc
     ; do second ROR and addition
-    clc
-    ror mzpwc+1
+    lsr mzpwc+1
     lda mzpwc
     ror
     clc
@@ -618,8 +605,7 @@ SYNTH_MACROS_INC = 1
 @sublevel_3:
     ; 2^(3/5) ~= %1.1
     lda mzpwb+1
-    clc
-    ror
+    lsr
     sta mzpwc+1
     lda mzpwb
     ror
@@ -632,30 +618,37 @@ SYNTH_MACROS_INC = 1
     jmp @endL  ; 35 cycles
 @sublevel_4:
     ; 2^(4/5) ~= %1.11
+    ; do first ROR while copying to mzpwc
     lda mzpwb+1
-    clc
-    ror
+    lsr
     sta mzpwc+1
     lda mzpwb
     ror
     sta mzpwc
+    ; do second ROR while copying to mzpwf
+    lda mzpwc+1
+    lsr
+    sta mzpwf+1
+    lda mzpwc
+    ror
+    ;sta mzpwf ;redundant, because we don't read from it anyway
+    ; do all additions
+    ; first addition
     clc
+    adc mzpwc ; mzpwf still in A
+    sta mzpwc
+    lda mzpwf+1
+    adc mzpwc+1
+    sta mzpwc+1
+    ; second addition
+    clc
+    lda mzpwc
     adc mzpwb
     sta mzpwb
     lda mzpwc+1
     adc mzpwb+1
     sta mzpwb+1
-    clc
-    ror
-    sta mzpwc+1
-    lda mzpwc
-    ror
-    clc
-    adc mzpwb
-    sta mzpwb
-    lda mzpwc+1
-    adc mzpwb+1
-    sta mzpwb+1  ; 64 cycles ... ouch!!
+    ; 66 cycles ... ouch!!
 @endL:
 
 
