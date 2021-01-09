@@ -20,6 +20,7 @@
 ; 2: envelope settings
 ; 3: synth navigation bar (snav)
 ; 4: popup panel for listboxes
+; 5: LFO settings panel
 
 ; Each panel has multiple byte strings hard coded. Those byte strings define elements shown on the GUI.
 ;   * one string that defines all interactive GUI components, such as checkboxes, listboxes etc.
@@ -108,49 +109,46 @@ dummy_data_size = 1
          .byte 0
       ; caption list of global panel
       capts:
-         .byte CCOLOR_CAPTION, px+2, py
+         .byte CCOLOR_CAPTION, px+3, py
          .word cp
          .byte (COLOR_IMPORTANT_CAPTION+16*COLOR_BACKGROUND), px+2, py+2 ; number of oscillators label
          .word nosc_lb
          .byte (COLOR_IMPORTANT_CAPTION+16*COLOR_BACKGROUND), px+2, py+5 ; number of envelopes label
          .word nenv_lb
          .byte (COLOR_IMPORTANT_CAPTION+16*COLOR_BACKGROUND), px+4, py+8 ; number of envelopes label
-         .word lfoa_lb
+         .word lfo_lb
          .byte CCOLOR_CAPTION, px+4, py+12 ; porta checkbox label
          .word retr_lb
          .byte CCOLOR_CAPTION, px+5, py+14 ; porta checkbox label
          .word porta_active_lb
          .byte CCOLOR_CAPTION, px+6, py+16 ; porta rate label
-         .word porta_rate_lb
+         .word rate_lb
          .byte CCOLOR_CAPTION, px+2, py+21 ; wavetable edit button placeholder
          .word wavetable_lb
          .byte 0
       cp: STR_FORMAT "global" ; caption of panel
       nosc_lb: STR_FORMAT "n. oscs"
       nenv_lb: STR_FORMAT "n. envs"
-      lfoa_lb: STR_FORMAT "lfo"
-      retr_lb: STR_FORMAT "retrig"
-      porta_rate_lb: STR_FORMAT "rate" ; portamento rate label
       porta_active_lb: STR_FORMAT "porta" ; portamento activate label
    .endscope
    .scope osc
       px = global::px+global::wd
       py = global::py
-      wd = 33
+      wd = 34
       hg = global::hg
       ; other labels
       modsecx = px + 4
       modsecy = py + 16
       pitsecx = px + 4
       pitsecy = py + 9
-      pwsecx = px + 18
+      pwsecx = px + 19
       pwsecy = py + 4
       wfsecx = px + 4
       wfsecy = py + 2
       ampsecx = px + 22
       ampsecy = pitsecy
       ; GUI component string of oscillator panel
-      ; TODO: forgot wavetable checkbox for volume (do I want it though?)
+      ; TODO: forgot wavetable checkbox for volume (do I want it though? I'll leave it until someone complains.)
       comps:
          .byte 2, px, py, 6, 0 ; tabselector
          .byte 6, wfsecx, wfsecy+2, 8, 4, (<waveforms_lb), (>waveforms_lb), 0 ; waveform listbox
@@ -213,7 +211,6 @@ dummy_data_size = 1
       ; data specific to the oscillator panel
       active_tab: .byte 0
       cp: STR_FORMAT "oscillators" ; caption of panel
-      waveform_lb: STR_FORMAT "waveform"
       amp_lb: STR_FORMAT "amp env"
       pulsewidth_lb: STR_FORMAT "pulse width"
       pw_lb: STR_FORMAT "pw"
@@ -292,8 +289,7 @@ dummy_data_size = 1
          .word cp
          .byte 0
       ; data specific to the synth-navigation panel
-      active_tab: .byte 0
-      cp: STR_FORMAT "timbre" ; caption of panel
+      cp: STR_FORMAT "timbre"
    .endscope
    .scope listbox_popup
       ; popup blocks the whole screen, therefore this panel is "fullscreen" (for click detection)
@@ -320,26 +316,64 @@ dummy_data_size = 1
       lb_ofs: .byte 0
       lb_id: .byte 0
    .endscope
+   .scope lfo ; LFO settings area
+      px = env::px+env::wd
+      py = osc::py+osc::hg
+      wd = (global::wd+osc::wd-env::wd)
+      hg = env::hg
+      ; GUI component string of the panel
+      comps:
+         .byte 6, px+2, py+3, 8, 5, (<lfo_waveform_lb), (>lfo_waveform_lb), 0 ; waveform listbox
+         .byte 5, px+12, py+2, 8, 0 ; LFO retrigger checkbox
+         .byte 4, px+7 , py+5, %00000001, 0, 128, 10, 0 ; drag edit - LFO rate
+         .byte 4, px+14 , py+5, %00000000, 0, 255, 0, 0 ; drag edit - LFO phase offset
+         .byte 0
+      ; caption list of the panel
+      capts:
+         .byte CCOLOR_CAPTION, px+2, py
+         .word lfo_lb
+         .byte CCOLOR_CAPTION, px+2, py+2
+         .word waveform_lb
+         .byte CCOLOR_CAPTION, px+14, py+2
+         .word retr_lb
+         .byte CCOLOR_CAPTION, px+2, py+5
+         .word rate_lb
+         .byte CCOLOR_CAPTION, px+14, py+4
+         .word phase_lb
+         .byte 0
+      ; data specific to the synth-navigation panel
+      phase_lb: STR_FORMAT "phase"
+      lfo_waveform_lb:
+         STR_FORMAT "tri"
+         STR_FORMAT "squ"
+         STR_FORMAT "saw up"
+         STR_FORMAT "saw dn"
+         STR_FORMAT "s'n'h"
+   .endscope
 
    ; Recurring Labels
    vol_lb: STR_FORMAT "vol"
    wavetable_lb: STR_FORMAT "wavetable"
+   waveform_lb: STR_FORMAT "waveform"
+   lfo_lb: STR_FORMAT "lfo"
+   retr_lb: STR_FORMAT "retrig"
+   rate_lb: STR_FORMAT "rate"
 
    ; Panel Lookup tables
    ; Each label marks a list of values, one for each panel.
    ; These lists must have length N_PANELS.
    ; X positions
-   px: .byte global::px, osc::px, env::px, snav::px, listbox_popup::px
+   px: .byte global::px, osc::px, env::px, snav::px, listbox_popup::px, lfo::px
    ; Y positions
-   py: .byte global::py, osc::py, env::py, snav::py, listbox_popup::py
+   py: .byte global::py, osc::py, env::py, snav::py, listbox_popup::py, lfo::py
    ; widths
-   wd: .byte global::wd, osc::wd, env::wd, snav::wd, listbox_popup::wd
+   wd: .byte global::wd, osc::wd, env::wd, snav::wd, listbox_popup::wd, lfo::wd
    ; heights
-   hg: .byte global::hg, osc::hg, env::hg, snav::hg, listbox_popup::hg
+   hg: .byte global::hg, osc::hg, env::hg, snav::hg, listbox_popup::hg, lfo::hg
    ; GUI component strings
-   comps: .word global::comps, osc::comps, env::comps, snav::comps, listbox_popup::comps
+   comps: .word global::comps, osc::comps, env::comps, snav::comps, listbox_popup::comps, lfo::comps
    ; GUI captions
-   capts: .word global::capts, osc::capts, env::capts, snav::capts, listbox_popup::capts
+   capts: .word global::capts, osc::capts, env::capts, snav::capts, listbox_popup::capts, lfo::capts
 
 
 ; The Panel Stack
@@ -359,16 +393,18 @@ dummy_sr:
 ; puts all synth related panels into GUI stack
 load_synth_gui:
    jsr guiutils::cls
-   lda #4
+   lda #5 ; GUI stack size (how many panels are visible)
    sta stack::sp
-   lda #0
+   lda #0 ; global settings panel
    sta stack::stack
-   lda #1
+   lda #1 ; oscillator panel
    sta stack::stack+1
-   lda #2
+   lda #2 ; envelope panel
    sta stack::stack+2
-   lda #3
+   lda #3 ; synth navigation bar
    sta stack::stack+3
+   lda #5 ; LFO panel
+   sta stack::stack+4
    jsr draw_gui
    jsr refresh_gui
    rts
@@ -394,6 +430,7 @@ draw_gui:
    .word draw_env
    .word draw_snav
    .word draw_lb_popup
+   .word draw_lfo
 @ret_addr:
    ; draw GUI components
    ldy dg_counter
@@ -1040,6 +1077,7 @@ refresh_gui:
    .word refresh_env
    .word refresh_snav
    .word dummy_sr   ; listbox popup ... popups don't need to be refreshed
+   .word refresh_lfo
 @ret_addr:
    ; advance in loop
    lda rfg_counter
@@ -1564,6 +1602,22 @@ draw_lb_popup:
    jsr guiutils::draw_lb_popup
    rts
 
+draw_lfo:
+   ; draw panel
+   lda #lfo::px
+   sta guiutils::draw_x
+   lda #lfo::py
+   sta guiutils::draw_y
+   lda #lfo::wd
+   sta guiutils::draw_width
+   lda #lfo::hg
+   sta guiutils::draw_height
+   lda #0
+   sta guiutils::draw_data1
+   lda #0
+   sta guiutils::draw_data2
+   jsr guiutils::draw_frame
+   rts
 
 
 
@@ -1681,6 +1735,7 @@ panel_write_subroutines:
    .word write_env
    .word write_snav
    .word write_lb_popup
+   .word write_lfo
 
 dummy_plx:
    plx
@@ -2101,6 +2156,55 @@ write_lb_popup:
    jsr draw_gui
    rts
 
+; LFO panel being changed
+write_lfo:
+   ldx Timbre ; may be replaced later
+   lda ms_curr_component_ofs
+   clc
+   adc #4
+   tay ; there's no component type where the data is before this index
+   ; now determine which component has been dragged
+   phx
+   lda ms_curr_component_id
+   asl
+   tax
+   jmp (@jmp_tbl, x)
+@jmp_tbl:
+   .word @wave
+   .word @retr
+   .word @rate
+   .word @offs
+@wave:
+   plx
+   iny
+   iny
+   iny
+   lda lfo::comps, y
+   sta timbres::Timbre::lfo::wave, x
+   rts
+@retr:
+   plx
+   lda lfo::comps, y
+   sta timbres::Timbre::lfo::retrig, x
+   rts
+@rate:
+   plx
+   iny
+   iny
+   lda lfo::comps, y
+   sta timbres::Timbre::lfo::rateH, x
+   iny
+   lda lfo::comps, y
+   sta timbres::Timbre::lfo::rateL, x
+   rts
+@offs:
+   plx
+   iny
+   iny
+   lda lfo::comps, y
+   sta timbres::Timbre::lfo::offs, x
+   rts
+
 
 
 
@@ -2309,6 +2413,33 @@ refresh_env:
    rts
 
 refresh_snav:
+   rts
+
+
+refresh_lfo:
+   ldx Timbre ; may be replaced later
+   ; LFO waveform
+   lda timbres::Timbre::lfo::wave, x
+   ldy #(0*checkbox_data_size+0*drag_edit_data_size+1*listbox_data_size-1)
+   sta lfo::comps, y
+   ; LFO retrigger
+   lda timbres::Timbre::lfo::retrig, x
+   ldy #(1*checkbox_data_size+0*drag_edit_data_size+1*listbox_data_size-1)
+   sta lfo::comps, y
+   ; LFO rate
+   lda timbres::Timbre::lfo::rateH, x
+   ldy #(1*checkbox_data_size+1*drag_edit_data_size+1*listbox_data_size-2)
+   sta lfo::comps, y
+   iny
+   lda timbres::Timbre::lfo::rateL, x
+   sta lfo::comps, y
+   ; phase offset
+   lda timbres::Timbre::lfo::offs, x
+   ldy #(1*checkbox_data_size+2*drag_edit_data_size+1*listbox_data_size-2)
+   sta lfo::comps, y
+   ; redraw components
+   lda #5
+   jsr draw_components
    rts
 
 .endscope

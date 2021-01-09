@@ -99,8 +99,6 @@ exit:
    jsr voices::panic
    jsr my_isr::shutdown_isr
 
-   ; TODO: properly shutdown all PSG voices (panic)
-
    ; hide mouse pointer
    lda #0
    ldx #0

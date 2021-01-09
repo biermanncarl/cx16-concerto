@@ -1313,7 +1313,7 @@
    sta timbres::Timbre::osc::pwm_sel, x
    lda #(128*0+0)
    sta timbres::Timbre::osc::pwm_dep, x
-   lda #0
+   lda #24
    sta timbres::Timbre::osc::pitch, x
    lda #0
    sta timbres::Timbre::osc::fine, x
@@ -1347,7 +1347,7 @@
    sta timbres::Timbre::osc::pwm_sel, x
    lda #(128+2*16+2)
    sta timbres::Timbre::osc::pwm_dep, x
-   lda #36
+   lda #60
    sta timbres::Timbre::osc::pitch, x
    lda #20
    sta timbres::Timbre::osc::fine, x

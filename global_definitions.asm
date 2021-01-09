@@ -31,7 +31,7 @@ GLOBAL_DEFS_INC = 1
 .define CCOLOR_CHECKBOX_CLEAR 16*COLOR_CHECKBOX + COLOR_BACKGROUND
 .define CCOLOR_CHECKBOX_TICK 16*COLOR_CHECKBOX + 0
 ; others
-.define N_PANELS 5   ; number of panels 
+.define N_PANELS 6   ; number of panels 
 
 
 
