@@ -445,7 +445,9 @@ stop_note:
    ldy Oscmap::lfo
    lda Voice::osc_psg_map, x
    sta Oscmap::freeosclist, y
+   sei
    VERA_MUTE_VOICE_A
+   cli
    ; advance indices
    txa
    clc
@@ -487,10 +489,22 @@ rts
 panic:
    ldx #(N_VOICES-1)
 @loop:
+   lda Voice::active, x
+   beq :+
+   phx
    jsr stop_note
-   dex
+   plx
+:  dex
    bpl @loop
    jsr init_voices
+   ; PSG Mute all
+   sei
+   ldx #(N_VOICES-1)
+@loop2:
+   VERA_MUTE_VOICE_X
+   dex
+   bpl @loop2
+   cli
 rts
 
 

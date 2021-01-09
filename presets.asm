@@ -185,7 +185,7 @@
    sta timbres::Timbre::osc::volume, x
    lda #0
    sta timbres::Timbre::osc::vol_mod_sel, x
-   lda #18
+   lda #7
    sta timbres::Timbre::osc::vol_mod_dep, x
    lda #0
    sta timbres::Timbre::osc::pwm_sel, x

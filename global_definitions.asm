@@ -1,4 +1,4 @@
-.ifndef GLOBAL_DEFS_INC
+.ifndef GLOBAL_DEFS_INC ; include protector ...
 GLOBAL_DEFS_INC = 1
 
 ; Synth engine definitions

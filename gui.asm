@@ -1708,11 +1708,13 @@ write_global:
    .word @porta_activate
    .word @porta_rate
 @n_oscs:
+   phy
+   jsr voices::panic ; If we don't do this, a different number of oscillators might be released than initially acquired by a voice. Safety first.
+   ply
    plx
    iny
    lda global::comps, y
    sta timbres::Timbre::n_oscs, x
-   ; TODO: do panic stop all voices
    rts
 @n_envs:
    plx
