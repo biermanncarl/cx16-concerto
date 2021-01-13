@@ -420,6 +420,8 @@ start_note:
    lda #0
 rts
 
+
+; TODO: Debug! This causes some conflict if a note is played at the same time or something like that!
 ; This subroutine deactivates the voice on a given channel and
 ; releases the oscillators occupied by it, so that they can be used by other notes.
 ; (and also mutes the PSG voices)
@@ -445,9 +447,8 @@ stop_note:
    ldy Oscmap::lfo
    lda Voice::osc_psg_map, x
    sta Oscmap::freeosclist, y
-   sei
+   ; no sei/cli before/after this because: if stop_note is called from within the ISR it's unnecessary. if it's called from the main program, the whole rutine call needs to be braced by sei-cli
    VERA_MUTE_VOICE_A
-   cli
    ; advance indices
    txa
    clc
