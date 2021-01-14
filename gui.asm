@@ -2,7 +2,7 @@
 ; It is called mainly by the mouse.asm driver, and sends commands to the guiutils.asm
 ; to output GUI elements.
 ; The appearance and behaviour of the GUI is also hard coded in this file.
-; The interconnection between the GUI and the timbre (and later perhaps song) data
+; The interaction between the GUI and the timbre (and later perhaps song) data
 ; is currently also done in this file.
 
 ; Panels are rectangular areas on the screen that contain basic GUI elements
@@ -14,6 +14,7 @@
 ; This is used to be able to dynamically swap out parts of the GUI, or do things like popup menus.
 ; The tool for that is a "panel stack" that defines which panels are shown in which order.
 
+; ***************************************
 ; Panel legend:
 ; 0: global settings
 ; 1: oscillator settings
@@ -21,6 +22,7 @@
 ; 3: synth navigation bar (snav)
 ; 4: popup panel for listboxes
 ; 5: LFO settings panel
+; ***************************************
 
 ; Each panel has multiple byte strings hard coded. Those byte strings define elements shown on the GUI.
 ;   * one string that defines all interactive GUI components, such as checkboxes, listboxes etc.
@@ -49,6 +51,8 @@
 ; second and third bytes: x and y position
 ; fourth and fifth bytes: pointer to a zero-terminated PETSCII string (thus, the symbol "@" cannot be represented)
 
+
+; *******************************************************************************************
 ; GUI control element legend with component string format
 ; 0: none (end of list)
 ; 1: button, followed by x and y position (absolute), and width, and address of string
@@ -58,13 +62,7 @@
 ; 5: checkbox, followed by x and y position (abs), width, checked boolean
 ; 6: listbox, followed by x and y position (abs), width, length of stringlist, stringlist pointer (16 bit), selection index
 ; 7: dummy component, no other data. always registers a click event, so that a panel never misses a click (for popups).
-button_data_size = 1
-tab_selector_data_size = 5
-arrowed_edit_data_size = 6
-drag_edit_data_size = 8
-checkbox_data_size = 5
-listbox_data_size = 8
-dummy_data_size = 1
+; *******************************************************************************************
 
 ; drag edit flags options:
 ; bit 0: coarse/fine option enabled
@@ -73,6 +71,13 @@ dummy_data_size = 1
 ; options irrelevant for drawing the component:
 ; bit 7: zero forbidden (for signed scale5 values)
 
+button_data_size = 1
+tab_selector_data_size = 5
+arrowed_edit_data_size = 6
+drag_edit_data_size = 8
+checkbox_data_size = 5
+listbox_data_size = 8
+dummy_data_size = 1
 
 
 
@@ -87,18 +92,7 @@ dummy_data_size = 1
       py = 10
       wd = 12
       hg = 24
-
-      ; GUI component string of global panel
-      ; TODO components:
-      ; Number of oscillators
-      ; number of envelopes
-      ; LFO active
-      ; retrigger activate (default on!)
-      ; portamento activate
-      ; portamento rate
-      ; volume
-      ; Wavetable activate?
-      ; Wavetbale edit button
+      ; GUI component string of global settings panel
       comps:
          .byte 3, px+3, py+3, 1, 6, 1 ; number of oscillators
          .byte 3, px+3, py+6, 1, 3, 1 ; number of envelopes

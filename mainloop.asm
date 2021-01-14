@@ -1,3 +1,21 @@
+; main loop ... wait until "Q" is pressed.
+mainloop:
+
+   ; GUI update
+   jsr mouse::mouse_tick
+
+
+
+   DISPLAY_BYTE ms_curr_panel, 30, 58
+   DISPLAY_BYTE ms_curr_component_id, 35, 58
+   DISPLAY_BYTE ms_curr_component_ofs, 35, 56
+   DISPLAY_BYTE ms_curr_data, 40, 58
+
+   DISPLAY_BYTE debug_a, 70, 58
+
+
+   ; keyboard polling
+
    jsr GETIN      ; get charakter from keyboard
    cmp #65        ; check if pressed "A"
    bne @skip_a
@@ -125,7 +143,6 @@
 @keyboard_space:
    ldx #15
    jsr voices::release_note
-
    jmp end_mainloop
 @keyboard_z:
    lda Octave
@@ -142,3 +159,31 @@
    adc #12
    sta Octave
    jmp end_mainloop
+
+
+play_note:
+
+   ; determine MIDI note
+   sta Note
+   lda Octave
+   clc
+   adc Note
+
+   ; play note
+   sta voices::note_pitch
+   lda #64
+   sta voices::note_volume
+   lda Timbre
+   sta voices::note_timbre
+   lda #15
+   sta voices::note_channel
+   sei
+   jsr voices::play_note
+   cli
+
+end_mainloop:
+
+   jmp mainloop
+
+
+exit:

@@ -1,4 +1,4 @@
 cd ../build
-cl65 -t cx16 -o PSGSYNTH.PRG "../source/psg_synth.asm"
+cl65 -t cx16 -o PSGSYNTH.PRG "../source/psg_synth.asm" -C cx16-asm.cfg
 cd ../source
 rm psg_synth.o

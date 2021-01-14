@@ -1,7 +1,10 @@
-;my_zp_ptr:
-;   .word 0
-;my_bit_register:
-;   .byte 0
+; This file contains variables on the zero page.
+; They are given more general names to be reusable for different purposes.
+; They are subdivided into two categories:
+;   * Variables that can be used by the main program (i.e. main loop)
+;   * Variables that can be used by the interrupt service routine (ISR)
+; This is, because the ISR can be called at any time, and would disturb the main program's
+; variables if they were using the same ones.
 
 ; my zero page words (main program)
 mzpwa:   .word 0

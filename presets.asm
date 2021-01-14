@@ -1,3 +1,8 @@
+; A multitude of macros representing patches for the synth engine.
+; Only a few of them will work properly.
+; They are just here for test purposes and will eventually be replaced by
+; patches loaded from files at runtime.
+
 .macro PRESET_BRIGHT_PLUCK patch_no
    ; global parameters
    ldx #patch_no

@@ -1,13 +1,25 @@
+; ******************************************************************************
+; Program: CONCERTO
+; Platform: Commander X16 (Emulator R38)
+; Compiler: CC65
+; Compile with: cl65 -t cx16 -o PSGSYNTH.PRG psg_synth.asm -C cx16-asm.cfg
+; Author: Carl Georg Biermann
+; ******************************************************************************
+
+
 .include "x16.asm"
 
 .zeropage
 .include "zeropage.asm"
 
-.org $080D
-.segment "STARTUP"
-.segment "INIT"
-.segment "ONCE"
 .segment "CODE"
+; BASIC stub to start program
+; "10 SYS2061"
+.org $0801
+.byte $0B, $08, $0A, $00, $9E, $32, $30, $36, $31, $00, $00, $00
+
+; And here is address 2061 = $080D, which is called by BASIC.
+.org $080D
 
    jmp start
 
@@ -26,9 +38,10 @@
 .include "mouse.asm"
 .include "presets.asm"
 
-
-
 start:
+
+   ; initialization
+   ; *******************************
 
    ; initialize patches
    ;PRESET_KICK_DRUM_2 0
@@ -42,60 +55,18 @@ start:
    PRESET_FAT_PLUCK 5
    PRESET_PAD_1 6
 
-
-   ; startup code
+   jsr voices::init_voices
    jsr gui::load_synth_gui
    jsr mouse::mouse_init
-
-   ; do other initializations
-   jsr voices::init_voices
    jsr my_isr::launch_isr
-   ; main loop ... wait until "Q" is pressed.
-mainloop:
 
-   ; GUI
-   jsr mouse::mouse_tick
-
+   ; main loop
+   ; *******************************
+.include "mainloop.asm"
 
 
-   DISPLAY_BYTE ms_curr_panel, 30, 58
-   DISPLAY_BYTE ms_curr_component_id, 35, 58
-   DISPLAY_BYTE ms_curr_component_ofs, 35, 56
-   DISPLAY_BYTE ms_curr_data, 40, 58
-
-   DISPLAY_BYTE ms_curr_component_ofs, 70, 58
-
-
-   ; keyboard polling
-.include "keyboard_polling.asm"
-
-
-play_note:
-
-   ; determine MIDI note
-   sta Note
-   lda Octave
-   clc
-   adc Note
-
-   ; play note
-   sta voices::note_pitch
-   lda #64
-   sta voices::note_volume
-   lda Timbre
-   sta voices::note_timbre
-   lda #15
-   sta voices::note_channel
-   sei
-   jsr voices::play_note
-   cli
-
-end_mainloop:
-
-   jmp mainloop
-
-
-exit:
+   ; cleanup code
+   ; *******************************
    jsr voices::panic
    jsr my_isr::shutdown_isr
 
@@ -105,13 +76,6 @@ exit:
    jsr MOUSE_CONFIG
 
    rts            ; return to BASIC
-   ; NOTE
-   ; The program gets corrupted in memory after returning to BASIC
-   ; If running again, reLOAD the program!
 
-
-
-
-; data
 .segment "RODATA"
 .include "pitch_data.asm"

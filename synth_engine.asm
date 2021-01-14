@@ -3,7 +3,7 @@
 
 .scope synth_engine
 
-
+; Synth Tick variables
 voi_pitch:     .byte 0
 voi_fine:      .byte 0
 voi_volume:    .byte 0

@@ -1,8 +1,16 @@
-; this file contains the facilities to play notes
-; its back-end communicates with the synth engine
+; This file contains the facilities to play notes.
+; It can be thought of as an API to tell the synth engine to play and stop notes.
+
+; The subroutines made for being called from outside are:
+; init_voices
+; play_note
+; release_note
+; stop_note       - release note puts a note into release phase, whereas stop_note stops it immediately
+; panic
+
 ; NOTE: synth voices DO NOT correspond to PSG voices.
 ; Instead, the single oscillators of a synth voice correspond
-; to the PSG voices.
+; to the PSG voices. They are dynamically assigned.
 .scope voices
 
 ; Interface. these variables have to be set before a play command
@@ -86,112 +94,6 @@ note_volume:
    lda #0
 :  sta adv_fol_ptr
 .endmacro
-
-; In this macro, the slide distance is multiplied by the portamento (base-)rate.
-; The result is the effective portamento rate.
-; It guarantees that the portamento time is constant regardless of how far
-; two notes are apart.
-; Expects voice index in X, timbre index in Y, slide distance in mzpbb
-.macro MUL8x8_PORTA ; uses ZP variables in the process
-   mp_slide_distance = mzpbb ; must be the same as in "continue_note"!
-   mp_return_value = mzpwb
-   ; the idea is that portamento is finished in a constant time
-   ; that means, rate must be higher, the larger the porta distance is
-   ; This is achieved by multiplying the "base rate" by the porta distance
-   
-   ; initialization
-   ; mzpwa stores the porta rate. It needs a 16 bit variable because it is left shifted
-   ; throughout the multiplication
-   lda timbres::Timbre::porta_r, y
-   sta mp_return_value+1
-   stz mp_return_value
-   stz Voice::porta::rateL, x
-   stz Voice::porta::rateH, x
-
-   ; multiplication
-   bbr0 mp_slide_distance, :+
-   lda mp_return_value+1
-   sta Voice::porta::rateL, x
-:  clc
-   rol mp_return_value+1
-   rol mp_return_value
-   bbr1 mp_slide_distance, :+
-   clc
-   lda mp_return_value+1
-   adc Voice::porta::rateL, x
-   sta Voice::porta::rateL, x
-   lda mp_return_value
-   adc Voice::porta::rateH, x
-   sta Voice::porta::rateH, x
-:  clc
-   rol mp_return_value+1
-   rol mp_return_value
-   bbr2 mp_slide_distance, :+
-   clc
-   lda mp_return_value+1
-   adc Voice::porta::rateL, x
-   sta Voice::porta::rateL, x
-   lda mp_return_value
-   adc Voice::porta::rateH, x
-   sta Voice::porta::rateH, x
-:  clc
-   rol mp_return_value+1
-   rol mp_return_value
-   bbr3 mp_slide_distance, :+
-   clc
-   lda mp_return_value+1
-   adc Voice::porta::rateL, x
-   sta Voice::porta::rateL, x
-   lda mp_return_value
-   adc Voice::porta::rateH, x
-   sta Voice::porta::rateH, x
-:  clc
-   rol mp_return_value+1
-   rol mp_return_value
-   bbr4 mp_slide_distance, :+
-   clc
-   lda mp_return_value+1
-   adc Voice::porta::rateL, x
-   sta Voice::porta::rateL, x
-   lda mp_return_value
-   adc Voice::porta::rateH, x
-   sta Voice::porta::rateH, x
-:  clc
-   rol mp_return_value+1
-   rol mp_return_value
-   bbr5 mp_slide_distance, :+
-   clc
-   lda mp_return_value+1
-   adc Voice::porta::rateL, x
-   sta Voice::porta::rateL, x
-   lda mp_return_value
-   adc Voice::porta::rateH, x
-   sta Voice::porta::rateH, x
-:  clc
-   rol mp_return_value+1
-   rol mp_return_value
-   bbr6 mp_slide_distance, :+
-   clc
-   lda mp_return_value+1
-   adc Voice::porta::rateL, x
-   sta Voice::porta::rateL, x
-   lda mp_return_value
-   adc Voice::porta::rateH, x
-   sta Voice::porta::rateH, x
-:  clc
-   rol mp_return_value+1
-   rol mp_return_value
-   bbr7 mp_slide_distance, @end_macro
-   clc
-   lda mp_return_value+1
-   adc Voice::porta::rateL, x
-   sta Voice::porta::rateL, x
-   lda mp_return_value
-   adc Voice::porta::rateH, x
-   sta Voice::porta::rateH, x
-@end_macro:
-.endmacro
-
 
 
 
@@ -384,10 +286,11 @@ retrigger_note:
 rts
 
 ; checks if there are enough oscillators available
-; and, in that case, reserves them for the neq voice.
+; and, in that case, reserves them for the new voice.
 ; expects channel index in X, timbre index in Y
 ; returns A=1 if successful, A=0 otherwise (zero flag set accordingly)
 ; doesn't preserve X and Y
+; This function is used within play_note.
 start_note:
    stn_loop_counter = mzpbb
    lda Oscmap::nfo
@@ -421,7 +324,6 @@ start_note:
 rts
 
 
-; TODO: Debug! This causes some conflict if a note is played at the same time or something like that!
 ; This subroutine deactivates the voice on a given channel and
 ; releases the oscillators occupied by it, so that they can be used by other notes.
 ; (and also mutes the PSG voices)
@@ -429,7 +331,7 @@ rts
 ; To ensure that the variables used by this function aren't messed up by the ISR,
 ; SEI has to be done before this function is called in the main program.
 ; This subroutine does not check if the note is actually playing!
-; It needs to be guaranteed by the context where it is called.
+; It needs to be guaranteed by the context where it is called, otherwise data will get corrupted.
 ; X: channel of note
 ; doesn't preserve X and Y
 stop_note:

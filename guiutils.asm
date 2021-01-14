@@ -1,6 +1,11 @@
-; basic utility functions for the GUI are found in this file
-; from more basic stuff like setting the VERA "screen cursor" to a specific location
+; Many utility functions for the GUI are found in this file.
+; From more basic stuff like setting the VERA "screen cursor" to a specific location
 ; to displaying more complex stuff like frames, edits, checkboxes etc.
+
+; These routines are designed to be called from within the main program.
+; The VERA is used from within the ISR and from within the main program.
+; To avoid any disturbances of VERA writes by the ISR (which uses the VERA, too),
+; great care has to be taken to always put an SEI before any VERA actions.
 
 
 .scope guiutils
@@ -9,7 +14,6 @@
 display_100s:       .byte 0
 display_10s:        .byte 0
 display_1s:         .byte 0
-display_address:    .word 0
 
 .macro SET_VERA_XY svx, svy
    stz VERA_ctrl
@@ -527,10 +531,6 @@ draw_drag_edit:
    sta dde_bittest   
    bbs2 dde_bittest, @signed
 @unsigned:
-   ; this additional spacebar was intended to keep all option the same size. But I want usigned edits to appear smaller, so commenting this out
-   ;lda #32
-   ;sta VERA_data0
-   ;stx VERA_data0
    bra @check_fine_coarse
 @signed:
    lda draw_data1

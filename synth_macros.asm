@@ -1,77 +1,81 @@
+; This file contains a range of macros used by the synth engine.
+; Some macros do VERA stuff, some macros do various types of
+; multiplication.
+
 .ifndef SYNTH_MACROS_INC
 SYNTH_MACROS_INC = 1
 
 .macro VERA_SET_VOICE_PARAMS n_voice, frequency, volume, waveform
-    VERA_SET_ADDR $1F9C0+4*n_voice, 1
-    stz VERA_ctrl
-    lda #<frequency
-    sta VERA_data0
-    lda #>frequency
-    sta VERA_data0
-    lda #volume
-    sta VERA_data0
-    lda #waveform
-    sta VERA_data0
+   VERA_SET_ADDR $1F9C0+4*n_voice, 1
+   stz VERA_ctrl
+   lda #<frequency
+   sta VERA_data0
+   lda #>frequency
+   sta VERA_data0
+   lda #volume
+   sta VERA_data0
+   lda #waveform
+   sta VERA_data0
 .endmacro
 
 ; parameters in memory, but PSG voice number A
 .macro VERA_SET_VOICE_PARAMS_MEM_A frequency, volume, waveform
-    pha
-    lda #$11
-	sta VERA_addr_bank
-	lda #$F9
-	sta VERA_addr_high
-	pla
-    asl
-    asl
-    clc
-    adc #$C0
-	sta VERA_addr_low
-    stz VERA_ctrl
+   pha
+   lda #$11
+   sta VERA_addr_bank
+   lda #$F9
+   sta VERA_addr_high
+   pla
+   asl
+   asl
+   clc
+   adc #$C0
+   sta VERA_addr_low
+   stz VERA_ctrl
 
-    lda frequency
-    sta VERA_data0
-    lda frequency+1
-    sta VERA_data0
-    lda volume
-    sta VERA_data0
-    lda waveform
-    sta VERA_data0
+   lda frequency
+   sta VERA_data0
+   lda frequency+1
+   sta VERA_data0
+   lda volume
+   sta VERA_data0
+   lda waveform
+   sta VERA_data0
 .endmacro
 
 ; mutes a voice
 .macro VERA_MUTE_VOICE n_voice
-    VERA_SET_ADDR ($1F9C0+4*n_voice+2), 1
-    lda #0
-    sta VERA_ctrl
-    stz VERA_data0
+   VERA_SET_ADDR ($1F9C0+4*n_voice+2), 1
+   lda #0
+   sta VERA_ctrl
+   stz VERA_data0
 .endmacro
 
 ; sets volume to value stored in register X
 .macro VERA_SET_VOICE_VOLUME_X n_voice, channels
-    VERA_SET_ADDR ($1F9C0+4*n_voice+2), 1
-    lda #0
-    sta VERA_ctrl
-    txa
-    clc
-    adc #channels
-    sta VERA_data0
+   VERA_SET_ADDR ($1F9C0+4*n_voice+2), 1
+   lda #0
+   sta VERA_ctrl
+   txa
+   clc
+   adc #channels
+   sta VERA_data0
 .endmacro
 
 ; mutes PSG voice with index stored in register X
 .macro VERA_MUTE_VOICE_X
-    lda #$11
-    sta VERA_addr_bank
-    lda #$F9
+   lda #$11
+   sta VERA_addr_bank
+   lda #$F9
 	sta VERA_addr_high
-    txa
-    asl
-    asl
-    clc
-    adc #$C2
+   txa
+   asl
+   asl
+   clc
+   adc #$C2
 	sta VERA_addr_low
-    stz VERA_ctrl
-    stz VERA_data0
+   stz VERA_ctrl
+   stz VERA_data0
 .endmacro
 
 ; mutes PSG voice with index stored in register A
@@ -101,6 +105,115 @@ SYNTH_MACROS_INC = 1
    lda svf_frequency+1
    sta VERA_data0
 .endmacro
+
+
+
+; In this macro, the slide distance is multiplied by the portamento (base-)rate.
+; The result is the effective portamento rate.
+; It guarantees that the portamento time is constant regardless of how far
+; two notes are apart.
+; Expects voice index in X, timbre index in Y, slide distance in mzpbb
+.macro MUL8x8_PORTA ; uses ZP variables in the process
+   mp_slide_distance = mzpbb ; must be the same as in "continue_note"!
+   mp_return_value = mzpwb
+   ; the idea is that portamento is finished in a constant time
+   ; that means, rate must be higher, the larger the porta distance is
+   ; This is achieved by multiplying the "base rate" by the porta distance
+   
+   ; initialization
+   ; mzpwa stores the porta rate. It needs a 16 bit variable because it is left shifted
+   ; throughout the multiplication
+   lda timbres::Timbre::porta_r, y
+   sta mp_return_value+1
+   stz mp_return_value
+   stz Voice::porta::rateL, x
+   stz Voice::porta::rateH, x
+
+   ; multiplication
+   bbr0 mp_slide_distance, :+
+   lda mp_return_value+1
+   sta Voice::porta::rateL, x
+:  clc
+   rol mp_return_value+1
+   rol mp_return_value
+   bbr1 mp_slide_distance, :+
+   clc
+   lda mp_return_value+1
+   adc Voice::porta::rateL, x
+   sta Voice::porta::rateL, x
+   lda mp_return_value
+   adc Voice::porta::rateH, x
+   sta Voice::porta::rateH, x
+:  clc
+   rol mp_return_value+1
+   rol mp_return_value
+   bbr2 mp_slide_distance, :+
+   clc
+   lda mp_return_value+1
+   adc Voice::porta::rateL, x
+   sta Voice::porta::rateL, x
+   lda mp_return_value
+   adc Voice::porta::rateH, x
+   sta Voice::porta::rateH, x
+:  clc
+   rol mp_return_value+1
+   rol mp_return_value
+   bbr3 mp_slide_distance, :+
+   clc
+   lda mp_return_value+1
+   adc Voice::porta::rateL, x
+   sta Voice::porta::rateL, x
+   lda mp_return_value
+   adc Voice::porta::rateH, x
+   sta Voice::porta::rateH, x
+:  clc
+   rol mp_return_value+1
+   rol mp_return_value
+   bbr4 mp_slide_distance, :+
+   clc
+   lda mp_return_value+1
+   adc Voice::porta::rateL, x
+   sta Voice::porta::rateL, x
+   lda mp_return_value
+   adc Voice::porta::rateH, x
+   sta Voice::porta::rateH, x
+:  clc
+   rol mp_return_value+1
+   rol mp_return_value
+   bbr5 mp_slide_distance, :+
+   clc
+   lda mp_return_value+1
+   adc Voice::porta::rateL, x
+   sta Voice::porta::rateL, x
+   lda mp_return_value
+   adc Voice::porta::rateH, x
+   sta Voice::porta::rateH, x
+:  clc
+   rol mp_return_value+1
+   rol mp_return_value
+   bbr6 mp_slide_distance, :+
+   clc
+   lda mp_return_value+1
+   adc Voice::porta::rateL, x
+   sta Voice::porta::rateL, x
+   lda mp_return_value
+   adc Voice::porta::rateH, x
+   sta Voice::porta::rateH, x
+:  clc
+   rol mp_return_value+1
+   rol mp_return_value
+   bbr7 mp_slide_distance, @end_macro
+   clc
+   lda mp_return_value+1
+   adc Voice::porta::rateL, x
+   sta Voice::porta::rateL, x
+   lda mp_return_value
+   adc Voice::porta::rateH, x
+   sta Voice::porta::rateH, x
+@end_macro:
+.endmacro
+
+
 
 
 
@@ -317,21 +430,21 @@ SYNTH_MACROS_INC = 1
 
 ; This is used for modulation of the parameters that are only 6 bits wide,
 ; namely volume and pulse width.
-; modulation depth is assumed to be indexed by register Y
+; The index parameter can be 0, 1 or 2. It influences how the modulation depth is indexed (no indexing, by X, by Y)
 ; modulation source is assumed to be in register A (and all flags from loading of A)
 ; result is returned in register A
 .macro SCALE_S6 moddepth, index
-    ; with this sequence, we do several tasks at once:
-    ; We extract the sign from the modulation source and store it in mzpbf
-    ; We truncate the sign from the modulation source
-    ; and right shift it effectively once, because the amplitude of any modulation source is too high anyway
-    stz mzpwc+1
-    asl         ; push sign out
-    rol mzpwc+1   ; push sign into variable
-    lsr
-    lsr
-    ; initialize zero page 8 bit value
-    sta mzpwc   ; only low byte is used
+   ; with this sequence, we do several tasks at once:
+   ; We extract the sign from the modulation source and store it in mzpbf
+   ; We truncate the sign from the modulation source
+   ; and right shift it effectively once, because the amplitude of any modulation source is too high anyway
+   stz mzpwc+1
+   asl         ; push sign out
+   rol mzpwc+1   ; push sign into variable
+   lsr
+   lsr
+   ; initialize zero page 8 bit value
+   sta mzpwc   ; only low byte is used
 
    .local @skip_bit0
    .local @skip_bit1
@@ -395,10 +508,10 @@ SYNTH_MACROS_INC = 1
    clc
    adc mzpwb
 @skip_bit0:
-    ; result is in register A
-    sta mzpwb   ; save it
+   ; result is in register A
+   sta mzpwb   ; save it
 
-    ; determine overall sign (mod source * mod depth)
+   ; determine overall sign (mod source * mod depth)
    .if(index=0)
       lda moddepth
    .endif
@@ -408,25 +521,25 @@ SYNTH_MACROS_INC = 1
    .if(index=2)
       lda moddepth, y
    .endif
-    and #%10000000
-    beq :+
-    inc mzpwc+1
-:   ; now if lowest bit of mzpbf is even, sign is positive and if it's odd, sign is negative
+   and #%10000000
+   beq :+
+   inc mzpwc+1
+:  ; now if lowest bit of mzpbf is even, sign is positive and if it's odd, sign is negative
 
-    ; now add/subtract scaling result to modulation destiny, according to sign
-    .local @minusS
-    .local @endS
-    lda mzpwc+1
-    ror
-    bcs @minusS
-    ; if we're here, sign is positive
-    lda mzpwb
-    bra @endS
+   ; now add/subtract scaling result to modulation destiny, according to sign
+   .local @minusS
+   .local @endS
+   lda mzpwc+1
+   ror
+   bcs @minusS
+   ; if we're here, sign is positive
+   lda mzpwb
+   bra @endS
 @minusS:
-    ; if we're here, sign is negative
-    lda mzpwb
-    eor #%11111111
-    inc
+   ; if we're here, sign is negative
+   lda mzpwb
+   eor #%11111111
+   inc
 @endS:
 .endmacro
 
@@ -443,249 +556,248 @@ SYNTH_MACROS_INC = 1
 ; skipping is NOT done in this macro if modsource select is "none"
 ; modsourceH is also allowed to have a sign bit (bit 7)
 .macro SCALE5_16 modsourceL, modsourceH, moddepth, resultL, resultH
-    ; mzpbf will hold the sign
-    stz mzpbf
+   ; mzpbf will hold the sign
+   stz mzpbf
 
-    ; initialize zero page 16 bit value
-    lda modsourceL, x
-    sta mzpwb
-    lda modsourceH, x
-    and #%01111111
-    cmp modsourceH, x
-    sta mzpwb+1        ; 14 cycles
-    ; from now on, the mod source isn't directly accessed anymore, so we can discard X
-    ; store the modulation sign
-    beq :+
-    inc mzpbf
+   ; initialize zero page 16 bit value
+   lda modsourceL, x
+   sta mzpwb
+   lda modsourceH, x
+   and #%01111111
+   cmp modsourceH, x
+   sta mzpwb+1        ; 14 cycles
+   ; from now on, the mod source isn't directly accessed anymore, so we can discard X
+   ; store the modulation sign
+   beq :+
+   inc mzpbf
 :
 
-    ; do %HHHH rightshifts
-    ; cycle counting needs to be redone, because initially, I forgot about LSR, so I CLCed before each ROR
-    ; instead of the naive approach of looping over rightshifting a 16 bit variable
-    ; we are taking a more efficient approach of testing each bit
-    ; of the %HHHH value and perform suitable actions
-    ; alternative rightshifts: binary branching
-    .local @skipH3
-    .local @skipH2
-    .local @skipH1
-    .local @skipH0
-    .local @endH
-    .local @loopH
-    ; check bit 3
-    lda moddepth, y
-    and #%00001000
-    beq @skipH3
-    ; 8 rightshifts = copy high byte to low byte, set high byte to 0
-    ; the subsequent rightshifting can be done entirely inside accumulator, no memory access needed
-    lda moddepth, y
-    and #%00000111
-    bne :+          ; if no other bit is set, we just move the bytes and are done
-    lda mzpwb+1
-    sta mzpwb
-    stz mzpwb+1
-    jmp @endH
-:   ; if we got here, we've got a nonzero number of rightshifts to be done in register A
-    tax
-    lda mzpwb+1
+   ; do %HHHH rightshifts
+   ; cycle counting needs to be redone, because initially, I forgot about LSR, so I CLCed before each ROR
+   ; instead of the naive approach of looping over rightshifting a 16 bit variable
+   ; we are taking a more efficient approach of testing each bit
+   ; of the %HHHH value and perform suitable actions
+   ; alternative rightshifts: binary branching
+   .local @skipH3
+   .local @skipH2
+   .local @skipH1
+   .local @skipH0
+   .local @endH
+   .local @loopH
+   ; check bit 3
+   lda moddepth, y
+   and #%00001000
+   beq @skipH3
+   ; 8 rightshifts = copy high byte to low byte, set high byte to 0
+   ; the subsequent rightshifting can be done entirely inside accumulator, no memory access needed
+   lda moddepth, y
+   and #%00000111
+   bne :+          ; if no other bit is set, we just move the bytes and are done
+   lda mzpwb+1
+   sta mzpwb
+   stz mzpwb+1
+   jmp @endH
+:  ; if we got here, we've got a nonzero number of rightshifts to be done in register A
+   tax
+   lda mzpwb+1
 @loopH:
-    lsr
-    dex
-    bne @loopH
-    sta mzpwb
-    stz mzpwb+1
-    jmp @endH    ; worst case if bit 3 is set: 15 rightshifts, makes 9*7 + 35 cycles = 98 cycles
+   lsr
+   dex
+   bne @loopH
+   sta mzpwb
+   stz mzpwb+1
+   jmp @endH    ; worst case if bit 3 is set: 15 rightshifts, makes 9*7 + 35 cycles = 98 cycles
 @skipH3:
-    ; check bit 2
-    lda moddepth, y
-    and #%00000100
-    beq @skipH2
-    lda mzpwb
-    lsr mzpwb+1
-    ror
-    lsr mzpwb+1
-    ror
-    lsr mzpwb+1
-    ror
-    lsr mzpwb+1
-    ror
-    sta mzpwb
+   ; check bit 2
+   lda moddepth, y
+   and #%00000100
+   beq @skipH2
+   lda mzpwb
+   lsr mzpwb+1
+   ror
+   lsr mzpwb+1
+   ror
+   lsr mzpwb+1
+   ror
+   lsr mzpwb+1
+   ror
+   sta mzpwb
 @skipH2:
-    ; check bit 1
-    lda moddepth, y
-    and #%00000010
-    beq @skipH1
-    lda mzpwb
-    lsr mzpwb+1
-    ror
-    lsr mzpwb+1
-    ror
-    sta mzpwb
+   ; check bit 1
+   lda moddepth, y
+   and #%00000010
+   beq @skipH1
+   lda mzpwb
+   lsr mzpwb+1
+   ror
+   lsr mzpwb+1
+   ror
+   sta mzpwb
 @skipH1:
-    ; check bit 1
-    lda moddepth, y
-    and #%00000001
-    beq @skipH0
-    lsr mzpwb+1
-    ror mzpwb
+   ; check bit 1
+   lda moddepth, y
+   and #%00000001
+   beq @skipH0
+   lsr mzpwb+1
+   ror mzpwb
 @skipH0:    ; worst case if bit 3 is not set: 107 cycles.
 @endH:
-    ; maximum number of cycles for rightshifts is 107 cycles. Good compared to 230 from naive approach.
-    ; still hurts tho.
+   ; maximum number of cycles for rightshifts is 107 cycles. Good compared to 230 from naive approach.
+   ; still hurts tho.
 
-
-    ; do sublevel scaling
-    .local @endL
-    .local @tableL
-    .local @sublevel_1
-    .local @sublevel_2
-    .local @sublevel_3
-    .local @sublevel_4
-    ; select subroutine
-    lda moddepth, y
-    and #%01110000
-    beq :+
-    clc
-    ror
-    ror
-    ror
-    tax
-    jmp (@tableL-2, x)  ; if x=0, nothing has to be done. if x=2,4,6 or 8, jump to respective subroutine
-:   jmp @endL
-    ; 24 cycles
+   ; do sublevel scaling
+   .local @endL
+   .local @tableL
+   .local @sublevel_1
+   .local @sublevel_2
+   .local @sublevel_3
+   .local @sublevel_4
+   ; select subroutine
+   lda moddepth, y
+   and #%01110000
+   beq :+
+   clc
+   ror
+   ror
+   ror
+   tax
+   jmp (@tableL-2, x)  ; if x=0, nothing has to be done. if x=2,4,6 or 8, jump to respective subroutine
+:  jmp @endL
+   ; 24 cycles
 @tableL:
-    .word @sublevel_1
-    .word @sublevel_2
-    .word @sublevel_3
-    .word @sublevel_4
+   .word @sublevel_1
+   .word @sublevel_2
+   .word @sublevel_3
+   .word @sublevel_4
 @sublevel_1:
-    ; 2^(1/5) ~= %1.001
-    ; do first ROR while copying to mzpwc
-    lda mzpwb+1
-    lsr
-    sta mzpwc+1
-    lda mzpwb
-    ror
-    sta mzpwc
-    ; then do remaining RORS with high byte in accumulator and low byte in memory
-    lda mzpwc+1
-    lsr
-    ror mzpwc
-    lsr
-    ; but last low byte ROR already in accumulator, since we are going to do addition with it
-    sta mzpwc+1
-    lda mzpwc
-    ror
-    clc
-    adc mzpwb
-    sta mzpwb
-    lda mzpwc+1
-    adc mzpwb+1
-    sta mzpwb+1
-    jmp @endL  ; 62 cycles ... ouch!
+   ; 2^(1/5) ~= %1.001
+   ; do first ROR while copying to mzpwc
+   lda mzpwb+1
+   lsr
+   sta mzpwc+1
+   lda mzpwb
+   ror
+   sta mzpwc
+   ; then do remaining RORS with high byte in accumulator and low byte in memory
+   lda mzpwc+1
+   lsr
+   ror mzpwc
+   lsr
+   ; but last low byte ROR already in accumulator, since we are going to do addition with it
+   sta mzpwc+1
+   lda mzpwc
+   ror
+   clc
+   adc mzpwb
+   sta mzpwb
+   lda mzpwc+1
+   adc mzpwb+1
+   sta mzpwb+1
+   jmp @endL  ; 62 cycles ... ouch!
 @sublevel_2:
-    ; 2^(2/5) ~= %1.01
-    ; do first ROR while copying to mzpwc
-    lda mzpwb+1
-    lsr
-    sta mzpwc+1
-    lda mzpwb
-    ror
-    sta mzpwc
-    ; do second ROR and addition
-    lsr mzpwc+1
-    lda mzpwc
-    ror
-    clc
-    adc mzpwb
-    sta mzpwb
-    lda mzpwc+1
-    adc mzpwb+1
-    sta mzpwb+1  
-    jmp @endL   ; 49 cycles
+   ; 2^(2/5) ~= %1.01
+   ; do first ROR while copying to mzpwc
+   lda mzpwb+1
+   lsr
+   sta mzpwc+1
+   lda mzpwb
+   ror
+   sta mzpwc
+   ; do second ROR and addition
+   lsr mzpwc+1
+   lda mzpwc
+   ror
+   clc
+   adc mzpwb
+   sta mzpwb
+   lda mzpwc+1
+   adc mzpwb+1
+   sta mzpwb+1  
+   jmp @endL   ; 49 cycles
 @sublevel_3:
-    ; 2^(3/5) ~= %1.1
-    lda mzpwb+1
-    lsr
-    sta mzpwc+1
-    lda mzpwb
-    ror
-    clc
-    adc mzpwb
-    sta mzpwb
-    lda mzpwc+1
-    adc mzpwb+1
-    sta mzpwb+1
-    jmp @endL  ; 35 cycles
+   ; 2^(3/5) ~= %1.1
+   lda mzpwb+1
+   lsr
+   sta mzpwc+1
+   lda mzpwb
+   ror
+   clc
+   adc mzpwb
+   sta mzpwb
+   lda mzpwc+1
+   adc mzpwb+1
+   sta mzpwb+1
+   jmp @endL  ; 35 cycles
 @sublevel_4:
-    ; 2^(4/5) ~= %1.11
-    ; do first ROR while copying to mzpwc
-    lda mzpwb+1
-    lsr
-    sta mzpwc+1
-    lda mzpwb
-    ror
-    sta mzpwc
-    ; do second ROR while copying to mzpwf
-    lda mzpwc+1
-    lsr
-    sta mzpwf+1
-    lda mzpwc
-    ror
-    ;sta mzpwf ;redundant, because we don't read from it anyway
-    ; do all additions
-    ; first addition
-    clc
-    adc mzpwc ; mzpwf still in A
-    sta mzpwc
-    lda mzpwf+1
-    adc mzpwc+1
-    sta mzpwc+1
-    ; second addition
-    clc
-    lda mzpwc
-    adc mzpwb
-    sta mzpwb
-    lda mzpwc+1
-    adc mzpwb+1
-    sta mzpwb+1
-    ; 66 cycles ... ouch!!
+   ; 2^(4/5) ~= %1.11
+   ; do first ROR while copying to mzpwc
+   lda mzpwb+1
+   lsr
+   sta mzpwc+1
+   lda mzpwb
+   ror
+   sta mzpwc
+   ; do second ROR while copying to mzpwf
+   lda mzpwc+1
+   lsr
+   sta mzpwf+1
+   lda mzpwc
+   ror
+   ;sta mzpwf ;redundant, because we don't read from it anyway
+   ; do all additions
+   ; first addition
+   clc
+   adc mzpwc ; mzpwf still in A
+   sta mzpwc
+   lda mzpwf+1
+   adc mzpwc+1
+   sta mzpwc+1
+   ; second addition
+   clc
+   lda mzpwc
+   adc mzpwb
+   sta mzpwb
+   lda mzpwc+1
+   adc mzpwb+1
+   sta mzpwb+1
+   ; 66 cycles ... ouch!!
 @endL:
 
 
-    ; determine overall sign (mod source * mod depth)
-    lda moddepth, y
-    and #%10000000
-    beq :+
-    inc mzpbf
-:   ; now if lowest bit of mzpbf is even, sign is positive and if it's odd, sign is negative
+   ; determine overall sign (mod source * mod depth)
+   lda moddepth, y
+   and #%10000000
+   beq :+
+   inc mzpbf
+:  ; now if lowest bit of mzpbf is even, sign is positive and if it's odd, sign is negative
 
-    ; now add/subtract scaling result to modulation destiny, according to sign
-    .local @minusS
-    .local @endS
-    lda mzpbf
-    ror
-    bcs @minusS
-    ; if we're here, sign is positive --> add
-    clc
-    lda mzpwb
-    adc resultL
-    sta resultL
-    lda mzpwb+1
-    adc resultH
-    sta resultH
-    bra @endS
+   ; now add/subtract scaling result to modulation destiny, according to sign
+   .local @minusS
+   .local @endS
+   lda mzpbf
+   ror
+   bcs @minusS
+   ; if we're here, sign is positive --> add
+   clc
+   lda mzpwb
+   adc resultL
+   sta resultL
+   lda mzpwb+1
+   adc resultH
+   sta resultH
+   bra @endS
 @minusS:
-    ; if we're here, sign is negative --> sub
-    sec
-    lda resultL
-    sbc mzpwb
-    sta resultL
-    lda resultH
-    sbc mzpwb+1
-    sta resultH
+   ; if we're here, sign is negative --> sub
+   sec
+   lda resultL
+   sbc mzpwb
+   sta resultL
+   lda resultH
+   sbc mzpwb+1
+   sta resultH
 @endS:
-    ; 35 cycles
-    ; worst case overall: 35 + 64 + 24 + 107 + 14 = 244 cycles ... much more than I hoped. (even more now with proper sign handling)
+   ; 35 cycles
+   ; worst case overall: 35 + 64 + 24 + 107 + 14 = 244 cycles ... much more than I hoped. (even more now with proper sign handling)
 .endmacro
 
 

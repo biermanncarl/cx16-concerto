@@ -54,6 +54,49 @@
    .byte    0
 .endmacro
 
+.macro DNB2
+   ; 1 bar
+   .byte    2,    0,    3,    40,   64
+   .byte    2,    1,    5,    48,   60
+   .byte    1,    20,   0,    0,    0
+;   .byte    3,    0,    0,    0,    0
+   .byte    1,    20,   0,    0,    0
+   .byte    2,    0,    4,    40,   64
+   .byte    1,    20,   0,    0,    0
+   .byte    2,    1,    5,    48,   60
+;   .byte    3,    0,    0,    0,    0
+   .byte    1,    40,   0,    0,    0
+   .byte    2,    0,    3,    40,   64
+   .byte    1,    20,   0,    0,    0
+;   .byte    3,    0,    0,    0,    0
+   .byte    2,    0,    4,    40,   64
+   .byte    2,    1,    5,    56,   60
+   .byte    1,    20,   0,    0,    0
+;   .byte    3,    0,    0,    0,    0
+   .byte    1,    20,   0,    0,    0
+   ; 1 bar
+   .byte    2,    0,    3,    40,   64
+   .byte    2,    1,    5,    55,   60
+   .byte    1,    20,   0,    0,    0
+;   .byte    3,    0,    0,    0,    0
+   .byte    1,    20,   0,    0,    0
+   .byte    2,    0,    4,    40,   64
+   .byte    1,    20,   0,    0,    0
+   .byte    2,    1,    5,    55,   60
+;   .byte    3,    0,    0,    0,    0
+   .byte    1,    40,   0,    0,    0
+   .byte    2,    0,    3,    40,   64
+   .byte    1,    20,   0,    0,    0
+;   .byte    3,    0,    0,    0,    0
+   .byte    2,    0,    4,    40,   64
+   .byte    2,    1,    5,    49,   60
+   .byte    1,    20,   0,    0,    0
+;   .byte    3,    0,    0,    0,    0
+   .byte    1,    20,   0,    0,    0
+   ; end of loop
+   .byte    0
+.endmacro
+
 psr_instr = 5
 .macro POLY_SUS_RELEASE
    ; chord 1

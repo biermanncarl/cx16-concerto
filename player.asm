@@ -1,5 +1,5 @@
-; plays notes
-; currently just here to test the sound engine.
+; The Player is able to play a short loop using several channels and timbres.
+; It is currently just a placeholder to be able to test the synth engine better.
 
 .scope player
 
@@ -19,7 +19,7 @@ event_pointer: .byte 0
 ; 3 - stop note -- 1 byte channel -- 1 byte soft or hard ending -- 2 bytes unused (ending: 0 with release, 1 hard ending)
 ; more to come
 events:
-POLY_SUS_RELEASE
+DNB2
 
 player_tick:
    lda time

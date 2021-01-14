@@ -1,3 +1,6 @@
+; This file contains various definitions of Commander X16 addresses.
+; It is based on a file made by Matt Heffernan
+
 .ifndef X16_INC
 X16_INC  = 1
 
@@ -13,54 +16,54 @@ DISK_DEVICE = HOST_DEVICE
 ; RAM Addresses
 
 ; Kernal Registers
-r0						= $02
-r0L					= r0
-r0H					= r0+1
-r1						= $04
-r1L					= r1
-r1H					= r1+1
-r2						= $06
-r2L					= r2
-r2H					= r2+1
-r3						= $08
-r3L					= r3
-r3H					= r3+1
-r4						= $0A
-r4L					= r4
-r4H					= r4+1
-r5						= $0C
-r5L					= r5
-r5H					= r5+1
-r6						= $0E
-r6L					= r6
-r6H					= r6+1
-r7						= $10
-r7L					= r7
-r7H					= r7+1
-r8						= $12
-r8L					= r8
-r8H					= r8+1
-r9						= $14
-r9L					= r9
-r9H					= r9+1
-r10					= $16
-r10L					= r10
-r10H					= r10+1
-r11					= $18
-r11L					= r11
-r11H					= r11+1
-r12					= $1A
-r12L					= r12
-r12H					= r12+1
-r13					= $1C
-r13L					= r13
-r13H					= r13+1
-r14					= $1E
-r14L					= r14
-r14H					= r14+1
-r15					= $20
-r15L					= r15
-r15H					= r15+1
+r0                = $02
+r0L               = r0
+r0H               = r0+1
+r1                = $04
+r1L               = r1
+r1H               = r1+1
+r2                = $06
+r2L               = r2
+r2H               = r2+1
+r3                = $08
+r3L               = r3
+r3H               = r3+1
+r4                = $0A
+r4L               = r4
+r4H               = r4+1
+r5                = $0C
+r5L               = r5
+r5H               = r5+1
+r6                = $0E
+r6L               = r6
+r6H               = r6+1
+r7                = $10
+r7L               = r7
+r7H               = r7+1
+r8                = $12
+r8L               = r8
+r8H               = r8+1
+r9                = $14
+r9L               = r9
+r9H               = r9+1
+r10               = $16
+r10L              = r10
+r10H              = r10+1
+r11               = $18
+r11L              = r11
+r11H              = r11+1
+r12               = $1A
+r12L              = r12
+r12H              = r12+1
+r13               = $1C
+r13L              = r13
+r13H              = r13+1
+r14               = $1E
+r14L              = r14
+r14H              = r14+1
+r15               = $20
+r15L              = r15
+r15H              = r15+1
 
 ; Zero-Page userspace
 ZP_PTR_1          = $00	; first four pointers for temporary use only
@@ -126,59 +129,60 @@ RAM_WIN_SIZE      = $2000
 ROM_WIN           = $C000
 
 ; Kernal Subroutines
-CONSOLE_set_paging_message		:= $FED5
-CONSOLE_put_image					:= $FED8
-CONSOLE_init						:= $FEDB
-CONSOLE_put_char					:= $FEDE
-CONSOLE_get_char					:= $FEE1
+CONSOLE_set_paging_message    := $FED5
+CONSOLE_put_image             := $FED8
+CONSOLE_init                  := $FEDB
+CONSOLE_put_char              := $FEDE
+CONSOLE_get_char              := $FEE1
 MEMORY_FILL                   := $FEE4
 MEMORY_COPY                   := $FEE7
 MEMORY_CRC                    := $FEEA
 MEMORY_DECOMPRESS             := $FEED
-SPRITE_set_image					:= $FEF0
-SPRITE_set_position				:= $FEF3
-FB_init                 		:= $FEF6
-FB_get_info             		:= $FEF9
-FB_set_palette          		:= $FEFC
-FB_cursor_position      		:= $FEFF
-FB_cursor_next_line     		:= $FF02
-FB_get_pixel            		:= $FF05
-FB_get_pixels           		:= $FF08
-FB_set_pixel            		:= $FF0B
-FB_set_pixels           		:= $FF0E
-FB_set_8_pixels         		:= $FF11
-FB_set_8_pixels_opaque  		:= $FF14
-FB_fill_pixels          		:= $FF17
-FB_filter_pixels        		:= $FF1A
-FB_move_pixels          		:= $FF1D
-GRAPH_init							:= $FF20
-GRAPH_clear							:= $FF23
-GRAPH_set_window					:= $FF26
-GRAPH_set_colors					:= $FF29
-GRAPH_draw_line					:= $FF2C
-GRAPH_draw_rect					:= $FF2F
-GRAPH_move_rect					:= $FF32
-GRAPH_draw_oval					:= $FF35
-GRAPH_draw_image					:= $FF38
-GRAPH_set_font						:= $FF3B
-GRAPH_get_char_size				:= $FF3E
-GRAPH_put_char						:= $FF41
-MONITOR								:= $FF44
-ENTER_BASIC							:= $FF47
+SPRITE_set_image              := $FEF0
+SPRITE_set_position           := $FEF3
+FB_init                       := $FEF6
+FB_get_info                   := $FEF9
+FB_set_palette                := $FEFC
+FB_cursor_position            := $FEFF
+FB_cursor_next_line           := $FF02
+FB_get_pixel                  := $FF05
+FB_get_pixels                 := $FF08
+FB_set_pixel                  := $FF0B
+FB_set_pixels                 := $FF0E
+FB_set_8_pixels               := $FF11
+FB_set_8_pixels_opaque        := $FF14
+FB_fill_pixels                := $FF17
+FB_filter_pixels              := $FF1A
+FB_move_pixels                := $FF1D
+GRAPH_init                    := $FF20
+GRAPH_clear                   := $FF23
+GRAPH_set_window              := $FF26
+GRAPH_set_colors              := $FF29
+GRAPH_draw_line               := $FF2C
+GRAPH_draw_rect               := $FF2F
+GRAPH_move_rect               := $FF32
+GRAPH_draw_oval               := $FF35
+GRAPH_draw_image              := $FF38
+GRAPH_set_font                := $FF3B
+GRAPH_get_char_size           := $FF3E
+GRAPH_put_char                := $FF41
+MONITOR                       := $FF44
+ENTER_BASIC                   := $FF47
 CLOCK_SET_DATE_TIME           := $FF4D
 CLOCK_GET_DATE_TIME           := $FF50
 JOYSTICK_SCAN                 := $FF53
 JOYSTICK_GET                  := $FF56
-SCREEN_SET_MODE					:= $FF5F
-SCREEN_SET_CHARSET				:= $FF62
+SCREEN_SET_MODE               := $FF5F
+SCREEN_SET_CHARSET            := $FF62
 
 MOUSE_CONFIG                  := $FF68
-MOUSE_GET			            := $FF6B
+MOUSE_GET                     := $FF6B
 MOUSE_SCAN                    := $FF71
 SCINIT                        := $FF81
 IOINIT                        := $FF84
 RAMTAS                        := $FF87
 RESTOR                        := $FF8A
+READST                        := $FFB7
 SETLFS                        := $FFBA
 SETNAM                        := $FFBD
 OPEN                          := $FFC0
@@ -194,11 +198,11 @@ SETTIM                        := $FFDB
 RDTIM                         := $FFDE
 STOP                          := $FFE1
 GETIN                         := $FFE4
-CLALL									:= $FFE7
-UDTIM									:= $FFEA
-SCREEN								:= $FFED
-PLOT									:= $FFF0
-IOBASE								:= $FFF3
+CLALL                         := $FFE7
+UDTIM                         := $FFEA
+SCREEN                        := $FFED
+PLOT                          := $FFF0
+IOBASE                        := $FFF3
 
 ; BASIC Vectors
 BASIC_PANIC       := $C000
@@ -219,21 +223,21 @@ NMIVec         := $0318
 ;   Macros
 
 .macro VERA_SET_ADDR addr, stride
-	.ifnblank stride
+   .ifnblank stride
       .if stride < 0
          lda #((^addr) | $08 | ((0-stride) << 4))
       .else
          lda #((^addr) | (stride << 4))
       .endif
-	.else
-		lda #(^addr) | $10
-	.endif
+   .else
+      lda #(^addr) | $10
+   .endif
 
-	sta VERA_addr_bank
-	lda #(>addr)
-	sta VERA_addr_high
-	lda #(<addr)
-	sta VERA_addr_low
+   sta VERA_addr_bank
+   lda #(>addr)
+   sta VERA_addr_high
+   lda #(<addr)
+   sta VERA_addr_low
 .endmacro
 
 

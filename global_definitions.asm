@@ -40,6 +40,8 @@ Octave:
    .byte 60
 Note:
    .byte 0
+
+; currently active timbre (in Synth GUI and keyboard)
 Timbre:
    .byte 0
 
