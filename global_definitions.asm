@@ -30,6 +30,7 @@ GLOBAL_DEFS_INC = 1
 .define CCOLOR_CAPTION 16*COLOR_BACKGROUND+COLOR_CAPTION
 .define CCOLOR_CHECKBOX_CLEAR 16*COLOR_CHECKBOX + COLOR_BACKGROUND
 .define CCOLOR_CHECKBOX_TICK 16*COLOR_CHECKBOX + 0
+.define CCOLOR_BUTTON 16*1 + 0
 ; others
 .define N_PANELS 6   ; number of panels 
 
@@ -99,6 +100,7 @@ ms_gui_write: .byte 0 ; used to determine whether or not an action has caused a 
    jmp (ej_jmp_tbl,x)
 .endmacro
 
+; unused?
 .macro ADD16 add_a, add_b ; stores result in a, 26 cycles
    clc
    lda add_b
@@ -109,6 +111,7 @@ ms_gui_write: .byte 0 ; used to determine whether or not an action has caused a 
    sta add_a+1
 .endmacro
 
+; unused?
 .macro SUB16 sub_a, sub_b ; stores result in a, 26 cycles
    sec
    lda sub_a
@@ -119,6 +122,7 @@ ms_gui_write: .byte 0 ; used to determine whether or not an action has caused a 
    sta sub_a+1
 .endmacro
 
+; I think this is unused ATM?
 .macro MUL8x8_MP mul_a, mul_b, mul_result ; stores result in a 16 bit variable, uses ZP variables in the process
    ; convention here is that MSB comes first
    ; initialization
@@ -248,7 +252,7 @@ ms_gui_write: .byte 0 ; used to determine whether or not an action has caused a 
 .endmacro
 
 ; env1: timbre1 timbre2 timbre3 ... env2: timbre1 timbre2 tibre3 ...
-; ---> this format saves multiplication when accessing with arbitrary timbre indes
+; ---> this format saves multiplication when accessing with arbitrary timbre indices
 .macro ENVELOPE_TIMBRE_BYTE_FIELD
    .repeat MAX_ENVS_PER_VOICE*N_TIMBRES
       .byte 0
@@ -263,7 +267,7 @@ ms_gui_write: .byte 0 ; used to determine whether or not an action has caused a 
 .endmacro
 
 ; lfo1: timbre1 timbre2 timbre3 ... lfo2: timbre1 timbre2 tibre3 ...
-; ---> this format saves multiplication when accessing with arbitrary timbre indes
+; ---> this format saves multiplication when accessing with arbitrary timbre indices
 .macro LFO_TIMBRE_BYTE_FIELD
    .repeat MAX_LFOS_PER_VOICE*N_TIMBRES
       .byte 0

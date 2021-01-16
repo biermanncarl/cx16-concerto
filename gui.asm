@@ -64,12 +64,20 @@
 ; 7: dummy component, no other data. always registers a click event, so that a panel never misses a click (for popups).
 ; *******************************************************************************************
 
-; drag edit flags options:
+; ADDITIONAL INFORMATION ON GUI COMPONENTS
+; ****************************************
+
+; BUTTONS are actually height 2, and appear to be one below the position set in the GUI 
+; component string. That is, because they have one row of characters above the actual
+; text label to make them look nicer.
+; However, click detection only recognizes the text label area, that is, one below the specified Y position.
+
+; DRAG EDIT flags options:
 ; bit 0: coarse/fine option enabled
 ; bit 1: fine active
 ; bit 2: signed
 ; options irrelevant for drawing the component:
-; bit 7: zero forbidden (for signed scale5 values)
+; bit 7: zero is forbidden value (for signed scale5 values)
 
 button_data_size = 6
 tab_selector_data_size = 5
@@ -280,17 +288,22 @@ dummy_data_size = 1
       hg = 4
       ; GUI component string of the panel
       comps:
-         .byte 3, 11, 1, 0, 6, 0 ; arrowed edit (timbre selection)
+         .byte 3, 41, 1, 0, 6, 0 ; arrowed edit (timbre selection)
+         .byte 1, 50, 0, 13, (<load_preset_lb), (>load_preset_lb)
+         .byte 1, 66, 0, 13, (<save_preset_lb), (>save_preset_lb)
          .byte 0
       ; caption list of the panel
       capts:
-         .byte CCOLOR_CAPTION, 1, 1
+         .byte (16*COLOR_BACKGROUND+15), 1, 1
+         .word logo_lb
+         .byte CCOLOR_CAPTION, 34, 1
          .word timbre_lb
          .byte 0
       ; data specific to the synth-navigation panel
       timbre_lb: STR_FORMAT "timbre"
-      load_preset_lb: STR_FORMAT "load preset"
-      save_preset_lb: STR_FORMAT "save preset"
+      load_preset_lb: STR_FORMAT " load preset"
+      save_preset_lb: STR_FORMAT " save preset"
+      logo_lb: STR_FORMAT "=== concerto 0.1.0 ==="
    .endscope
    ; listbox popup. shows up when a listbox was clicked.
    .scope listbox_popup
@@ -393,7 +406,7 @@ dummy_sr:
 
 
 ; brings up the synth GUI
-; puts all synth related panels into GUI stack
+; puts all synth related panels into the GUI stack
 load_synth_gui:
    jsr guiutils::cls
    lda #5 ; GUI stack size (how many panels are visible)
@@ -506,7 +519,7 @@ draw_components:
    tax
    INDEXED_JSR (@jmp_tbl-2), @ret_addr ;-2 because there's no drawing routine for "none" component
 @jmp_tbl:
-   .word dummy_sr  ; button
+   .word draw_button  ; button
    .word draw_tab_select  ; tab-select (no drawing routine, drawing is done in panel-specific routine)
    .word draw_arrowed_edit  ; arrowed edit
    .word draw_drag_edit ; drag edit
@@ -519,7 +532,29 @@ draw_components:
 ; GUI components' drawing routines
 ; --------------------------------
 ; expect GUI component string address in dc_pointer, and offset (+1) in register Y
-; and are expected to advance register Y to the start of the next component
+; and are expected to advance register Y to the start (i.e. the identifier) of the next component
+
+draw_button:
+   ;.byte $db
+   lda (dc_pointer), y
+   sta guiutils::draw_x
+   iny
+   lda (dc_pointer), y
+   sta guiutils::draw_y
+   iny
+   lda (dc_pointer), y
+   sta guiutils::draw_width
+   iny
+   lda (dc_pointer), y
+   sta guiutils::str_pointer
+   iny
+   lda (dc_pointer), y
+   sta guiutils::str_pointer+1
+   iny
+   phy
+   jsr guiutils::draw_button
+   ply
+   rts
 
 draw_tab_select:
    lda (dc_pointer), y
@@ -705,6 +740,11 @@ click_event:
 ; and relevant click data (determined by the click detection) in ms_curr_data
 
 click_button:
+   ; register the click to trigger a write_...
+   inc ms_gui_write
+   ; nothing else to be done here. click events are handled inside the panels'
+   ; write_... subroutines, because they can identify individual buttons and know
+   ; what actions to perform.
    rts
 
 click_tab_select:
@@ -1235,23 +1275,67 @@ check_gui_loop:
 
 ; component checks (part of mouse_get_component subroutine)
 ; ---------------------------------------------------------
-; expect ms_curr_panel and gc_pointer to be set, also gc_cx and gc_cy for mouse positions
+; These routines check whether the mouse is over the specified GUI component, and,
+; in case it is, even return additional information, like e.g. which tab has been clicked.
+; These routines are not independent, but are part of the above mouse_get_component subroutine.
+; The mouse coordinates are given in 4 pixel multiples.
+; These routines expect ms_curr_panel and gc_pointer to be set, also gc_cx and gc_cy for mouse positions
 ; and register Y to be at the first "data" position of the component (one past the identifier byte).
 ; The return procedure is as follows:
-; If a click has been registered, the variables 
-; ms_curr_component_id, ms_curr_component_ofs and ms_curr_data
-; have to be set, and RTS called to exit the check.
-; If no click has been registered, JMP check_gui_loop is called to continue checking.
-; ms_curr_component_ofs and ms_curr_data are not returned if ms_curr_component's bit 7 is set
-; The checks are expected to advance the Y register to the start of the next component, in the case
-; that there was no click detected, so the checks can continue with the next component.
+; * If a click has been registered, the variables 
+;   ms_curr_component_id, ms_curr_component_ofs and ms_curr_data
+;   have to be set, and RTS called to exit the check.
+; * If no click has been registered, JMP check_gui_loop is called to continue checking.
+;   ms_curr_component_ofs and ms_curr_data are not returned if ms_curr_component's bit 7 is set
+;   The checks are expected to advance the Y register to the start of the next component, in the case
+;   that there was no click detected, so the checks can continue with the next component.
 
 check_button:
    ; check if mouse is over the button
+   ; this code is nearly identical to the check_checkbox bit,
+   ; apart from the number of INYs required, and the different Y position (off by 1)
+   cb_width = mzpbg
+   ; this is basically an "mouse is inside box" check
+   ; with variable width
+   ; get the width of the checkbox
+   iny
+   iny
+   lda (gc_pointer), y
+   sta cb_width
+   dey
+   dey
+   ; check x direction
+   lda gc_cx
+   lsr
+   sec
+   sbc (gc_pointer), y ; now we have the distance of the mouse pointer to the left side of the checkbox
+   iny
+   ; now A must be smaller than the checkbox' width.
+   cmp cb_width
+   bcs @exit_from_y
+   bra :+
+   ; we're out
+@exit_from_y:   ; "from y" refers to the Y register being at the position of the y coordinate of the component's position data
+   iny
    iny
    iny
    iny
    jmp check_gui_loop
+:  ; we're in
+   ; check y direction
+   lda gc_cy
+   lsr
+   dec ; this is to make up for the button actually being in the line below
+   cmp (gc_pointer), y
+   bne @exit_from_y
+   ; we're in
+   tya
+   dec
+   dec
+   sta ms_curr_component_ofs
+   lda gc_counter
+   sta ms_curr_component_id
+   rts
 
 ; which tab clicked is returned in ms_curr_data
 check_tab_selector:
@@ -1628,6 +1712,7 @@ draw_lfo:
 ; -------------------
 
 ; on the GUI, no modsource is 0, but in the synth engine, it is 128 (bit 7 set)
+; The following two routines map between those two formats.
 map_modsource_from_gui:
    cmp #0
    beq :+
@@ -2083,18 +2168,30 @@ write_env:
 
 write_snav:
    lda ms_curr_component_id
-   cmp #0
-   beq @timbre_selector
-   rts
+   asl
+   tax
+   jmp (@jmp_tbl, x)
+@jmp_tbl:
+   .word @timbre_selector
+   .word @load_preset
+   .word @save_preset
 @timbre_selector:
    ; read data from component string and write it to the Timbre setting
    lda ms_curr_component_ofs
    clc
    adc #5
    tay
-   lda (ce_pointer), y
+   lda snav::comps, y
    sta Timbre
    jsr refresh_gui
+   rts
+@load_preset:
+   lda #65
+   jsr CHROUT
+   rts
+@save_preset:
+   lda #66
+   jsr CHROUT
    rts
 
 
@@ -2416,6 +2513,7 @@ refresh_env:
    rts
 
 refresh_snav:
+   ; nothing to be done here (yet)
    rts
 
 

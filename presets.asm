@@ -951,7 +951,7 @@
    sta timbres::Timbre::env::sustain, x
    lda #0
    sta timbres::Timbre::env::releaseL, x
-   lda #2
+   lda #48
    sta timbres::Timbre::env::releaseH, x
    ; env 1
    ldx #(1*N_TIMBRES+patch_no)
@@ -975,7 +975,7 @@
    sta timbres::Timbre::lfo::wave, x
    lda #14
    sta timbres::Timbre::lfo::rateH, x
-   lda #10
+   lda #0
    sta timbres::Timbre::lfo::rateL, x
    lda #1
    sta timbres::Timbre::lfo::retrig, x
@@ -1018,6 +1018,136 @@
    sta timbres::Timbre::osc::pitch_mod_dep2, x
 .endmacro
 
+.macro PRESET_TAMBOURINE patch_no
+   ; global parameters
+   ldx #patch_no
+   lda #2
+   sta timbres::Timbre::n_oscs, x
+   lda #2
+   sta timbres::Timbre::n_envs, x
+   lda #1
+   sta timbres::Timbre::n_lfos, x
+   ; set mono & porta rate
+   lda #30
+   sta timbres::Timbre::porta_r, x
+   lda #0
+   sta timbres::Timbre::porta, x
+   lda #1
+   sta timbres::Timbre::retrig, x
+   ; env 0
+   ldx #(0*N_TIMBRES+patch_no)
+   lda #0
+   sta timbres::Timbre::env::attackL, x
+   lda #127
+   sta timbres::Timbre::env::attackH, x
+   lda #0
+   sta timbres::Timbre::env::decayL, x
+   lda #7
+   sta timbres::Timbre::env::decayH, x
+   lda #0
+   sta timbres::Timbre::env::sustain, x
+   lda #0
+   sta timbres::Timbre::env::releaseL, x
+   lda #2
+   sta timbres::Timbre::env::releaseH, x
+   ; env 1
+   ldx #(1*N_TIMBRES+patch_no)
+   lda #0
+   sta timbres::Timbre::env::attackL, x
+   lda #127
+   sta timbres::Timbre::env::attackH, x
+   lda #0
+   sta timbres::Timbre::env::decayL, x
+   lda #39
+   sta timbres::Timbre::env::decayH, x
+   lda #0
+   sta timbres::Timbre::env::sustain, x
+   lda #0
+   sta timbres::Timbre::env::releaseL, x
+   lda #38
+   sta timbres::Timbre::env::releaseH, x
+   ; lfo 0
+   ldx #(0*N_TIMBRES+patch_no)
+   lda #3
+   sta timbres::Timbre::lfo::wave, x
+   lda #102
+   sta timbres::Timbre::lfo::rateH, x
+   lda #96
+   sta timbres::Timbre::lfo::rateL, x
+   lda #1
+   sta timbres::Timbre::lfo::retrig, x
+   lda #255
+   sta timbres::Timbre::lfo::offs, x
+   ; set oscillator parameters
+   ; oscillator 0
+   ldx #(0*N_TIMBRES+patch_no)
+   lda #0
+   sta timbres::Timbre::osc::waveform, x
+   lda #63
+   sta timbres::Timbre::osc::pulse, x
+   lda #128
+   sta timbres::Timbre::osc::pwm_sel, x
+   lda #(0)
+   sta timbres::Timbre::osc::pwm_dep, x
+   lda #120
+   sta timbres::Timbre::osc::pitch, x
+   lda #0
+   sta timbres::Timbre::osc::fine, x
+   lda #192
+   sta timbres::Timbre::osc::lrmid, x
+   lda #0
+   sta timbres::Timbre::osc::amp_sel, x
+   lda #50
+   sta timbres::Timbre::osc::volume, x
+   lda #128
+   sta timbres::Timbre::osc::vol_mod_sel, x
+   lda #(0)
+   sta timbres::Timbre::osc::vol_mod_dep, x
+   lda #0
+   sta timbres::Timbre::osc::track, x
+   lda #3
+   sta timbres::Timbre::osc::pitch_mod_sel1, x
+   lda #(3+2*16) ; 63
+   sta timbres::Timbre::osc::pitch_mod_dep1, x
+   lda #1
+   sta timbres::Timbre::osc::pitch_mod_sel2, x
+   lda #(128+3) ; -61
+   sta timbres::Timbre::osc::pitch_mod_dep2, x
+   ; oscillator 1
+   ldx #(1*N_TIMBRES+patch_no)
+   lda #0
+   sta timbres::Timbre::osc::waveform, x
+   lda #21
+   sta timbres::Timbre::osc::pulse, x
+   lda #128
+   sta timbres::Timbre::osc::pwm_sel, x
+   lda #(0)
+   sta timbres::Timbre::osc::pwm_dep, x
+   lda #108
+   sta timbres::Timbre::osc::pitch, x
+   lda #0
+   sta timbres::Timbre::osc::fine, x
+   lda #192
+   sta timbres::Timbre::osc::lrmid, x
+   lda #0
+   sta timbres::Timbre::osc::amp_sel, x
+   lda #52
+   sta timbres::Timbre::osc::volume, x
+   lda #128
+   sta timbres::Timbre::osc::vol_mod_sel, x
+   lda #(0)
+   sta timbres::Timbre::osc::vol_mod_dep, x
+   lda #0
+   sta timbres::Timbre::osc::track, x
+   lda #3
+   sta timbres::Timbre::osc::pitch_mod_sel1, x
+   lda #(128+7+4*16) ; -45
+   sta timbres::Timbre::osc::pitch_mod_dep1, x
+   lda #128
+   sta timbres::Timbre::osc::pitch_mod_sel2, x
+   lda #1
+   sta timbres::Timbre::osc::pitch_mod_dep2, x
+.endmacro
 
 .macro PRESET_BASS_1 patch_no
    ; global parameters
@@ -1846,7 +1976,7 @@
    sta timbres::Timbre::osc::track, x
    lda #1
    sta timbres::Timbre::osc::pitch_mod_sel1, x
-   lda #(2 * 16 + 3)
+   lda #(4 * 16 + 4)
    sta timbres::Timbre::osc::pitch_mod_dep1, x
    lda #2
    sta timbres::Timbre::osc::pitch_mod_sel2, x
@@ -1890,7 +2020,7 @@
    sta timbres::Timbre::osc::pitch, x
    lda #0
    sta timbres::Timbre::osc::fine, x
-   lda #32
+   lda #38
    sta timbres::Timbre::osc::volume, x
    lda #192
    sta timbres::Timbre::osc::lrmid, x

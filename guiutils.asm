@@ -152,6 +152,8 @@ str_pointer = mzpwe
 ; draw a component at position and with dimensions:
 draw_x: .byte 0
 draw_y: .byte 0
+; NOTE: draw_x/draw_y are kept separate from cur_x/cur_y, because of the drawing of more complex objects like the frame around a panel.
+; However, this is the only place where it is necessary ATM, so it might be possible to get rid of either of them and find a different solution for draw_frame.
 draw_width: .byte 0
 draw_height: .byte 0
 ; additional drawing parameters
@@ -488,6 +490,39 @@ draw_tabs:
    cli 
    rts
 
+; draw a button
+; x, y position in draw_x and draw_y
+; label as address of 0-terminated string in str_pointer
+; width in draw_width
+draw_button:
+   lda draw_x
+   sta cur_x
+   lda draw_y
+   sta cur_y
+   ; top of button
+   ldx #(1+16*COLOR_BACKGROUND)
+   ldy draw_width
+   sei
+   jsr set_cursor
+   lda #100
+@loop_top:
+   sta VERA_data0
+   stx VERA_data0
+   dey
+   bne @loop_top
+   ; label of button
+   inc cur_y
+   lda #CCOLOR_BUTTON
+   sta color
+   ldx draw_width
+   inx ; this is required by print_with_padding
+   ldy #0
+   jsr set_cursor
+   jsr print_with_padding
+   cli
+   rts
+
+
 ; draw a number edit that has arrows
 ; x, y position in draw_x and draw_y
 ; data1: number on display
@@ -603,13 +638,13 @@ draw_checkbox:
    rts
 
 
-; prints a string with padding up to specified width -- quite specific, it is used in listbox drawing
+; prints a string with padding up to specified width -- quite specific, it is used in listbox & button drawing
 ; assumes that the VERA address is already set accordingly
 ; (str_pointer), y   is where printing continues, incrementing Y along the way
 ; color according to the variable color
 ; X: overall width plus 1
 print_with_padding:
-@loop1: ; printing loop. assumes that the string length is less or equal than the listbox width minus 2
+@loop1: ; printing loop. assumes that the string length is less or equal than the listbox/button width minus 2 (really 2 or just 1?)
    lda (str_pointer), y
    beq @end_loop1
    sta VERA_data0
@@ -619,7 +654,7 @@ print_with_padding:
    iny
    bra @loop1
 @end_loop1:
-   ; do padding at the end of the listbox if necessary
+   ; do padding at the end of the listbox/button if necessary
 @loop2:
    dex
    beq @end_loop2

@@ -53,7 +53,7 @@ start:
    PRESET_KICK_DRUM_3 3
    PRESET_SNARE_DRUM_5 4
    PRESET_FAT_PLUCK 5
-   PRESET_PAD_1 6
+   PRESET_TAMBOURINE 6
 
    jsr voices::init_voices
    jsr gui::load_synth_gui
