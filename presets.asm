@@ -801,7 +801,7 @@
    sta timbres::Timbre::osc::pwm_sel, x
    lda #(0)
    sta timbres::Timbre::osc::pwm_dep, x
-   lda #35
+   lda #38
    sta timbres::Timbre::osc::pitch, x
    lda #0
    sta timbres::Timbre::osc::fine, x
@@ -1970,7 +1970,7 @@
    sta timbres::Timbre::osc::amp_sel, x
    lda #0
    sta timbres::Timbre::osc::vol_mod_sel, x
-   lda #(32)
+   lda #(70)
    sta timbres::Timbre::osc::vol_mod_dep, x
    lda #0
    sta timbres::Timbre::osc::track, x

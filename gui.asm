@@ -22,6 +22,7 @@
 ; 3: synth navigation bar (snav)
 ; 4: popup panel for listboxes
 ; 5: LFO settings panel
+; 6: help/info panel
 ; ***************************************
 
 ; Each panel has multiple byte strings hard coded. Those byte strings define elements shown on the GUI.
@@ -93,13 +94,14 @@ dummy_data_size = 1
 .scope gui
    ; PANEL DATA
 
-   ; compiler variables for convenience
-   ; and panel data that will be accessed via pointers
+   ; compiler variables for convenience,
+   ; panel data that will be accessed via pointers
+   ; and additional data specific to the needs of each panel.
 
    ; global settings panel
    .scope global
-      px = 15
-      py = 10
+      px = 17
+      py = 7
       wd = 12
       hg = 24
       ; GUI component string of global settings panel
@@ -247,7 +249,7 @@ dummy_data_size = 1
    .endscope
    ; envelope settings panel
    .scope env
-      px = 15
+      px = global::px
       py = osc::py+osc::hg
       wd = 24
       hg = 8
@@ -366,6 +368,41 @@ dummy_data_size = 1
          STR_FORMAT "saw dn"
          STR_FORMAT "s'n'h"
    .endscope
+   ; help/info panel
+   .scope info
+      px = global::px
+      py = env::py+env::hg
+      wd = (global::wd+osc::wd)
+      hg = 16
+      ; GUI component string of the panel
+      comps:
+         .byte 0 ; empty
+      ; caption list of the panel
+      capts:
+         .byte CCOLOR_CAPTION, px+4, py
+         .word cp
+         .byte CCOLOR_CAPTION, px+2, py+2
+         .word help_1_lb
+         .byte CCOLOR_CAPTION, px+2, py+4
+         .word help_2_lb
+         .byte CCOLOR_CAPTION, px+2, py+6
+         .word help_3_lb
+         .byte CCOLOR_CAPTION, px+2, py+8
+         .word help_4_lb
+         .byte CCOLOR_CAPTION, px+2, py+11
+         .word help_5_lb
+         .byte CCOLOR_CAPTION, px+2, py+13
+         .word help_6_lb
+         .byte 0
+      ; data specific to the synth-navigation panel
+      cp: STR_FORMAT "help"
+      help_1_lb: STR_FORMAT "controls:"
+      help_2_lb: STR_FORMAT "a, w, s, ... play notes"
+      help_3_lb: STR_FORMAT "z, x         toggle octaves"
+      help_4_lb: STR_FORMAT "space        release note"
+      help_5_lb: STR_FORMAT "left drag    coarse edit"
+      help_6_lb: STR_FORMAT "right drag   fine edit"
+   .endscope
 
    ; Recurring Labels
    vol_lb: STR_FORMAT "vol"
@@ -379,17 +416,17 @@ dummy_data_size = 1
    ; Each label marks a list of values, one for each panel.
    ; These lists must have length N_PANELS.
    ; X positions
-   px: .byte global::px, osc::px, env::px, snav::px, listbox_popup::px, lfo::px
+   px: .byte global::px, osc::px, env::px, snav::px, listbox_popup::px, lfo::px, info::px
    ; Y positions
-   py: .byte global::py, osc::py, env::py, snav::py, listbox_popup::py, lfo::py
+   py: .byte global::py, osc::py, env::py, snav::py, listbox_popup::py, lfo::py, info::py
    ; widths
-   wd: .byte global::wd, osc::wd, env::wd, snav::wd, listbox_popup::wd, lfo::wd
+   wd: .byte global::wd, osc::wd, env::wd, snav::wd, listbox_popup::wd, lfo::wd, info::wd
    ; heights
-   hg: .byte global::hg, osc::hg, env::hg, snav::hg, listbox_popup::hg, lfo::hg
+   hg: .byte global::hg, osc::hg, env::hg, snav::hg, listbox_popup::hg, lfo::hg, info::hg
    ; GUI component strings
-   comps: .word global::comps, osc::comps, env::comps, snav::comps, listbox_popup::comps, lfo::comps
+   comps: .word global::comps, osc::comps, env::comps, snav::comps, listbox_popup::comps, lfo::comps, info::comps
    ; GUI captions
-   capts: .word global::capts, osc::capts, env::capts, snav::capts, listbox_popup::capts, lfo::capts
+   capts: .word global::capts, osc::capts, env::capts, snav::capts, listbox_popup::capts, lfo::capts, info::capts
 
 
 ; The Panel Stack
@@ -409,18 +446,20 @@ dummy_sr:
 ; puts all synth related panels into the GUI stack
 load_synth_gui:
    jsr guiutils::cls
-   lda #5 ; GUI stack size (how many panels are visible)
+   lda #6 ; GUI stack size (how many panels are visible)
    sta stack::sp
-   lda #0 ; global settings panel
+   lda #6 ; help/info panel
    sta stack::stack
-   lda #1 ; oscillator panel
+   lda #0 ; global settings panel
    sta stack::stack+1
-   lda #2 ; envelope panel
+   lda #1 ; oscillator panel
    sta stack::stack+2
-   lda #3 ; synth navigation bar
+   lda #2 ; envelope panel
    sta stack::stack+3
-   lda #5 ; LFO panel
+   lda #3 ; synth navigation bar
    sta stack::stack+4
+   lda #5 ; LFO panel
+   sta stack::stack+5
    jsr draw_gui
    jsr refresh_gui
    rts
@@ -447,6 +486,7 @@ draw_gui:
    .word draw_snav
    .word draw_lb_popup
    .word draw_lfo
+   .word draw_info
 @ret_addr:
    ; draw GUI components
    ldy dg_counter
@@ -1121,6 +1161,7 @@ refresh_gui:
    .word refresh_snav
    .word dummy_sr   ; listbox popup ... popups don't need to be refreshed
    .word refresh_lfo
+   .word dummy_sr   ; info box - no refresh necessary yet
 @ret_addr:
    ; advance in loop
    lda rfg_counter
@@ -1669,7 +1710,7 @@ draw_env:
    rts
 
 draw_snav:
-   ; TODO
+   ; TODO - nothing to be done yet?
    rts
 
 draw_lb_popup:
@@ -1701,8 +1742,21 @@ draw_lfo:
    sta guiutils::draw_height
    lda #0
    sta guiutils::draw_data1
+   jsr guiutils::draw_frame
+   rts
+
+draw_info:
+   ; draw frame
+   lda #info::px
+   sta guiutils::draw_x
+   lda #info::py
+   sta guiutils::draw_y
+   lda #info::wd
+   sta guiutils::draw_width
+   lda #info::hg
+   sta guiutils::draw_height
    lda #0
-   sta guiutils::draw_data2
+   sta guiutils::draw_data1
    jsr guiutils::draw_frame
    rts
 
@@ -1824,6 +1878,7 @@ panel_write_subroutines:
    .word write_snav
    .word write_lb_popup
    .word write_lfo
+   .word dummy_sr ; info box - nothing to edit here
 
 dummy_plx:
    plx

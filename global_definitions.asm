@@ -32,7 +32,7 @@ GLOBAL_DEFS_INC = 1
 .define CCOLOR_CHECKBOX_TICK 16*COLOR_CHECKBOX + 0
 .define CCOLOR_BUTTON 16*1 + 0
 ; others
-.define N_PANELS 6   ; number of panels 
+.define N_PANELS 7   ; number of panels 
 
 
 
