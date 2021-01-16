@@ -129,8 +129,6 @@ dummy_data_size = 1
          .word porta_active_lb
          .byte CCOLOR_CAPTION, px+6, py+16 ; porta rate label
          .word rate_lb
-         .byte CCOLOR_CAPTION, px+2, py+21 ; wavetable edit button placeholder
-         .word wavetable_lb
          .byte 0
       cp: STR_FORMAT "global" ; caption of panel
       nosc_lb: STR_FORMAT "n. oscs"
