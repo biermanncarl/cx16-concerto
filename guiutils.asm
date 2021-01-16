@@ -10,7 +10,7 @@
 
 .scope guiutils
 
-; actually used by DISPLAY_BYTE macro
+; variables used by the DISPLAY_BYTE macro
 display_100s:       .byte 0
 display_10s:        .byte 0
 display_1s:         .byte 0
@@ -27,6 +27,7 @@ display_1s:         .byte 0
 .endmacro
 
 ; displays the byte db_data at position db_x and db_y
+; used only for debugging.
 .macro DISPLAY_BYTE db_data, db_x, db_y
    .local @loop100s
    .local @loop10s
@@ -99,6 +100,7 @@ display_1s:         .byte 0
 .endmacro
 
 ; displays the 0-terminated message at position db_x and db_y
+; used only for debugging.
 .macro DISPLAY_LABEL msg_start, dm_x, dm_y
 .local @loop_msg
 .local @done_msg
@@ -519,7 +521,7 @@ draw_arrowed_edit:
 ; data1: number on display
 ; data2: bit 0: coarse/fine available, bit1: coarse/fine switch, bit2: signed
 draw_drag_edit:
-   dde_bittest = mzpbg ; mzpbg used! (use something else for bit-testing if this clashes with something else)
+   dde_bittest = mzpbg ; mzpbg used! (use something else for bit-testing in this routine if this clashes with something else)
    lda draw_x
    sta cur_x
    lda draw_y
@@ -570,9 +572,6 @@ draw_drag_edit:
 @no_coarse_fine:
    lda draw_data1
    jsr print_byte_simple
-   ;lda #32          ; Here too: no additional space, if no fine mode available -> Edit will be smaller
-   ;sta VERA_data0
-   ;stx VERA_data0
    cli
    rts
 
@@ -604,7 +603,7 @@ draw_checkbox:
    rts
 
 
-; prints a string with padding up to specified width -- quite specific, is used in listbox drawing
+; prints a string with padding up to specified width -- quite specific, it is used in listbox drawing
 ; assumes that the VERA address is already set accordingly
 ; (str_pointer), y   is where printing continues, incrementing Y along the way
 ; color according to the variable color
@@ -692,7 +691,7 @@ draw_lb_popup:
    cli
    rts
 
-; clears the area on the screen where the listbox was before.
+; clears the area on the screen where the listbox popup was before.
 ; x, y position in draw_x and draw_y
 ; width in draw_width, height in draw_height
 clear_lb_popup:

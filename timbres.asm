@@ -1,7 +1,7 @@
 ; This file manages the synth patches.
 ; The patch data will be read by the synth engine as well as the GUI.
 
-; Disk save and load commands for synth patches are present in this file.
+; Disk save and load commands for individual synth patches are planned to be in this file.
 
 ; The patch data is organized in arrays. Each successive byte belongs to a different patch.
 ; For example, the portamento rate is a field of N_TIMBRES bytes (32 the last time I checked).
@@ -14,7 +14,7 @@
 ;    retrigger setting patch 0
 ;    retrigger setting patch 1
 ;    ...
-; This even holds true for arrays inside a patch, e.g. the attack rate:
+; This even holds true for arrays inside a patch, e.g. the attack rate for all envelopes:
 ;    attack rate Low byte env 1 patch 0
 ;    attack rate Low byte env 1 patch 1
 ;    attack rate Low byte env 1 patch 2
@@ -24,6 +24,14 @@
 ;    attack rate Low byte env 2 patch 2
 ;    ...
 
+; This is for more efficient accessing of the data.
+; Timbre selection needs to be quick for arbitrary access.
+; The individual envelopes and oscillators are only parsed from start to finish.
+; To access all three envelope settings of a timbre, one starts by setting X to the
+; timbre index, giving the offset of envelope 1.
+; Then, by adding N_TIMBRES to X, we get the offset of envelope 2, and if we do it again,
+; we get the offset of envelope 3 of that same patch.
+; That way, we can avoid multiplications to find the correct indices.
 
 
 .scope timbres

@@ -55,7 +55,7 @@
 ; *******************************************************************************************
 ; GUI control element legend with component string format
 ; 0: none (end of list)
-; 1: button, followed by x and y position (absolute), and width, and address of string
+; 1: button, followed by x and y position (absolute), and width, and address of label (16 bit)
 ; 2: tab selector, followed by x and y position (abs), number of tabs, and active tab
 ; 3: arrowed edit, followed by x and y position (abs), min value, max value, value
 ; 4: dragging edit, followed by x and y position (abs), options (flags), min value, max value, coarse value, fine value
@@ -71,7 +71,7 @@
 ; options irrelevant for drawing the component:
 ; bit 7: zero forbidden (for signed scale5 values)
 
-button_data_size = 1
+button_data_size = 6
 tab_selector_data_size = 5
 arrowed_edit_data_size = 6
 drag_edit_data_size = 8
@@ -87,6 +87,8 @@ dummy_data_size = 1
 
    ; compiler variables for convenience
    ; and panel data that will be accessed via pointers
+
+   ; global settings panel
    .scope global
       px = 15
       py = 10
@@ -125,6 +127,7 @@ dummy_data_size = 1
       nenv_lb: STR_FORMAT "n. envs"
       porta_active_lb: STR_FORMAT "porta" ; portamento activate label
    .endscope
+   ; oscillator settings panel
    .scope osc
       px = global::px+global::wd
       py = global::py
@@ -234,6 +237,7 @@ dummy_data_size = 1
          STR_FORMAT " r"
          .byte 12, 43, 18, 0
    .endscope
+   ; envelope settings panel
    .scope env
       px = 15
       py = osc::py+osc::hg
@@ -268,7 +272,8 @@ dummy_data_size = 1
       lb_sustain: STR_FORMAT "sus"
       lb_release: STR_FORMAT "rel"
    .endscope
-   .scope snav ; synth navigation/tool bar
+   ; synth navigation/tool panel
+   .scope snav
       px = 0
       py = 0
       wd = 80
@@ -280,11 +285,14 @@ dummy_data_size = 1
       ; caption list of the panel
       capts:
          .byte CCOLOR_CAPTION, 1, 1
-         .word cp
+         .word timbre_lb
          .byte 0
       ; data specific to the synth-navigation panel
-      cp: STR_FORMAT "timbre"
+      timbre_lb: STR_FORMAT "timbre"
+      load_preset_lb: STR_FORMAT "load preset"
+      save_preset_lb: STR_FORMAT "save preset"
    .endscope
+   ; listbox popup. shows up when a listbox was clicked.
    .scope listbox_popup
       ; popup blocks the whole screen, therefore this panel is "fullscreen" (for click detection)
       px = 0
@@ -310,7 +318,8 @@ dummy_data_size = 1
       lb_ofs: .byte 0
       lb_id: .byte 0
    .endscope
-   .scope lfo ; LFO settings area
+   ; LFO settings panel
+   .scope lfo
       px = env::px+env::wd
       py = osc::py+osc::hg
       wd = (global::wd+osc::wd-env::wd)

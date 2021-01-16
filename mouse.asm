@@ -23,6 +23,8 @@
 ; or for the other button to be pressed.
 ; If the other button is pressed while still holding down, the state of the mouse
 ; is changed to one of the "reset" states, which wait for all buttons to be released.
+; NOTE: the reset function has not been implemented on the GUI yet.
+; The GUI currently only reacts to click and drag events.
 
 .scope mouse
 

@@ -1,5 +1,5 @@
-; This file contains various definitions of Commander X16 addresses.
-; It is based on a file made by Matt Heffernan
+; This file contains various definitions of Commander X16 addresses and values.
+; It is based on a file made by Matt Heffernan.
 
 .ifndef X16_INC
 X16_INC  = 1
