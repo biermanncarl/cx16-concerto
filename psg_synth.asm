@@ -66,6 +66,8 @@ start:
    PRESET_SNARE_DRUM_5 4
    PRESET_FAT_PLUCK 5
    PRESET_TAMBOURINE 6
+   PRESET_KEY_2 7
+   PRESET_GUITAR_1 8
 
    jsr voices::init_voices
    jsr gui::load_synth_gui

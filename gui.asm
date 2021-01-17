@@ -288,7 +288,7 @@ dummy_data_size = 1
       hg = 4
       ; GUI component string of the panel
       comps:
-         .byte 3, 41, 1, 0, 6, 0 ; arrowed edit (timbre selection)
+         .byte 3, 41, 1, 0, 8, 0 ; arrowed edit (timbre selection)
          .byte 1, 50, 0, 13, (<load_preset_lb), (>load_preset_lb)
          .byte 1, 66, 0, 13, (<save_preset_lb), (>save_preset_lb)
          .byte 0
