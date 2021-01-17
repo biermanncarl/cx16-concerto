@@ -18,12 +18,17 @@ event_pointer: .byte 0
 ; 2 - play note -- 1 byte channel -- 1 byte instrument -- 1 byte pitch -- 1 byte volume
 ; 3 - stop note -- 1 byte channel -- 1 byte soft or hard ending -- 2 bytes unused (ending: 0 with release, 1 hard ending)
 ; more to come
-events:
-;DNB2
+
+demo_loop_1:
+DNB2
+demo_loop_2:
 MELLOW_LOOP
 
 player_tick:
-   lda time
+   lda pld_ptr
+   bne :+
+   rts ; if player data points to ZP, we don't play. (i.e. player is off)
+:  lda time
    bne :++
    ; low byte of timer is zero
    dec
@@ -50,7 +55,8 @@ do_events:
    clc
    adc #event_length
    sta event_pointer
-   lda events, y
+   lda (pld_ptr), y
+   iny
    asl
    tax
    jmp (@jmp_tbl, x)
@@ -75,24 +81,28 @@ player_end_of_data:
 player_wait:
    ; load waiting length
    ; the subtraction is done, because the current tick is counted as 1. So if we wait 1 tick overall, in the next tick we will do the next event
-   lda events+1, y
+   lda (pld_ptr), y
+   iny
    sec
    sbc #1
    sta time
-   lda events+2, y
+   lda (pld_ptr), y
    sbc #0
    sta time+1
    rts
 
 ; play note event
 player_play_note:
-   lda events+1, y
+   lda (pld_ptr), y
+   iny
    sta voices::note_channel
-   lda events+2, y
+   lda (pld_ptr), y
+   iny
    sta voices::note_timbre
-   lda events+3, y
+   lda (pld_ptr), y
+   iny
    sta voices::note_pitch
-   lda events+4, y
+   lda (pld_ptr), y
    sta voices::note_volume
    jsr voices::play_note
    jmp do_events
@@ -100,12 +110,13 @@ player_play_note:
 ; stop note event. TODO: distinguish soft and hard note stops (soft aka. put notes into release phase)
 player_stop_note:
    ; load channel number
-   ldx events+1, y
+   lda (pld_ptr), y
+   iny
    ; first check if note is active
    lda voices::Voice::active, x
    beq do_events ; don't do anything if note is inactive
    ; then check for soft or hard ending
-   lda events+2, y
+   lda (pld_ptr), y
    beq @soft_ending
 @hard_ending:
    jsr voices::stop_note

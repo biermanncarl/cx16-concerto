@@ -180,7 +180,7 @@
    sta timbres::Timbre::env::attackH, x
    lda #0
    sta timbres::Timbre::env::decayL, x
-   lda #28
+   lda #22
    sta timbres::Timbre::env::decayH, x
    lda #0
    sta timbres::Timbre::env::sustain, x
@@ -249,7 +249,7 @@
    ldx #(2*N_TIMBRES+patch_no)
    lda #128
    sta timbres::Timbre::osc::waveform, x
-   lda #57
+   lda #53
    sta timbres::Timbre::osc::pitch, x
    lda #20
    sta timbres::Timbre::osc::fine, x
@@ -257,7 +257,7 @@
    sta timbres::Timbre::osc::lrmid, x
    lda #2
    sta timbres::Timbre::osc::amp_sel, x
-   lda #61
+   lda #62
    sta timbres::Timbre::osc::volume, x
    lda #128
    sta timbres::Timbre::osc::vol_mod_sel, x

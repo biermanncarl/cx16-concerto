@@ -36,3 +36,6 @@ mzpbf:   .byte 0
 mzpbg:   .byte 0
 ; my zero page bytes (main program)
 mzpbh:   .byte 0
+
+; player data pointer
+pld_ptr: .word 0

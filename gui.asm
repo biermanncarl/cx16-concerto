@@ -280,17 +280,20 @@ dummy_data_size = 1
       lb_sustain: STR_FORMAT "sus"
       lb_release: STR_FORMAT "rel"
    .endscope
-   ; synth navigation/tool panel
+   ; synth navigation/tool panel ... it sits in the background.
    .scope snav
       px = 0
       py = 0
       wd = 80
-      hg = 4
+      hg = 60
       ; GUI component string of the panel
       comps:
          .byte 3, 41, 1, 0, 8, 0 ; arrowed edit (timbre selection)
          .byte 1, 50, 0, 13, (<load_preset_lb), (>load_preset_lb)
          .byte 1, 66, 0, 13, (<save_preset_lb), (>save_preset_lb)
+         .byte 1, 14, 57, 6, (<demo1_lb), (>demo1_lb)
+         .byte 1, 23, 57, 6, (<demo2_lb), (>demo2_lb)
+         .byte 1, 32, 57, 4, (<stop_lb), (>stop_lb)
          .byte 0
       ; caption list of the panel
       capts:
@@ -298,12 +301,18 @@ dummy_data_size = 1
          .word logo_lb
          .byte CCOLOR_CAPTION, 34, 1
          .word timbre_lb
+         .byte CCOLOR_CAPTION, 1, 58
+         .word demos_lb
          .byte 0
       ; data specific to the synth-navigation panel
       timbre_lb: STR_FORMAT "timbre"
       load_preset_lb: STR_FORMAT " load preset"
       save_preset_lb: STR_FORMAT " save preset"
       logo_lb: STR_FORMAT "=== concerto 0.1.0 ==="
+      demos_lb: STR_FORMAT "play demos"
+      demo1_lb: STR_FORMAT "demo 1"
+      demo2_lb: STR_FORMAT "demo 2"
+      stop_lb: STR_FORMAT "stop"
    .endscope
    ; listbox popup. shows up when a listbox was clicked.
    .scope listbox_popup
@@ -446,15 +455,15 @@ load_synth_gui:
    jsr guiutils::cls
    lda #6 ; GUI stack size (how many panels are visible)
    sta stack::sp
-   lda #6 ; help/info panel
-   sta stack::stack
-   lda #0 ; global settings panel
-   sta stack::stack+1
-   lda #1 ; oscillator panel
-   sta stack::stack+2
-   lda #2 ; envelope panel
-   sta stack::stack+3
    lda #3 ; synth navigation bar
+   sta stack::stack
+   lda #6 ; help/info panel
+   sta stack::stack+1
+   lda #0 ; global settings panel
+   sta stack::stack+2
+   lda #1 ; oscillator panel
+   sta stack::stack+3
+   lda #2 ; envelope panel
    sta stack::stack+4
    lda #5 ; LFO panel
    sta stack::stack+5
@@ -2228,6 +2237,9 @@ write_snav:
    .word @timbre_selector
    .word @load_preset
    .word @save_preset
+   .word @demo1
+   .word @demo2
+   .word @stop
 @timbre_selector:
    ; read data from component string and write it to the Timbre setting
    lda ms_curr_component_ofs
@@ -2245,6 +2257,30 @@ write_snav:
 @save_preset:
    lda #66
    jsr CHROUT
+   rts
+@demo1:
+   sei
+   stz player::event_pointer
+   jsr voices::panic
+   lda #(<player::demo_loop_1)
+   sta pld_ptr
+   lda #(>player::demo_loop_1)
+   sta pld_ptr+1
+   cli
+   rts
+@demo2:
+   sei
+   stz player::event_pointer
+   jsr voices::panic
+   lda #(<player::demo_loop_2)
+   sta pld_ptr
+   lda #(>player::demo_loop_2)
+   sta pld_ptr+1
+   cli
+   rts
+@stop:
+   stz pld_ptr
+   jsr voices::panic
    rts
 
 

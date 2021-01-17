@@ -388,7 +388,7 @@ rts
 
 
 
-; stop all voices, should contain a PSG MUTE ALL, as well (TODO)
+; stop all voices (aka panic off)
 panic:
    ldx #(N_VOICES-1)
 @loop:
