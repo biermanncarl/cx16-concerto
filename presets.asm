@@ -164,7 +164,7 @@
    sta timbres::Timbre::env::attackH, x
    lda #228
    sta timbres::Timbre::env::decayL, x
-   lda #0
+   lda #1
    sta timbres::Timbre::env::decayH, x
    lda #0
    sta timbres::Timbre::env::sustain, x
@@ -219,7 +219,7 @@
    ldx #(1*N_TIMBRES+patch_no)
    lda #0
    sta timbres::Timbre::osc::waveform, x
-   lda #52
+   lda #48
    sta timbres::Timbre::osc::pulse, x
    lda #0
    sta timbres::Timbre::osc::pitch, x
@@ -229,7 +229,7 @@
    sta timbres::Timbre::osc::lrmid, x
    lda #1
    sta timbres::Timbre::osc::amp_sel, x
-   lda #38
+   lda #30
    sta timbres::Timbre::osc::volume, x
    lda #128
    sta timbres::Timbre::osc::vol_mod_sel, x
@@ -1164,7 +1164,7 @@
    sta timbres::Timbre::osc::pitch_mod_dep2, x
 .endmacro
 
-.macro PRESET_TAMBOURINE patch_no
+.macro PRESET_TAMBOURINE patch_no  ; or rather Hihat
    ; global parameters
    ldx #patch_no
    lda #2
@@ -1216,7 +1216,7 @@
    ldx #(0*N_TIMBRES+patch_no)
    lda #3
    sta timbres::Timbre::lfo::wave, x
-   lda #102
+   lda #128
    sta timbres::Timbre::lfo::rateH, x
    lda #96
    sta timbres::Timbre::lfo::rateL, x
@@ -1261,7 +1261,7 @@
    sta timbres::Timbre::osc::pitch_mod_dep2, x
    ; oscillator 1
    ldx #(1*N_TIMBRES+patch_no)
-   lda #0
+   lda #192
    sta timbres::Timbre::osc::waveform, x
    lda #21
    sta timbres::Timbre::osc::pulse, x
@@ -1269,7 +1269,7 @@
    sta timbres::Timbre::osc::pwm_sel, x
    lda #(0)
    sta timbres::Timbre::osc::pwm_dep, x
-   lda #108
+   lda #127
    sta timbres::Timbre::osc::pitch, x
    lda #0
    sta timbres::Timbre::osc::fine, x
@@ -1809,11 +1809,11 @@
    sta timbres::Timbre::env::attackL, x
    lda #127
    sta timbres::Timbre::env::attackH, x
-   lda #46
+   lda #132
    sta timbres::Timbre::env::decayL, x
-   lda #1
+   lda #0
    sta timbres::Timbre::env::decayH, x
-   lda #54
+   lda #15
    sta timbres::Timbre::env::sustain, x
    lda #0
    sta timbres::Timbre::env::releaseL, x
@@ -1827,9 +1827,9 @@
    sta timbres::Timbre::env::attackH, x
    lda #0
    sta timbres::Timbre::env::decayL, x
-   lda #2
+   lda #1
    sta timbres::Timbre::env::decayH, x
-   lda #29
+   lda #3
    sta timbres::Timbre::env::sustain, x
    lda #0
    sta timbres::Timbre::env::releaseL, x

@@ -19,7 +19,8 @@ event_pointer: .byte 0
 ; 3 - stop note -- 1 byte channel -- 1 byte soft or hard ending -- 2 bytes unused (ending: 0 with release, 1 hard ending)
 ; more to come
 events:
-DNB2
+;DNB2
+MELLOW_LOOP
 
 player_tick:
    lda time

@@ -123,7 +123,7 @@ isr_choke:
 do_psg_control:
    lda #1
    sta isr_running
-   ;jsr player::player_tick
+   jsr player::player_tick
    jsr synth_engine::synth_tick
    stz isr_running
 
