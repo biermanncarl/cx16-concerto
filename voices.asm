@@ -287,6 +287,7 @@ rts
 
 ; checks if there are enough oscillators available
 ; and, in that case, reserves them for the new voice.
+; Also resets portamento.
 ; expects channel index in X, timbre index in Y
 ; returns A=1 if successful, A=0 otherwise (zero flag set accordingly)
 ; doesn't preserve X and Y
@@ -297,10 +298,12 @@ start_note:
    cmp timbres::Timbre::n_oscs, y ; carry is set if nfo>=non (number of oscillators needed)
    bcs :+
    jmp @unsuccessful    ; if there's no oscillator left, don't play
+   ; reset portamento
+:  stz Voice::porta::active, x
    ; get oscillators from and update free oscillators ringlist
    ; x: offset in voice data
    ; y: offset in freeosclist (but first, it is timbre index)
-:  lda timbres::Timbre::n_oscs, y
+   lda timbres::Timbre::n_oscs, y
    sta stn_loop_counter
 @loop_osc:
    ; get oscillator from list and put it into voice data
