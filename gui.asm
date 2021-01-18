@@ -101,7 +101,7 @@ dummy_data_size = 1
    ; global settings panel
    .scope global
       px = 17
-      py = 7
+      py = 6
       wd = 12
       hg = 24
       ; GUI component string of global settings panel
@@ -308,7 +308,7 @@ dummy_data_size = 1
       timbre_lb: STR_FORMAT "timbre"
       load_preset_lb: STR_FORMAT " load preset"
       save_preset_lb: STR_FORMAT " save preset"
-      logo_lb: STR_FORMAT "=== concerto 0.1.0 ==="
+      logo_lb: STR_FORMAT "=== concerto 0.1.0a ==="
       demos_lb: STR_FORMAT "play demos"
       demo1_lb: STR_FORMAT "demo 1"
       demo2_lb: STR_FORMAT "demo 2"
@@ -2261,6 +2261,7 @@ write_snav:
 @demo1:
    sei
    stz player::event_pointer
+   stz player::time
    jsr voices::panic
    lda #(<player::demo_loop_1)
    sta pld_ptr
@@ -2271,6 +2272,7 @@ write_snav:
 @demo2:
    sei
    stz player::event_pointer
+   stz player::time
    jsr voices::panic
    lda #(<player::demo_loop_2)
    sta pld_ptr

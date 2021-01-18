@@ -55,6 +55,9 @@ start:
    ; initialization
    ; *******************************
 
+   ; set ROM bank to 0 (from 4, the BASIC ROM)
+   stz ROM_BANK
+
    ; initialize patches
    ;PRESET_KICK_DRUM_2 0
    ;PRESET_ONE_OSC_PATCH 0
@@ -88,6 +91,10 @@ start:
    lda #0
    ldx #0
    jsr MOUSE_CONFIG
+
+   ; restore BASIC ROM page
+   lda #4
+   sta ROM_BANK
 
    rts            ; return to BASIC
 

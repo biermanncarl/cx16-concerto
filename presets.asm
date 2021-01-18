@@ -162,7 +162,7 @@
    sta timbres::Timbre::env::attackL, x
    lda #127
    sta timbres::Timbre::env::attackH, x
-   lda #228
+   lda #155
    sta timbres::Timbre::env::decayL, x
    lda #1
    sta timbres::Timbre::env::decayH, x
@@ -229,7 +229,7 @@
    sta timbres::Timbre::osc::lrmid, x
    lda #1
    sta timbres::Timbre::osc::amp_sel, x
-   lda #30
+   lda #39
    sta timbres::Timbre::osc::volume, x
    lda #128
    sta timbres::Timbre::osc::vol_mod_sel, x
@@ -1214,15 +1214,15 @@
    sta timbres::Timbre::env::releaseH, x
    ; lfo 0
    ldx #(0*N_TIMBRES+patch_no)
-   lda #3
+   lda #1
    sta timbres::Timbre::lfo::wave, x
-   lda #128
+   lda #64
    sta timbres::Timbre::lfo::rateH, x
-   lda #96
+   lda #0
    sta timbres::Timbre::lfo::rateL, x
    lda #1
    sta timbres::Timbre::lfo::retrig, x
-   lda #255
+   lda #0
    sta timbres::Timbre::lfo::offs, x
    ; set oscillator parameters
    ; oscillator 0
@@ -1253,7 +1253,7 @@
    sta timbres::Timbre::osc::track, x
    lda #3
    sta timbres::Timbre::osc::pitch_mod_sel1, x
-   lda #(3+2*16) ; 63
+   lda #(5) ; 51
    sta timbres::Timbre::osc::pitch_mod_dep1, x
    lda #1
    sta timbres::Timbre::osc::pitch_mod_sel2, x
