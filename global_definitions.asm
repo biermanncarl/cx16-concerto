@@ -34,6 +34,7 @@ GLOBAL_DEFS_INC = 1
 .define CCOLOR_BUTTON 16*1 + 0
 ; others
 .define N_PANELS 7   ; number of panels 
+.define MAX_FILENAME_LEN 16
 
 
 

@@ -3,6 +3,98 @@
 
 
 
+; primitive write_timbre
+   phx
+   lda Timbre::n_oscs, x
+   jsr CHROUT
+   lda Timbre::n_envs, x
+   jsr CHROUT
+   lda Timbre::n_lfos, x
+   jsr CHROUT
+   lda Timbre::porta, x
+   jsr CHROUT
+   lda Timbre::porta_r, x
+   jsr CHROUT
+   lda Timbre::retrig, x
+   jsr CHROUT
+   lda Timbre::lfo::rateH, x
+   jsr CHROUT
+   lda Timbre::lfo::rateL, x
+   jsr CHROUT
+   lda Timbre::lfo::wave, x
+   jsr CHROUT
+   lda Timbre::lfo::retrig, x
+   jsr CHROUT
+   lda Timbre::lfo::offs, x
+   jsr CHROUT
+   ldy #MAX_ENVS_PER_VOICE
+@loop_envs:
+   lda Timbre::env::attackL, x
+   jsr CHROUT
+   lda Timbre::env::attackH, x
+   jsr CHROUT
+   lda Timbre::env::decayL, x
+   jsr CHROUT
+   lda Timbre::env::decayH, x
+   jsr CHROUT
+   lda Timbre::env::sustain, x
+   jsr CHROUT
+   lda Timbre::env::releaseL, x
+   jsr CHROUT
+   lda Timbre::env::releaseH, x
+   jsr CHROUT
+   txa
+   clc
+   adc #N_TIMBRES
+   tax
+   dey
+   bne @loop_envs
+   plx
+   phx
+   ldy #MAX_OSCS_PER_VOICE
+@loop_oscs:
+   lda Timbre::osc::pitch, x
+   jsr CHROUT
+   lda Timbre::osc::fine, x
+   jsr CHROUT
+   lda Timbre::osc::track, x
+   jsr CHROUT
+   lda Timbre::osc::pitch_mod_sel1, x
+   jsr CHROUT
+   lda Timbre::osc::pitch_mod_dep1, x
+   jsr CHROUT
+   lda Timbre::osc::pitch_mod_sel2, x
+   jsr CHROUT
+   lda Timbre::osc::pitch_mod_dep2, x
+   jsr CHROUT
+   lda Timbre::osc::lrmid, x
+   jsr CHROUT
+   lda Timbre::osc::volume, x
+   jsr CHROUT
+   lda Timbre::osc::amp_sel, x
+   jsr CHROUT
+   lda Timbre::osc::vol_mod_sel, x
+   jsr CHROUT
+   lda Timbre::osc::vol_mod_dep, x
+   jsr CHROUT
+   lda Timbre::osc::waveform, x
+   jsr CHROUT
+   lda Timbre::osc::pulse, x
+   jsr CHROUT
+   lda Timbre::osc::pwm_sel, x
+   jsr CHROUT
+   lda Timbre::osc::pwm_dep, x
+   jsr CHROUT
+   txa
+   clc
+   adc #N_TIMBRES
+   tax
+   dey
+   bne @loop_oscs
+   plx
+
+
+
 
 ; primitive listbox behaviour. just skip through the list
 click_listbox:

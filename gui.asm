@@ -2266,8 +2266,8 @@ write_snav:
    jsr CHROUT
    rts
 @save_preset:
-   lda #66
-   jsr CHROUT
+   ldx Timbre
+   jsr timbres::save_timbre
    rts
 @demo1:
    sei

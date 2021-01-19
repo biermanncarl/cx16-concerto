@@ -40,6 +40,8 @@
 
 
 .scope Timbre
+data_start:
+
    ;general
    n_oscs:  TIMBRE_BYTE_FIELD         ; how many oscillators are used
    n_envs:  TIMBRE_BYTE_FIELD         ; how many envelopes are used
@@ -96,7 +98,95 @@
       pwm_dep:          OSCILLATOR_TIMBRE_BYTE_FIELD    ; pwm modulation depth
       ; etc.
    .endscope
+data_end:
+data_size = data_end - data_start
+data_count = data_size / N_TIMBRES
 .endscope
+
+command_len:
+   .byte 15
+command_string:
+   ; needs to be MAX_FILENAME_LEN bytes in total
+   .byte 64,"0:test.cot,s,w"
+   .res 12,0
+
+; this is the sequence that must be found at the beginning of each valid timbre file
+; 4 bytes
+magic_sequence:
+   .byte "cot", 0   ; stands for CONCERTO timbre, version number 0
+
+
+
+
+; more info about the Commander DOS
+; https://en.wikipedia.org/wiki/Commodore_DOS
+
+; opens the file with filename specified in "filename" and saves a timbre in it
+; X:            timbre number
+; filename:     name of the file to store the timbre in
+; filename_len: length of the file name
+; This routine can be dramatically optimized in size if the data format in memory is known
+; Don't need to call each label on its own, just visit a set number of locations,
+; evenly spaced by N_TIMBRES bytes.
+; TODO!!
+save_timbre:
+   st_pointer = mzpwd
+   phx
+   ; set file name
+   lda command_len
+   ldx #(<command_string)
+   ldy #(>command_string)
+   jsr SETNAM
+   ; setlfs - set logical file number
+   lda #1 ; logical file number
+   ldx #8 ; device number. 8 is disk drive
+   ldy #2 ; secondary command address, apparently must not be zero
+   jsr SETLFS
+   ; open - open the logical file
+   lda #1
+   jsr OPEN
+   ; chkin - open a logical file for output
+   ldx #1 ; logical file to be used
+   jsr CHKOUT
+   ; magic sequence
+   lda magic_sequence
+   jsr CHROUT
+   lda magic_sequence+1
+   jsr CHROUT
+   lda magic_sequence+2
+   jsr CHROUT
+   lda magic_sequence+3
+   jsr CHROUT
+   ; write patch data
+   plx
+   txa
+   clc
+   adc #(<Timbre::data_start)
+   sta st_pointer
+   lda #(>Timbre::data_start)
+   adc #0
+   sta st_pointer+1
+   ldy #Timbre::data_count
+@loop:
+   lda (st_pointer)
+   jsr CHROUT
+   lda st_pointer
+   clc
+   adc #N_TIMBRES
+   sta st_pointer
+   lda st_pointer+1
+   adc #0
+   sta st_pointer+1
+   dey
+   bne @loop
+   ; close file
+   lda #1
+   jsr CLOSE
+   jsr CLRCHN
+   rts
+
+
+
 
 
 ; loads the default sound
