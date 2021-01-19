@@ -336,7 +336,7 @@
    sta timbres::Timbre::osc::volume, x
    lda #0
    sta timbres::Timbre::osc::vol_mod_sel, x
-   lda #7
+   lda #12
    sta timbres::Timbre::osc::vol_mod_dep, x
    lda #0
    sta timbres::Timbre::osc::pwm_sel, x
@@ -1167,7 +1167,7 @@
 .macro PRESET_TAMBOURINE patch_no  ; or rather Hihat
    ; global parameters
    ldx #patch_no
-   lda #2
+   lda #3
    sta timbres::Timbre::n_oscs, x
    lda #2
    sta timbres::Timbre::n_envs, x
@@ -1292,6 +1292,40 @@
    lda #128
    sta timbres::Timbre::osc::pitch_mod_sel2, x
    lda #1
+   sta timbres::Timbre::osc::pitch_mod_dep2, x
+   ; oscillator 2
+   ldx #(2*N_TIMBRES+patch_no)
+   lda #0
+   sta timbres::Timbre::osc::waveform, x
+   lda #20
+   sta timbres::Timbre::osc::pulse, x
+   lda #128
+   sta timbres::Timbre::osc::pwm_sel, x
+   lda #(0)
+   sta timbres::Timbre::osc::pwm_dep, x
+   lda #107
+   sta timbres::Timbre::osc::pitch, x
+   lda #0
+   sta timbres::Timbre::osc::fine, x
+   lda #192
+   sta timbres::Timbre::osc::lrmid, x
+   lda #0
+   sta timbres::Timbre::osc::amp_sel, x
+   lda #43
+   sta timbres::Timbre::osc::volume, x
+   lda #128
+   sta timbres::Timbre::osc::vol_mod_sel, x
+   lda #(0)
+   sta timbres::Timbre::osc::vol_mod_dep, x
+   lda #0
+   sta timbres::Timbre::osc::track, x
+   lda #3
+   sta timbres::Timbre::osc::pitch_mod_sel1, x
+   lda #(7+1*16) ; 42
+   sta timbres::Timbre::osc::pitch_mod_dep1, x
+   lda #128
+   sta timbres::Timbre::osc::pitch_mod_sel2, x
+   lda #(15)
    sta timbres::Timbre::osc::pitch_mod_dep2, x
 .endmacro
 

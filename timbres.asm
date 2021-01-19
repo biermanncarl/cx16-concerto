@@ -99,4 +99,95 @@
 .endscope
 
 
+; loads the default sound
+; at the same time, this function IS the definition of the default patch.
+; X: timbre number, is preserved.
+; does not preserve A, Y
+load_default_timbre:
+   ; do all "direct" values first
+   lda #1
+   sta Timbre::n_oscs, x
+   sta Timbre::n_envs, x
+   sta Timbre::retrig, x
+   sta Timbre::n_lfos, x
+   stz Timbre::porta, x
+   lda #20
+   sta Timbre::porta_r, x
+   ; LFO
+   lda #10
+   sta Timbre::lfo::rateH, x
+   stz Timbre::lfo::rateL, x
+   stz Timbre::lfo::wave, x
+   stz Timbre::lfo::offs, x
+   lda #1
+   sta Timbre::lfo::retrig
+   ; envelopes
+   phx
+   ldy #MAX_ENVS_PER_VOICE
+@loop_envs:
+   stz Timbre::env::attackL, x
+   stz Timbre::env::decayL, x
+   stz Timbre::env::releaseL, x
+   lda #127
+   sta Timbre::env::attackH, x
+   lda #63
+   sta Timbre::env::sustain, x
+   lda #2
+   sta Timbre::env::decayH, x
+   sta Timbre::env::releaseH, x
+   txa
+   clc
+   adc #N_TIMBRES
+   tax
+   dey
+   bne @loop_envs
+   plx
+   ; oscillators
+   phx
+   ldy #MAX_OSCS_PER_VOICE
+@loop_oscs:
+   stz Timbre::osc::pitch, x
+   stz Timbre::osc::fine, x
+   stz Timbre::osc::amp_sel
+   stz Timbre::osc::waveform
+   lda #1
+   sta Timbre::osc::track, x
+   lda #192
+   sta Timbre::osc::lrmid, x
+   lda #64
+   sta Timbre::osc::volume, x
+   lda #40
+   sta Timbre::osc::pulse, x
+   ; select no modulation source
+   lda #128
+   sta Timbre::osc::pitch_mod_sel1, x
+   sta Timbre::osc::pitch_mod_sel2, x
+   sta Timbre::osc::vol_mod_sel, x
+   sta Timbre::osc::pwm_sel, x
+   ; select minimal modulation depths
+   lda #15
+   sta Timbre::osc::pitch_mod_dep1, x
+   sta Timbre::osc::pitch_mod_dep2, x
+   stz Timbre::osc::vol_mod_dep, x
+   stz Timbre::osc::pwm_dep, x
+   txa
+   clc
+   adc #N_TIMBRES
+   tax
+   dey
+   bne @loop_oscs
+   plx
+   rts
+
+
+; initializes all timbres to the default timbre
+init_timbres:
+   ldx #N_TIMBRES
+@loop_timbres:
+   dex
+   jsr load_default_timbre
+   cpx #0
+   bne @loop_timbres
+   rts
+
 .endscope

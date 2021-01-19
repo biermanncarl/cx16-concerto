@@ -58,10 +58,10 @@ start:
    ; set ROM bank to 0 (from 4, the BASIC ROM)
    stz ROM_BANK
 
-   ; initialize patches
-   ;PRESET_KICK_DRUM_2 0
-   ;PRESET_ONE_OSC_PATCH 0
-   ;PRESET_LEAD_2 0
+   ; initialize timbres
+   ; first load defaults
+   jsr timbres::init_timbres
+   ; then load custom ones
    PRESET_ONE_OSC_PATCH 0
    PRESET_BRIGHT_PLUCK 1
    PRESET_KEY_1 2
