@@ -289,11 +289,13 @@ dummy_data_size = 1
       ; GUI component string of the panel
       comps:
          .byte 3, 41, 1, 0, N_TIMBRES-1, 0 ; arrowed edit (timbre selection)
-         .byte 1, 50, 0, 13, (<load_preset_lb), (>load_preset_lb)
-         .byte 1, 66, 0, 13, (<save_preset_lb), (>save_preset_lb)
-         .byte 1, 14, 57, 6, (<demo1_lb), (>demo1_lb)
-         .byte 1, 23, 57, 6, (<demo2_lb), (>demo2_lb)
-         .byte 1, 32, 57, 4, (<stop_lb), (>stop_lb)
+         .byte 1, 50, 0, 13, (<load_preset_lb), (>load_preset_lb) ; load preset button
+         .byte 1, 66, 0, 13, (<save_preset_lb), (>save_preset_lb) ; save preset button
+         .byte 1, 14, 57, 6, (<demo1_lb), (>demo1_lb) ; play demo 1 button
+         .byte 1, 23, 57, 6, (<demo2_lb), (>demo2_lb) ; play demo 2 button
+         .byte 1, 32, 57, 4, (<stop_lb), (>stop_lb)   ; stop player button
+         .byte 3, 64, 58, 0, N_VOICES-1, N_VOICES-1 ; arrowed edit (keyboard channel)
+         .byte 4, 76, 58, %00000000, 0, MAX_VOLUME, MAX_VOLUME, 0 ; drag edit (keyboard volume)
          .byte 0
       ; caption list of the panel
       capts:
@@ -303,6 +305,10 @@ dummy_data_size = 1
          .word timbre_lb
          .byte CCOLOR_CAPTION, 1, 58
          .word demos_lb
+         .byte CCOLOR_CAPTION, 47, 58
+         .word channel_select_lb
+         .byte CCOLOR_CAPTION, 72, 58
+         .word vol_lb
          .byte 0
       ; data specific to the synth-navigation panel
       timbre_lb: STR_FORMAT "timbre"
@@ -313,6 +319,7 @@ dummy_data_size = 1
       demo1_lb: STR_FORMAT "demo 1"
       demo2_lb: STR_FORMAT "demo 2"
       stop_lb: STR_FORMAT "stop"
+      channel_select_lb: STR_FORMAT "keyboard channel"
    .endscope
    ; listbox popup. shows up when a listbox was clicked.
    .scope listbox_popup
@@ -2229,6 +2236,12 @@ write_env:
 
 
 write_snav:
+   ; prepare component string offset
+   lda ms_curr_component_ofs
+   clc
+   adc #5 ; currently, we're reading only arrowed edits and drag edits
+   tay
+   ; prepare jump
    lda ms_curr_component_id
    asl
    tax
@@ -2240,12 +2253,10 @@ write_snav:
    .word @demo1
    .word @demo2
    .word @stop
+   .word @select_channel
+   .word @keyb_volume
 @timbre_selector:
    ; read data from component string and write it to the Timbre setting
-   lda ms_curr_component_ofs
-   clc
-   adc #5
-   tay
    lda snav::comps, y
    sta Timbre
    jsr refresh_gui
@@ -2283,6 +2294,15 @@ write_snav:
 @stop:
    stz pld_ptr
    jsr voices::panic
+   rts
+@select_channel:
+   lda snav::comps, y
+   sta Channel
+   rts
+@keyb_volume:
+   iny
+   lda snav::comps, y
+   sta Volume
    rts
 
 

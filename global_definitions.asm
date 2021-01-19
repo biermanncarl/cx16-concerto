@@ -9,6 +9,7 @@ GLOBAL_DEFS_INC = 1
 .define MAX_ENVS_PER_VOICE 3
 .define MAX_LFOS_PER_VOICE 1
 .define N_TOT_MODSOURCES MAX_ENVS_PER_VOICE+MAX_LFOS_PER_VOICE
+.define MAX_VOLUME 64
 
 ; GUI definitions
 ; colors
@@ -41,6 +42,10 @@ Octave:
    .byte 60
 Note:
    .byte 0
+Channel:
+   .byte (N_VOICES-1)
+Volume:
+   .byte MAX_VOLUME
 
 ; currently active timbre (in Synth GUI and keyboard)
 Timbre:

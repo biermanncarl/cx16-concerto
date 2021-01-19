@@ -141,7 +141,7 @@ mainloop:
    lda #14
    jmp play_note
 @keyboard_space:
-   ldx #15
+   ldx Channel
    jsr voices::release_note
    jmp end_mainloop
 @keyboard_z:
@@ -171,11 +171,11 @@ play_note:
 
    ; play note
    sta voices::note_pitch
-   lda #64
+   lda Volume
    sta voices::note_volume
    lda Timbre
    sta voices::note_timbre
-   lda #15
+   lda Channel
    sta voices::note_channel
    sei
    jsr voices::play_note
