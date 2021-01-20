@@ -1,7 +1,27 @@
+; Copyright 2021 Carl Georg Biermann
+
+; This file is part of Concerto.
+
+; Concerto is free software: you can redistribute it and/or modify
+; it under the terms of the GNU General Public License as published by
+; the Free Software Foundation, either version 3 of the License, or
+; (at your option) any later version.
+
+; This program is distributed in the hope that it will be useful,
+; but WITHOUT ANY WARRANTY; without even the implied warranty of
+; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+; GNU General Public License for more details.
+
+; You should have received a copy of the GNU General Public License
+; along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+;*****************************************************************************
+
+
 ; This file manages the synth patches.
 ; The patch data will be read by the synth engine as well as the GUI.
 
-; Disk save and load commands for individual synth patches are planned to be in this file.
+; Disk save and load commands for individual synth patches are found in this file.
 
 ; The patch data is organized in arrays. Each successive byte belongs to a different patch.
 ; For example, the portamento rate is a field of N_TIMBRES bytes (32 the last time I checked).
@@ -9,7 +29,7 @@
 ;    rate of patch 1
 ;    rate of patch 2
 ;    ...
-; rate of patch 31
+;    rate of patch 31
 ; Then, the next field:
 ;    retrigger setting patch 0
 ;    retrigger setting patch 1
