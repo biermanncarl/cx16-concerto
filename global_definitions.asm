@@ -33,8 +33,7 @@ GLOBAL_DEFS_INC = 1
 .define CCOLOR_CHECKBOX_TICK 16*COLOR_CHECKBOX + 0
 .define CCOLOR_BUTTON 16*1 + 0
 ; others
-.define N_PANELS 7   ; number of panels 
-.define MAX_FILENAME_LEN 16
+.define N_PANELS 7   ; number of panels
 
 
 
@@ -79,9 +78,9 @@ ms_gui_write: .byte 0 ; used to determine whether or not an action has caused a 
 
 ; utility macros
 
-; compile time macro: converts an ascii string to a zero-terminated string that can be displayed directly as petscii
+; compile time macro: converts an ascii string to a zero-terminated string that can be displayed directly on the VERA
 ; currently supports characters, spaces, digits, and maybe more but untested.
-; obviously cannot support "@", because that's petscii 0
+; obviously cannot support "@", because that's character 0 on the VERA
 .macro STR_FORMAT stf_arg
    .repeat  .strlen(stf_arg), i
    .if (.strat(stf_arg, i)=32)

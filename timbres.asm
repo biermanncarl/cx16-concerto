@@ -104,34 +104,30 @@ data_count = data_size / N_TIMBRES
 .endscope
 
 command_len:
-   .byte 15
+   .byte 17
 command_string:
-   ; needs to be MAX_FILENAME_LEN bytes in total
-   .byte 64,"0:test.cot,s,w"
-   .res 12,0
-
-; this is the sequence that must be found at the beginning of each valid timbre file
-; 4 bytes
-magic_sequence:
-   .byte "cot", 0   ; stands for CONCERTO timbre, version number 0
+   .byte 64,"0:preset.cot,s,w"
 
 
 
 
-; more info about the Commander DOS
+
+; more info about the Commodore DOS
 ; https://en.wikipedia.org/wiki/Commodore_DOS
 
-; opens the file with filename specified in "filename" and saves a timbre in it
-; X:            timbre number
-; filename:     name of the file to store the timbre in
-; filename_len: length of the file name
-; This routine can be dramatically optimized in size if the data format in memory is known
-; Don't need to call each label on its own, just visit a set number of locations,
-; evenly spaced by N_TIMBRES bytes.
-; TODO!!
+; opens the file "PRESET.COT" and saves a timbre in it (overwrites existing preset)
+; WARNING: No proper error handling (yet)!
+; X:              timbre number
+; command_string: string that holds the DOS command to write the file
+; command_len:    length of the command string
 save_timbre:
    st_pointer = mzpwd
    phx
+   ; put "w" as last character of the command string
+   ldy command_len
+   dey
+   lda #87 ; PETSCII "W"
+   sta command_string, y
    ; set file name
    lda command_len
    ldx #(<command_string)
@@ -142,20 +138,22 @@ save_timbre:
    ldx #8 ; device number. 8 is disk drive
    ldy #2 ; secondary command address, apparently must not be zero
    jsr SETLFS
+   bcs @close_file
    ; open - open the logical file
    lda #1
    jsr OPEN
-   ; chkin - open a logical file for output
+   bcs @close_file
+   ; chkout - open a logical file for output
    ldx #1 ; logical file to be used
    jsr CHKOUT
-   ; magic sequence
-   lda magic_sequence
+   ; write magic sequence (aka identifier), last byte is version number
+   lda #67 ; PETSCII "C"
    jsr CHROUT
-   lda magic_sequence+1
+   lda #79 ; PETSCII "O"
    jsr CHROUT
-   lda magic_sequence+2
+   lda #84 ; PETSCII "T"
    jsr CHROUT
-   lda magic_sequence+3
+   lda #0  ; version
    jsr CHROUT
    ; write patch data
    plx
@@ -179,14 +177,90 @@ save_timbre:
    sta st_pointer+1
    dey
    bne @loop
+   phx ; this phx is just here to cancel the plx after @close_file
    ; close file
+@close_file:
+   plx
    lda #1
    jsr CLOSE
    jsr CLRCHN
    rts
 
 
-
+; opens the file "PRESET.COT" and loads a timbre from it (overwrites existing preset)
+; WARNING: No proper error handling (yet)!
+; X:            timbre number
+; filename:     name of the file to store the timbre in
+; filename_len: length of the file name
+load_timbre:
+   lt_pointer = mzpwd
+   phx
+   ; put "r" as last character of the command string
+   ldy command_len
+   dey
+   lda #82 ; PETSCII "R"
+   sta command_string, y
+   ; set file name
+   lda command_len
+   ldx #(<command_string)
+   ldy #(>command_string)
+   jsr SETNAM
+   ; setlfs - set logical file number
+   lda #1 ; logical file number
+   ldx #8 ; device number. 8 is disk drive
+   ldy #2 ; secondary command address, apparently must not be zero
+   jsr SETLFS
+   bcs @close_file
+   ; open - open the logical file
+   lda #1
+   jsr OPEN
+   bcs @close_file
+   ; chkin - open a logical file for input
+   ldx #1 ; logical file to be used
+   jsr CHKIN
+   ; read and compare magic sequence (aka identifier), last byte is version number
+   jsr CHRIN
+   cmp #67 ; PETSCII "C"
+   bne @close_file
+   jsr CHRIN
+   cmp #79 ; PETSCII "O"
+   bne @close_file
+   jsr CHRIN
+   cmp #84 ; PETSCII "T"
+   bne @close_file
+   jsr CHRIN
+   cmp #0  ; version
+   bne @close_file
+   ; read patch data
+   plx
+   txa
+   clc
+   adc #(<Timbre::data_start)
+   sta lt_pointer
+   lda #(>Timbre::data_start)
+   adc #0
+   sta lt_pointer+1
+   ldy #Timbre::data_count
+@loop:
+   jsr CHRIN
+   sta (lt_pointer)
+   lda lt_pointer
+   clc
+   adc #N_TIMBRES
+   sta lt_pointer
+   lda lt_pointer+1
+   adc #0
+   sta lt_pointer+1
+   dey
+   bne @loop
+   phx ; this phx is just here to cancel the plx after @close_file
+@close_file:
+   plx
+   ; close file
+   lda #1
+   jsr CLOSE
+   jsr CLRCHN
+   rts
 
 
 ; loads the default sound

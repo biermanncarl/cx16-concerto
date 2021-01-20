@@ -2262,8 +2262,12 @@ write_snav:
    jsr refresh_gui
    rts
 @load_preset:
-   lda #65
-   jsr CHROUT
+   sei
+   jsr voices::panic
+   ldx Timbre
+   jsr timbres::load_timbre
+   jsr refresh_gui
+   cli
    rts
 @save_preset:
    ldx Timbre
