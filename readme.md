@@ -23,6 +23,14 @@ reduce audio dropouts. If audio dropouts persist, increase the number.
 You can also run CONCERTO without an SD card image. However, then the load/save
 function for your preset is unavailable. (It simply does nothing.)
 
+## How to build CONCERTO from source
+
+CONCERTO is built using the ca65 assembler. I built it with the command
+
+```shell
+cl65 -t cx16 -o CONCERTO.PRG -C cx16-asm.cfg psg_synth.asm
+```
+
 ## Quick sart guide
 
 If you have used synthesizers already, most of CONCERTO will be familiar to you.
