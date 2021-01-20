@@ -8,6 +8,21 @@ demos. Go explore what the X16 can do!
 In this document, you will find a quick start guide, and a brief explanation of
 the structure of the source code.
 
+## How to run CONCERTO in the emulator
+
+The recommended way of starting the emulator for using CONCERTO is:
+
+```shell
+x16emu -prg CONCERTO.PRG -run -abufs 12 -sdcard <SD_CARD_IMAGE>
+```
+
+However, you can load and run concerto from inside the emulator as with most
+```.PRG``` files. The ```abufs``` option is necessary in some environments to
+reduce audio dropouts. If audio dropouts persist, increase the number.
+
+You can also run CONCERTO without an SD card image. However, then the load/save
+function for your preset is unavailable. (It simply does nothing.)
+
 ## Quick sart guide
 
 If you have used synthesizers already, most of CONCERTO will be familiar to you.
@@ -53,7 +68,7 @@ know, because they may at first be irritating to experienced synth users.
 
 The main source code file is ```psg_synth.asm```. This is where all the
 initialization routines are called, the main loop is inserted, and that exits back
-to BASIC.
+to BASIC. You can find the build instructions there.
 
 The overall structure of the program can be separated into the main loop, where
 the GUI and all user interaction is done, and the interrupt service routine (ISR)
