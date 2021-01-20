@@ -334,7 +334,7 @@ dummy_data_size = 1
       timbre_lb: STR_FORMAT "timbre"
       load_preset_lb: STR_FORMAT " load preset"
       save_preset_lb: STR_FORMAT " save preset"
-      logo_lb: STR_FORMAT "=== concerto 0.1.0a ==="
+      logo_lb: STR_FORMAT "=== concerto v0.1.0-alpha ==="
       demos_lb: STR_FORMAT "play demos"
       demo1_lb: STR_FORMAT "demo 1"
       demo2_lb: STR_FORMAT "demo 2"
