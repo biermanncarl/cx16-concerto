@@ -20,7 +20,7 @@ event_pointer: .byte 0
 ; more to come
 
 demo_loop_1:
-DNB2
+DNB
 demo_loop_2:
 MELLOW_LOOP
 

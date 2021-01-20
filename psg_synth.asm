@@ -37,6 +37,7 @@
 
 ; variables/macros
 .include "global_definitions.asm"
+.include "utility_macros.asm"
 .include "synth_macros.asm"
 .include "loops.asm"
 ; sub modules
