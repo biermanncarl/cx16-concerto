@@ -56,7 +56,6 @@ ms_armed_reset = 3
 ms_armed_fine_reset = 4
 
 
-
 ; get mouse running
 mouse_init:
    ; initialize variables
@@ -67,7 +66,11 @@ mouse_init:
    jsr MOUSE_CONFIG
    rts
 
-
+mouse_hide:
+   lda #0
+   ldx #0
+   jsr MOUSE_CONFIG
+   rts
 
 ; this is called in the main loop
 ; and handles all mouse input. It interprets the mouse data and turns it into messages

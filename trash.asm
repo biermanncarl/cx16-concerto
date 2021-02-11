@@ -23,6 +23,20 @@
 
 
 
+
+   ; then load custom ones
+   PRESET_ONE_OSC_PATCH 0
+   PRESET_BRIGHT_PLUCK 1
+   PRESET_KEY_1 2
+   PRESET_KICK_DRUM_3 3
+   PRESET_SNARE_DRUM_5 4
+   PRESET_FAT_PLUCK 5
+   PRESET_TAMBOURINE 6
+   PRESET_KEY_2 7
+   PRESET_GUITAR_1 8
+
+
+
 ; primitive write_timbre
    phx
    lda Timbre::n_oscs, x

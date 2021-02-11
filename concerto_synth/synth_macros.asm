@@ -20,7 +20,83 @@
 
 ; This file contains a range of macros used by the synth engine.
 ; Some macros do VERA stuff, some macros do various types of
-; multiplication.
+; multiplication. Some are for memory allocation.
+
+
+; Synth engine definitions
+.define N_VOICES 16
+.define N_TIMBRES 32
+.define N_OSCILLATORS 16 ; total number of PSG voices, which correspond to oscillators
+.define MAX_OSCS_PER_VOICE 6
+.define MAX_ENVS_PER_VOICE 3
+.define MAX_LFOS_PER_VOICE 1
+.define N_TOT_MODSOURCES MAX_ENVS_PER_VOICE+MAX_LFOS_PER_VOICE
+.define MAX_VOLUME 64
+
+
+.macro VOICE_BYTE_FIELD
+   .repeat N_VOICES, I
+      .byte 0
+   .endrep
+.endmacro
+
+.macro TIMBRE_BYTE_FIELD
+   .repeat N_TIMBRES, I
+      .byte 0
+   .endrep
+.endmacro
+
+.macro OSCILLATOR_BYTE_FIELD
+   .repeat N_OSCILLATORS, I
+      .byte 0
+   .endrep
+.endmacro
+
+; osc1: timbre1 timbre2 timbre3 ... osc2: timbre1 timbre2 timbre3 ... 
+; ---> this format saves multiplication when accessing with arbitrary timbre indes
+.macro OSCILLATOR_TIMBRE_BYTE_FIELD
+   .repeat MAX_OSCS_PER_VOICE*N_TIMBRES
+      .byte 0
+   .endrep
+.endmacro
+
+; osc1: voice1 voice2 voice3 ... osc2: voice1 voice2 voice3 ...
+.macro OSCILLATOR_VOICE_BYTE_FIELD
+   .repeat MAX_OSCS_PER_VOICE*N_VOICES
+      .byte 0
+   .endrep
+.endmacro
+
+; env1: timbre1 timbre2 timbre3 ... env2: timbre1 timbre2 tibre3 ...
+; ---> this format saves multiplication when accessing with arbitrary timbre indices
+.macro ENVELOPE_TIMBRE_BYTE_FIELD
+   .repeat MAX_ENVS_PER_VOICE*N_TIMBRES
+      .byte 0
+   .endrep
+.endmacro
+
+; env1: voice1 voice2 voice3 ... env2: voice1 voice2 voice3 ...
+.macro ENVELOPE_VOICE_BYTE_FIELD
+   .repeat MAX_ENVS_PER_VOICE*N_VOICES
+      .byte 0
+   .endrep
+.endmacro
+
+; lfo1: timbre1 timbre2 timbre3 ... lfo2: timbre1 timbre2 tibre3 ...
+; ---> this format saves multiplication when accessing with arbitrary timbre indices
+.macro LFO_TIMBRE_BYTE_FIELD
+   .repeat MAX_LFOS_PER_VOICE*N_TIMBRES
+      .byte 0
+   .endrep
+.endmacro
+
+; lfo1: voice1 voice2 voice3 ... lfo2: voice1 voice2 voice3 ...
+.macro LFO_VOICE_BYTE_FIELD
+   .repeat MAX_LFOS_PER_VOICE*N_VOICES
+      .byte 0
+   .endrep
+.endmacro
+
 
 .ifndef SYNTH_MACROS_INC
 SYNTH_MACROS_INC = 1

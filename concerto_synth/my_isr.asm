@@ -122,16 +122,13 @@ the_isr:
    jmp end_aflow
 
 do_fillup:
-   ; fill FIFO buffer with 4 samples
-   ; this will generate the next AFLOW interrupt in ~10 ms
+   ; fill FIFO buffer with 3 samples
    ; at lowest possible PCM playback rate
+   ; this will generate the next AFLOW interrupt in ~7 ms
    lda #0
    sta VERA_audio_data
    sta VERA_audio_data
-   ;lda #4
    sta VERA_audio_data
-   ;sta VERA_audio_data
-   ;sta VERA_audio_data
 
    ; safety check, if my ISR is already running. If so, skip sound engine tick.
    lda isr_running
@@ -143,7 +140,9 @@ isr_choke:
 do_psg_control:
    lda #1
    sta isr_running
-   jsr player::player_tick
+   ; call playback routine
+   jsr concerto_playback_routine
+   ; do synth tick updates
    jsr synth_engine::synth_tick
    stz isr_running
 

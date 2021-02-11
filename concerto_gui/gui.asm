@@ -311,11 +311,6 @@ dummy_data_size = 1
          .byte 3, 41, 1, 0, N_TIMBRES-1, 0 ; arrowed edit (timbre selection)
          .byte 1, 50, 0, 13, (<load_preset_lb), (>load_preset_lb) ; load preset button
          .byte 1, 66, 0, 13, (<save_preset_lb), (>save_preset_lb) ; save preset button
-         .byte 1, 14, 57, 6, (<demo1_lb), (>demo1_lb) ; play demo 1 button
-         .byte 1, 23, 57, 6, (<demo2_lb), (>demo2_lb) ; play demo 2 button
-         .byte 1, 32, 57, 4, (<stop_lb), (>stop_lb)   ; stop player button
-         .byte 3, 64, 58, 0, N_VOICES-1, N_VOICES-1 ; arrowed edit (keyboard channel)
-         .byte 4, 76, 58, %00000000, 0, MAX_VOLUME, MAX_VOLUME, 0 ; drag edit (keyboard volume)
          .byte 0
       ; caption list of the panel
       capts:
@@ -323,23 +318,12 @@ dummy_data_size = 1
          .word logo_lb
          .byte CCOLOR_CAPTION, 34, 1
          .word timbre_lb
-         .byte CCOLOR_CAPTION, 1, 58
-         .word demos_lb
-         .byte CCOLOR_CAPTION, 47, 58
-         .word channel_select_lb
-         .byte CCOLOR_CAPTION, 72, 58
-         .word vol_lb
          .byte 0
       ; data specific to the synth-navigation panel
       timbre_lb: STR_FORMAT "timbre"
       load_preset_lb: STR_FORMAT " load preset"
       save_preset_lb: STR_FORMAT " save preset"
       logo_lb: STR_FORMAT "=== concerto v0.1.0-alpha ==="
-      demos_lb: STR_FORMAT "play demos"
-      demo1_lb: STR_FORMAT "demo 1"
-      demo2_lb: STR_FORMAT "demo 2"
-      stop_lb: STR_FORMAT "stop"
-      channel_select_lb: STR_FORMAT "keyboard channel"
    .endscope
    ; listbox popup. shows up when a listbox was clicked.
    .scope listbox_popup
@@ -1941,40 +1925,40 @@ write_global:
    .word @porta_rate
 @n_oscs:
    phy
-   jsr voices::panic ; If we don't do this, a different number of oscillators might be released than initially acquired by a voice. Safety first.
+   jsr concerto_synth::voices::panic ; If we don't do this, a different number of oscillators might be released than initially acquired by a voice. Safety first.
    ply
    plx
    iny
    lda global::comps, y
-   sta timbres::Timbre::n_oscs, x
+   sta concerto_synth::timbres::Timbre::n_oscs, x
    rts
 @n_envs:
    plx
    iny
    lda global::comps, y
-   sta timbres::Timbre::n_envs, x
+   sta concerto_synth::timbres::Timbre::n_envs, x
    rts
 @n_lfos:
    plx
    lda global::comps, y
-   sta timbres::Timbre::n_lfos, x
+   sta concerto_synth::timbres::Timbre::n_lfos, x
    rts
 @retr_activate:
    plx
    lda global::comps, y
-   sta timbres::Timbre::retrig, x
+   sta concerto_synth::timbres::Timbre::retrig, x
    rts
 @porta_activate:
    plx
    lda global::comps, y
-   sta timbres::Timbre::porta, x
+   sta concerto_synth::timbres::Timbre::porta, x
    rts
 @porta_rate:
    plx
    iny
    iny
    lda global::comps, y
-   sta timbres::Timbre::porta_r, x
+   sta concerto_synth::timbres::Timbre::porta_r, x
    rts
 
 
@@ -2040,14 +2024,14 @@ write_osc:
    ror
    ror
    ror
-   sta timbres::Timbre::osc::waveform, x
+   sta concerto_synth::timbres::Timbre::osc::waveform, x
    rts
 @pulsewidth:
    plx
    iny
    iny
    lda osc::comps, y
-   sta timbres::Timbre::osc::pulse, x
+   sta concerto_synth::timbres::Timbre::osc::pulse, x
    rts
 @ampsel:
    plx
@@ -2055,14 +2039,14 @@ write_osc:
    iny
    iny
    lda osc::comps, y
-   sta timbres::Timbre::osc::amp_sel, x
+   sta concerto_synth::timbres::Timbre::osc::amp_sel, x
    rts
 @volume:
    plx
    iny
    iny
    lda osc::comps, y
-   sta timbres::Timbre::osc::volume, x
+   sta concerto_synth::timbres::Timbre::osc::volume, x
    rts
 @channelsel:
    plx
@@ -2074,21 +2058,21 @@ write_osc:
    ror
    ror
    ror
-   sta timbres::Timbre::osc::lrmid, x
+   sta concerto_synth::timbres::Timbre::osc::lrmid, x
    rts
 @semitones:
    plx
    iny
    iny
    ; decide if we need to tune down to compensate for fine tuning (because fine tuning internally only goes up)
-   lda timbres::Timbre::osc::fine, x
+   lda concerto_synth::timbres::Timbre::osc::fine, x
    bmi :+
    lda osc::comps, y
-   sta timbres::Timbre::osc::pitch, x
+   sta concerto_synth::timbres::Timbre::osc::pitch, x
    rts
 :  lda osc::comps, y
    dec
-   sta timbres::Timbre::osc::pitch, x
+   sta concerto_synth::timbres::Timbre::osc::pitch, x
    rts
 @finetune:
    plx
@@ -2096,24 +2080,24 @@ write_osc:
    iny
    ; if fine tune is now negative, but was non-negative beforehand, we need to decrement semitones
    ; and the other way round: if fine tune was negative, but now is non-negative, we need to increment semitones
-   lda timbres::Timbre::osc::fine, x
+   lda concerto_synth::timbres::Timbre::osc::fine, x
    bmi @fine_negative
 @fine_positive:
    lda osc::comps, y
    bpl @fine_normal
-   dec timbres::Timbre::osc::pitch, x
+   dec concerto_synth::timbres::Timbre::osc::pitch, x
    bra @fine_normal
 @fine_negative:
    lda osc::comps, y
    bmi @fine_normal
-   inc timbres::Timbre::osc::pitch, x
+   inc concerto_synth::timbres::Timbre::osc::pitch, x
 @fine_normal:
-   sta timbres::Timbre::osc::fine, x
+   sta concerto_synth::timbres::Timbre::osc::fine, x
    rts
 @keytrack:
    plx
    lda osc::comps, y
-   sta timbres::Timbre::osc::track, x
+   sta concerto_synth::timbres::Timbre::osc::track, x
    rts
 @pmsel1:
    plx
@@ -2122,7 +2106,7 @@ write_osc:
    iny
    lda osc::comps, y
    jsr map_modsource_from_gui
-   sta timbres::Timbre::osc::pitch_mod_sel1, x
+   sta concerto_synth::timbres::Timbre::osc::pitch_mod_sel1, x
    rts
 @pmsel2:
    plx
@@ -2131,7 +2115,7 @@ write_osc:
    iny
    lda osc::comps, y
    jsr map_modsource_from_gui
-   sta timbres::Timbre::osc::pitch_mod_sel2, x
+   sta concerto_synth::timbres::Timbre::osc::pitch_mod_sel2, x
    rts
 @pwmsel:
    plx
@@ -2140,7 +2124,7 @@ write_osc:
    iny
    lda osc::comps, y
    jsr map_modsource_from_gui
-   sta timbres::Timbre::osc::pwm_sel, x
+   sta concerto_synth::timbres::Timbre::osc::pwm_sel, x
    rts
 @volmsel:
    plx
@@ -2149,7 +2133,7 @@ write_osc:
    iny
    lda osc::comps, y
    jsr map_modsource_from_gui
-   sta timbres::Timbre::osc::vol_mod_sel, x
+   sta concerto_synth::timbres::Timbre::osc::vol_mod_sel, x
    rts
 @pitchmoddep1:
    plx
@@ -2157,7 +2141,7 @@ write_osc:
    iny
    lda osc::comps, y
    jsr map_twos_complement_to_scale5
-   sta timbres::Timbre::osc::pitch_mod_dep1, x
+   sta concerto_synth::timbres::Timbre::osc::pitch_mod_dep1, x
    rts
 @pitchmoddep2:
    plx
@@ -2165,7 +2149,7 @@ write_osc:
    iny
    lda osc::comps, y
    jsr map_twos_complement_to_scale5
-   sta timbres::Timbre::osc::pitch_mod_dep2, x
+   sta concerto_synth::timbres::Timbre::osc::pitch_mod_dep2, x
    rts
 @pwmdep:
    plx
@@ -2173,7 +2157,7 @@ write_osc:
    iny
    lda osc::comps, y
    jsr map_twos_complement_to_signed_7bit
-   sta timbres::Timbre::osc::pwm_dep, x
+   sta concerto_synth::timbres::Timbre::osc::pwm_dep, x
    rts
 @vmdep:
    plx
@@ -2181,7 +2165,7 @@ write_osc:
    iny
    lda osc::comps, y
    jsr map_twos_complement_to_signed_7bit
-   sta timbres::Timbre::osc::vol_mod_dep, x
+   sta concerto_synth::timbres::Timbre::osc::vol_mod_dep, x
    rts
 
 ; something on envelope panel being changed
@@ -2224,31 +2208,31 @@ write_env:
 @attack:
    plx
    lda env::comps, y
-   sta timbres::Timbre::env::attackH, x
+   sta concerto_synth::timbres::Timbre::env::attackH, x
    iny
    lda env::comps, y
-   sta timbres::Timbre::env::attackL, x
+   sta concerto_synth::timbres::Timbre::env::attackL, x
    rts
 @decay:
    plx
    lda env::comps, y
-   sta timbres::Timbre::env::decayH, x
+   sta concerto_synth::timbres::Timbre::env::decayH, x
    iny
    lda env::comps, y
-   sta timbres::Timbre::env::decayL, x
+   sta concerto_synth::timbres::Timbre::env::decayL, x
    rts
 @sustain:
    plx
    lda env::comps, y
-   sta timbres::Timbre::env::sustain, x
+   sta concerto_synth::timbres::Timbre::env::sustain, x
    rts
 @release:
    plx
    lda env::comps, y
-   sta timbres::Timbre::env::releaseH, x
+   sta concerto_synth::timbres::Timbre::env::releaseH, x
    iny
    lda env::comps, y
-   sta timbres::Timbre::env::releaseL, x
+   sta concerto_synth::timbres::Timbre::env::releaseL, x
    rts
 @skip:
    plx
@@ -2270,11 +2254,6 @@ write_snav:
    .word @timbre_selector
    .word @load_preset
    .word @save_preset
-   .word @demo1
-   .word @demo2
-   .word @stop
-   .word @select_channel
-   .word @keyb_volume
 @timbre_selector:
    ; read data from component string and write it to the Timbre setting
    lda snav::comps, y
@@ -2283,50 +2262,15 @@ write_snav:
    rts
 @load_preset:
    sei
-   jsr voices::panic
+   jsr concerto_synth::voices::panic
    ldx Timbre
-   jsr timbres::load_timbre
+   jsr concerto_synth::timbres::load_timbre
    jsr refresh_gui
    cli
    rts
 @save_preset:
    ldx Timbre
-   jsr timbres::save_timbre
-   rts
-@demo1:
-   sei
-   stz player::event_pointer
-   stz player::time
-   jsr voices::panic
-   lda #(<player::demo_loop_1)
-   sta pld_ptr
-   lda #(>player::demo_loop_1)
-   sta pld_ptr+1
-   cli
-   rts
-@demo2:
-   sei
-   stz player::event_pointer
-   stz player::time
-   jsr voices::panic
-   lda #(<player::demo_loop_2)
-   sta pld_ptr
-   lda #(>player::demo_loop_2)
-   sta pld_ptr+1
-   cli
-   rts
-@stop:
-   stz pld_ptr
-   jsr voices::panic
-   rts
-@select_channel:
-   lda snav::comps, y
-   sta Channel
-   rts
-@keyb_volume:
-   iny
-   lda snav::comps, y
-   sta Volume
+   jsr concerto_synth::timbres::save_timbre
    rts
 
 
@@ -2415,29 +2359,29 @@ write_lfo:
    iny
    iny
    lda lfo::comps, y
-   sta timbres::Timbre::lfo::wave, x
+   sta concerto_synth::timbres::Timbre::lfo::wave, x
    rts
 @retr:
    plx
    lda lfo::comps, y
-   sta timbres::Timbre::lfo::retrig, x
+   sta concerto_synth::timbres::Timbre::lfo::retrig, x
    rts
 @rate:
    plx
    iny
    iny
    lda lfo::comps, y
-   sta timbres::Timbre::lfo::rateH, x
+   sta concerto_synth::timbres::Timbre::lfo::rateH, x
    iny
    lda lfo::comps, y
-   sta timbres::Timbre::lfo::rateL, x
+   sta concerto_synth::timbres::Timbre::lfo::rateL, x
    rts
 @offs:
    plx
    iny
    iny
    lda lfo::comps, y
-   sta timbres::Timbre::lfo::offs, x
+   sta concerto_synth::timbres::Timbre::lfo::offs, x
    rts
 
 
@@ -2456,27 +2400,27 @@ write_lfo:
 refresh_global:
    ldx Timbre ; may be replaced later
    ; number of oscillators
-   lda timbres::Timbre::n_oscs, x
+   lda concerto_synth::timbres::Timbre::n_oscs, x
    ldy #(0*checkbox_data_size+0*drag_edit_data_size+1*arrowed_edit_data_size-1)
    sta global::comps, y
    ; number of envelopes
-   lda timbres::Timbre::n_envs, x
+   lda concerto_synth::timbres::Timbre::n_envs, x
    ldy #(0*checkbox_data_size+0*drag_edit_data_size+2*arrowed_edit_data_size-1)
    sta global::comps, y
    ; LFO activate checkbox
-   lda timbres::Timbre::n_lfos, x
+   lda concerto_synth::timbres::Timbre::n_lfos, x
    ldy #(1*checkbox_data_size+0*drag_edit_data_size+2*arrowed_edit_data_size-1)
    sta global::comps, y
    ; retrigger checkbox
-   lda timbres::Timbre::retrig, x
+   lda concerto_synth::timbres::Timbre::retrig, x
    ldy #(2*checkbox_data_size+0*drag_edit_data_size+2*arrowed_edit_data_size-1)
    sta global::comps, y
    ; porta activate checkbox
-   lda timbres::Timbre::porta, x
+   lda concerto_synth::timbres::Timbre::porta, x
    ldy #(3*checkbox_data_size+0*drag_edit_data_size+2*arrowed_edit_data_size-1)
    sta global::comps, y
    ; porta rate edit
-   lda timbres::Timbre::porta_r, x
+   lda concerto_synth::timbres::Timbre::porta_r, x
    ldy #(3*checkbox_data_size+1*drag_edit_data_size+2*arrowed_edit_data_size-2)
    sta global::comps, y
    ; redraw components
@@ -2499,7 +2443,7 @@ refresh_osc:
    tax ; oscillator index is in x
    ; read Timbre data and load it into GUI components
    ; waveform
-   lda timbres::Timbre::osc::waveform, x
+   lda concerto_synth::timbres::Timbre::osc::waveform, x
    clc
    rol
    rol
@@ -2508,20 +2452,20 @@ refresh_osc:
    sta osc::comps, y
    ; waveform via wavetable
    ; pulse width
-   lda timbres::Timbre::osc::pulse, x
+   lda concerto_synth::timbres::Timbre::osc::pulse, x
    ldy #(tab_selector_data_size+listbox_data_size+checkbox_data_size+drag_edit_data_size-2)
    sta osc::comps, y
    ; pulse width via wavetable
    ; amplifier select
-   lda timbres::Timbre::osc::amp_sel, x
+   lda concerto_synth::timbres::Timbre::osc::amp_sel, x
    ldy #(tab_selector_data_size+2*listbox_data_size+2*checkbox_data_size+drag_edit_data_size-1)
    sta osc::comps, y
    ; volume
-   lda timbres::Timbre::osc::volume, x
+   lda concerto_synth::timbres::Timbre::osc::volume, x
    ldy #(tab_selector_data_size+2*listbox_data_size+2*checkbox_data_size+2*drag_edit_data_size-2)
    sta osc::comps, y
    ; L/R
-   lda timbres::Timbre::osc::lrmid, x
+   lda concerto_synth::timbres::Timbre::osc::lrmid, x
    clc
    rol
    rol
@@ -2531,60 +2475,60 @@ refresh_osc:
    ; semitones
    ; we need to check fine tune to get correct semi tones.
    ; if fine tune is negative, we need to increment one to the semitone value to be displayed on the GUI
-   lda timbres::Timbre::osc::fine, x
+   lda concerto_synth::timbres::Timbre::osc::fine, x
    bmi :+
-   lda timbres::Timbre::osc::pitch, x
+   lda concerto_synth::timbres::Timbre::osc::pitch, x
    bra :++
-:  lda timbres::Timbre::osc::pitch, x
+:  lda concerto_synth::timbres::Timbre::osc::pitch, x
    inc
 :  ldy #(tab_selector_data_size+3*listbox_data_size+2*checkbox_data_size+3*drag_edit_data_size-2)
    sta osc::comps, y
    ; fine tune
-   lda timbres::Timbre::osc::fine, x
+   lda concerto_synth::timbres::Timbre::osc::fine, x
    ldy #(tab_selector_data_size+3*listbox_data_size+2*checkbox_data_size+4*drag_edit_data_size-2)
    sta osc::comps, y
    ; key track
-   lda timbres::Timbre::osc::track, x
+   lda concerto_synth::timbres::Timbre::osc::track, x
    ldy #(tab_selector_data_size+3*listbox_data_size+3*checkbox_data_size+4*drag_edit_data_size-1)
    sta osc::comps, y
    ; pitch via wavetable
    ; pitch mod select 1
-   lda timbres::Timbre::osc::pitch_mod_sel1, x
+   lda concerto_synth::timbres::Timbre::osc::pitch_mod_sel1, x
    jsr map_modsource_to_gui
    ldy #(tab_selector_data_size+4*listbox_data_size+4*checkbox_data_size+4*drag_edit_data_size-1)
    sta osc::comps, y
    ; pitch mod select 2
-   lda timbres::Timbre::osc::pitch_mod_sel2, x
+   lda concerto_synth::timbres::Timbre::osc::pitch_mod_sel2, x
    jsr map_modsource_to_gui
    ldy #(tab_selector_data_size+5*listbox_data_size+4*checkbox_data_size+4*drag_edit_data_size-1)
    sta osc::comps, y
    ; pwm select
-   lda timbres::Timbre::osc::pwm_sel, x
+   lda concerto_synth::timbres::Timbre::osc::pwm_sel, x
    jsr map_modsource_to_gui
    ldy #(tab_selector_data_size+6*listbox_data_size+4*checkbox_data_size+4*drag_edit_data_size-1)
    sta osc::comps, y
    ; vol mod select
-   lda timbres::Timbre::osc::vol_mod_sel, x
+   lda concerto_synth::timbres::Timbre::osc::vol_mod_sel, x
    jsr map_modsource_to_gui
    ldy #(tab_selector_data_size+7*listbox_data_size+4*checkbox_data_size+4*drag_edit_data_size-1)
    sta osc::comps, y
    ; pitch mod depth 1
-   lda timbres::Timbre::osc::pitch_mod_dep1, x
+   lda concerto_synth::timbres::Timbre::osc::pitch_mod_dep1, x
    jsr map_scale5_to_twos_complement
    ldy #(tab_selector_data_size+7*listbox_data_size+4*checkbox_data_size+5*drag_edit_data_size-2)
    sta osc::comps, y
    ; pitch mod depth 2
-   lda timbres::Timbre::osc::pitch_mod_dep2, x
+   lda concerto_synth::timbres::Timbre::osc::pitch_mod_dep2, x
    jsr map_scale5_to_twos_complement
    ldy #(tab_selector_data_size+7*listbox_data_size+4*checkbox_data_size+6*drag_edit_data_size-2)
    sta osc::comps, y
    ; pwm depth
-   lda timbres::Timbre::osc::pwm_dep, x
+   lda concerto_synth::timbres::Timbre::osc::pwm_dep, x
    jsr map_signed_7bit_to_twos_complement
    ldy #(tab_selector_data_size+7*listbox_data_size+4*checkbox_data_size+7*drag_edit_data_size-2)
    sta osc::comps, y
    ; volume mod depth
-   lda timbres::Timbre::osc::vol_mod_dep, x
+   lda concerto_synth::timbres::Timbre::osc::vol_mod_dep, x
    jsr map_signed_7bit_to_twos_complement
    ldy #(tab_selector_data_size+7*listbox_data_size+4*checkbox_data_size+8*drag_edit_data_size-2)
    sta osc::comps, y
@@ -2610,37 +2554,37 @@ refresh_env:
    ; read ADSR data from Timbre and load it into edits
    ; attack edit
    ldy #(tab_selector_data_size + 6)
-   lda timbres::Timbre::env::attackH, x
+   lda concerto_synth::timbres::Timbre::env::attackH, x
    sta env::comps, y
    iny
-   lda timbres::Timbre::env::attackL, x
+   lda concerto_synth::timbres::Timbre::env::attackL, x
    sta env::comps, y
    ; decay edit
    tya
    clc
    adc #(drag_edit_data_size-1)
    tay
-   lda timbres::Timbre::env::decayH, x
+   lda concerto_synth::timbres::Timbre::env::decayH, x
    sta env::comps, y
    iny
-   lda timbres::Timbre::env::decayL, x
+   lda concerto_synth::timbres::Timbre::env::decayL, x
    sta env::comps, y
    ; sustain edit
    tya
    clc
    adc #(drag_edit_data_size-1)
    tay
-   lda timbres::Timbre::env::sustain, x
+   lda concerto_synth::timbres::Timbre::env::sustain, x
    sta env::comps, y
    ; release edit
    tya
    clc
    adc #(drag_edit_data_size)
    tay
-   lda timbres::Timbre::env::releaseH, x
+   lda concerto_synth::timbres::Timbre::env::releaseH, x
    sta env::comps, y
    iny
-   lda timbres::Timbre::env::releaseL, x
+   lda concerto_synth::timbres::Timbre::env::releaseL, x
    sta env::comps, y
    ; redraw components
    lda #2
@@ -2655,22 +2599,22 @@ refresh_snav:
 refresh_lfo:
    ldx Timbre ; may be replaced later
    ; LFO waveform
-   lda timbres::Timbre::lfo::wave, x
+   lda concerto_synth::timbres::Timbre::lfo::wave, x
    ldy #(0*checkbox_data_size+0*drag_edit_data_size+1*listbox_data_size-1)
    sta lfo::comps, y
    ; LFO retrigger
-   lda timbres::Timbre::lfo::retrig, x
+   lda concerto_synth::timbres::Timbre::lfo::retrig, x
    ldy #(1*checkbox_data_size+0*drag_edit_data_size+1*listbox_data_size-1)
    sta lfo::comps, y
    ; LFO rate
-   lda timbres::Timbre::lfo::rateH, x
+   lda concerto_synth::timbres::Timbre::lfo::rateH, x
    ldy #(1*checkbox_data_size+1*drag_edit_data_size+1*listbox_data_size-2)
    sta lfo::comps, y
    iny
-   lda timbres::Timbre::lfo::rateL, x
+   lda concerto_synth::timbres::Timbre::lfo::rateL, x
    sta lfo::comps, y
    ; phase offset
-   lda timbres::Timbre::lfo::offs, x
+   lda concerto_synth::timbres::Timbre::lfo::offs, x
    ldy #(1*checkbox_data_size+2*drag_edit_data_size+1*listbox_data_size-2)
    sta lfo::comps, y
    ; redraw components

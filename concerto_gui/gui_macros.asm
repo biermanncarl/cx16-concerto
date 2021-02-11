@@ -18,19 +18,6 @@
 ;*****************************************************************************
 
 
-.ifndef GLOBAL_DEFS_INC ; include protector ...
-GLOBAL_DEFS_INC = 1
-
-; Synth engine definitions
-.define N_VOICES 16
-.define N_TIMBRES 32
-.define N_OSCILLATORS 16 ; total number of PSG voices, which correspond to oscillators
-.define MAX_OSCS_PER_VOICE 6
-.define MAX_ENVS_PER_VOICE 3
-.define MAX_LFOS_PER_VOICE 1
-.define N_TOT_MODSOURCES MAX_ENVS_PER_VOICE+MAX_LFOS_PER_VOICE
-.define MAX_VOLUME 64
-
 ; GUI definitions
 ; colors
 .define COLOR_BACKGROUND 11
@@ -56,43 +43,35 @@ GLOBAL_DEFS_INC = 1
 .define N_PANELS 7   ; number of panels
 
 
-
-; keyboard variables
-Octave:
-   .byte 60
-Note:
+; compile time macro: converts an ascii string to a zero-terminated string that can be displayed directly on the VERA
+; currently supports characters, spaces, digits, and maybe more but untested.
+; obviously cannot support "@", because that's character 0 on the VERA
+.macro STR_FORMAT stf_arg
+   .repeat  .strlen(stf_arg), i
+   .if (.strat(stf_arg, i)=32)
+      .byte 32
+   .else
+      .if (.strat(stf_arg, i)>64) && (.strat(stf_arg, i)<91)
+         .byte .strat(stf_arg, i)-64
+      .else
+         .byte .strat(stf_arg, i)
+      .endif
+   .endif
+   .endrepeat
    .byte 0
-Channel:
-   .byte (N_VOICES-1)
-Volume:
-   .byte MAX_VOLUME
+.endmacro
 
-; currently active timbre (in Synth GUI and keyboard)
-Timbre:
-   .byte 0
+; performs an indexed JSR. Paramters are the jump table address and the desired return address.
+.macro INDEXED_JSR ej_jmp_tbl, ej_return
+   lda #(>(ej_return-1))
+   pha
+   lda #(<(ej_return-1))
+   pha
+   jmp (ej_jmp_tbl,x)
+.endmacro
 
-; debug variable
-debug_a: .byte 0
-
-; mouse variables
-ms_status: .byte 0
-; reference values
-ms_ref_x: .word 0
-ms_ref_y: .word 0
-ms_ref_buttons: .byte 0
-ms_ref_panel: .byte 0
-ms_ref_component_id: .byte 0  ; component ID (from 0 to ...)
-ms_ref_component_ofs: .byte 0 ; component offset (in a panel's component string)
-; current values
-ms_curr_x: .word 0
-ms_curr_y: .word 0
-ms_curr_buttons: .byte 0
-ms_curr_panel: .byte 0
-ms_curr_component_id: .byte 0
-ms_curr_component_ofs: .byte 0
-ms_curr_data: .byte 0 ; used to store the current tab selected, which arrow is clicked etc.
-ms_curr_data2: .byte 0 ; used to store dragging distance (y direction)
-ms_gui_write: .byte 0 ; used to determine whether or not an action has caused a value was changed.
-
-
-.endif
+.macro PANEL_BYTE_FIELD
+   .repeat N_PANELS
+      .byte 0
+   .endrep
+.endmacro

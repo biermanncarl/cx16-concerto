@@ -39,10 +39,10 @@
 ;                                                                             ;
 ;*****************************************************************************;
 
-.include "x16.asm"
-
 .zeropage
-.include "zeropage.asm"
+; define zero page variables of the submodules
+.include "concerto_synth/synth_zeropage.asm"
+.include "concerto_gui/gui_zeropage.asm"
 
 .segment "CODE"
 ; BASIC stub to start program
@@ -55,69 +55,38 @@
 
    jmp start
 
-; variables/macros
-.include "global_definitions.asm"
-.include "utility_macros.asm"
-.include "synth_macros.asm"
-.include "loops.asm"
-; sub modules
-.include "timbres.asm"
-.include "voices.asm"
-.include "synth_engine.asm"
-.include "player.asm"
-.include "my_isr.asm"
-.include "guiutils.asm"
-.include "gui.asm"
-.include "mouse.asm"
-.include "presets.asm"
+; include the synth engine
+.include "concerto_synth/concerto_synth.asm"
+
+; include the synth gui
+.include "concerto_gui/concerto_gui.asm"
+
+
+; keyboard variables
+Octave:
+   .byte 60
+Note:
+   .byte 0
+
+
 
 start:
-
-   ; initialization
-   ; *******************************
-
    ; set ROM bank to 0 (from 4, the BASIC ROM)
+   ; this is for better performance (the BASIC ROM has shown to have a hit on performance over the 0 ROM)
    stz ROM_BANK
 
-   ; initialize timbres
-   ; first load defaults
-   jsr timbres::init_timbres
-   ; then load custom ones
-   PRESET_ONE_OSC_PATCH 0
-   PRESET_BRIGHT_PLUCK 1
-   PRESET_KEY_1 2
-   PRESET_KICK_DRUM_3 3
-   PRESET_SNARE_DRUM_5 4
-   PRESET_FAT_PLUCK 5
-   PRESET_TAMBOURINE 6
-   PRESET_KEY_2 7
-   PRESET_GUITAR_1 8
+   jsr concerto_synth::initialize
+   ;jsr concerto_gui::initialize
 
-   jsr voices::init_voices
-   jsr gui::load_synth_gui
-   jsr mouse::mouse_init
-   jsr my_isr::launch_isr
+   jsr concerto_synth::activate_synth
 
-   ; main loop
-   ; *******************************
 .include "mainloop.asm"
 
-
-   ; cleanup code
-   ; *******************************
-   jsr voices::panic
-   jsr my_isr::shutdown_isr
-
-   ; hide mouse pointer
-   lda #0
-   ldx #0
-   jsr MOUSE_CONFIG
+   jsr concerto_synth::deactivate_synth
+   jsr concerto_gui::hide_mouse
 
    ; restore BASIC ROM page
    lda #4
    sta ROM_BANK
 
    rts            ; return to BASIC
-
-.segment "RODATA"
-.include "pitch_data.asm"

@@ -22,17 +22,7 @@
 mainloop:
 
    ; GUI update
-   jsr mouse::mouse_tick
-
-
-
-   ;DISPLAY_BYTE ms_curr_panel, 30, 58
-   ;DISPLAY_BYTE ms_curr_component_id, 35, 58
-   ;DISPLAY_BYTE ms_curr_component_ofs, 35, 56
-   ;DISPLAY_BYTE ms_curr_data, 40, 58
-
-   ;DISPLAY_BYTE debug_a, 70, 58
-
+   jsr concerto_gui::gui_tick
 
    ; keyboard polling
 
@@ -161,8 +151,8 @@ mainloop:
    lda #14
    jmp play_note
 @keyboard_space:
-   ldx Channel
-   jsr voices::release_note
+   ldx #0
+   jsr concerto_synth::voices::release_note
    jmp end_mainloop
 @keyboard_z:
    lda Octave
@@ -190,15 +180,15 @@ play_note:
    adc Note
 
    ; play note
-   sta voices::note_pitch
-   lda Volume
-   sta voices::note_volume
-   lda Timbre
-   sta voices::note_timbre
-   lda Channel
-   sta voices::note_channel
+   sta concerto_synth::voices::note_pitch
+   lda #MAX_VOLUME
+   sta concerto_synth::voices::note_volume
+   lda concerto_gui::Timbre
+   sta concerto_synth::voices::note_timbre
+   lda #0
+   sta concerto_synth::voices::note_channel
    sei
-   jsr voices::play_note
+   jsr concerto_synth::voices::play_note
    cli
 
 end_mainloop:
