@@ -23,7 +23,7 @@
 ;   - include the Concerto synth engine before including this file.
 ;   - include gui_zeropage.asm into your zeropage segment.
 ;   - Start up the GUI calling ...
-;   - call ... in the main loop in order to be able to use the mouse and keyboard
+;   - call ... in the main loop in order to be able to use the mouse
 ;   - you may stop calling the GUI tick at any time.
 
 .scope concerto_gui
@@ -34,13 +34,27 @@
 .include "gui.asm"
 .include "mouse.asm"
 
+; concerto_gui::initialize
+; Initializes and draws the GUI on screen. Expects 80x60 characters screen mode.
+; Also brings up the mouse cursor.
+; PARAMETERS: none
+; AFFECTS: A, X, Y
 initialize:
    jsr gui::load_synth_gui
    jsr mouse::mouse_init
    rts
 
+; concerto_gui::hide_mouse
+; Hides the mouse cursor.
+; PARAMETERS: none
+; AFFECTS: A, X
 hide_mouse = mouse::mouse_hide
 
+; concerto_gui::gui_tick
+; Reads the mouse and performs actions according to the mouse input. Call this regularly in your main loop.
+; It is NOT recommended to call this in the interrupt service routine, although it's possible to do so.
+; PARAMETERS: none
+; AFFECTS: A, X, Y
 gui_tick = mouse::mouse_tick
 
 ; currently active timbre (in GUI editor)
