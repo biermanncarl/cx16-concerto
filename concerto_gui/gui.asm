@@ -121,7 +121,7 @@ dummy_data_size = 1
    ; global settings panel
    .scope global
       px = 17
-      py = 6
+      py = 10
       wd = 12
       hg = 24
       ; GUI component string of global settings panel
@@ -323,7 +323,7 @@ dummy_data_size = 1
       timbre_lb: STR_FORMAT "timbre"
       load_preset_lb: STR_FORMAT " load preset"
       save_preset_lb: STR_FORMAT " save preset"
-      logo_lb: STR_FORMAT "=== concerto v0.1.0-alpha ==="
+      logo_lb: STR_FORMAT "=== concerto v0.2.0-alpha ==="
    .endscope
    ; listbox popup. shows up when a listbox was clicked.
    .scope listbox_popup
@@ -391,7 +391,7 @@ dummy_data_size = 1
       px = global::px
       py = env::py+env::hg
       wd = (global::wd+osc::wd)
-      hg = 16
+      hg = 9
       ; GUI component string of the panel
       comps:
          .byte 0 ; empty
@@ -405,21 +405,12 @@ dummy_data_size = 1
          .word help_2_lb
          .byte CCOLOR_CAPTION, px+2, py+6
          .word help_3_lb
-         .byte CCOLOR_CAPTION, px+2, py+8
-         .word help_4_lb
-         .byte CCOLOR_CAPTION, px+2, py+11
-         .word help_5_lb
-         .byte CCOLOR_CAPTION, px+2, py+13
-         .word help_6_lb
          .byte 0
       ; data specific to the synth-navigation panel
       cp: STR_FORMAT "help"
       help_1_lb: STR_FORMAT "controls:"
-      help_2_lb: STR_FORMAT "a, w, s, ... play notes"
-      help_3_lb: STR_FORMAT "z, x         toggle octaves"
-      help_4_lb: STR_FORMAT "space        release note"
-      help_5_lb: STR_FORMAT "left drag    coarse edit"
-      help_6_lb: STR_FORMAT "right drag   fine edit"
+      help_2_lb: STR_FORMAT "left drag    coarse edit"
+      help_3_lb: STR_FORMAT "right drag   fine edit"
    .endscope
 
    ; Recurring Labels

@@ -44,6 +44,7 @@
 .include "concerto_synth/synth_zeropage.asm"
 .include "concerto_gui/gui_zeropage.asm"
 
+
 .segment "CODE"
 ; BASIC stub to start program
 ; "10 SYS2061"
@@ -76,7 +77,7 @@ start:
    stz ROM_BANK
 
    jsr concerto_synth::initialize
-   ;jsr concerto_gui::initialize
+   jsr concerto_gui::initialize
 
    jsr concerto_synth::activate_synth
 
