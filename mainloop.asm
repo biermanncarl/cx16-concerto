@@ -152,7 +152,7 @@ mainloop:
    jmp play_note
 @keyboard_space:
    ldx #0
-   jsr concerto_synth::voices::release_note
+   jsr concerto_synth::release_note
    jmp end_mainloop
 @keyboard_z:
    lda Octave
@@ -180,15 +180,15 @@ play_note:
    adc Note
 
    ; play note
-   sta concerto_synth::voices::note_pitch
+   sta concerto_synth::note_pitch
    lda #MAX_VOLUME
-   sta concerto_synth::voices::note_volume
+   sta concerto_synth::note_volume
    lda concerto_gui::Timbre
-   sta concerto_synth::voices::note_timbre
+   sta concerto_synth::note_timbre
    lda #0
-   sta concerto_synth::voices::note_channel
+   sta concerto_synth::note_channel
    sei
-   jsr concerto_synth::voices::play_note
+   jsr concerto_synth::play_note
    cli
 
 end_mainloop:

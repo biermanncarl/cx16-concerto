@@ -42,15 +42,15 @@ start:
 
    ; play a note
    lda #60
-   sta concerto_synth::voices::note_pitch
+   sta concerto_synth::note_pitch
    lda #63
-   sta concerto_synth::voices::note_volume
+   sta concerto_synth::note_volume
    lda #0
-   sta concerto_synth::voices::note_channel
+   sta concerto_synth::note_channel
    lda #0
-   sta concerto_synth::voices::note_timbre
+   sta concerto_synth::note_timbre
    sei
-   jsr concerto_synth::voices::play_note
+   jsr concerto_synth::play_note
    cli
 
    ; and wait until key is pressed

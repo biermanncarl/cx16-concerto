@@ -33,15 +33,7 @@
 ; to the PSG voices. They are dynamically assigned.
 .scope voices
 
-; Interface. these variables have to be set before a play command
-note_channel:
-   .byte 0
-note_timbre:
-   .byte 0
-note_pitch:
-   .byte 0
-note_volume:
-   .byte 0
+
 
 ; These data fields correspond to the monophonic voices of all the 16 channels.
 ; Each voice can be active or inactive.
@@ -353,11 +345,15 @@ rts
 ; This subroutine can be called from within the ISR, or from the main program.
 ; To ensure that the variables used by this function aren't messed up by the ISR,
 ; SEI has to be done before this function is called in the main program.
-; This subroutine does not check if the note is actually playing!
-; It needs to be guaranteed by the context where it is called, otherwise data will get corrupted.
-; X: channel of note
+; r0L: channel of note
 ; doesn't preserve X and Y
 stop_note:
+   ldx note_channel
+   ; check if note is active. If not, return.
+   lda Voice::active, x
+   bne :+
+   rts
+:
    ; update freeosclist
    ; get oscillators from voice and put them back into free oscillators ringlist
    ; x: offset in voice data
@@ -388,10 +384,11 @@ rts
 
 ; Puts a note into its release phase.
 ; Basically just puts every envelope into the release phase.
-; expects channel of note in X
+; expects channel of note in r0L
 ; doesn't preserve X and Y
 release_note:
    rln_env_counter = mzpbb
+   ldx note_channel
    ; load timbre number
    ldy Voice::timbre, x
    ; number of active envelopes
