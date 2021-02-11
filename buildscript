@@ -1,4 +1,5 @@
 cd ../build
 cl65 -t cx16 -o CONCERTO.PRG -C cx16-asm.cfg "../source/psg_synth.asm"
+cl65 -t cx16 -o EXAMPLE01.PRG -C cx16-asm.cfg "../source/example_01_hello_world_concerto.asm"
 cd ../source
 rm psg_synth.o

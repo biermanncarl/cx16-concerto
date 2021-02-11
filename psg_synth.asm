@@ -22,7 +22,7 @@
 ; Program: CONCERTO                                                           ;
 ; Platform: Commander X16 (Emulator R38)                                      ;
 ; Compiler: CC65                                                              ;
-; Compile with: cl65 -t cx16 -o PSGSYNTH.PRG psg_synth.asm -C cx16-asm.cfg    ;
+; Compile with: cl65 -t cx16 -o CONCERTO.PRG psg_synth.asm -C cx16-asm.cfg    ;
 ; Author: Carl Georg Biermann                                                 ;
 ; Dedication:                                                                 ;
 ;                                                                             ;

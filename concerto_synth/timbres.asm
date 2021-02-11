@@ -141,7 +141,7 @@ command_string:
 ; command_string: string that holds the DOS command to write the file
 ; command_len:    length of the command string
 save_timbre:
-   st_pointer = mzpwd
+   st_pointer = mzpwg
    phx
    ; put "w" as last character of the command string
    ldy command_len
@@ -213,7 +213,7 @@ save_timbre:
 ; filename:     name of the file to store the timbre in
 ; filename_len: length of the file name
 load_timbre:
-   lt_pointer = mzpwd
+   lt_pointer = mzpwg
    phx
    ; put "r" as last character of the command string
    ldy command_len

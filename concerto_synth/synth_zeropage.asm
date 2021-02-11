@@ -23,6 +23,8 @@ mzpwb:   .word 0
 mzpwc:   .word 0
 ; my zero page words (ISR)
 mzpwf:   .word 0
+; my zero page words (main program)
+mzpwg:   .word 0
 
 ; my zero page bytes (ISR)
 mzpbb:   .byte 0
