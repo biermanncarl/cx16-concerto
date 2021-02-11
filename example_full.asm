@@ -22,7 +22,7 @@
 ; Program: CONCERTO                                                           ;
 ; Platform: Commander X16 (Emulator R38)                                      ;
 ; Compiler: CC65                                                              ;
-; Compile with: cl65 -t cx16 -o CONCERTO.PRG psg_synth.asm -C cx16-asm.cfg    ;
+; Compile with: cl65 -t cx16 -o CONCERTO.PRG example_full.asm -C cx16-asm.cfg ;
 ; Author: Carl Georg Biermann                                                 ;
 ; Dedication:                                                                 ;
 ;                                                                             ;
@@ -81,7 +81,7 @@ start:
 
    jsr concerto_synth::activate_synth
 
-.include "mainloop.asm"
+.include "example_full_mainloop.asm"
 
    jsr concerto_synth::deactivate_synth
    jsr concerto_gui::hide_mouse
