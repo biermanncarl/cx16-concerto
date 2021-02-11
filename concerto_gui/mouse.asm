@@ -52,8 +52,6 @@
 ms_idle = 0
 ms_hold_L = 1
 ms_hold_R = 2
-ms_armed_reset = 3
-ms_armed_fine_reset = 4
 
 
 ; get mouse running
@@ -110,8 +108,6 @@ mouse_tick:
    .word do_idle
    .word do_hold_L
    .word do_hold_R
-   .word do_armed_reset
-   .word do_armed_fine_reset
 end_mouse_tick:
    rts
 
@@ -186,23 +182,12 @@ do_hold_L:
    ; NOW, issue a click event.
    jsr gui::click_event
    jmp end_mouse_tick
-@button_pressed:  ; a button is pressed. check right one first
-   and #2
-   beq :+
-   ; right one is pressed. arm for reset
-   lda #ms_armed_reset
-   sta ms_status
-   jmp end_mouse_tick
-:  ; check left button
-   lda ms_curr_buttons
-   and #1
-   beq :+
-   ; left one is still being pressed. do dragging
+@button_pressed:  ; a button is pressed.  do dragging
    ; left mouse button dragging = 0 in ms_curr_data
    lda #0
    sta ms_curr_data
    jmp do_dragging
-:  jmp end_mouse_tick
+   jmp end_mouse_tick
 
 ; right button is held down. (and no other button has been pressed)
 do_hold_R:
@@ -213,23 +198,12 @@ do_hold_R:
    lda #ms_idle
    sta ms_status
    jmp end_mouse_tick
-:  ; a button is pressed. check left one first
-   and #1
-   beq :+
-   ; left one is pressed. arm for fine reset
-   lda #ms_armed_fine_reset
-   sta ms_status
-   jmp end_mouse_tick
-:  ; check right button
-   lda ms_curr_buttons
-   and #2
-   beq :+
-   ; right one is still being pressed. do fine dragging
+:  ; a button is still being pressed. do fine dragging
    ; right mouse button dragging = 1 in ms_curr_data
    lda #1
    sta ms_curr_data
    jmp do_dragging
-:  jmp end_mouse_tick
+   jmp end_mouse_tick
 
 do_dragging:
    ; check if there is actually a component being dragged
@@ -248,28 +222,6 @@ do_dragging:
    sbc ms_curr_y
    sta ms_curr_data2
    jsr gui::drag_event
-:  jmp end_mouse_tick
-
-; waiting for buttons to be released to reset a parameter
-do_armed_reset:
-   ; check for any buttons pressed
-   lda ms_curr_buttons
-   bne :+
-   ; no buttons pressed --> do reset
-   lda #ms_idle
-   sta ms_status
-   nop ; TODO
-:  jmp end_mouse_tick
-
-; waiting for buttons to be released to reset the "fine" part of a parameter
-do_armed_fine_reset:
-   ; check for any buttons pressed
-   lda ms_curr_buttons
-   bne :+
-   ; no buttons pressed --> do fine reset
-   lda #ms_idle
-   sta ms_status
-   nop ; TODO
 :  jmp end_mouse_tick
 
 .endscope
