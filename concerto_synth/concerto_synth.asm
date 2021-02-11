@@ -19,11 +19,7 @@
 
 ; Include this file to be able to use the Concerto synth engine.
 
-; Usage:
-;  - include this file
-;  - call ... to install the interrupt service routine that updates the VERA PSG voices.
-;  - call ... to play notes (for more details, see voices.asm)
-;  - call ... to stop the interrupt service routine
+; For more information, see readme.md.
 
 ; You can emply your own playback routine within each call of the interrupt service routine
 ; via setting this following (compile time) vector to point to the starting address of

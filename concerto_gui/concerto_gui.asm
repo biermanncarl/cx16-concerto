@@ -19,12 +19,7 @@
 
 ; Include this file to your program to include the concerto synth GUI.
 ;
-; Usage:
-;   - include the Concerto synth engine before including this file.
-;   - include gui_zeropage.asm into your zeropage segment.
-;   - Start up the GUI calling ...
-;   - call ... in the main loop in order to be able to use the mouse
-;   - you may stop calling the GUI tick at any time.
+; For more information, see readme.md
 
 .scope concerto_gui
 

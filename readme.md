@@ -1,9 +1,8 @@
 # Welcome to CONCERTO
 
-CONCERTO is a music making program for the Commander X16. In its current shape,
-there is only the synth engine present and a couple of demo loops. The graphical
-user interface gives you full control over all sounds, even the ones used in the
-demos. Go explore what the X16 can do!
+CONCERTO is a synthesizer engine for the Commander X16. It is designed to be
+included in other applications. It comes with or without a user interface for
+editing sounds.
 
 In this document, you will find a quick start guide, and a brief explanation of
 the structure of the source code.
@@ -28,7 +27,7 @@ function for your preset is unavailable. (It simply does nothing.)
 CONCERTO is built using the ca65 assembler. I built it with the command
 
 ```shell
-cl65 -t cx16 -o CONCERTO.PRG -C cx16-asm.cfg psg_synth.asm
+cl65 -t cx16 -o CONCERTO.PRG -C cx16-asm.cfg example_full.asm
 ```
 
 ## Quick sart guide
@@ -77,29 +76,35 @@ know, because they may at first be irritating to experienced synth users.
   quiet sounds that sound compressed ;)
   For maximal modulation depth, the clamping can fail, though.
 
-## Source code structure
+## How to include Concerto into your own application
 
-The main source code file is ```psg_synth.asm```. This is where all the
-initialization routines are called, the main loop is inserted, and that exits back
-to BASIC. You can find the build instructions there.
+Currently, only projects written with CC65 assembler can use Concerto.
 
-The overall structure of the program can be separated into the main loop, where
-the GUI and all user interaction is done, and the interrupt service routine (ISR)
-which does the synth engine and also the playback routine in a regular interval.
+The easiest way to get started with Concerto is to look at the example files
+provided along with the source code. Here is a quick summary what needs to be
+done.
 
-CONCERTO currently hijacks the sample playback mechanism in order to generate
-interrupts at intervals of around 7 milliseconds. However, sound is only generated
-by the 16 channels of the programmable sound generator (PSG) in the VERA.
-This mechanism is placed inside ```my_isr.asm```.
+Synth engine:
+* Copy the folder ```concerto_synth``` into the folder of your project
+* In your zero page segment, ```.INCLUDE "concerto_synth/synth_zeropage.asm"```
+* In your code segment, ```.INCLUDE "concerto_synth/concerto_synth.asm"```
+* Do ```JSR concerto_synth::initialize``` to initialize the synth engine
+* Do ```JSR concerto_synth::activate_synth``` to start the synth engine
+* Call functions from ```concerto_synth/concerto_synth.asm``` to play notes
+  etc.
+* Do ```JSR concerto_synth::deactivate_synth``` to stop the synth engine
+* You can define a subroutine with the name ```concerto_playback_routine```
+  which will be called before each synth tick as long as the synth engine is
+  activated.
 
-The synth engine itself is placed inside ```synth_engine.asm```. The routine
-```synth_tick``` computes the parameters for the PSG every 7 ms tick.
-
-The GUI is located in ```gui.asm```. It uses some utility functions in
-```guiutils.asm``` for drawing stuff on the screen. But all data juggling with the
-GUI components is inside ```gui.asm```. This file, however, doesn't include any
-code that lies directly in the path of execution of the main loop. Instead, GUI
-routines like ```click_event``` or ```drag_event``` are called by the mouse code,
-and the keyboard code (which in return *is* executed directly in the main loop).
-
-Each source file contains some additional info about its content.
+Graphical user interface:
+* Copy the folder ```concerto_gui``` into the folder of your project
+* In your zero page segment, ```.INCLUDE "concerto_gui/gui_zeropage.asm"```
+* In your code segment, ```.INCLUDE "concerto_gui/concerto_gui.asm"```
+* Do ```JSR concerto_gui::initialize``` to initialize and draw the UI
+* Do ```JSR concerto_gui::gui_tick``` *regularly* to let the user interact
+  using the mouse
+* Do ```JSR concerto_gui::hide_mouse``` to hide the mouse pointer
+* You may stop calling ```gui_tick``` regularly at any time without the danger
+  of corruption. (E.g. if you want to bring up a different UI). Simply
+  ```initialize``` again before continuing the regular calls of ```gui_tick```.
