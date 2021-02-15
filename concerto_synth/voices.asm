@@ -295,7 +295,7 @@ retrigger_note:
    bcc @loop_envs
 
 @skip_lfos:
-rts
+   rts
 
 ; checks if there are enough oscillators available
 ; and, in that case, reserves them for the new voice.
@@ -415,6 +415,7 @@ panic:
    lda Voice::active, x
    beq :+
    phx
+   stx note_channel
    jsr stop_note
    plx
 :  dex

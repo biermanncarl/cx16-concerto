@@ -130,7 +130,7 @@ panic = voices::panic
 default_playback:
    rts
 
-.ifndef playback_routine
+.ifndef concerto_playback_routine
    concerto_playback_routine = default_playback
 .endif
 

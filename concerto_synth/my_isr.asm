@@ -29,26 +29,12 @@
 
 default_isr:
    .word $0000
+; this variable contains a nonzero value if the ISR is currently running, so as to prevent the ISR interrupting itself
 isr_running:
    .byte 0
 
 ; subroutine for launching the ISR
 launch_isr:
-
-   ; replace the interrupt handler
-
-   ; copy address of default interrupt handler
-   lda IRQVec
-   sta default_isr
-   lda IRQVec+1
-   sta default_isr+1
-   ; replace irq handler
-   sei            ; block interrupts
-   lda #<the_isr
-   sta IRQVec
-   lda #>the_isr
-   sta IRQVec+1
-   cli            ; allow interrupts
 
    ; setup the timer
 
@@ -78,6 +64,21 @@ launch_isr:
    ora #$08
    sta VERA_ien
 
+   ; replace the interrupt handler
+
+   ; copy address of default interrupt handler
+   lda IRQVec
+   sta default_isr
+   lda IRQVec+1
+   sta default_isr+1
+   ; replace irq handler
+   sei            ; block interrupts
+   lda #<the_isr
+   sta IRQVec
+   lda #>the_isr
+   sta IRQVec+1
+   cli            ; allow interrupts
+
    ; start playback
    ; this will trigger AFLOW interrupts to occur
    ; set sample rate in multiples of 381.5 Hz = 25 MHz / (512*128)
@@ -103,13 +104,13 @@ shutdown_isr:
 
    ; restore interrupt handler
    sei            ; block interrupts
-   lda #<default_isr
+   lda default_isr
    sta IRQVec
-   lda #>default_isr
+   lda default_isr+1
    sta IRQVec+1
    cli            ; allow interrupts
 
-rts
+   rts
 
 
 
@@ -149,7 +150,7 @@ do_psg_control:
 end_aflow:
    ; call default interrupt handler
    ; for keyboard service
-jmp (default_isr)
+   jmp (default_isr)
 
 
 .endscope
