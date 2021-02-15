@@ -82,7 +82,9 @@ Currently, only projects written with CC65 assembler can use Concerto.
 
 The easiest way to get started with Concerto is to look at the example files
 provided along with the source code. Here is a quick summary what needs to be
-done.
+done. More information on the usage of those routines can be found in the
+source files ```concerto_synth/concerto_synth.asm``` and
+```concerto_gui/gui_zeropage.asm```, respectively.
 
 Synth engine:
 * Copy the folder ```concerto_synth``` into the folder of your project

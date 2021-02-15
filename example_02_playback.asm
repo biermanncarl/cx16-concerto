@@ -17,7 +17,7 @@
 
 ;*****************************************************************************
 
-; Compile with: cl65 -t cx16 -o EXAMPLE01.PRG example_01_hello_world_concerto.asm -C cx16-asm.cfg
+; Compile with: cl65 -t cx16 -o EXAMPLE02.PRG example_02_playback.asm -C cx16-asm.cfg
 
 
 .zeropage
