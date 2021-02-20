@@ -69,6 +69,7 @@ data_start:
    porta:   TIMBRE_BYTE_FIELD         ; portamento on/off
    porta_r: TIMBRE_BYTE_FIELD         ; portamento rate
    retrig:  TIMBRE_BYTE_FIELD         ; when monophonic, will envelopes be retriggered? (could be combined with mono variable)
+   vibrato: TIMBRE_BYTE_FIELD         ; vibrato amount (a scale5 value but only positive. negative value means inactive)
 
    ; envelope rates (not times!)
    .scope env
@@ -297,6 +298,8 @@ load_default_timbre:
    stz Timbre::porta, x
    lda #20
    sta Timbre::porta_r, x
+   lda #(16*1+6);$FF
+   sta Timbre::vibrato, x
    ; LFO
    lda #10
    sta Timbre::lfo::rateH, x

@@ -132,6 +132,7 @@ dummy_data_size = 1
          .byte 5, px+2, py+12, 8, 1 ; retrigger checkbox
          .byte 5, px+2, py+14, 8, 0 ; porta checkbox
          .byte 4, px+2, py+16, %00000000, 0, 255, 0, 0 ; porta rate edit
+         .byte 4, px+7, py+19, %00000000, 0, 76, 0, 0 ; vibrato amount edit
          .byte 0
       ; caption list of global panel
       capts:
@@ -149,11 +150,14 @@ dummy_data_size = 1
          .word porta_active_lb
          .byte CCOLOR_CAPTION, px+6, py+16 ; porta rate label
          .word rate_lb
+         .byte CCOLOR_CAPTION, px+2, py+19 ; vibrato amount label
+         .word vibrato_lb
          .byte 0
       cp: STR_FORMAT "global" ; caption of panel
       nosc_lb: STR_FORMAT "n. oscs"
       nenv_lb: STR_FORMAT "n. envs"
       porta_active_lb: STR_FORMAT "porta" ; portamento activate label
+      vibrato_lb: STR_FORMAT "vib."
    .endscope
    ; oscillator settings panel
    .scope osc
@@ -1914,6 +1918,7 @@ write_global:
    .word @retr_activate
    .word @porta_activate
    .word @porta_rate
+   .word @vibrato_amount
 @n_oscs:
    phy
    jsr concerto_synth::voices::panic ; If we don't do this, a different number of oscillators might be released than initially acquired by a voice. Safety first.
@@ -1950,6 +1955,18 @@ write_global:
    iny
    lda global::comps, y
    sta concerto_synth::timbres::Timbre::porta_r, x
+   rts
+@vibrato_amount:
+   plx
+   iny
+   iny
+   lda global::comps, y ; if this value is 0, that means vibrato off, which is represented as a negative value internally
+   beq :+
+   jsr map_twos_complement_to_scale5
+   sta concerto_synth::timbres::Timbre::vibrato, x
+   rts
+:  lda #$FF
+   sta concerto_synth::timbres::Timbre::vibrato, x
    rts
 
 
@@ -2413,6 +2430,14 @@ refresh_global:
    ; porta rate edit
    lda concerto_synth::timbres::Timbre::porta_r, x
    ldy #(3*checkbox_data_size+1*drag_edit_data_size+2*arrowed_edit_data_size-2)
+   sta global::comps, y
+   ; vibrato amount edit
+   lda concerto_synth::timbres::Timbre::vibrato, x
+   bmi :+
+   jsr map_scale5_to_twos_complement
+   bra :++
+:  lda #0
+:  ldy #(3*checkbox_data_size+2*drag_edit_data_size+2*arrowed_edit_data_size-2)
    sta global::comps, y
    ; redraw components
    lda #0

@@ -621,11 +621,12 @@ end_env: ; jump here when done with all envelopes
    ; ---------------
 
    ; This section of code determines the *voice* pitch. Voice pitch depends
-   ; only on the note played and on the porta settings.
+   ; only on the note played, on the (global) vibrato and on the porta settings.
    ; The resulting pitch will be added to all oscillators with enabled
    ; keyboard tracking.
 
    ; x: voice index
+   ; y: timbre index (in vibrato section)
 
    ; check portamento
    lda voices::Voice::porta::active, x
@@ -634,6 +635,7 @@ end_env: ; jump here when done with all envelopes
    beq @porta_up     ; if not, it is going down:
 
    ;porta downwards
+@porta_down:
    lda voices::Voice::porta::posL, x
    sec
    sbc voices::Voice::porta::rateL, x
@@ -645,12 +647,12 @@ end_env: ; jump here when done with all envelopes
    sta voi_pitch
    cmp voices::Voice::pitch, x
    ; porta still going? if not, end it
-   bcs @voice_pitch_done
+   bcs @do_vibrato
    stz voices::Voice::porta::active, x
    stz voi_fine
    lda voices::Voice::pitch, x
    sta voi_pitch
-   bra @voice_pitch_done
+   bra @do_vibrato
 @porta_up:
    ; porta upwards
    lda voices::Voice::porta::rateL, x
@@ -664,20 +666,29 @@ end_env: ; jump here when done with all envelopes
    sta voi_pitch
    cmp voices::Voice::pitch, x
    ; porta still going? if not, end it
-   bcc @voice_pitch_done
+   bcc @do_vibrato
    stz voices::Voice::porta::active, x
    stz voi_fine
    lda voices::Voice::pitch, x
    sta voi_pitch
-   bra @voice_pitch_done
+   bra @do_vibrato
 @skip_porta:
    ; normal keyboard note
    lda voices::Voice::pitch, x
    sta voi_pitch
    stz voi_fine
-@voice_pitch_done:
+@do_vibrato:
+   ldy voices::Voice::timbre, x
+   lda timbres::Timbre::vibrato, y
+   bpl :+
+   jmp @skip_vibrato
+:  ldx #3 ; select LFO as modsource
+   ; actually, this routine could be sloightly optimized for this particular use case... (unsigned mod depth)
+   SCALE5_16 voi_modsourcesL, voi_modsourcesH, timbres::Timbre::vibrato, voi_fine, voi_pitch
 
-
+   
+@skip_vibrato:
+   ldx voice_index
 
 
 
