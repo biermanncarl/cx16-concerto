@@ -628,46 +628,61 @@ end_env: ; jump here when done with all envelopes
    ; x: voice index
    ; y: timbre index (in vibrato section)
 
-   ; check portamento
-   lda voices::Voice::porta::active, x
+   ; check pitch slide
+   lda voices::Voice::pitch_slide::active, x
    beq @skip_porta   ; porta inactive?
    cmp #1            ; porta upwards?
    beq @porta_up     ; if not, it is going down:
+   cmp #2            ; porta downwards?
+   beq @porta_down
 
-   ;porta downwards
-@porta_down:
-   lda voices::Voice::porta::posL, x
-   sec
-   sbc voices::Voice::porta::rateL, x
-   sta voices::Voice::porta::posL, x
+   ; free slide, no end (might update this for more convenient options for composing ... i.e. slide with target, much like porta)
+   ; could also be optimized, because some code is redundant.
+@free_slide:
+   lda voices::Voice::pitch_slide::posL, x
+   clc
+   adc voices::Voice::pitch_slide::rateL, x
+   sta voices::Voice::pitch_slide::posL, x
    sta voi_fine
-   lda voices::Voice::porta::posH, x
-   sbc voices::Voice::porta::rateH, x
-   sta voices::Voice::porta::posH, x
+   lda voices::Voice::pitch_slide::posH, x
+   adc voices::Voice::pitch_slide::rateH, x
+   sta voices::Voice::pitch_slide::posH, x
+   sta voi_pitch
+   bra @do_vibrato
+@porta_down:
+   ; porta downwards
+   lda voices::Voice::pitch_slide::posL, x
+   sec
+   sbc voices::Voice::pitch_slide::rateL, x
+   sta voices::Voice::pitch_slide::posL, x
+   sta voi_fine
+   lda voices::Voice::pitch_slide::posH, x
+   sbc voices::Voice::pitch_slide::rateH, x
+   sta voices::Voice::pitch_slide::posH, x
    sta voi_pitch
    cmp voices::Voice::pitch, x
-   ; porta still going? if not, end it
+   ; slide still going? if not, end it
    bcs @do_vibrato
-   stz voices::Voice::porta::active, x
+   stz voices::Voice::pitch_slide::active, x
    stz voi_fine
    lda voices::Voice::pitch, x
    sta voi_pitch
    bra @do_vibrato
 @porta_up:
    ; porta upwards
-   lda voices::Voice::porta::rateL, x
+   lda voices::Voice::pitch_slide::rateL, x
    clc
-   adc voices::Voice::porta::posL, x
-   sta voices::Voice::porta::posL, x
+   adc voices::Voice::pitch_slide::posL, x
+   sta voices::Voice::pitch_slide::posL, x
    sta voi_fine
-   lda voices::Voice::porta::rateH, x
-   adc voices::Voice::porta::posH, x
-   sta voices::Voice::porta::posH, x
+   lda voices::Voice::pitch_slide::rateH, x
+   adc voices::Voice::pitch_slide::posH, x
+   sta voices::Voice::pitch_slide::posH, x
    sta voi_pitch
    cmp voices::Voice::pitch, x
-   ; porta still going? if not, end it
+   ; slide still going? if not, end it
    bcc @do_vibrato
-   stz voices::Voice::porta::active, x
+   stz voices::Voice::pitch_slide::active, x
    stz voi_fine
    lda voices::Voice::pitch, x
    sta voi_pitch

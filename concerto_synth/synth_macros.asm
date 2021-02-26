@@ -222,90 +222,90 @@ SYNTH_MACROS_INC = 1
    lda timbres::Timbre::porta_r, y
    sta mp_return_value+1
    stz mp_return_value
-   stz Voice::porta::rateL, x
-   stz Voice::porta::rateH, x
+   stz Voice::pitch_slide::rateL, x
+   stz Voice::pitch_slide::rateH, x
 
    ; multiplication
    bbr0 mp_slide_distance, :+
    lda mp_return_value+1
-   sta Voice::porta::rateL, x
+   sta Voice::pitch_slide::rateL, x
 :  clc
    rol mp_return_value+1
    rol mp_return_value
    bbr1 mp_slide_distance, :+
    clc
    lda mp_return_value+1
-   adc Voice::porta::rateL, x
-   sta Voice::porta::rateL, x
+   adc Voice::pitch_slide::rateL, x
+   sta Voice::pitch_slide::rateL, x
    lda mp_return_value
-   adc Voice::porta::rateH, x
-   sta Voice::porta::rateH, x
+   adc Voice::pitch_slide::rateH, x
+   sta Voice::pitch_slide::rateH, x
 :  clc
    rol mp_return_value+1
    rol mp_return_value
    bbr2 mp_slide_distance, :+
    clc
    lda mp_return_value+1
-   adc Voice::porta::rateL, x
-   sta Voice::porta::rateL, x
+   adc Voice::pitch_slide::rateL, x
+   sta Voice::pitch_slide::rateL, x
    lda mp_return_value
-   adc Voice::porta::rateH, x
-   sta Voice::porta::rateH, x
+   adc Voice::pitch_slide::rateH, x
+   sta Voice::pitch_slide::rateH, x
 :  clc
    rol mp_return_value+1
    rol mp_return_value
    bbr3 mp_slide_distance, :+
    clc
    lda mp_return_value+1
-   adc Voice::porta::rateL, x
-   sta Voice::porta::rateL, x
+   adc Voice::pitch_slide::rateL, x
+   sta Voice::pitch_slide::rateL, x
    lda mp_return_value
-   adc Voice::porta::rateH, x
-   sta Voice::porta::rateH, x
+   adc Voice::pitch_slide::rateH, x
+   sta Voice::pitch_slide::rateH, x
 :  clc
    rol mp_return_value+1
    rol mp_return_value
    bbr4 mp_slide_distance, :+
    clc
    lda mp_return_value+1
-   adc Voice::porta::rateL, x
-   sta Voice::porta::rateL, x
+   adc Voice::pitch_slide::rateL, x
+   sta Voice::pitch_slide::rateL, x
    lda mp_return_value
-   adc Voice::porta::rateH, x
-   sta Voice::porta::rateH, x
+   adc Voice::pitch_slide::rateH, x
+   sta Voice::pitch_slide::rateH, x
 :  clc
    rol mp_return_value+1
    rol mp_return_value
    bbr5 mp_slide_distance, :+
    clc
    lda mp_return_value+1
-   adc Voice::porta::rateL, x
-   sta Voice::porta::rateL, x
+   adc Voice::pitch_slide::rateL, x
+   sta Voice::pitch_slide::rateL, x
    lda mp_return_value
-   adc Voice::porta::rateH, x
-   sta Voice::porta::rateH, x
+   adc Voice::pitch_slide::rateH, x
+   sta Voice::pitch_slide::rateH, x
 :  clc
    rol mp_return_value+1
    rol mp_return_value
    bbr6 mp_slide_distance, :+
    clc
    lda mp_return_value+1
-   adc Voice::porta::rateL, x
-   sta Voice::porta::rateL, x
+   adc Voice::pitch_slide::rateL, x
+   sta Voice::pitch_slide::rateL, x
    lda mp_return_value
-   adc Voice::porta::rateH, x
-   sta Voice::porta::rateH, x
+   adc Voice::pitch_slide::rateH, x
+   sta Voice::pitch_slide::rateH, x
 :  clc
    rol mp_return_value+1
    rol mp_return_value
    bbr7 mp_slide_distance, @end_macro
    clc
    lda mp_return_value+1
-   adc Voice::porta::rateL, x
-   sta Voice::porta::rateL, x
+   adc Voice::pitch_slide::rateL, x
+   sta Voice::pitch_slide::rateL, x
    lda mp_return_value
-   adc Voice::porta::rateH, x
-   sta Voice::porta::rateH, x
+   adc Voice::pitch_slide::rateH, x
+   sta Voice::pitch_slide::rateH, x
 @end_macro:
 .endmacro
 

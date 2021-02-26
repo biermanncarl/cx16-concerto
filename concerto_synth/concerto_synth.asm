@@ -21,7 +21,7 @@
 
 ; For more information, see readme.md.
 
-; You can emply your own playback routine within each call of the interrupt service routine
+; You can employ your own playback routine within each call of the interrupt service routine
 ; via setting this following (compile time) vector to point to the starting address of
 ; your own routine before including concerto_synth.asm.
 ; Example:
@@ -52,6 +52,10 @@ note_channel = r0L
 note_timbre  = r0H
 note_pitch   = r1L
 note_volume  = r1H
+pitchslide_position_fine = r2L
+pitchslide_position_note = r2H
+pitchslide_rate_fine = r3L
+pitchslide_rate_note = r3H
 
 ; concerto_synth::initialize
 ; subroutine to initialize the synth engine
@@ -122,6 +126,26 @@ stop_note = voices::stop_note
 ; AFFECTS: A, X, Y
 panic = voices::panic
 
+; concerto_synth::set_pitchslide_position
+; Sets the current pitch for the pitch slide on a given channel.
+; If pitch slide had been inactive previously, it gets activated and the slide rate is set to zero.
+; If coarse position is set to 255, the pitch of the played note is assumed, instead.
+; PARAMETERS:  
+;              channel number:  r0L
+;              position coarse: r2H
+;              position fine:   r2L
+; AFFECTS: A, X
+set_pitchslide_position = voices::set_pitchslide_position
+
+; concerto_synth::set_pitchslide_rate
+; Sets the rate for the pitch slide on a given channel.
+; If the pitch slide had been inactive previously, it gets activated and is started at the note's current pitch.
+; PARAMETERS:  
+;              channel number: r0L
+;              rate coarse:    r3H
+;              rate fine:      r3L
+; AFFECTS: A, X
+set_pitchslide_rate = voices::set_pitchslide_rate
 
 
 

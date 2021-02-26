@@ -1,3 +1,4 @@
 cl65 -t cx16 -o CONCERTO.PRG -C cx16-asm.cfg "example_full.asm"
 cl65 -t cx16 -o EXAMPLE01.PRG -C cx16-asm.cfg "example_01_hello_world_concerto.asm"
 cl65 -t cx16 -o EXAMPLE02.PRG -C cx16-asm.cfg "example_02_playback.asm"
+cl65 -t cx16 -o EXAMPLE03.PRG -C cx16-asm.cfg "example_03_pitchbend.asm"

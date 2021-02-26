@@ -298,7 +298,7 @@ load_default_timbre:
    stz Timbre::porta, x
    lda #20
    sta Timbre::porta_r, x
-   lda #(16*1+6);$FF
+   lda #$FF
    sta Timbre::vibrato, x
    ; LFO
    lda #10

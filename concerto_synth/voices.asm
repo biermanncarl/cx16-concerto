@@ -62,12 +62,12 @@
    ; PSG voices (synth oscillator to PSG oscillator mapping)
    osc_psg_map:   OSCILLATOR_VOICE_BYTE_FIELD
 
-   ; portamento
-   .scope porta
+   ; pitch slide (either for pitchbend or portamento)
+   .scope pitch_slide
       active:  VOICE_BYTE_FIELD   ; is porta still going? 0 if inactive, 1 if going up, 2 if going down
       rateL:   VOICE_BYTE_FIELD   ; unsigned rate (fine, note)
       rateH:   VOICE_BYTE_FIELD
-      posL:    VOICE_BYTE_FIELD   ; current position in protamento (fine, note). Overwrites note as long as active
+      posL:    VOICE_BYTE_FIELD   ; current position in slide (fine, note). Overwrites note as long as active
       posH:    VOICE_BYTE_FIELD
    .endscope
 .endscope
@@ -193,7 +193,7 @@ continue_note:
    lda timbres::Timbre::porta, y
    bne @setup_porta
 @no_porta:
-   stz Voice::porta::active, x
+   stz Voice::pitch_slide::active, x
    jmp cn_check_retrigger
 @setup_porta:
    ; portamento stuff (must come before voice's pitch is replaced!)
@@ -212,14 +212,14 @@ continue_note:
    sta cn_slide_distance
    ldy #1
 :  tya
-   sta Voice::porta::active, x ; up or down
+   sta Voice::pitch_slide::active, x ; up or down
    ; determine porta rate
    ldy note_timbre
    MUL8x8_PORTA
    ; set current porta starting point
-   stz Voice::porta::posL, x
+   stz Voice::pitch_slide::posL, x
    lda Voice::pitch, x
-   sta Voice::porta::posH, x
+   sta Voice::pitch_slide::posH, x
 cn_check_retrigger:
    ; retrigger or continue?
    lda timbres::Timbre::retrig, y
@@ -311,7 +311,7 @@ start_note:
    bcs :+
    jmp @unsuccessful    ; if there's no oscillator left, don't play
    ; reset portamento
-:  stz Voice::porta::active, x
+:  stz Voice::pitch_slide::active, x
    ; get oscillators from and update free oscillators ringlist
    ; x: offset in voice data
    ; y: offset in freeosclist (but first, it is timbre index)
@@ -336,7 +336,7 @@ start_note:
    rts
 @unsuccessful:
    lda #0
-rts
+   rts
 
 
 ; This subroutine deactivates the voice on a given channel and
@@ -379,7 +379,7 @@ stop_note:
    inc Oscmap::nfo
    dec spn_loop_counter
    bne @loop_osc
-rts
+   rts
 
 
 ; Puts a note into its release phase.
@@ -404,7 +404,7 @@ release_note:
    tax
    dec rln_env_counter
    bne @loop_env
-rts
+   rts
 
 
 
@@ -429,8 +429,56 @@ panic:
    dex
    bpl @loop2
    cli
-rts
+   rts
 
+
+; set slide position
+; parameters according to labels in concerto_synth.asm
+; if slide was inactive beforehand, it is activated and its rate set to 0
+; if position is set to 255, it will automatically set the slide position to
+; the note that was originally played.
+set_pitchslide_position:
+   ldx note_channel
+   lda pitchslide_position_note
+   cmp #255
+   bne :+
+@reset:
+   lda Voice::pitch, x
+   sta Voice::pitch_slide::posH, x
+   stz Voice::pitch_slide::posL, x
+   beq :++
+@normal:
+:  sta Voice::pitch_slide::posH, x
+   lda pitchslide_position_fine
+   sta Voice::pitch_slide::posL, x
+:  ; check if slide was active beforehand
+   ; if yes, keep it going with the previously set slide rate (i.e. do nothing)
+   ; if not, activate it and set slide rate to 0   
+   lda Voice::pitch_slide::active, x
+   bne :+
+   lda #3
+   sta Voice::pitch_slide::active, x
+   stz Voice::pitch_slide::rateL, x
+   stz Voice::pitch_slide::rateH, x
+:  rts
+
+; set slide rate
+; parameters according to labels in concerto_synth.asm
+; if slide has been inactive, activate and set slide position to the original note
+set_pitchslide_rate:
+   ldx note_channel
+   lda pitchslide_rate_fine
+   sta Voice::pitch_slide::rateL, x
+   lda pitchslide_rate_note
+   sta Voice::pitch_slide::rateH, x
+   lda Voice::pitch_slide::active, x
+   bne :+
+   lda Voice::pitch, x
+   sta Voice::pitch_slide::posH, x
+   stz Voice::pitch_slide::posL, x
+:  lda #3
+   sta Voice::pitch_slide::active, x
+   rts
 
 
 
