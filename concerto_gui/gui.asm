@@ -327,7 +327,7 @@ dummy_data_size = 1
       timbre_lb: STR_FORMAT "timbre"
       load_preset_lb: STR_FORMAT " load preset"
       save_preset_lb: STR_FORMAT " save preset"
-      logo_lb: STR_FORMAT "=== concerto v0.2.0-alpha ==="
+      logo_lb: STR_FORMAT "=== concerto v0.1.2-alpha ==="
    .endscope
    ; listbox popup. shows up when a listbox was clicked.
    .scope listbox_popup
