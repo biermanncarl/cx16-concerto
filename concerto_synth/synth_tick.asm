@@ -631,14 +631,7 @@ end_env: ; jump here when done with all envelopes
    ; check pitch slide
    lda voices::Voice::pitch_slide::active, x
    beq @skip_porta   ; porta inactive?
-   cmp #1            ; porta upwards?
-   beq @porta_up     ; if not, it is going down:
-   cmp #2            ; porta downwards?
-   beq @porta_down
-
-   ; free slide, no end (might update this for more convenient options for composing ... i.e. slide with target, much like porta)
-   ; could also be optimized, because some code is redundant.
-@free_slide:
+   ; do slide
    lda voices::Voice::pitch_slide::posL, x
    clc
    adc voices::Voice::pitch_slide::rateL, x
@@ -648,40 +641,23 @@ end_env: ; jump here when done with all envelopes
    adc voices::Voice::pitch_slide::rateH, x
    sta voices::Voice::pitch_slide::posH, x
    sta voi_pitch
-   bra @do_vibrato
-@porta_down:
-   ; porta downwards
-   lda voices::Voice::pitch_slide::posL, x
-   sec
-   sbc voices::Voice::pitch_slide::rateL, x
-   sta voices::Voice::pitch_slide::posL, x
-   sta voi_fine
+   ; check for finish
+   lda voices::Voice::pitch_slide::active, x
+   cmp #3            ; free porta?
+   beq @do_vibrato
+   cmp #2            ; porta down?
+   beq @porta_down_check
+@porta_up_check:
    lda voices::Voice::pitch_slide::posH, x
-   sbc voices::Voice::pitch_slide::rateH, x
-   sta voices::Voice::pitch_slide::posH, x
-   sta voi_pitch
    cmp voices::Voice::pitch, x
    ; slide still going? if not, end it
-   bcs @do_vibrato
-   stz voices::Voice::pitch_slide::active, x
-   stz voi_fine
-   lda voices::Voice::pitch, x
-   sta voi_pitch
+   bcs @stop_porta
    bra @do_vibrato
-@porta_up:
-   ; porta upwards
-   lda voices::Voice::pitch_slide::rateL, x
-   clc
-   adc voices::Voice::pitch_slide::posL, x
-   sta voices::Voice::pitch_slide::posL, x
-   sta voi_fine
-   lda voices::Voice::pitch_slide::rateH, x
-   adc voices::Voice::pitch_slide::posH, x
-   sta voices::Voice::pitch_slide::posH, x
-   sta voi_pitch
+@porta_down_check:
+   lda voices::Voice::pitch_slide::posH, x
    cmp voices::Voice::pitch, x
-   ; slide still going? if not, end it
-   bcc @do_vibrato
+   bcs @do_vibrato
+@stop_porta:
    stz voices::Voice::pitch_slide::active, x
    stz voi_fine
    lda voices::Voice::pitch, x

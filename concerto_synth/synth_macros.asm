@@ -217,7 +217,7 @@ SYNTH_MACROS_INC = 1
    ; This is achieved by multiplying the "base rate" by the porta distance
    
    ; initialization
-   ; mzpwa stores the porta rate. It needs a 16 bit variable because it is left shifted
+   ; mp_return_value stores the porta rate. It needs a 16 bit variable because it is left shifted
    ; throughout the multiplication
    lda timbres::Timbre::porta_r, y
    sta mp_return_value+1
@@ -298,7 +298,7 @@ SYNTH_MACROS_INC = 1
 :  clc
    rol mp_return_value+1
    rol mp_return_value
-   bbr7 mp_slide_distance, @end_macro
+   bbr7 mp_slide_distance, :+
    clc
    lda mp_return_value+1
    adc Voice::pitch_slide::rateL, x
@@ -306,7 +306,19 @@ SYNTH_MACROS_INC = 1
    lda mp_return_value
    adc Voice::pitch_slide::rateH, x
    sta Voice::pitch_slide::rateH, x
-@end_macro:
+
+:  ; check if porta going down. if yes, invert rate
+   lda Voice::pitch_slide::active, x
+   cmp #2
+   bne :+
+   lda Voice::pitch_slide::rateL, x
+   eor #%11111111
+   inc
+   sta Voice::pitch_slide::rateL, x
+   lda Voice::pitch_slide::rateH, x
+   eor #%11111111
+   sta Voice::pitch_slide::rateH, x
+:
 .endmacro
 
 
