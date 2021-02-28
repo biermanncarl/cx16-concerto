@@ -22,7 +22,6 @@
 ; Program: CONCERTO                                                           ;
 ; Platform: Commander X16 (Emulator R38)                                      ;
 ; Compiler: CC65                                                              ;
-; Compile with: cl65 -t cx16 -o CONCERTO.PRG example_full.asm -C cx16-asm.cfg ;
 ; Author: Carl Georg Biermann                                                 ;
 ; Dedication:                                                                 ;
 ;                                                                             ;
@@ -39,20 +38,15 @@
 ;                                                                             ;
 ;*****************************************************************************;
 
+; Compile with: cl65 -t cx16 -o CONCERTO.PRG -C cx16-asm.cfg -u __EXEHDR__ "example_full.asm"
+
 .zeropage
 ; define zero page variables of the submodules
 .include "concerto_synth/synth_zeropage.asm"
 .include "concerto_gui/gui_zeropage.asm"
 
 
-.segment "CODE"
-; BASIC stub to start program
-; "10 SYS2061"
-.org $0801
-.byte $0B, $08, $0A, $00, $9E, $32, $30, $36, $31, $00, $00, $00
-
-; And here is address 2061 = $080D, which is called by BASIC.
-.org $080D
+.code
 
    jmp start
 

@@ -27,10 +27,10 @@ function for your preset is unavailable. (It simply does nothing.)
 CONCERTO is built using the ca65 assembler. I built it with the command
 
 ```shell
-cl65 -t cx16 -o CONCERTO.PRG -C cx16-asm.cfg example_full.asm
+cl65 -t cx16 -o CONCERTO.PRG -C cx16-asm.cfg -u __EXEHDR__ "example_full.asm"
 ```
 
-## Quick sart guide
+## Quick start guide
 
 If you have used synthesizers already, most of CONCERTO will be familiar to you.
 In order for you to be able to feel right at home, there are some things you should
