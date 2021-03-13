@@ -56,6 +56,8 @@
 ; include the synth gui
 .include "concerto_gui/concerto_gui.asm"
 
+; include the X16 header
+.include "concerto_synth/x16.asm"
 
 ; keyboard variables
 Octave:

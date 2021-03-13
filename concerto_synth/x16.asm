@@ -21,13 +21,6 @@
 ; This file contains various definitions of Commander X16 addresses and values.
 ; It is based on a file made by Matt Heffernan.
 
-.ifndef X16_INC
-X16_INC  = 1
-
-.ifndef __CX16__
-__CX16__ = 1
-.endif
-
 SD_DEVICE   = 1
 HOST_DEVICE = 8
 DISK_DEVICE = HOST_DEVICE
@@ -93,8 +86,8 @@ ZP_PTR_4          = $26
 
 ; I/O Registers
 VERA_addr_low     = $9F20
-VERA_addr_high    = $9F21
-VERA_addr_bank    = $9F22
+VERA_addr_mid     = $9F21
+VERA_addr_high    = $9F22
 VERA_data0        = $9F23
 VERA_data1        = $9F24
 VERA_ctrl         = $9F25
@@ -239,26 +232,3 @@ VRAM_sprattr   = $1FC00
 IRQVec         := $0314
 BRKVec         := $0316
 NMIVec         := $0318
-
-;   Macros
-
-.macro VERA_SET_ADDR addr, stride
-   .ifnblank stride
-      .if stride < 0
-         lda #((^addr) | $08 | ((0-stride) << 4))
-      .else
-         lda #((^addr) | (stride << 4))
-      .endif
-   .else
-      lda #(^addr) | $10
-   .endif
-
-   sta VERA_addr_bank
-   lda #(>addr)
-   sta VERA_addr_high
-   lda #(<addr)
-   sta VERA_addr_low
-.endmacro
-
-
-.endif

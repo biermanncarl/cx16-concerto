@@ -38,9 +38,9 @@ display_1s:         .byte 0
 .macro SET_VERA_XY svx, svy
    stz VERA_ctrl
    lda #$10
-   sta VERA_addr_bank
-   lda svy
    sta VERA_addr_high
+   lda svy
+   sta VERA_addr_mid
    lda svx
    asl
    sta VERA_addr_low
@@ -95,9 +95,9 @@ display_1s:         .byte 0
    ; set VERA address
    stz VERA_ctrl
    lda #$10
-   sta VERA_addr_bank
-   lda #db_y
    sta VERA_addr_high
+   lda #db_y
+   sta VERA_addr_mid
    lda #db_x
    clc
    asl
@@ -128,9 +128,9 @@ display_1s:         .byte 0
    ; set VERA address
    stz VERA_ctrl
    lda #$10
-   sta VERA_addr_bank
-   lda #dm_y
    sta VERA_addr_high
+   lda #dm_y
+   sta VERA_addr_mid
    lda #dm_x
    clc
    asl

@@ -23,6 +23,7 @@
 
 .scope concerto_gui
 
+.include "../concerto_synth/x16.asm"
 .include "gui_macros.asm"
 .include "gui_variables.asm"
 .include "gui_utils.asm"

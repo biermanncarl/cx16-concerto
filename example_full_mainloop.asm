@@ -152,7 +152,8 @@ mainloop:
    jmp play_note
 @keyboard_space:
    ldx #0
-   jsr concerto_synth::release_note
+   stx concerto_synth::note_channel
+   jsr concerto_synth::stop_note
    jmp end_mainloop
 @keyboard_z:
    lda Octave

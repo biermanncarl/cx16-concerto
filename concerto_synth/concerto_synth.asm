@@ -33,13 +33,9 @@
 ;       ...
 ;       rts
 
-; this is used by the GUI, as well. Therefore cannot put it into a scope.
-.include "x16.asm"
-
-
-
 .scope concerto_synth
 
+.include "x16.asm"
 .include "pitch_data.asm"
 .include "synth_macros.asm"
 .include "timbres.asm"
