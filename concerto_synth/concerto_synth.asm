@@ -42,6 +42,8 @@
 .include "voices.asm"
 .include "synth_tick.asm"
 .include "my_isr.asm"
+; This just provides some macros which can be used by the host app. Doesn't do anything:
+.include "presets.asm"
 
 ; Interface parameters
 note_channel = r0L
