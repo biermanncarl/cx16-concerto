@@ -280,7 +280,7 @@ dummy_data_size = 1
          .byte 2, px, py, 3, 0 ; tab selector
          .byte 4, px+4 , py+3, %00000001, 0, 127, 0, 0 ; drag edit - attack
          .byte 4, px+9 , py+3, %00000001, 0, 127, 0, 0 ; drag edit - decay
-         .byte 4, px+14, py+3, %00000000, 0, concerto_synth::ENV_PEAK, 0, 0 ; drag edit - sustain
+         .byte 4, px+14, py+3, %00000000, 0, ENV_PEAK, 0, 0 ; drag edit - sustain
          .byte 4, px+18, py+3, %00000001, 0, 127, 0, 0 ; drag edit - release
          .byte 0
       ; caption list of envelope panel

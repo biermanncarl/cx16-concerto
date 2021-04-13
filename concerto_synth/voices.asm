@@ -173,6 +173,7 @@ play_note:
    lda note_pitch
    sta Voice::pitch, x
    lda note_volume
+   inc ; compensate for max volume being 63, but the synth engine can handle 64. Consequently, volume 0 won't be silent.
    sta Voice::volume, x
    lda note_timbre
    sta Voice::timbre, x
