@@ -45,7 +45,7 @@ osc_panmute:   .byte 0
 ; where S is the sign of the modulation, and MMMMMMM is a 7 bit value defining
 ; the magnitude of the modulation depth. 64 aka 1000000 is full modulation
 ; depth, i.e. the modulation source is added to the destination with a 
-; prefactor of 1. However, you can go up to 127 aka 1111111 (on your own risk!)
+; prefactor of 1. However, you can go up to 127 aka 1111111 (at your own risk!)
 
 ; Pitch modulation depth is defined by a different format that saves some CPU
 ; cycles (because it is a 16 bit modulation it's worth it).
@@ -61,7 +61,7 @@ osc_panmute:   .byte 0
 ; times N gets right shifted.
 ; LLL is a binary number that must assume a value from 0 to 4.
 ; It is one of five sub-levels between powers of 2.
-; Since the right shifts can only produce divisions with powers of 2,
+; Since the right shifts can only produce divisions by powers of 2,
 ; these sub-levels are intended to fill in the gaps between powers of 2
 ; as evenly as possible.
 ; Beware: HHHH denotes how much N is scaled DOWN
@@ -75,7 +75,7 @@ osc_panmute:   .byte 0
 ; %1.100
 ; %1.110
 ; and right shift the result up to 15 times. (only in practice, the right shift is done first)
-; These values are chosen to be distributed relatively evenly on an exponential scale.
+; These values are chosen to be distributed relatively evenly on a logarithmic scale.
 
 
 ; MODULATION SOURCE NUMBER FORMAT
@@ -197,11 +197,11 @@ env_do_attack:
    adc voices::Voice::env::phaseH, x
    sta voices::Voice::env::phaseH, x
    ; high byte still in accumulator after addition
-   cmp #127 ; this is the threshold for when attack stage is done
+   cmp #ENV_PEAK ; this is the threshold for when attack stage is done
    bcc advance_env ; if 64 is still larger than high byte, we're still in attack phase, and therefore done for now
    ; otherwise, advance to next stage:
    inc voices::Voice::env::step, x
-   lda #127
+   lda #ENV_PEAK
    sta voices::Voice::env::phaseH, x
    stz voices::Voice::env::phaseL, x
    jmp advance_env
