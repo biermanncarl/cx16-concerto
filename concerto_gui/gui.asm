@@ -334,7 +334,7 @@ dummy_data_size = 1
       copy_preset_lb: STR_FORMAT " copy"
       paste_preset_lb: STR_FORMAT " paste"
       load_save_description_lb: STR_FORMAT "to/from file preset.cop"
-      logo_lb: STR_FORMAT "=== concerto v0.2.0-alpha ==="
+      logo_lb: STR_FORMAT "=== concerto v0.3.0-alpha ==="
    .endscope
    ; listbox popup. shows up when a listbox was clicked.
    .scope listbox_popup
