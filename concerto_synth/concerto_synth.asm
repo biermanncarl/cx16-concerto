@@ -145,6 +145,22 @@ set_pitchslide_position = voices::set_pitchslide_position
 ; AFFECTS: A, X
 set_pitchslide_rate = voices::set_pitchslide_rate
 
+; concerto_synth::dump_timbres
+; Dumps the entirety of timbre data as a byte stream to CHROUT.
+; Use this to save all timbre data to an already opened file.
+; The number of bytes emitted by this function is always the same (within one version of Concerto).
+; PARAMETERS: none
+; AFFECTS: A, X, Y
+dump_timbres = timbres::dump_to_chrout
+
+; concerto_synth::restore_timbres
+; Loads the entire timbre data as a byte stream from CHRIN.
+; Use this to load all timbre data from an already opened file.
+; The number of bytes consumed by this function is always the same (within one version of Concerto).
+; PARAMETERS: none
+; AFFECTS: A, X, Y
+restore_timbres = timbres::restore_from_chrin
+
 
 
 ; default dummy playback routine being called in the isr

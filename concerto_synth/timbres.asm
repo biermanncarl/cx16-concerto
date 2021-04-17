@@ -128,7 +128,7 @@ data_count = data_size / N_TIMBRES ; 129 currently
 command_len:
    .byte 17
 command_string:
-   .byte 64,"0:preset.cot,s,w"
+   .byte 64,"0:preset.cop,s,w"
 copying:
    .byte 128 ; which timbre to copy. negative is none
 pasting:
@@ -140,7 +140,7 @@ pasting:
 ; more info about the Commodore DOS
 ; https://en.wikipedia.org/wiki/Commodore_DOS
 
-; opens the file "PRESET.COT" and saves a timbre in it (overwrites existing preset)
+; opens the file "PRESET.COP" and saves a timbre in it (overwrites existing preset)
 ; WARNING: No proper error handling (yet)!
 ; X:              timbre number
 ; command_string: string that holds the DOS command to write the file
@@ -211,7 +211,7 @@ save_timbre:
    rts
 
 
-; opens the file "PRESET.COT" and loads a timbre from it (overwrites existing preset)
+; opens the file "PRESET.COP" and loads a timbre from it (overwrites existing preset)
 ; WARNING: No proper error handling (yet)!
 ; X:            timbre number
 ; filename:     name of the file to store the timbre in
@@ -373,6 +373,14 @@ init_timbres:
    bne @loop_timbres
    rts
 
+; sets the timbre pointer to the start of the timbre data
+initialize_timbre_pointer:
+   lda #<Timbre::data_start
+   sta timbre_pointer
+   lda #>Timbre::data_start
+   sta timbre_pointer+1
+   rts
+
 ; advances the timbre_pointer by N_TIMBRES, i.e. from one parameter to the next
 advance_timbre_pointer:
    clc
@@ -392,11 +400,7 @@ copy_paste:
    rts    ; exit if no preset is being copied
 :  stx pasting
    ldx #Timbre::data_count
-   ; initialize pointer
-   lda #<Timbre::data_start
-   sta timbre_pointer
-   lda #>Timbre::data_start
-   sta timbre_pointer+1
+   jsr initialize_timbre_pointer
 @loop:
    ldy copying
    lda (timbre_pointer), y
@@ -405,6 +409,43 @@ copy_paste:
    jsr advance_timbre_pointer
    dex
    bne @loop
+   rts
+
+; dumps all timbre data to CHROUT. can be used to write to an already opened file
+dump_to_chrout:
+   jsr initialize_timbre_pointer
+   ldx #Timbre::data_count
+@loop_parameters:
+   ldy #N_TIMBRES
+@loop_timbres:
+   dey
+   bmi :+
+   lda (timbre_pointer), y
+   jsr CHROUT ; leaves X and Y untouched
+   bra @loop_timbres
+:  jsr advance_timbre_pointer
+   dex
+   bne @loop_parameters
+   rts
+
+; restores all timbres from a data stream from CHRIN (which was previously dumped via dump_to_chrout)
+; can be used to read from an already opened file
+restore_from_chrin:
+   jsr initialize_timbre_pointer
+   ldx #Timbre::data_count
+@loop_parameters:
+   ldy #N_TIMBRES
+@loop_timbres:
+   dey
+   bmi :+
+   phy
+   jsr CHRIN ; leaves X untouched, uses Y (as far as I know)
+   ply
+   sta (timbre_pointer), y
+   bra @loop_timbres
+:  jsr advance_timbre_pointer
+   dex
+   bne @loop_parameters
    rts
 
 .endscope
