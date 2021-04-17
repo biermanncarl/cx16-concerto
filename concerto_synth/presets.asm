@@ -35,6 +35,7 @@
   CONCERTO_PRESET_KICK_DRUM_1 5
   CONCERTO_PRESET_SNARE_DRUM_1 6
   CONCERTO_PRESET_TAMBOURINE 7
+  CONCERTO_PRESET_SNARE_DRUM_2 8
 .endmacro
 
 
@@ -1234,4 +1235,110 @@
    sta concerto_synth::timbres::Timbre::osc::pitch_mod_sel2, x
    lda #(2 * 16 + 2)
    sta concerto_synth::timbres::Timbre::osc::pitch_mod_dep2, x
+.endmacro
+
+
+.macro CONCERTO_PRESET_SNARE_DRUM_2 patch_no
+   ; global parameters
+   ldx #patch_no
+   lda #2
+   sta concerto_synth::timbres::Timbre::n_oscs, x
+   lda #3
+   sta concerto_synth::timbres::Timbre::n_envs, x
+   lda #0
+   sta concerto_synth::timbres::Timbre::n_lfos, x
+   ; set mono & porta rate
+   lda #30
+   sta concerto_synth::timbres::Timbre::porta_r, x
+   lda #0
+   sta concerto_synth::timbres::Timbre::porta, x
+   lda #1
+   sta concerto_synth::timbres::Timbre::retrig, x
+   ; env 0
+   ldx #(0*N_TIMBRES+patch_no)
+   lda #0
+   sta concerto_synth::timbres::Timbre::env::attackL, x
+   lda #127
+   sta concerto_synth::timbres::Timbre::env::attackH, x
+   lda #0
+   sta concerto_synth::timbres::Timbre::env::decayL, x
+   lda #10
+   sta concerto_synth::timbres::Timbre::env::decayH, x
+   lda #0
+   sta concerto_synth::timbres::Timbre::env::sustain, x
+   lda #0
+   sta concerto_synth::timbres::Timbre::env::releaseL, x
+   lda #3
+   sta concerto_synth::timbres::Timbre::env::releaseH, x
+   ; env 1
+   ldx #(1*N_TIMBRES+patch_no)
+   lda #0
+   sta concerto_synth::timbres::Timbre::env::attackL, x
+   lda #127
+   sta concerto_synth::timbres::Timbre::env::attackH, x
+   lda #0
+   sta concerto_synth::timbres::Timbre::env::decayL, x
+   lda #78
+   sta concerto_synth::timbres::Timbre::env::decayH, x
+   lda #0
+   sta concerto_synth::timbres::Timbre::env::sustain, x
+   lda #0
+   sta concerto_synth::timbres::Timbre::env::releaseL, x
+   lda #2
+   sta concerto_synth::timbres::Timbre::env::releaseH, x
+   ; env 2
+   ldx #(2*N_TIMBRES+patch_no)
+   lda #0
+   sta concerto_synth::timbres::Timbre::env::attackL, x
+   lda #127
+   sta concerto_synth::timbres::Timbre::env::attackH, x
+   lda #0
+   sta concerto_synth::timbres::Timbre::env::decayL, x
+   lda #24
+   sta concerto_synth::timbres::Timbre::env::decayH, x
+   lda #0
+   sta concerto_synth::timbres::Timbre::env::sustain, x
+   lda #0
+   sta concerto_synth::timbres::Timbre::env::releaseL, x
+   lda #2
+   sta concerto_synth::timbres::Timbre::env::releaseH, x
+   ; set oscillator parameters
+   ; oscillator 0
+   ldx #(0*N_TIMBRES+patch_no)
+   lda #196
+   sta concerto_synth::timbres::Timbre::osc::waveform, x
+   lda #123
+   sta concerto_synth::timbres::Timbre::osc::pitch, x
+   lda #192
+   sta concerto_synth::timbres::Timbre::osc::lrmid, x
+   lda #0
+   sta concerto_synth::timbres::Timbre::osc::amp_sel, x
+   lda #64
+   sta concerto_synth::timbres::Timbre::osc::volume, x
+   lda #0
+   sta concerto_synth::timbres::Timbre::osc::track, x
+   lda #1
+   sta concerto_synth::timbres::Timbre::osc::pitch_mod_sel1, x
+   lda #(128+16*4+3)
+   sta concerto_synth::timbres::Timbre::osc::pitch_mod_dep1, x
+   ; oscillator 1
+   ldx #(1*N_TIMBRES+patch_no)
+   lda #0
+   sta concerto_synth::timbres::Timbre::osc::waveform, x
+   lda #63
+   sta concerto_synth::timbres::Timbre::osc::pulse, x
+   lda #47
+   sta concerto_synth::timbres::Timbre::osc::pitch, x
+   lda #192
+   sta concerto_synth::timbres::Timbre::osc::lrmid, x
+   lda #2
+   sta concerto_synth::timbres::Timbre::osc::amp_sel, x
+   lda #64
+   sta concerto_synth::timbres::Timbre::osc::volume, x
+   lda #0
+   sta concerto_synth::timbres::Timbre::osc::track, x
+   lda #2
+   sta concerto_synth::timbres::Timbre::osc::pitch_mod_sel1, x
+   lda #(16*4+5)
+   sta concerto_synth::timbres::Timbre::osc::pitch_mod_dep1, x
 .endmacro
