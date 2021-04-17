@@ -313,8 +313,8 @@ dummy_data_size = 1
       ; GUI component string of the panel
       comps:
          .byte 3, 41, 1, 0, N_TIMBRES-1, 0 ; arrowed edit (timbre selection)
-         .byte 1, 50, 2, 13, (<load_preset_lb), (>load_preset_lb) ; load preset button
-         .byte 1, 66, 2, 13, (<save_preset_lb), (>save_preset_lb) ; save preset button
+         .byte 1, 66, 2, 13, (<load_preset_lb), (>load_preset_lb) ; load preset button
+         .byte 1, 51, 2, 13, (<save_preset_lb), (>save_preset_lb) ; save preset button
          .byte 1, 33, 2, 6, (<copy_preset_lb), (>copy_preset_lb) ; load preset button
          .byte 1, 41, 2, 7, (<paste_preset_lb), (>paste_preset_lb) ; save preset button
          .byte 0
@@ -324,6 +324,8 @@ dummy_data_size = 1
          .word logo_lb
          .byte CCOLOR_CAPTION, 34, 1
          .word timbre_lb
+         .byte CCOLOR_CAPTION, 53, 1
+         .word load_save_description_lb
          .byte 0
       ; data specific to the synth-navigation panel
       timbre_lb: STR_FORMAT "timbre"
@@ -331,6 +333,7 @@ dummy_data_size = 1
       save_preset_lb: STR_FORMAT " save preset"
       copy_preset_lb: STR_FORMAT " copy"
       paste_preset_lb: STR_FORMAT " paste"
+      load_save_description_lb: STR_FORMAT "to/from file preset.cop"
       logo_lb: STR_FORMAT "=== concerto v0.2.0-alpha ==="
    .endscope
    ; listbox popup. shows up when a listbox was clicked.
