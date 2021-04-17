@@ -313,8 +313,10 @@ dummy_data_size = 1
       ; GUI component string of the panel
       comps:
          .byte 3, 41, 1, 0, N_TIMBRES-1, 0 ; arrowed edit (timbre selection)
-         .byte 1, 50, 0, 13, (<load_preset_lb), (>load_preset_lb) ; load preset button
-         .byte 1, 66, 0, 13, (<save_preset_lb), (>save_preset_lb) ; save preset button
+         .byte 1, 50, 2, 13, (<load_preset_lb), (>load_preset_lb) ; load preset button
+         .byte 1, 66, 2, 13, (<save_preset_lb), (>save_preset_lb) ; save preset button
+         .byte 1, 33, 2, 6, (<copy_preset_lb), (>copy_preset_lb) ; load preset button
+         .byte 1, 41, 2, 7, (<paste_preset_lb), (>paste_preset_lb) ; save preset button
          .byte 0
       ; caption list of the panel
       capts:
@@ -327,6 +329,8 @@ dummy_data_size = 1
       timbre_lb: STR_FORMAT "timbre"
       load_preset_lb: STR_FORMAT " load preset"
       save_preset_lb: STR_FORMAT " save preset"
+      copy_preset_lb: STR_FORMAT " copy"
+      paste_preset_lb: STR_FORMAT " paste"
       logo_lb: STR_FORMAT "=== concerto v0.2.0-alpha ==="
    .endscope
    ; listbox popup. shows up when a listbox was clicked.
@@ -2262,6 +2266,8 @@ write_snav:
    .word @timbre_selector
    .word @load_preset
    .word @save_preset
+   .word @copy_preset
+   .word @paste_preset
 @timbre_selector:
    ; read data from component string and write it to the Timbre setting
    lda snav::comps, y
@@ -2280,7 +2286,18 @@ write_snav:
    ldx Timbre
    jsr concerto_synth::timbres::save_timbre
    rts
-
+@copy_preset:
+   lda Timbre
+   sta concerto_synth::timbres::copying
+   rts
+@paste_preset:
+   sei
+   jsr concerto_synth::voices::panic
+   ldx Timbre
+   jsr concerto_synth::timbres::copy_paste
+   jsr refresh_gui
+   cli
+   rts
 
 ; since there is only the dummy component on the popup,
 ; this subroutine is only called upon a click on the 

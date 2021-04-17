@@ -56,7 +56,7 @@
 
 .scope timbres
 
-
+timbre_pointer = mzpwg
 
 
 .scope Timbre
@@ -121,14 +121,18 @@ data_start:
    .endscope
 data_end:
 data_size = data_end - data_start
-data_count = data_size / N_TIMBRES
+data_count = data_size / N_TIMBRES ; 129 currently
 .endscope
 
+; internal variables
 command_len:
    .byte 17
 command_string:
    .byte 64,"0:preset.cot,s,w"
-
+copying:
+   .byte 128 ; which timbre to copy. negative is none
+pasting:
+   .byte 0   ; where to paste
 
 
 
@@ -142,7 +146,6 @@ command_string:
 ; command_string: string that holds the DOS command to write the file
 ; command_len:    length of the command string
 save_timbre:
-   st_pointer = mzpwg
    phx
    ; put "w" as last character of the command string
    ldy command_len
@@ -181,21 +184,21 @@ save_timbre:
    txa
    clc
    adc #(<Timbre::data_start)
-   sta st_pointer
+   sta timbre_pointer
    lda #(>Timbre::data_start)
    adc #0
-   sta st_pointer+1
+   sta timbre_pointer+1
    ldy #Timbre::data_count
 @loop:
-   lda (st_pointer)
+   lda (timbre_pointer)
    jsr CHROUT
-   lda st_pointer
+   lda timbre_pointer
    clc
    adc #N_TIMBRES
-   sta st_pointer
-   lda st_pointer+1
+   sta timbre_pointer
+   lda timbre_pointer+1
    adc #0
-   sta st_pointer+1
+   sta timbre_pointer+1
    dey
    bne @loop
    phx ; this phx is just here to cancel the plx after @close_file
@@ -214,7 +217,6 @@ save_timbre:
 ; filename:     name of the file to store the timbre in
 ; filename_len: length of the file name
 load_timbre:
-   lt_pointer = mzpwg
    phx
    ; put "r" as last character of the command string
    ldy command_len
@@ -257,21 +259,15 @@ load_timbre:
    txa
    clc
    adc #(<Timbre::data_start)
-   sta lt_pointer
+   sta timbre_pointer
    lda #(>Timbre::data_start)
    adc #0
-   sta lt_pointer+1
+   sta timbre_pointer+1
    ldy #Timbre::data_count
 @loop:
    jsr CHRIN
-   sta (lt_pointer)
-   lda lt_pointer
-   clc
-   adc #N_TIMBRES
-   sta lt_pointer
-   lda lt_pointer+1
-   adc #0
-   sta lt_pointer+1
+   sta (timbre_pointer)
+   jsr advance_timbre_pointer
    dey
    bne @loop
    phx ; this phx is just here to cancel the plx after @close_file
@@ -375,6 +371,40 @@ init_timbres:
    jsr load_default_timbre
    cpx #0
    bne @loop_timbres
+   rts
+
+; advances the timbre_pointer by N_TIMBRES, i.e. from one parameter to the next
+advance_timbre_pointer:
+   clc
+   lda timbre_pointer
+   adc #N_TIMBRES
+   sta timbre_pointer
+   bcc :+
+   inc timbre_pointer+1
+:  rts
+
+; copy_paste. copies the timbre stored in variable "copying" to the one given in Y
+; if the value of "copying" is negative, nothing is done.
+; copy timbre "copying" to timbre "Y"
+copy_paste:
+   lda copying
+   bpl :+
+   rts    ; exit if no preset is being copied
+:  stx pasting
+   ldx #Timbre::data_count
+   ; initialize pointer
+   lda #<Timbre::data_start
+   sta timbre_pointer
+   lda #>Timbre::data_start
+   sta timbre_pointer+1
+@loop:
+   ldy copying
+   lda (timbre_pointer), y
+   ldy pasting
+   sta (timbre_pointer), y
+   jsr advance_timbre_pointer
+   dex
+   bne @loop
    rts
 
 .endscope
