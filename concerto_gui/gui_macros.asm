@@ -40,7 +40,7 @@
 .define CCOLOR_CHECKBOX_TICK 16*COLOR_CHECKBOX + 0
 .define CCOLOR_BUTTON 16*1 + 0
 ; others
-.define N_PANELS 7   ; number of panels
+.define N_PANELS 9   ; number of panels
 
 
 ; compile time macro: converts an ascii string to a zero-terminated string that can be displayed directly on the VERA

@@ -27,6 +27,7 @@
 .define N_VOICES 16
 .define N_TIMBRES 32
 .define N_OSCILLATORS 16 ; total number of PSG voices, which correspond to oscillators
+.define N_FM_VOICES 8
 .define MAX_OSCS_PER_VOICE 6
 .define MAX_ENVS_PER_VOICE 3
 .define MAX_LFOS_PER_VOICE 1
@@ -34,6 +35,7 @@
 .define MAX_VOLUME 63
 .define MAX_VOLUME_INTERNAL 64
 .define ENV_PEAK 127
+.define N_OPERATORS 4
 
 
 .macro VOICE_BYTE_FIELD
@@ -95,6 +97,18 @@
 ; lfo1: voice1 voice2 voice3 ... lfo2: voice1 voice2 voice3 ...
 .macro LFO_VOICE_BYTE_FIELD
    .repeat MAX_LFOS_PER_VOICE*N_VOICES
+      .byte 0
+   .endrep
+.endmacro
+
+.macro OPERATOR_TIMBRE_BYTE_FIELD
+   .repeat N_OPERATORS*N_TIMBRES
+      .byte 0
+   .endrep
+.endmacro
+
+.macro FM_VOICE_BYTE_FIELD
+   .repeat N_FM_VOICES
       .byte 0
    .endrep
 .endmacro
@@ -202,6 +216,18 @@ SYNTH_MACROS_INC = 1
    sta VERA_data0
    lda svf_frequency+1
    sta VERA_data0
+.endmacro
+
+; naive writing to a register in the YM2151
+; Potentially burns a lot of cycles in the waiting loop
+.macro SET_YM reg, data
+:  bit YM_data
+   bmi :-
+
+   lda #reg
+   sta YM_reg
+   lda #data
+   sta YM_data
 .endmacro
 
 

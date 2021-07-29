@@ -119,6 +119,28 @@ data_start:
       pwm_dep:          OSCILLATOR_TIMBRE_BYTE_FIELD    ; pwm modulation depth
       ; etc.
    .endscope
+
+   ; FM stuff
+   .scope fm_general
+      con:              TIMBRE_BYTE_FIELD   ; the connection algorithm of the timbre (3 bits)
+      fl:               TIMBRE_BYTE_FIELD   ; feedback level (3 bits)
+      op_en:            TIMBRE_BYTE_FIELD   ; operator enable (4 bits) (also acts as FM enable)
+   .endscope
+
+   .scope operators
+      level:            OPERATOR_TIMBRE_BYTE_FIELD  ; volume (needs to be converted to attenuation) (7 bits)
+      ; pitch related
+      mul:              OPERATOR_TIMBRE_BYTE_FIELD  ; multiplier for the frequency (4 bits)
+      dt1:              OPERATOR_TIMBRE_BYTE_FIELD  ; fine detune (?) (didn't work in YM2151 UI program) (3 bits)
+      dt2:              OPERATOR_TIMBRE_BYTE_FIELD  ; coarse detune (2 bits)
+      ; envelope
+      ar:               OPERATOR_TIMBRE_BYTE_FIELD  ; attack rate (5 bits)
+      d1r:              OPERATOR_TIMBRE_BYTE_FIELD  ; decay rate 1 (classical decay)  (5 bits)
+      d1l:              OPERATOR_TIMBRE_BYTE_FIELD  ; decay level (or sustain level)  (4 bits)
+      d2r:              OPERATOR_TIMBRE_BYTE_FIELD  ; decay rate 2 (0 for sustain)    (5 bits)
+      rr:               OPERATOR_TIMBRE_BYTE_FIELD  ; release rate    (4 bits)
+      ks:               OPERATOR_TIMBRE_BYTE_FIELD  ; key scaling    (2 bits)
+   .endscope
 data_end:
 data_size = data_end - data_start
 data_count = data_size / N_TIMBRES ; 129 currently
@@ -285,6 +307,7 @@ load_timbre:
 ; X: timbre number, is preserved.
 ; does not preserve A, Y
 load_default_timbre:
+   stx pasting
    ; do all "direct" values first
    lda #1
    sta Timbre::n_oscs, x
@@ -304,8 +327,13 @@ load_default_timbre:
    stz Timbre::lfo::offs, x
    lda #1
    sta Timbre::lfo::retrig
+   ; FM general
+   lda #7
+   sta Timbre::fm_general::con, x
+   lda #15
+   sta Timbre::fm_general::op_en, x
+   stz Timbre::fm_general::fl, x
    ; envelopes
-   phx
    ldy #MAX_ENVS_PER_VOICE
 @loop_envs:
    stz Timbre::env::attackL, x
@@ -324,9 +352,8 @@ load_default_timbre:
    tax
    dey
    bne @loop_envs
-   plx
    ; oscillators
-   phx
+   ldx pasting
    ldy #MAX_OSCS_PER_VOICE
 @loop_oscs:
    stz Timbre::osc::pitch, x
@@ -359,7 +386,27 @@ load_default_timbre:
    tax
    dey
    bne @loop_oscs
-   plx
+   ; FM operators
+   ldx pasting
+   ldy #N_OPERATORS
+@loop_operators:
+   stz Timbre::operators::mul, x
+   stz Timbre::operators::dt1, x
+   stz Timbre::operators::dt2, x
+   stz Timbre::operators::ar, x
+   stz Timbre::operators::d2r, x
+   stz Timbre::operators::ks, x
+   lda #2
+   sta Timbre::operators::d1r, x
+   sta Timbre::operators::d1l, x
+   sta Timbre::operators::level, x ; need to revisit this, once I decided upon a way to scale the levels
+   txa
+   clc
+   adc #N_TIMBRES
+   tax
+   dey
+   bne @loop_operators
+   ldx pasting
    rts
 
 

@@ -66,7 +66,7 @@ display_1s:         .byte 0
    cpx #48
    bne :+
    ldx #32
-:  stx guiutils::display_100s
+:  stx concerto_gui::guiutils::display_100s
 
    ldx #48
 @loop10s:
@@ -79,7 +79,7 @@ display_1s:         .byte 0
    cpx #48
    bne :+
    ldx #32
-:  stx guiutils::display_10s
+:  stx concerto_gui::guiutils::display_10s
 
    ldx #48
 @loop1s:
@@ -89,7 +89,7 @@ display_1s:         .byte 0
    bcs @loop1s
    adc #1
    dex
-   stx guiutils::display_1s
+   stx concerto_gui::guiutils::display_1s
 
    sei
    ; set VERA address
@@ -104,15 +104,15 @@ display_1s:         .byte 0
    sta VERA_addr_low
 
    ; do output
-   lda guiutils::display_100s
+   lda concerto_gui::guiutils::display_100s
    sta VERA_data0
    lda #$21
    sta VERA_data0
-   lda guiutils::display_10s
+   lda concerto_gui::guiutils::display_10s
    sta VERA_data0
    lda #$21
    sta VERA_data0
-   lda guiutils::display_1s
+   lda concerto_gui::guiutils::display_1s
    sta VERA_data0
    lda #$21    ; set color
    sta VERA_data0

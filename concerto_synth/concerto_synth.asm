@@ -36,13 +36,14 @@
 .scope concerto_synth
 
 .include "x16.asm"
+.include "ym2151.asm"
 .include "pitch_data.asm"
 .include "synth_macros.asm"
 .include "timbres.asm"
 .include "voices.asm"
 .include "synth_tick.asm"
 .include "my_isr.asm"
-; This just provides some macros which can be used by the host app. Doesn't do anything:
+; This just provides some macros which can be used by the host app. Doesn't do anything on its own:
 .include "presets.asm"
 
 ; Interface parameters

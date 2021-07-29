@@ -52,6 +52,9 @@
    lda #1
    sta concerto_synth::timbres::Timbre::porta, x
    sta concerto_synth::timbres::Timbre::retrig, x
+   ; set FM stuff
+   lda #%0001
+   sta concerto_synth::timbres::Timbre::fm_general::op_en, x
    ; env 0
    ldx #(0*N_TIMBRES+patch_no)
    lda #0
@@ -176,6 +179,9 @@
    sta concerto_synth::timbres::Timbre::porta, x
    lda #1
    sta concerto_synth::timbres::Timbre::retrig, x
+   ; set FM stuff
+   lda #%0001
+   sta concerto_synth::timbres::Timbre::fm_general::op_en, x
    ; env 0
    ldx #(0*N_TIMBRES+patch_no)
    lda #0
@@ -321,6 +327,8 @@
    lda #1
    sta concerto_synth::timbres::Timbre::porta, x
    sta concerto_synth::timbres::Timbre::retrig, x
+   ; set FM stuff
+   stz concerto_synth::timbres::Timbre::fm_general::op_en, x
    ; env 0
    ldx #(0*N_TIMBRES+patch_no)
    lda #0
@@ -450,6 +458,8 @@
    sta concerto_synth::timbres::Timbre::porta, x
    lda #1
    sta concerto_synth::timbres::Timbre::retrig, x
+   ; set FM stuff
+   stz concerto_synth::timbres::Timbre::fm_general::op_en, x
    ; env 0
    ldx #(0*N_TIMBRES+patch_no)
    lda #0
@@ -658,6 +668,8 @@
    sta concerto_synth::timbres::Timbre::porta, x
    lda #1
    sta concerto_synth::timbres::Timbre::retrig, x
+   ; set FM stuff
+   stz concerto_synth::timbres::Timbre::fm_general::op_en, x
    ; env 0
    ldx #(0*N_TIMBRES+patch_no)
    lda #0
@@ -824,6 +836,8 @@
    sta concerto_synth::timbres::Timbre::porta, x
    lda #1
    sta concerto_synth::timbres::Timbre::retrig, x
+   ; set FM stuff
+   stz concerto_synth::timbres::Timbre::fm_general::op_en, x
    ; env 0
    ldx #(0*N_TIMBRES+patch_no)
    lda #0
@@ -955,6 +969,8 @@
    sta concerto_synth::timbres::Timbre::porta, x
    lda #1
    sta concerto_synth::timbres::Timbre::retrig, x
+   ; set FM stuff
+   stz concerto_synth::timbres::Timbre::fm_general::op_en, x
    ; env 0
    ldx #(0*N_TIMBRES+patch_no)
    lda #0
@@ -1086,6 +1102,8 @@
    sta concerto_synth::timbres::Timbre::porta, x
    lda #1
    sta concerto_synth::timbres::Timbre::retrig, x
+   ; set FM stuff
+   stz concerto_synth::timbres::Timbre::fm_general::op_en, x
    ; env 0
    ldx #(0*N_TIMBRES+patch_no)
    lda #0
@@ -1254,6 +1272,8 @@
    sta concerto_synth::timbres::Timbre::porta, x
    lda #1
    sta concerto_synth::timbres::Timbre::retrig, x
+   ; set FM stuff
+   stz concerto_synth::timbres::Timbre::fm_general::op_en, x
    ; env 0
    ldx #(0*N_TIMBRES+patch_no)
    lda #0

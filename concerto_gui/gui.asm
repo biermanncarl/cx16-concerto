@@ -43,6 +43,8 @@
 ; 4: popup panel for listboxes
 ; 5: LFO settings panel
 ; 6: help/info panel
+; 7: FM general setup
+; 8: FM operator setup
 ; ***************************************
 
 ; Each panel has multiple byte strings hard coded. Those byte strings define elements shown on the GUI.
@@ -120,7 +122,7 @@ dummy_data_size = 1
 
    ; global settings panel
    .scope global
-      px = 17
+      px = 2
       py = 10
       wd = 12
       hg = 24
@@ -299,10 +301,6 @@ dummy_data_size = 1
       ; data specific to the envelope panel
       active_tab: .byte 0
       cp: STR_FORMAT "envelopes" ; caption of panel
-      lb_attack: STR_FORMAT "att"
-      lb_decay: STR_FORMAT "dec"
-      lb_sustain: STR_FORMAT "sus"
-      lb_release: STR_FORMAT "rel"
    .endscope
    ; synth navigation/tool panel ... it sits in the background.
    .scope snav
@@ -424,6 +422,79 @@ dummy_data_size = 1
       help_3_lb: STR_FORMAT "right drag   fine edit"
    .endscope
 
+   ; FM general setup (everything that isn't operators)
+   .scope fm_gen
+      px = osc::px+osc::wd+1
+      py = osc::py
+      wd = 29
+      hg = 15
+      comps:
+         .byte 3, px+13, py+2, 0, 7, 0 ; connection scheme number
+         .byte 4, px+14, py+4, %0, 0, 7, 0, 0 ; feedback
+         .byte 0
+      capts:
+         .byte CCOLOR_CAPTION, px+4, py
+         .word cp
+         .byte CCOLOR_CAPTION, px+2, py+2
+         .word con_select_lb
+         .byte CCOLOR_CAPTION, px+2, py+4
+         .word lb_feedback
+         .byte 0 ; empty
+      cp: STR_FORMAT "fm general"
+      con_select_lb: STR_FORMAT "connection"
+      lb_feedback: STR_FORMAT "feedback"
+   .endscope
+
+   ; FM operators setup
+   .scope fm_op
+      px = fm_gen::px
+      py = fm_gen::py+fm_gen::hg
+      wd = fm_gen::wd
+      hg = 15
+      comps:
+         .byte 2, px, py, N_OPERATORS, 0 ; tabselector
+         .byte 4, px+4 , py+7, %0, 0, 31, 0, 0 ; drag edit - attack
+         .byte 4, px+9, py+7, %0, 0, 31, 0, 0 ; drag edit - decay1
+         .byte 4, px+14, py+7, %0, 0, 15, 0, 0 ; drag edit - decay level
+         .byte 4, px+19, py+7, %0, 0, 31, 0, 0 ; drag edit - decay2
+         .byte 4, px+24, py+7, %0, 0, 15, 0, 0 ; drag edit - release
+         .byte 4, px+10, py+3, %0, 0, 15, 0, 0 ; drag edit - mul
+         .byte 4, px+15, py+3, %0, 0, 7, 0, 0 ; drag edit - fine
+         .byte 4, px+20, py+3, %0, 0, 3, 0, 0 ; drag edit - coarse
+         .byte 0
+      capts:
+         .byte CCOLOR_CAPTION, px+4, py
+         .word cp
+         .byte CCOLOR_CAPTION, px+4, py+6
+         .word lb_attack
+         .byte CCOLOR_CAPTION, px+9, py+6
+         .word lb_decay_1
+         .byte CCOLOR_CAPTION, px+14, py+6
+         .word lb_decay_level
+         .byte CCOLOR_CAPTION, px+19, py+6
+         .word lb_decay_2
+         .byte CCOLOR_CAPTION, px+24, py+6
+         .word lb_release
+         .byte CCOLOR_CAPTION, px+4, py+2
+         .word lb_tuning
+         .byte CCOLOR_CAPTION, px+10, py+2
+         .word lb_mul
+         .byte CCOLOR_CAPTION, px+15, py+2
+         .word lb_dt1
+         .byte CCOLOR_CAPTION, px+20, py+2
+         .word lb_dt2
+         .byte 0
+      active_tab: .byte 0
+      cp: STR_FORMAT "fm operators"
+      lb_decay_1: STR_FORMAT "dec1"
+      lb_decay_2: STR_FORMAT "dec2"
+      lb_decay_level: STR_FORMAT "lev"
+      lb_tuning: STR_FORMAT "tune"
+      lb_mul: STR_FORMAT "mul"
+      lb_dt1: STR_FORMAT "fine"
+      lb_dt2: STR_FORMAT "coarse"
+   .endscope
+
    ; Recurring Labels
    vol_lb: STR_FORMAT "vol"
    wavetable_lb: STR_FORMAT "wavetable"
@@ -431,22 +502,26 @@ dummy_data_size = 1
    lfo_lb: STR_FORMAT "lfo"
    retr_lb: STR_FORMAT "retrig"
    rate_lb: STR_FORMAT "rate"
+   lb_attack: STR_FORMAT "att"
+   lb_decay: STR_FORMAT "dec"
+   lb_sustain: STR_FORMAT "sus"
+   lb_release: STR_FORMAT "rel"
 
    ; Panel Lookup tables
    ; Each label marks a list of values, one for each panel.
    ; These lists must have length N_PANELS.
    ; X positions
-   px: .byte global::px, osc::px, env::px, snav::px, listbox_popup::px, lfo::px, info::px
+   px: .byte global::px, osc::px, env::px, snav::px, listbox_popup::px, lfo::px, info::px, fm_gen::px, fm_op::px
    ; Y positions
-   py: .byte global::py, osc::py, env::py, snav::py, listbox_popup::py, lfo::py, info::py
+   py: .byte global::py, osc::py, env::py, snav::py, listbox_popup::py, lfo::py, info::py, fm_gen::py, fm_op::py
    ; widths
-   wd: .byte global::wd, osc::wd, env::wd, snav::wd, listbox_popup::wd, lfo::wd, info::wd
+   wd: .byte global::wd, osc::wd, env::wd, snav::wd, listbox_popup::wd, lfo::wd, info::wd, fm_gen::wd, fm_op::wd
    ; heights
-   hg: .byte global::hg, osc::hg, env::hg, snav::hg, listbox_popup::hg, lfo::hg, info::hg
+   hg: .byte global::hg, osc::hg, env::hg, snav::hg, listbox_popup::hg, lfo::hg, info::hg, fm_gen::hg, fm_op::hg
    ; GUI component strings
-   comps: .word global::comps, osc::comps, env::comps, snav::comps, listbox_popup::comps, lfo::comps, info::comps
+   comps: .word global::comps, osc::comps, env::comps, snav::comps, listbox_popup::comps, lfo::comps, info::comps, fm_gen::comps, fm_op::comps
    ; GUI captions
-   capts: .word global::capts, osc::capts, env::capts, snav::capts, listbox_popup::capts, lfo::capts, info::capts
+   capts: .word global::capts, osc::capts, env::capts, snav::capts, listbox_popup::capts, lfo::capts, info::capts, fm_gen::capts, fm_op::capts
 
 
 ; The Panel Stack
@@ -466,20 +541,24 @@ dummy_sr:
 ; puts all synth related panels into the GUI stack
 load_synth_gui:
    jsr guiutils::cls
-   lda #6 ; GUI stack size (how many panels are visible)
+   lda #8 ; GUI stack size (how many panels are visible)
    sta stack::sp
    lda #3 ; synth navigation bar
    sta stack::stack
    lda #6 ; help/info panel
    sta stack::stack+1
-   lda #0 ; global settings panel
+   lda #7 ; FM general settings panel
    sta stack::stack+2
-   lda #1 ; oscillator panel
+   lda #8 ; FM operator settings panel
    sta stack::stack+3
-   lda #2 ; envelope panel
+   lda #0 ; global settings panel
    sta stack::stack+4
-   lda #5 ; LFO panel
+   lda #1 ; oscillator panel
    sta stack::stack+5
+   lda #2 ; envelope panel
+   sta stack::stack+6
+   lda #5 ; LFO panel
+   sta stack::stack+7
    jsr draw_gui
    jsr refresh_gui
    rts
@@ -507,6 +586,8 @@ draw_gui:
    .word draw_lb_popup
    .word draw_lfo
    .word draw_info
+   .word draw_fm_gen
+   .word draw_fm_op
 @ret_addr:
    ; draw GUI components
    ldy dg_counter
@@ -1182,6 +1263,8 @@ refresh_gui:
    .word dummy_sr   ; listbox popup ... popups don't need to be refreshed
    .word refresh_lfo
    .word dummy_sr   ; info box - no refresh necessary yet
+   .word refresh_fm_gen
+   .word refresh_fm_op
 @ret_addr:
    ; advance in loop
    lda rfg_counter
@@ -1780,6 +1863,39 @@ draw_info:
    jsr guiutils::draw_frame
    rts
 
+draw_fm_gen:
+   ; draw frame
+   lda #fm_gen::px
+   sta guiutils::draw_x
+   lda #fm_gen::py
+   sta guiutils::draw_y
+   lda #fm_gen::wd
+   sta guiutils::draw_width
+   lda #fm_gen::hg
+   sta guiutils::draw_height
+   lda #0
+   sta guiutils::draw_data1
+   jsr guiutils::draw_frame
+   rts
+
+draw_fm_op:
+   ; draw frame
+   lda #fm_op::px
+   sta guiutils::draw_x
+   lda #fm_op::py
+   sta guiutils::draw_y
+   lda #fm_op::wd
+   sta guiutils::draw_width
+   lda #fm_op::hg
+   sta guiutils::draw_height
+   lda #N_OPERATORS
+   sta guiutils::draw_data1
+   lda fm_op::active_tab
+   inc
+   sta guiutils::draw_data2
+   jsr guiutils::draw_frame
+   rts
+
 
 
 ; utility subroutines
@@ -1898,6 +2014,8 @@ panel_write_subroutines:
    .word write_snav
    .word write_lb_popup
    .word write_lfo
+   .word write_fm_gen
+   .word write_fm_op
    .word dummy_sr ; info box - nothing to edit here
 
 dummy_plx:
@@ -2412,6 +2530,29 @@ write_lfo:
    sta concerto_synth::timbres::Timbre::lfo::offs, x
    rts
 
+write_fm_gen:
+   rts
+
+write_fm_op:
+   ldx Timbre
+   lda ms_curr_component_ofs
+   clc
+   adc #4
+   tay ; there's no component type where the data is before this index
+   ; now determine which component has been dragged
+   phx
+   lda ms_curr_component_id
+   asl
+   tax
+   jmp (@jmp_tbl, x)
+@jmp_tbl:
+   .word @tab_select
+@tab_select:
+   plx
+   lda ms_curr_data
+   sta fm_op::active_tab
+   jsr refresh_fm_op
+   rts
 
 
 
@@ -2656,6 +2797,12 @@ refresh_lfo:
    ; redraw components
    lda #5
    jsr draw_components
+   rts
+
+refresh_fm_gen:
+   rts
+
+refresh_fm_op:
    rts
 
 .endscope

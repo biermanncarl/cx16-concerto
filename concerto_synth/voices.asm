@@ -59,8 +59,9 @@
       phaseH:  LFO_VOICE_BYTE_FIELD
    .endscope
 
-   ; PSG voices (synth oscillator to PSG oscillator mapping)
+   ; PSG voices (synth oscillator to PSG oscillator mapping) and FM voices (synth voice to YM2151 voice mapping)
    osc_psg_map:   OSCILLATOR_VOICE_BYTE_FIELD
+   fm_voice_map:  VOICE_BYTE_FIELD
 
    ; pitch slide (either for pitchbend or portamento)
    .scope pitch_slide
@@ -97,7 +98,20 @@
    ; These two cases can be distinguished via the nfo (number of free oscillators) variable
 .endscope
 
+.scope FMmap
+   ; information about which FM voices are free
 
+   ; ringlist of available FM voices and another list with their
+   ; corresponding previous timbres that have been loaded onto them.
+   ; This is to be able to reuse previously loaded timbres (which saves costly communication with the YM2151 chip)
+   freevoicelist: FM_VOICE_BYTE_FIELD
+   timbremap:     FM_VOICE_BYTE_FIELD
+   ffv:  .byte 0
+   lfv:  .byte 0
+   nfv:  .byte 0
+.endscope
+
+; advance free-oscillators-list pointer
 .macro ADVANCE_FOL_POINTER adv_fol_ptr
    lda adv_fol_ptr
    ina
@@ -107,6 +121,18 @@
 :  sta adv_fol_ptr
 .endmacro
 
+; advance free-FM-voices-list pointer
+.macro ADVANCE_FVL_POINTER adv_fvl_ptr
+   lda adv_fvl_ptr
+   ina
+   cmp #(N_FM_VOICES)
+   bcc :+
+   lda #0
+:  sta adv_fvl_ptr
+.endmacro
+
+
+.include "ym2151_interface.asm"
 
 
 ; Puts all the Voicemap & Oscmap variables into a state ready to receive
@@ -124,7 +150,23 @@ init_voices:
    stz Oscmap::lfo
    lda #N_OSCILLATORS
    sta Oscmap::nfo
-rts
+
+   ; init free-fm-voice-list
+   ldx #(N_FM_VOICES-1)
+@loop_fm_voices:
+   txa
+   sta FMmap::freevoicelist, x
+   lda #N_TIMBRES ; invalid timbre number ... enforce loading onto the YM2151 (invalid timbre won't get reused)
+   sta FMmap::timbremap, x
+   dex
+   bpl @loop_fm_voices
+
+   stz FMmap::ffv
+   stz FMmap::lfv
+   lda #N_FM_VOICES
+   sta FMmap::nfv
+
+   rts
 
 
 
@@ -182,11 +224,11 @@ play_note:
    lda #1
    sta Voice::active,x
 @skip_play:
-rts
+   rts
 
 ; This subroutine is used in play_note in the case that a note with the same timbre as played is
 ; still active on the channel. It does all the stuff specific to that case.
-; expects channel index in X, timbre index in Y
+; expects channel index in X, timbre index in Y (additionally to the note_ variables)
 ; doesn't preserve X and Y
 continue_note:
    cn_slide_distance = mzpbb
@@ -225,6 +267,9 @@ cn_check_retrigger:
    ; retrigger or continue?
    lda timbres::Timbre::retrig, y
    bne :+
+   ; porta ... need to set FM pitch, which doesn't support porta (yet)
+   lda note_pitch
+   jsr set_fm_note
    rts
 :  jsr retrigger_note
 rts
@@ -294,11 +339,19 @@ retrigger_note:
    tay
    cpx #(MAX_LFOS_PER_VOICE*N_VOICES) ; a bit wonky ... but should do.
    bcc @loop_envs
-
 @skip_lfos:
+
+   ; Check if FM voice is needed
+   ldy note_timbre
+   lda timbres::Timbre::fm_general::op_en, y
+   beq @skip_fm  ; no voice is needed.
+   jsr trigger_fm_note
+@skip_fm:
+   lda #1 ; return successfully
    rts
 
-; checks if there are enough oscillators available
+
+; checks if there are enough VERA oscillators and FM voices available
 ; and, in that case, reserves them for the new voice.
 ; Also resets portamento.
 ; expects channel index in X, timbre index in Y
@@ -308,11 +361,17 @@ retrigger_note:
 start_note:
    stn_loop_counter = mzpbb
    lda Oscmap::nfo
-   cmp timbres::Timbre::n_oscs, y ; carry is set if nfo>=non (number of oscillators needed)
+   cmp timbres::Timbre::n_oscs, y ; carry is set if nfo>=non (number of free oscillators >= number of oscillators needed)
    bcs :+
-   jmp @unsuccessful    ; if there's no oscillator left, don't play
-   ; reset portamento
-:  stz Voice::pitch_slide::active, x
+   jmp @unsuccessful    ; if there's not enough oscillators left, don't play
+:  ; check if we need an FM voice
+   lda timbres::Timbre::fm_general::op_en, y
+   beq :+ ; no FM voice needed -> go ahead initializing the voice
+   lda FMmap::nfv ; check if there's an FM voice available
+   bne :+
+   jmp @unsuccessful ; no FM voice available -> can't play note
+:  ; reset portamento
+   stz Voice::pitch_slide::active, x
    ; get oscillators from and update free oscillators ringlist
    ; x: offset in voice data
    ; y: offset in freeosclist (but first, it is timbre index)
@@ -333,6 +392,76 @@ start_note:
    dec stn_loop_counter
    bne @loop_osc
 
+
+   ; FM stuff
+   ; Check again if FM voice is needed
+   ldy note_timbre
+   lda timbres::Timbre::fm_general::op_en, y
+   bne :+
+   lda #1 ; if no voice is needed, return successfully
+   rts
+:  ; look for an unused voice that has the same timbre loaded
+   lda note_timbre
+   ldx FMmap::ffv
+@search_timbre:
+   cmp FMmap::timbremap, x ; patches that have last been loaded are stored in timbremap
+   beq @timbre_found
+   inx
+   cpx #N_FM_VOICES
+   bne :+
+   ldx #0
+:  cpx FMmap::lfv
+   bne @search_timbre
+@timbre_not_found:
+   ; this is simple. get the next available voice
+   ldx FMmap::ffv
+   lda FMmap::freevoicelist, x
+   bra @claim_fm_voice
+@timbre_found:
+   ; More complicated. need to swap things around.
+   ; The situation is as follows:
+   ;                               v   unused voice with the same timbre loaded as the new note
+   ; | 0 | 0 | 1 | 1 | 0 | 0 | 0 | 0 |     (0=unused, 1=used)
+
+   ; We want to move the slots as follows
+   ;                   ,-----------,
+   ;                   V -> ->  -> |
+   ; | 0 | 0 | 1 | 1 | 0 | 0 | 0 | 0 |
+   ; so that the unused voice with the correct timbre is right in front of the other used voices,
+   ; and the order of the other unused voices has been preserved.
+
+   ; We will do this backwards
+   ; We know which timbre the found voice has, so we don't need to save that.
+   ; But we do need to save the voide index.
+   lda FMmap::freevoicelist, x
+   pha
+   ; Now loop backwards
+@shift_loop:
+   ; copy X to Y
+   txa
+   tay
+   ; advance X backwards
+   dex
+   bpl :+
+   ldx #(N_FM_VOICES-1)
+:  ; move data
+   lda FMmap::freevoicelist, x
+   sta FMmap::freevoicelist, y
+   lda FMmap::timbremap, x
+   sta FMmap::timbremap, y
+   ; loop condition
+   cpx FMmap::ffv
+   bne @shift_loop
+   ; Loop is done, now we can put the appropriate data into the FMmap::ffv'th slot.
+   pla ; pull YM2151 voice index
+
+@claim_fm_voice:
+   ; the number of the free FM voice is expected in A
+   ldx note_channel
+   sta Voice::fm_voice_map, x
+   dec FMmap::nfv
+   ADVANCE_FVL_POINTER FMmap::ffv
+
    lda #1
    rts
 @unsuccessful:
@@ -340,9 +469,26 @@ start_note:
    rts
 
 
+
+useless_subroutine:
+   ; minimal set of setup to get a tone (except key on)
+   SET_YM YM_RL_FL_CON, %01000111 ; all parallel setup
+   SET_YM YM_TL, 0 ; max volume
+   SET_YM YM_KC, $50
+   SET_YM YM_KS_AR, 63
+   ; additional stuff
+   SET_YM YM_AMS_EN_D1R, 15
+   SET_YM YM_D1L_RR, %11111011
+   SET_YM YM_DT2_D2R, %00000011
+   SET_YM YM_KON, %0000000 ; key off to safely retrigger the note
+   SET_YM YM_KON, %1111000
+
+
+
+
 ; This subroutine deactivates the voice on a given channel and
 ; releases the oscillators occupied by it, so that they can be used by other notes.
-; (and also mutes the PSG voices)
+; (and also mutes the PSG and FM voices)
 ; This subroutine can be called from within the ISR, or from the main program.
 ; To ensure that the variables used by this function aren't messed up by the ISR,
 ; SEI has to be done before this function is called in the main program.
@@ -380,6 +526,42 @@ stop_note:
    inc Oscmap::nfo
    dec spn_loop_counter
    bne @loop_osc
+   
+   ; do FM stuff
+   ; check if FM was used
+   ldx note_channel
+   ldy Voice::timbre, x
+   lda timbres::Timbre::fm_general::op_en, y
+   bne :+
+   rts
+:  ; FM was used
+   ; FM key off
+   lda #YM_KON
+   ldy Voice::fm_voice_map, x
+   jsr write_ym2151
+   ; immediately mute voice by setting to minimal volume
+   ldx note_channel
+   lda Voice::fm_voice_map, x
+   clc
+   adc #YM_TL
+   ldy #%01111111
+   jsr write_ym2151
+   adc #8
+   jsr write_ym2151
+   adc #8
+   jsr write_ym2151
+   adc #8
+   jsr write_ym2151
+
+   ; release FM resources
+   ADVANCE_FVL_POINTER FMmap::lfv
+   tay
+   lda Voice::fm_voice_map, x
+   sta FMmap::freevoicelist, y
+   lda Voice::timbre, x
+   sta FMmap::timbremap, y
+   inc FMmap::nfv
+
    rts
 
 
@@ -405,7 +587,17 @@ release_note:
    tax
    dec rln_env_counter
    bne @loop_env
+
+   ; FM key off
+   lda timbres::Timbre::fm_general::op_en, y
+   bne :+
    rts
+:  ldx note_channel
+   lda #YM_KON
+   ldy Voice::fm_voice_map, x
+   jsr write_ym2151
+   rts
+
 
 
 
