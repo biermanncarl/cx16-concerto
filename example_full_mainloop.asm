@@ -155,7 +155,7 @@ mainloop:
 @keyboard_space:
    ldx #0
    stx concerto_synth::note_channel
-   jsr concerto_synth::stop_note
+   jsr concerto_synth::release_note
    jmp end_mainloop
 @keyboard_z:
    lda Octave

@@ -23,6 +23,25 @@
 ; limited bandwidth onto this chip.
 
 
+; Operator order
+; **************
+; One of those annoying things of the YM2151: for the key-on command, the bits are in the order M1, C1, M2, C2,
+; But in the address space, the operators are ordered M1, M2, C1, C2.
+; WHY???
+; Anyway, we store stuff in the order as the flags: M1, C1, M2, C2,
+; That is:
+;   operator 1 = Modulator 1
+;   operator 2 = Carrier 1
+;   operator 3 = Modulator 2
+;   operator 4 = Carrier 2
+; This is nicer for editing, because then, modulation is more often routed into adjacent operators.
+; Therefore, when writing stuff to the YM2151, we need to swap C1 and M2.
+; For that purpose, we have a lookup table for writing address increments (backwards!!):
+operator_stride:
+   .byte (2*N_FM_VOICES), (256-N_FM_VOICES), (2*N_FM_VOICES)
+
+
+
 ; naive writing procedure to the YM2151
 ; potentially burns a lot of cycles in the waiting loop
 ; A: register
@@ -35,9 +54,166 @@ write_ym2151:
    rts
 
 
+; prevent timbres already loaded onto the YM2151 from being reused, e.g. after a timbre has been modified.
+invalidate_fm_timbres:
+   ; override all timbres with invalid timbre
+   ldx #(N_FM_VOICES-1)
+@loop_fm_voices:
+   txa
+   lda #N_TIMBRES ; invalid timbre number ... enforce loading onto the YM2151 (invalid timbre won't get reused)
+   sta FMmap::timbremap, x
+   dex
+   bpl @loop_fm_voices
+   rts
+
+
 ; Load an FM timbre onto the YM2151.
+; Expects voice index in A
 ; Expects note_timbre and note_channel to be set accordingly.
 load_fm_timbre:
+   operator_counter = mzpbb
+   lfmt_op_en = mzpbc
+   pha
+   ldx note_timbre
+
+   ; General parameters
+   ; set RL_FL_CON
+   lda timbres::Timbre::fm_general::fl, x
+   asl
+   asl
+   asl
+   ora timbres::Timbre::fm_general::con, x
+   ora #%11000000 ; set LR bits, constant for now
+   tay
+   pla
+   clc
+   adc #YM_RL_FL_CON
+   jsr write_ym2151
+   ; PMS_AMS
+   ; (TODO)
+
+   ; Operator parameters
+   ; We use a "running address register". To avoid adding the voice offset
+   ; to an absolute address like YM_RL_FL_CON again and again,
+   ; we simply add the differences between addresses.
+   ; The running address is usually kept at the stack for easy access.
+   adc #(YM_DT1_MUL-YM_RL_FL_CON)
+   pha ; push running address
+   lda #4
+   sta operator_counter
+   ; Load operator enabled register
+   lda timbres::Timbre::fm_general::op_en, x
+   ; Data offset
+; expects the op_en register to be loaded in A (right shifted by how many operators we have already done)
+@loop:
+   ; Check if operator is enabled, only then copy parameters
+   lsr
+   sta lfmt_op_en
+   bcs @operator_enabled
+@operator_disabled:
+   pla
+   jmp @advance_loop
+@operator_enabled:
+   ; ** DT1_MUL
+   ; value
+   lda timbres::Timbre::operators::dt1, x
+   asl
+   asl
+   asl
+   asl
+   ora timbres::Timbre::operators::mul, x
+   tay
+   ; address
+   pla
+   pha
+   jsr write_ym2151
+
+
+   ; ** TL
+   ; Total level can be skipped since it is set on note trigger.
+
+   ; ** KS_AR
+   ; TODO: Key scaling
+   ; value
+   lda timbres::Timbre::operators::ks, x
+   clc
+   ror
+   ror
+   ror
+   adc timbres::Timbre::operators::ar, x
+   tay
+   ; address
+   pla
+   clc
+   adc #(YM_KS_AR-YM_DT1_MUL)
+   pha
+   jsr write_ym2151
+
+   ; ** AMS-EN_D1R (5 bits D1R)
+   ; value
+   ldy timbres::Timbre::operators::d1r, x
+   ; address
+   pla
+   clc
+   adc #(YM_AMS_EN_D1R-YM_KS_AR)
+   pha
+   jsr write_ym2151
+
+   ; ** DT2_D2R
+   ; value
+   lda timbres::Timbre::operators::dt2, x
+   clc
+   ror
+   ror
+   ror
+   ora timbres::Timbre::operators::d2r, x
+   tay
+   ; address
+   pla
+   clc
+   adc #(YM_DT2_D2R-YM_AMS_EN_D1R)
+   pha
+   jsr write_ym2151
+
+   ; ** D1L_RR
+   ; value
+   lda timbres::Timbre::operators::d1l, x
+   asl
+   asl
+   asl
+   asl
+   ora timbres::Timbre::operators::rr, x
+   tay
+   ; address
+   pla
+   clc
+   adc #(YM_D1L_RR-YM_DT2_D2R)
+   pha
+   jsr write_ym2151
+
+@advance_running_address:
+   ; revert running address back to "start"
+   pla
+   sec
+   sbc #(YM_D1L_RR-YM_DT1_MUL)
+@advance_loop:
+   ; expecting running write address in A
+   ; advance running write address by multiple of 8 to get to the next operator
+   ldy operator_counter
+   clc
+   adc operator_stride-2, y ; -1 because operator_counter goes from 1-4, another -1 since 4 operators = 3 steps in between --> one less stride needed
+   pha
+   ; advance read address offset
+   txa
+   clc
+   adc #N_TIMBRES
+   tax
+   lda lfmt_op_en
+   dec operator_counter
+   bpl @loop
+
+   ; pop running address
+   pla
    rts
 
 
@@ -85,52 +261,79 @@ set_fm_note:
 ; Expects note_timbre, note_channel, note_pitch and note_volume to be set accordingly.
 ; This function is called from within retrigger_note
 trigger_fm_note:
+   tfm_operator_counter = mzpbb
+   tfm_op_en = mzpbc
    ; (re)trigger FM voice (TBD later if it's done here)
    ldx note_channel
-   ; set connection
-   lda #YM_RL_FL_CON
-   clc
-   adc Voice::fm_voice_map, x
-   ldy #%11000111 ; L+R enabled, all parallel connection
-   jsr write_ym2151
-   ; set max volume
-   lda #YM_TL
-   clc
-   adc Voice::fm_voice_map, x
-   ldy #0
-   jsr write_ym2151
+
    ; key off
    lda #YM_KON
    ldy Voice::fm_voice_map, x
    jsr write_ym2151
+
    ; note pitch
    lda note_pitch
    jsr set_fm_note
-   ; attack rate (and key scaling)
-   lda #YM_KS_AR
+
+   ; set operator volumes
+   ; *********************
+   ; This is annoyingly complicated ... we basically need to replicate the load timbre loop just for this
+   ; TODO: velocity sensitivity!
+   lda #YM_TL
    clc
    adc Voice::fm_voice_map, x
-   ldy #63
+   pha ; push running address
+   lda #4
+   sta tfm_operator_counter
+   ; Load operator enabled register
+   ldx note_timbre
+   lda timbres::Timbre::fm_general::op_en, x
+; expects the op_en register to be loaded in A (right shifted by how many operators we have already done)
+@vol_loop:
+   ; Check if operator is enabled, only then copy parameters
+   lsr
+   sta tfm_op_en
+   bcs @operator_enabled
+@operator_disabled:
+   pla
+   bra @advance_loop
+@operator_enabled:
+   ; TOTAL LEVEL
+   ; value
+   ldy timbres::Timbre::operators::level, x
+   ; address
+   pla
    jsr write_ym2151
-   ; decay rate 1 (+ amplitude modulation sensitivity)
-   lda #YM_AMS_EN_D1R
+@advance_loop:
+   ; expecting running write address in A
+   ; advance running write address by multiple of 8 to get to the next operator
+   ldy operator_counter
    clc
-   adc Voice::fm_voice_map, x
-   ldy #6
-   jsr write_ym2151
-   ; decay level 1 & release rate
-   lda #YM_D1L_RR
+   adc operator_stride-2, y ; -1 because operator_counter goes from 1-4, another -1 since 4 operators = 3 steps in between --> one less stride needed
+   pha
+   ; advance read address offset
+   txa
    clc
-   adc Voice::fm_voice_map, x
-   ldy #%11110011
-   jsr write_ym2151
+   adc #N_TIMBRES
+   tax
+   lda tfm_op_en
+   dec tfm_operator_counter
+   bpl @vol_loop
+   ; pop running address
+   pla
+
+   ; key fraction
+   ; ************
+   ; TODO
+
    ; key on
+   ; ******
+   ldx note_channel
    ldy note_timbre
    lda timbres::Timbre::fm_general::op_en, y
-   clc
-   rol
-   rol
-   rol
+   asl
+   asl
+   asl
    adc Voice::fm_voice_map, x
    tay
    lda #YM_KON

@@ -413,9 +413,12 @@ start_note:
 :  cpx FMmap::lfv
    bne @search_timbre
 @timbre_not_found:
-   ; this is simple. get the next available voice
+   ; this is simple. get the next available voice, and load data onto YM2151
    ldx FMmap::ffv
    lda FMmap::freevoicelist, x
+   pha
+   jsr load_fm_timbre
+   pla
    bra @claim_fm_voice
 @timbre_found:
    ; More complicated. need to swap things around.

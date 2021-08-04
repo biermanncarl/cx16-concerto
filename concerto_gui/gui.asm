@@ -189,16 +189,16 @@ dummy_data_size = 1
          .byte 6, ampsecx, ampsecy+1, 8, N_TOT_MODSOURCES, (<modsources_lb), (>modsources_lb), 0 ; amp listbox
          .byte 4, ampsecx, ampsecy+4, %00000000, 0, 64, 0, 0 ; volume drag edit
          .byte 6, ampsecx+4, ampsecy+4, 5, 4, (<channel_select_lb), (>channel_select_lb), 0 ; channel listbox
-         .byte 4, pitsecx+3, pitsecy+2, %00000100, 128, 127, 0, 0 ; semitone edit ... signed range TODO
-         .byte 4, pitsecx+3, pitsecy+4, %00000100, 128, 127, 0, 0 ; fine tune edit ... signed range TODO
+         .byte 4, pitsecx+3, pitsecy+2, %00000100, 128, 127, 0, 0 ; semitone edit ... signed range
+         .byte 4, pitsecx+3, pitsecy+4, %00000100, 128, 127, 0, 0 ; fine tune edit ... signed range
          .byte 5, pitsecx+8, pitsecy+2, 7, 0 ; pitch tracking checkbox
          .byte 5, pitsecx+8, pitsecy+4, 7, 0 ; pitch modulate by wavetable checkbox
          .byte 6, modsecx+7, modsecy+2, 8, N_TOT_MODSOURCES+1, (<modsources_none_option_lb), (>modsources_none_option_lb), 0 ; pitch mod select 1
          .byte 6, modsecx+7, modsecy+3, 8, N_TOT_MODSOURCES+1, (<modsources_none_option_lb), (>modsources_none_option_lb), 0 ; pitch mod select 2
          .byte 6, modsecx+7, modsecy+4, 8, N_TOT_MODSOURCES+1, (<modsources_none_option_lb), (>modsources_none_option_lb), 0 ; pw mod select
          .byte 6, modsecx+7, modsecy+5, 8, N_TOT_MODSOURCES+1, (<modsources_none_option_lb), (>modsources_none_option_lb), 0 ; volume mod select
-         .byte 4, modsecx+15, modsecy+2, %10000100, 256-76, 76, 0, 0 ; drag edit - pitch mod depth 1 range TODO
-         .byte 4, modsecx+15, modsecy+3, %10000100, 256-76, 76, 0, 0 ; drag edit - pitch mod depth 2 range TODO
+         .byte 4, modsecx+15, modsecy+2, %10000100, 256-76, 76, 0, 0 ; drag edit - pitch mod depth 1 range
+         .byte 4, modsecx+15, modsecy+3, %10000100, 256-76, 76, 0, 0 ; drag edit - pitch mod depth 2 range
          .byte 4, modsecx+15, modsecy+4, %00000100, 256-127, 127, 0, 0 ; drag edit - pw mod depth range
          .byte 4, modsecx+15, modsecy+5, %00000100, 256-127, 127, 0, 0 ; drag edit - volume mod depth range
          .byte 0
@@ -429,8 +429,8 @@ dummy_data_size = 1
       wd = 29
       hg = 15
       comps:
-         .byte 3, px+13, py+2, 0, 7, 0 ; connection scheme number
-         .byte 4, px+14, py+4, %0, 0, 7, 0, 0 ; feedback
+         .byte 3, px+13, py+2, 0, 7, 0 ; connection scheme number (arrowed edit)
+         .byte 4, px+14, py+4, %0, 0, 7, 0, 0 ; feedback level (drag edit)
          .byte 0
       capts:
          .byte CCOLOR_CAPTION, px+4, py
@@ -450,39 +450,48 @@ dummy_data_size = 1
       px = fm_gen::px
       py = fm_gen::py+fm_gen::hg
       wd = fm_gen::wd
-      hg = 15
+      hg = 18
       comps:
          .byte 2, px, py, N_OPERATORS, 0 ; tabselector
-         .byte 4, px+4 , py+7, %0, 0, 31, 0, 0 ; drag edit - attack
-         .byte 4, px+9, py+7, %0, 0, 31, 0, 0 ; drag edit - decay1
-         .byte 4, px+14, py+7, %0, 0, 15, 0, 0 ; drag edit - decay level
-         .byte 4, px+19, py+7, %0, 0, 31, 0, 0 ; drag edit - decay2
-         .byte 4, px+24, py+7, %0, 0, 15, 0, 0 ; drag edit - release
-         .byte 4, px+10, py+3, %0, 0, 15, 0, 0 ; drag edit - mul
-         .byte 4, px+15, py+3, %0, 0, 7, 0, 0 ; drag edit - fine
-         .byte 4, px+20, py+3, %0, 0, 3, 0, 0 ; drag edit - coarse
+         .byte 4, px+4 , py+11, %0, 0, 31, 0, 0 ; drag edit - attack
+         .byte 4, px+9, py+11, %0, 0, 31, 0, 0 ; drag edit - decay1
+         .byte 4, px+14, py+11, %0, 0, 15, 0, 0 ; drag edit - decay level
+         .byte 4, px+19, py+11, %0, 0, 31, 0, 0 ; drag edit - decay2
+         .byte 4, px+24, py+11, %0, 0, 15, 0, 0 ; drag edit - release
+         .byte 4, px+10, py+7, %0, 0, 15, 0, 0 ; drag edit - mul
+         .byte 4, px+15, py+7, %00000100, 253, 3, 0, 0 ; drag edit - fine
+         .byte 4, px+20, py+7, %0, 0, 3, 0, 0 ; drag edit - coarse
+         .byte 5, px+4, py+2, 8, 0 ; activate operator checkbox
+         .byte 4, px+16, py+3, %0, 0, 127, 0, 0 ; drag edit - level (vol)
+         .byte 4, px+17, py+14, %00000000, 0, 3, 0, 0 ; drag edit - key scaling
          .byte 0
       capts:
          .byte CCOLOR_CAPTION, px+4, py
          .word cp
-         .byte CCOLOR_CAPTION, px+4, py+6
+         .byte CCOLOR_CAPTION, px+4, py+10
          .word lb_attack
-         .byte CCOLOR_CAPTION, px+9, py+6
+         .byte CCOLOR_CAPTION, px+9, py+10
          .word lb_decay_1
-         .byte CCOLOR_CAPTION, px+14, py+6
+         .byte CCOLOR_CAPTION, px+14, py+10
          .word lb_decay_level
-         .byte CCOLOR_CAPTION, px+19, py+6
+         .byte CCOLOR_CAPTION, px+19, py+10
          .word lb_decay_2
-         .byte CCOLOR_CAPTION, px+24, py+6
+         .byte CCOLOR_CAPTION, px+24, py+10
          .word lb_release
-         .byte CCOLOR_CAPTION, px+4, py+2
+         .byte CCOLOR_CAPTION, px+4, py+6
          .word lb_tuning
-         .byte CCOLOR_CAPTION, px+10, py+2
+         .byte CCOLOR_CAPTION, px+10, py+6
          .word lb_mul
-         .byte CCOLOR_CAPTION, px+15, py+2
+         .byte CCOLOR_CAPTION, px+15, py+6
          .word lb_dt1
-         .byte CCOLOR_CAPTION, px+20, py+2
+         .byte CCOLOR_CAPTION, px+20, py+6
          .word lb_dt2
+         .byte CCOLOR_CAPTION, px+6, py+2
+         .word lb_op_en
+         .byte CCOLOR_CAPTION, px+16, py+2
+         .word vol_lb
+         .byte CCOLOR_CAPTION, px+4, py+14
+         .word lb_ks
          .byte 0
       active_tab: .byte 0
       cp: STR_FORMAT "fm operators"
@@ -493,6 +502,8 @@ dummy_data_size = 1
       lb_mul: STR_FORMAT "mul"
       lb_dt1: STR_FORMAT "fine"
       lb_dt2: STR_FORMAT "coarse"
+      lb_op_en: STR_FORMAT "active"
+      lb_ks: STR_FORMAT "key scaling"
    .endscope
 
    ; Recurring Labels
@@ -2014,9 +2025,9 @@ panel_write_subroutines:
    .word write_snav
    .word write_lb_popup
    .word write_lfo
+   .word dummy_sr ; info box - nothing to edit here
    .word write_fm_gen
    .word write_fm_op
-   .word dummy_sr ; info box - nothing to edit here
 
 dummy_plx:
    plx
@@ -2531,9 +2542,10 @@ write_lfo:
    rts
 
 write_fm_gen:
-   rts
-
-write_fm_op:
+   ; invalidate all FM timbres that have been loaded onto the YM2151 (i.e. enforce reload after timbre has been changed)
+   jsr concerto_synth::voices::panic
+   jsr concerto_synth::voices::invalidate_fm_timbres
+   ; do the usual stuff
    ldx Timbre
    lda ms_curr_component_ofs
    clc
@@ -2546,14 +2558,172 @@ write_fm_op:
    tax
    jmp (@jmp_tbl, x)
 @jmp_tbl:
+   .word @connection
+   .word @feedback
+@connection:
+   plx
+   iny
+   lda fm_gen::comps, y
+   sta concerto_synth::timbres::Timbre::fm_general::con, x
+   rts
+@feedback:
+   plx
+   iny
+   iny
+   lda fm_gen::comps, y
+   sta concerto_synth::timbres::Timbre::fm_general::fl, x
+   rts
+
+write_fm_op:
+   wfm_bits = mzpba
+   ; invalidate all FM timbres that have been loaded onto the YM2151 (i.e. enforce reload after timbre has been changed)
+   jsr concerto_synth::voices::panic
+   jsr concerto_synth::voices::invalidate_fm_timbres
+   ; determine operator index
+   ldx fm_op::active_tab
+   lda Timbre
+   clc
+@loop:
+   dex
+   bmi @loop_done
+   adc #N_TIMBRES
+   bra @loop
+@loop_done:
+   tax
+   ; component offset
+   lda ms_curr_component_ofs
+   adc #4 ; carry should be clear from previous code
+   tay ; there's no component type where the data is before this index
+   ; now determine which component has been dragged
+   phx
+   lda ms_curr_component_id
+   asl
+   tax
+   jmp (@jmp_tbl, x)
+@jmp_tbl:
    .word @tab_select
+   .word @attack
+   .word @decay1
+   .word @decay_level
+   .word @decay2
+   .word @release
+   .word @mul
+   .word @fine
+   .word @coarse
+   .word @active
+   .word @vol
+   .word @key_scaling
 @tab_select:
    plx
    lda ms_curr_data
    sta fm_op::active_tab
    jsr refresh_fm_op
    rts
-
+@attack:
+   plx
+   iny
+   iny
+   lda fm_op::comps, y
+   sta concerto_synth::timbres::Timbre::operators::ar, x
+   rts
+@decay1:
+   plx
+   iny
+   iny
+   lda fm_op::comps, y
+   sta concerto_synth::timbres::Timbre::operators::d1r, x
+   rts
+@decay_level:
+   plx
+   iny
+   iny
+   sec
+   lda #15
+   sbc fm_op::comps, y
+   sta concerto_synth::timbres::Timbre::operators::d1l, x
+   rts
+@decay2:
+   plx
+   iny
+   iny
+   lda fm_op::comps, y
+   sta concerto_synth::timbres::Timbre::operators::d2r, x
+   rts
+@release:
+   plx
+   iny
+   iny
+   lda fm_op::comps, y
+   sta concerto_synth::timbres::Timbre::operators::rr, x
+   rts
+@mul:
+   plx
+   iny
+   iny
+   lda fm_op::comps, y
+   sta concerto_synth::timbres::Timbre::operators::mul, x
+   rts
+@fine:
+   plx
+   iny
+   iny
+   lda fm_op::comps, y
+   bpl :+
+   ; transform -3 ... -0 range to 5 .. 7 (4 is unused, since it does the same thing as 0)
+   eor #%11111111
+   clc
+   adc #5
+:  sta concerto_synth::timbres::Timbre::operators::dt1, x
+   rts
+@coarse:
+   plx
+   iny
+   iny
+   lda fm_op::comps, y
+   sta concerto_synth::timbres::Timbre::operators::dt2, x
+   rts
+@active:
+   plx
+   ; generate 'bit mask'
+   lda #1
+   ldx fm_op::active_tab
+:  dex
+   bmi :+
+   asl
+   bra :-
+:  sta wfm_bits
+   ldx Timbre
+   ; check if operator is enbaled
+   lda fm_op::comps, y
+   beq @_disable_op
+@_enable_op:
+   lda concerto_synth::timbres::Timbre::fm_general::op_en, x
+   ora wfm_bits
+   sta concerto_synth::timbres::Timbre::fm_general::op_en, x
+   rts
+@_disable_op:
+   lda concerto_synth::timbres::Timbre::fm_general::op_en, x
+   eor #%11111111
+   ora wfm_bits
+   eor #%11111111
+   sta concerto_synth::timbres::Timbre::fm_general::op_en, x
+   rts
+@vol:
+   plx
+   iny
+   iny
+   lda #127
+   sec
+   sbc fm_op::comps, y
+   sta concerto_synth::timbres::Timbre::operators::level, x
+   rts
+@key_scaling:
+   plx
+   iny
+   iny
+   lda fm_op::comps, y
+   sta concerto_synth::timbres::Timbre::operators::ks, x
+   rts
 
 
 
@@ -2800,9 +2970,101 @@ refresh_lfo:
    rts
 
 refresh_fm_gen:
+   ldx Timbre
+   ; connection scheme
+   lda concerto_synth::timbres::Timbre::fm_general::con, x
+   ldy #(0*checkbox_data_size+0*drag_edit_data_size+0*listbox_data_size+1*arrowed_edit_data_size-1)
+   sta fm_gen::comps, y
+   ; feedback level
+   lda concerto_synth::timbres::Timbre::fm_general::fl, x
+   ldy #(0*checkbox_data_size+1*drag_edit_data_size+0*listbox_data_size+1*arrowed_edit_data_size-2)
+   sta fm_gen::comps, y
+   ; redraw components
+   lda #7
+   jsr draw_components
    rts
 
 refresh_fm_op:
+   ; determine operator index
+   ldx fm_op::active_tab
+   lda Timbre
+   clc
+@loop:
+   dex
+   bmi @loop_done
+   clc
+   adc #N_TIMBRES
+   bra @loop
+@loop_done:
+   tax
+   ; attack
+   lda concerto_synth::timbres::Timbre::operators::ar, x
+   ldy #(tab_selector_data_size + 0*checkbox_data_size+1*drag_edit_data_size+0*listbox_data_size+0*arrowed_edit_data_size-2)
+   sta fm_op::comps, y
+   ; decay 1
+   lda concerto_synth::timbres::Timbre::operators::d1r, x
+   ldy #(tab_selector_data_size + 0*checkbox_data_size+2*drag_edit_data_size+0*listbox_data_size+0*arrowed_edit_data_size-2)
+   sta fm_op::comps, y
+   ; decay level
+   sec
+   lda #15
+   sbc concerto_synth::timbres::Timbre::operators::d1l, x
+   ldy #(tab_selector_data_size + 0*checkbox_data_size+3*drag_edit_data_size+0*listbox_data_size+0*arrowed_edit_data_size-2)
+   sta fm_op::comps, y
+   ; decay 2
+   lda concerto_synth::timbres::Timbre::operators::d2r, x
+   ldy #(tab_selector_data_size + 0*checkbox_data_size+4*drag_edit_data_size+0*listbox_data_size+0*arrowed_edit_data_size-2)
+   sta fm_op::comps, y
+   ; release
+   lda concerto_synth::timbres::Timbre::operators::rr, x
+   ldy #(tab_selector_data_size + 0*checkbox_data_size+5*drag_edit_data_size+0*listbox_data_size+0*arrowed_edit_data_size-2)
+   sta fm_op::comps, y
+   ; mul
+   lda concerto_synth::timbres::Timbre::operators::mul, x
+   ldy #(tab_selector_data_size + 0*checkbox_data_size+6*drag_edit_data_size+0*listbox_data_size+0*arrowed_edit_data_size-2)
+   sta fm_op::comps, y
+   ; fine
+   lda concerto_synth::timbres::Timbre::operators::dt1, x
+   and #%00000100
+   beq :+
+   lda concerto_synth::timbres::Timbre::operators::dt1, x
+   eor #%11111111
+   clc
+   adc #5
+   bra :++
+:  lda concerto_synth::timbres::Timbre::operators::dt1, x
+:  ldy #(tab_selector_data_size + 0*checkbox_data_size+7*drag_edit_data_size+0*listbox_data_size+0*arrowed_edit_data_size-2)
+   sta fm_op::comps, y
+   ; coarse
+   lda concerto_synth::timbres::Timbre::operators::dt2, x
+   ldy #(tab_selector_data_size + 0*checkbox_data_size+8*drag_edit_data_size+0*listbox_data_size+0*arrowed_edit_data_size-2)
+   sta fm_op::comps, y
+   ; vol
+   sec
+   lda #127
+   sbc concerto_synth::timbres::Timbre::operators::level, x
+   ldy #(tab_selector_data_size + 1*checkbox_data_size+9*drag_edit_data_size+0*listbox_data_size+0*arrowed_edit_data_size-2)
+   sta fm_op::comps, y
+   ; key scaling
+   lda concerto_synth::timbres::Timbre::operators::ks, x
+   ldy #(tab_selector_data_size + 1*checkbox_data_size+10*drag_edit_data_size+0*listbox_data_size+0*arrowed_edit_data_size-2)
+   sta fm_op::comps, y
+   ; active
+   ldx Timbre
+   lda concerto_synth::timbres::Timbre::fm_general::op_en, x
+   ldx fm_op::active_tab
+@loop_2:
+   lsr
+   dex
+   bpl @loop_2
+   lda #0
+   adc #0 ; convert carry into 0 or 1
+   ldy #(tab_selector_data_size + 1*checkbox_data_size+8*drag_edit_data_size+0*listbox_data_size+0*arrowed_edit_data_size-1)
+   sta fm_op::comps, y
+   ; ATTENTION: order changed, because X is destroyed by activation checkbox
+   ; redraw components
+   lda #8
+   jsr draw_components
    rts
 
 .endscope
