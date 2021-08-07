@@ -187,6 +187,18 @@ set_cursor:
    SET_VERA_XY cur_x, cur_y
    rts
 
+; move the cursor one line down from the current cur_x, cur_y
+move_cursor_down:
+   inc cur_y
+   jsr set_cursor
+   rts
+
+; move the cursor two lines down from the current cur_x, cur_y
+move_cursor_down2:
+   inc cur_y
+   inc cur_y
+   jsr set_cursor
+   rts
 
 ; displays the 0-terminated message at position cur_x|cur_y
 ; message pointer is in str_pointer
@@ -775,6 +787,279 @@ clear_lb_popup:
    cli
    rts
 
+
+
+; draw FM algorithm
+; Alg number in draw_data1
+; Position fixed by macros @alg_x, @alg_y
+draw_fm_alg:
+   @alg_x = 70
+   @alg_y = 14
+   ; clear drawing area
+   lda #@alg_x
+   sta draw_x
+   lda #@alg_y
+   sta draw_y
+   lda #5
+   sta draw_width
+   lda #8
+   sta draw_height
+   jsr clear_lb_popup
+   lda #@alg_x
+   sta cur_x
+   lda #@alg_y
+   sta cur_y
+   ; do actual drawing
+   sei
+   jsr set_cursor
+   ldx #CCOLOR_ALG_CONNECTION
+   ; operator 1, always the same
+   lda #112
+   sta VERA_data0
+   stx VERA_data0
+   lda #110
+   sta VERA_data0
+   stx VERA_data0
+   inc cur_y
+   jsr set_cursor
+   lda #109
+   sta VERA_data0
+   stx VERA_data0
+   lda #49
+   sta VERA_data0
+   ldx #CCOLOR_ALG_OP_NUMBERS
+   stx VERA_data0
+   ; all algs require this
+   inc cur_x
+   ; now switch depending on alg
+   lda draw_data1
+   asl
+   tax
+   INDEXED_JSR @jmp_table, @return
+@jmp_table:
+   .word @con_0
+   .word @con_1
+   .word @con_2
+   .word @con_3
+   .word @con_4
+   .word @con_5
+   .word @con_6
+   .word @con_7
+@con_0:
+   ; finish off numbers
+   ldx #CCOLOR_ALG_OP_NUMBERS
+   jsr move_cursor_down2
+   lda #50
+   sta VERA_data0
+   stx VERA_data0
+   jsr move_cursor_down2
+   lda #51
+   sta VERA_data0
+   stx VERA_data0
+   jsr move_cursor_down2
+   lda #52
+   sta VERA_data0
+   stx VERA_data0
+   ; draw connections
+   ldx #CCOLOR_ALG_CONNECTION
+   lda #@alg_y+2
+   sta cur_y
+   jsr set_cursor
+   lda #66
+   sta VERA_data0
+   stx VERA_data0
+   jsr move_cursor_down2
+   lda #66
+   sta VERA_data0
+   stx VERA_data0
+   jsr move_cursor_down2
+   lda #66
+   sta VERA_data0
+   stx VERA_data0
+   rts
+@con_1:
+   ; finish off numbers
+   ldx #CCOLOR_ALG_OP_NUMBERS
+   lda #50
+   sta VERA_data0
+   stx VERA_data0
+   jsr move_cursor_down2
+   lda #51
+   sta VERA_data0
+   stx VERA_data0
+   jsr move_cursor_down2
+   lda #52
+   sta VERA_data0
+   stx VERA_data0
+   ; draw connections
+   ldx #CCOLOR_ALG_CONNECTION
+   lda #@alg_y+2
+   sta cur_y
+   jsr set_cursor
+   lda #107
+   sta VERA_data0
+   stx VERA_data0
+   lda #125
+   sta VERA_data0
+   stx VERA_data0
+   jsr move_cursor_down2
+   lda #66
+   sta VERA_data0
+   stx VERA_data0
+   rts
+@con_2:
+   ; finish off numbers
+   ldx #CCOLOR_ALG_OP_NUMBERS
+   lda #50
+   sta VERA_data0
+   stx VERA_data0
+   inc cur_x
+   jsr move_cursor_down2
+   lda #51
+   sta VERA_data0
+   stx VERA_data0
+   dec cur_x
+   jsr move_cursor_down
+   lda #52
+   sta VERA_data0
+   stx VERA_data0
+   ; draw connections
+   ldx #CCOLOR_ALG_CONNECTION
+   lda #@alg_y+2
+   sta cur_y
+   jsr set_cursor
+   lda #66
+   sta VERA_data0
+   stx VERA_data0
+   sta VERA_data0
+   stx VERA_data0
+   jsr move_cursor_down
+   lda #107
+   sta VERA_data0
+   stx VERA_data0
+   rts
+@con_3:
+   ; finish off numbers
+   ldx #CCOLOR_ALG_OP_NUMBERS
+   lda #51
+   sta VERA_data0
+   stx VERA_data0
+   jsr move_cursor_down2
+   lda #50
+   sta VERA_data0
+   stx VERA_data0
+   inc cur_x
+   jsr move_cursor_down
+   lda #52
+   sta VERA_data0
+   stx VERA_data0
+   dec cur_x
+   ; draw connections
+   ldx #CCOLOR_ALG_CONNECTION
+   lda #@alg_y+2
+   sta cur_y
+   jsr set_cursor
+   lda #66
+   sta VERA_data0
+   stx VERA_data0
+   sta VERA_data0
+   stx VERA_data0
+   inc cur_x
+   jsr move_cursor_down
+   lda #115
+   sta VERA_data0
+   stx VERA_data0
+   rts
+@con_4:
+   ; finish off numbers
+   ldx #CCOLOR_ALG_OP_NUMBERS
+   lda #51
+   sta VERA_data0
+   stx VERA_data0
+   jsr move_cursor_down2
+   lda #50
+   sta VERA_data0
+   stx VERA_data0
+   lda #52
+   sta VERA_data0
+   stx VERA_data0
+   ; draw connections
+   ldx #CCOLOR_ALG_CONNECTION
+   lda #@alg_y+2
+   sta cur_y
+   jsr set_cursor
+   lda #66
+   sta VERA_data0
+   stx VERA_data0
+   sta VERA_data0
+   stx VERA_data0
+   rts
+@con_5:
+   ; finish off numbers
+   ldx #CCOLOR_ALG_OP_NUMBERS
+   jsr move_cursor_down2
+   lda #51
+   sta VERA_data0
+   stx VERA_data0
+   lda #50
+   sta VERA_data0
+   stx VERA_data0
+   lda #52
+   sta VERA_data0
+   stx VERA_data0
+   ; draw connections
+   ldx #CCOLOR_ALG_CONNECTION
+   lda #@alg_y+2
+   sta cur_y
+   jsr set_cursor
+   lda #107
+   sta VERA_data0
+   stx VERA_data0
+   lda #114
+   sta VERA_data0
+   stx VERA_data0
+   lda #110
+   sta VERA_data0
+   stx VERA_data0
+   rts
+@con_6:
+   ; finish off numbers
+   ldx #CCOLOR_ALG_OP_NUMBERS
+   jsr move_cursor_down2
+   lda #51
+   sta VERA_data0
+   stx VERA_data0
+   lda #50
+   sta VERA_data0
+   stx VERA_data0
+   lda #52
+   sta VERA_data0
+   stx VERA_data0
+   ; draw connections
+   ldx #CCOLOR_ALG_CONNECTION
+   lda #@alg_y+2
+   sta cur_y
+   jsr set_cursor
+   lda #66
+   sta VERA_data0
+   stx VERA_data0
+   rts
+@con_7:
+   ; finish off numbers
+   ldx #CCOLOR_ALG_OP_NUMBERS
+   lda #51
+   sta VERA_data0
+   stx VERA_data0
+   lda #50
+   sta VERA_data0
+   stx VERA_data0
+   lda #52
+   sta VERA_data0
+   stx VERA_data0
+   rts
+@return:
+   cli
+   rts
 
 
 .endscope ; gui

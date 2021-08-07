@@ -429,20 +429,39 @@ dummy_data_size = 1
       wd = 29
       hg = 15
       comps:
-         .byte 3, px+13, py+2, 0, 7, 0 ; connection scheme number (arrowed edit)
-         .byte 4, px+14, py+4, %0, 0, 7, 0, 0 ; feedback level (drag edit)
+         .byte 3, px+13, py+4, 0, 7, 0 ; connection scheme number (arrowed edit)
+         .byte 4, px+14, py+6, %0, 0, 7, 0, 0 ; feedback level (drag edit)
+         .byte 5, px+15, py+2, 2, 0 ; activate operator 1 checkbox
+         .byte 5, px+18, py+2, 2, 0 ; activate operator 2 checkbox
+         .byte 5, px+21, py+2, 2, 0 ; activate operator 3 checkbox
+         .byte 5, px+24, py+2, 2, 0 ; activate operator 4 checkbox
          .byte 0
       capts:
          .byte CCOLOR_CAPTION, px+4, py
          .word cp
-         .byte CCOLOR_CAPTION, px+2, py+2
-         .word con_select_lb
          .byte CCOLOR_CAPTION, px+2, py+4
+         .word con_select_lb
+         .byte CCOLOR_CAPTION, px+2, py+6
          .word lb_feedback
+         .byte COLOR_IMPORTANT_CAPTION+16*COLOR_BACKGROUND, px+2, py+2
+         .word lb_op_en
+         .byte CCOLOR_CAPTION, px+16, py+2
+         .word lb_op1
+         .byte CCOLOR_CAPTION, px+19, py+2
+         .word lb_op2
+         .byte CCOLOR_CAPTION, px+22, py+2
+         .word lb_op3
+         .byte CCOLOR_CAPTION, px+25, py+2
+         .word lb_op4
          .byte 0 ; empty
       cp: STR_FORMAT "fm general"
       con_select_lb: STR_FORMAT "connection"
       lb_feedback: STR_FORMAT "feedback"
+      lb_op_en: STR_FORMAT "activate op."
+      lb_op1: STR_FORMAT "1"
+      lb_op2: STR_FORMAT "2"
+      lb_op3: STR_FORMAT "3"
+      lb_op4: STR_FORMAT "4"
    .endscope
 
    ; FM operators setup
@@ -450,33 +469,32 @@ dummy_data_size = 1
       px = fm_gen::px
       py = fm_gen::py+fm_gen::hg
       wd = fm_gen::wd
-      hg = 18
+      hg = 17
       comps:
          .byte 2, px, py, N_OPERATORS, 0 ; tabselector
-         .byte 4, px+4 , py+11, %0, 0, 31, 0, 0 ; drag edit - attack
-         .byte 4, px+9, py+11, %0, 0, 31, 0, 0 ; drag edit - decay1
-         .byte 4, px+14, py+11, %0, 0, 15, 0, 0 ; drag edit - decay level
-         .byte 4, px+19, py+11, %0, 0, 31, 0, 0 ; drag edit - decay2
-         .byte 4, px+24, py+11, %0, 0, 15, 0, 0 ; drag edit - release
+         .byte 4, px+4 , py+12, %0, 0, 31, 0, 0 ; drag edit - attack
+         .byte 4, px+9, py+12, %0, 0, 31, 0, 0 ; drag edit - decay1
+         .byte 4, px+14, py+12, %0, 0, 15, 0, 0 ; drag edit - decay level
+         .byte 4, px+19, py+12, %0, 0, 31, 0, 0 ; drag edit - decay2
+         .byte 4, px+24, py+12, %0, 0, 15, 0, 0 ; drag edit - release
          .byte 4, px+10, py+7, %0, 0, 15, 0, 0 ; drag edit - mul
          .byte 4, px+15, py+7, %00000100, 253, 3, 0, 0 ; drag edit - fine
          .byte 4, px+20, py+7, %0, 0, 3, 0, 0 ; drag edit - coarse
-         .byte 5, px+4, py+2, 8, 0 ; activate operator checkbox
-         .byte 4, px+16, py+3, %0, 0, 127, 0, 0 ; drag edit - level (vol)
+         .byte 4, px+4, py+3, %0, 0, 127, 0, 0 ; drag edit - level (vol)
          .byte 4, px+17, py+14, %00000000, 0, 3, 0, 0 ; drag edit - key scaling
          .byte 0
       capts:
          .byte CCOLOR_CAPTION, px+4, py
          .word cp
-         .byte CCOLOR_CAPTION, px+4, py+10
+         .byte CCOLOR_CAPTION, px+4, py+11
          .word lb_attack
-         .byte CCOLOR_CAPTION, px+9, py+10
+         .byte CCOLOR_CAPTION, px+9, py+11
          .word lb_decay_1
-         .byte CCOLOR_CAPTION, px+14, py+10
+         .byte CCOLOR_CAPTION, px+14, py+11
          .word lb_decay_level
-         .byte CCOLOR_CAPTION, px+19, py+10
+         .byte CCOLOR_CAPTION, px+19, py+11
          .word lb_decay_2
-         .byte CCOLOR_CAPTION, px+24, py+10
+         .byte CCOLOR_CAPTION, px+24, py+11
          .word lb_release
          .byte CCOLOR_CAPTION, px+4, py+6
          .word lb_tuning
@@ -486,9 +504,7 @@ dummy_data_size = 1
          .word lb_dt1
          .byte CCOLOR_CAPTION, px+20, py+6
          .word lb_dt2
-         .byte CCOLOR_CAPTION, px+6, py+2
-         .word lb_op_en
-         .byte CCOLOR_CAPTION, px+16, py+2
+         .byte CCOLOR_CAPTION, px+4, py+2
          .word vol_lb
          .byte CCOLOR_CAPTION, px+4, py+14
          .word lb_ks
@@ -502,7 +518,6 @@ dummy_data_size = 1
       lb_mul: STR_FORMAT "mul"
       lb_dt1: STR_FORMAT "fine"
       lb_dt2: STR_FORMAT "coarse"
-      lb_op_en: STR_FORMAT "active"
       lb_ks: STR_FORMAT "key scaling"
    .endscope
 
@@ -2542,6 +2557,7 @@ write_lfo:
    rts
 
 write_fm_gen:
+   wfm_bits = mzpba
    ; invalidate all FM timbres that have been loaded onto the YM2151 (i.e. enforce reload after timbre has been changed)
    jsr concerto_synth::voices::panic
    jsr concerto_synth::voices::invalidate_fm_timbres
@@ -2560,11 +2576,18 @@ write_fm_gen:
 @jmp_tbl:
    .word @connection
    .word @feedback
+   .word @op1_active
+   .word @op2_active
+   .word @op3_active
+   .word @op4_active
 @connection:
    plx
    iny
    lda fm_gen::comps, y
    sta concerto_synth::timbres::Timbre::fm_general::con, x
+   ; draw FM algorithm
+   sta guiutils::draw_data1
+   jsr guiutils::draw_fm_alg
    rts
 @feedback:
    plx
@@ -2573,9 +2596,41 @@ write_fm_gen:
    lda fm_gen::comps, y
    sta concerto_synth::timbres::Timbre::fm_general::fl, x
    rts
+@op1_active:
+   lda #%00000001
+   sta wfm_bits
+   bra @op_active_common
+@op2_active:
+   lda #%00000010
+   sta wfm_bits
+   bra @op_active_common
+@op3_active:
+   lda #%00000100
+   sta wfm_bits
+   bra @op_active_common
+@op4_active:
+   lda #%00001000
+   sta wfm_bits
+   bra @op_active_common
+@op_active_common: ; DON'T put this label into jump table ...
+   plx
+   ; get checkbox value
+   lda fm_gen::comps, y
+   ; push into carry flag
+   lsr
+   lda wfm_bits
+   bcc :+
+   ; checkbox activated
+   ora concerto_synth::timbres::Timbre::fm_general::op_en, x
+   bra :++
+:  ; checkbox deactivated
+   eor #%11111111
+   and concerto_synth::timbres::Timbre::fm_general::op_en, x
+:  sta concerto_synth::timbres::Timbre::fm_general::op_en, x
+   rts
+
 
 write_fm_op:
-   wfm_bits = mzpba
    ; invalidate all FM timbres that have been loaded onto the YM2151 (i.e. enforce reload after timbre has been changed)
    jsr concerto_synth::voices::panic
    jsr concerto_synth::voices::invalidate_fm_timbres
@@ -2610,7 +2665,6 @@ write_fm_op:
    .word @mul
    .word @fine
    .word @coarse
-   .word @active
    .word @vol
    .word @key_scaling
 @tab_select:
@@ -2681,32 +2735,6 @@ write_fm_op:
    iny
    lda fm_op::comps, y
    sta concerto_synth::timbres::Timbre::operators::dt2, x
-   rts
-@active:
-   plx
-   ; generate 'bit mask'
-   lda #1
-   ldx fm_op::active_tab
-:  dex
-   bmi :+
-   asl
-   bra :-
-:  sta wfm_bits
-   ldx Timbre
-   ; check if operator is enbaled
-   lda fm_op::comps, y
-   beq @_disable_op
-@_enable_op:
-   lda concerto_synth::timbres::Timbre::fm_general::op_en, x
-   ora wfm_bits
-   sta concerto_synth::timbres::Timbre::fm_general::op_en, x
-   rts
-@_disable_op:
-   lda concerto_synth::timbres::Timbre::fm_general::op_en, x
-   eor #%11111111
-   ora wfm_bits
-   eor #%11111111
-   sta concerto_synth::timbres::Timbre::fm_general::op_en, x
    rts
 @vol:
    plx
@@ -2879,7 +2907,6 @@ refresh_osc:
    jsr map_signed_7bit_to_twos_complement
    ldy #(tab_selector_data_size+7*listbox_data_size+4*checkbox_data_size+8*drag_edit_data_size-2)
    sta osc::comps, y
-
    ; redraw components
    lda #1
    jsr draw_components
@@ -2970,6 +2997,7 @@ refresh_lfo:
    rts
 
 refresh_fm_gen:
+   @rfm_bits = mzpbd
    ldx Timbre
    ; connection scheme
    lda concerto_synth::timbres::Timbre::fm_general::con, x
@@ -2979,9 +3007,41 @@ refresh_fm_gen:
    lda concerto_synth::timbres::Timbre::fm_general::fl, x
    ldy #(0*checkbox_data_size+1*drag_edit_data_size+0*listbox_data_size+1*arrowed_edit_data_size-2)
    sta fm_gen::comps, y
+   ; operators enable
+   lda concerto_synth::timbres::Timbre::fm_general::op_en, x
+   sta @rfm_bits
+   ; operator 1 enable
+   lda #0
+   bbr0 @rfm_bits, :+
+   lda #1
+:  ldy #(1*checkbox_data_size+1*drag_edit_data_size+0*listbox_data_size+1*arrowed_edit_data_size-1)
+   sta fm_gen::comps, y
+   ; operator 2 enable
+   lda #0
+   bbr1 @rfm_bits, :+
+   lda #1
+:  ldy #(2*checkbox_data_size+1*drag_edit_data_size+0*listbox_data_size+1*arrowed_edit_data_size-1)
+   sta fm_gen::comps, y
+   ; operator 3 enable
+   lda #0
+   bbr2 @rfm_bits, :+
+   lda #1
+:  ldy #(3*checkbox_data_size+1*drag_edit_data_size+0*listbox_data_size+1*arrowed_edit_data_size-1)
+   sta fm_gen::comps, y
+   ; operator 4 enable
+   lda #0
+   bbr3 @rfm_bits, :+
+   lda #1
+:  ldy #(4*checkbox_data_size+1*drag_edit_data_size+0*listbox_data_size+1*arrowed_edit_data_size-1)
+   sta fm_gen::comps, y
    ; redraw components
    lda #7
    jsr draw_components
+   ; redraw FM algorithm
+   ldx Timbre
+   lda concerto_synth::timbres::Timbre::fm_general::con, x
+   sta guiutils::draw_data1
+   jsr guiutils::draw_fm_alg
    rts
 
 refresh_fm_op:
@@ -3043,25 +3103,12 @@ refresh_fm_op:
    sec
    lda #127
    sbc concerto_synth::timbres::Timbre::operators::level, x
-   ldy #(tab_selector_data_size + 1*checkbox_data_size+9*drag_edit_data_size+0*listbox_data_size+0*arrowed_edit_data_size-2)
+   ldy #(tab_selector_data_size + 0*checkbox_data_size+9*drag_edit_data_size+0*listbox_data_size+0*arrowed_edit_data_size-2)
    sta fm_op::comps, y
    ; key scaling
    lda concerto_synth::timbres::Timbre::operators::ks, x
-   ldy #(tab_selector_data_size + 1*checkbox_data_size+10*drag_edit_data_size+0*listbox_data_size+0*arrowed_edit_data_size-2)
+   ldy #(tab_selector_data_size + 0*checkbox_data_size+10*drag_edit_data_size+0*listbox_data_size+0*arrowed_edit_data_size-2)
    sta fm_op::comps, y
-   ; active
-   ldx Timbre
-   lda concerto_synth::timbres::Timbre::fm_general::op_en, x
-   ldx fm_op::active_tab
-@loop_2:
-   lsr
-   dex
-   bpl @loop_2
-   lda #0
-   adc #0 ; convert carry into 0 or 1
-   ldy #(tab_selector_data_size + 1*checkbox_data_size+8*drag_edit_data_size+0*listbox_data_size+0*arrowed_edit_data_size-1)
-   sta fm_op::comps, y
-   ; ATTENTION: order changed, because X is destroyed by activation checkbox
    ; redraw components
    lda #8
    jsr draw_components

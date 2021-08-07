@@ -364,7 +364,7 @@ load_default_timbre:
    sta Timbre::osc::track, x
    lda #192
    sta Timbre::osc::lrmid, x
-   lda #64
+   lda #50
    sta Timbre::osc::volume, x
    lda #40
    sta Timbre::osc::pulse, x
@@ -393,12 +393,16 @@ load_default_timbre:
    stz Timbre::operators::mul, x
    stz Timbre::operators::dt1, x
    stz Timbre::operators::dt2, x
-   stz Timbre::operators::ar, x
-   stz Timbre::operators::d2r, x
    stz Timbre::operators::ks, x
-   lda #2
+   lda #31
+   sta Timbre::operators::ar, x
+   sta Timbre::operators::d2r, x
+   lda #12
    sta Timbre::operators::d1r, x
+   lda #15
    sta Timbre::operators::d1l, x
+   sta Timbre::operators::rr, x
+   lda #22
    sta Timbre::operators::level, x ; need to revisit this, once I decided upon a way to scale the levels
    txa
    clc
