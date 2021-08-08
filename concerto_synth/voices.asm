@@ -63,6 +63,10 @@
    osc_psg_map:   OSCILLATOR_VOICE_BYTE_FIELD
    fm_voice_map:  VOICE_BYTE_FIELD
 
+   .scope fm
+      trigger_loaded:   VOICE_BYTE_FIELD  ; true if FM voice shall be triggered in the next synth tick. (usually the first tick of a voice)
+   .endscope
+
    ; pitch slide (either for pitchbend or portamento)
    .scope pitch_slide
       active:  VOICE_BYTE_FIELD   ; is porta still going? 0 if inactive, 1 if going up, 2 if going down, 3 if free slide (no aimed for note)
@@ -283,6 +287,7 @@ retrigger_note:
    ; ZP variable: is set to n_envs
    ; y: counter (and timbre index before that)
    rn_number = mzpbb
+   stz Voice::fm::trigger_loaded, x
    phx
    phy
    lda timbres::Timbre::n_envs, y

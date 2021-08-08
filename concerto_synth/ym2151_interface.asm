@@ -271,10 +271,6 @@ trigger_fm_note:
    ldy Voice::fm_voice_map, x
    jsr write_ym2151
 
-   ; note pitch
-   lda note_pitch
-   jsr set_fm_note
-
    ; set operator volumes
    ; *********************
    ; This is annoyingly complicated ... we basically need to replicate the load timbre loop just for this
@@ -322,21 +318,18 @@ trigger_fm_note:
    ; pop running address
    pla
 
+   ; note pitch
+   lda note_pitch
+   jsr set_fm_note
+
    ; key fraction
    ; ************
    ; TODO
 
-   ; key on
-   ; ******
+   ; load trigger
+   ; ************
    ldx note_channel
-   ldy note_timbre
-   lda timbres::Timbre::fm_general::op_en, y
-   asl
-   asl
-   asl
-   adc Voice::fm_voice_map, x
-   tay
-   lda #YM_KON
-   jsr write_ym2151
+   lda #1
+   sta Voice::fm::trigger_loaded, x
 
    rts

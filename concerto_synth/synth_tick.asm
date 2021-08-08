@@ -140,12 +140,11 @@ next_voice:
    ; -----------------------
 
    ; This section of code updates all active ADSR envelopes.
-   ; (At the moment, we just got AD envelopes)
 
    ; step = 0 means inactive (either not started or already finished) 
    ; When the envelope is inactive, phase has to be 0 for reference,
    ; since the envelope amplitude is in "phase".
-   ; (If phase weren't 0 when the envelope is inactive, it would yield a nonzero modulation
+   ; (If phase wasn't 0 when the envelope is inactive, it would yield a nonzero modulation
    ; to everything the envelope is assigned to)
    
    ; step legend:
@@ -684,7 +683,28 @@ end_env: ; jump here when done with all envelopes
 
 
 
+   ; --------------
+   ; --------------
+   ; -- FM VOICE --
+   ; --------------
+   ; --------------
 
+   ; trigger key if loaded
+   ldx voice_index
+   lda voices::Voice::fm::trigger_loaded, x
+   beq @skip_fm_trigger
+@do_fm_trigger:
+   stz voices::Voice::fm::trigger_loaded, x
+   ldy voices::Voice::timbre, x
+   lda timbres::Timbre::fm_general::op_en, y
+   asl
+   asl
+   asl
+   adc voices::Voice::fm_voice_map, x
+   tay
+   lda #YM_KON
+   jsr voices::write_ym2151
+@skip_fm_trigger:
 
 
 

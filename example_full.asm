@@ -17,27 +17,6 @@
 
 ;*****************************************************************************
 
-
-;*****************************************************************************;
-; Program: CONCERTO                                                           ;
-; Platform: Commander X16 (Emulator R38)                                      ;
-; Compiler: CC65                                                              ;
-; Author: Carl Georg Biermann                                                 ;
-; Dedication:                                                                 ;
-;                                                                             ;
-;                  Sing joyfully to the Lord, you righteous;                  ;
-;                 it is fitting for the upright to praise him.                ;
-;                       Praise the Lord with the harp;                        ;
-;                 make music to him on the ten-stringed lyre.                 ;
-;                          Sing to him a new song;                            ;
-;                    play skillfully, and shout for joy.                      ;
-;                 For the word of the Lord is right and true;                 ;
-;                       he is faithful in all he does.                        ;
-;                                                                             ;
-;                            Psalm 33 Verses 1-4                              ;
-;                                                                             ;
-;*****************************************************************************;
-
 ; Compile with: cl65 -t cx16 -o CONCERTO.PRG -C cx16-asm.cfg -u __EXEHDR__ "example_full.asm"
 
 .zeropage
