@@ -271,9 +271,6 @@ cn_check_retrigger:
    ; retrigger or continue?
    lda timbres::Timbre::retrig, y
    bne :+
-   ; porta ... need to set FM pitch, which doesn't support porta (yet)
-   lda note_pitch
-   jsr set_fm_note
    rts
 :  jsr retrigger_note
 rts

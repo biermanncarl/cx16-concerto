@@ -334,6 +334,8 @@ load_default_timbre:
    lda #15
    sta Timbre::fm_general::op_en, x
    stz Timbre::fm_general::fl, x
+   lda #%11000000
+   sta Timbre::fm_general::lr, x
    ; envelopes
    ldy #MAX_ENVS_PER_VOICE
 @loop_envs:

@@ -101,17 +101,31 @@ voi_modsourcesH:
       .byte 0
    .endrepeat
 
+
+
+; ZERO PAGE USAGE
+; ***************
 ; give zero page variables more understandable names
+; mzpbb stays constant throughout the whole voice being processed
+; mzpbc and mzpbd are reused per code section
+; mzpbf and mzpbg are reserved for multiplications
+; mzpbe is used for all modulation sources, but is reused afterwards
 voice_index = mzpbb
+; envelopes
 env_counter = mzpbc
 n_envs      = mzpbd
+; LFOs
 lfo_counter = mzpbc
 bittest     = mzpbd  ; for Sample and Hold RNG
-osc_counter = mzpbc ; c and d are reused
-n_oscs      = mzpbd
+; all modulation sources
 modsource_index = mzpbe ; keeps track of which modsource we're processing
-osc_offset = mzpbe ; e reused for oscillators loop
-; mzpbf and mzpbg are reserved for multiplications
+; FM
+keycode     = mzpbc 
+; PSG Oscillators
+osc_counter = mzpbc
+n_oscs      = mzpbd
+osc_offset = mzpbe
+
 
 
 
@@ -689,7 +703,51 @@ end_env: ; jump here when done with all envelopes
    ; --------------
    ; --------------
 
-   ; trigger key if loaded
+   stx note_channel
+
+   ; Set note's pitch
+   ; We have to convert from continuous internal format to
+   ; annoying YM2151 format.
+   ; Maybe one or two lookup tables can do the trick in the future
+   ; (There is already one being used in the NOTE determination)
+   ldy #0
+   lda voi_pitch
+   sec
+   sbc #3 ; this is just to correct for wrong YM frequency in the emulation R38
+@sub_loop:
+   iny
+   sbc #12
+   bcs @sub_loop
+   adc #12
+   ; semitone is in A. Now translate it to stupid YM2151 format
+   tax
+   lda semitones_ym2151, x
+   sta keycode
+   ldx note_channel
+   dey
+   ; octave is in Y
+   tya
+   clc
+   asl
+   asl
+   asl
+   asl
+   clc
+   adc keycode ; carry should be clear from previous operation, where bits were pushed out that are supposed to be zero anyway.
+   tay ; done computing the value
+   lda #YM_KC
+   clc
+   adc voices::Voice::fm_voice_map, x
+   jsr voices::write_ym2151
+   ; key fraction
+   ; this is trivial
+   ldy voi_fine
+   lda #YM_KF
+   adc voices::Voice::fm_voice_map, x
+   jsr voices::write_ym2151
+
+
+   ; trigger key-on if it has been loaded
    ldx voice_index
    lda voices::Voice::fm::trigger_loaded, x
    beq @skip_fm_trigger

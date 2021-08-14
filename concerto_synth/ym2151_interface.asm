@@ -217,44 +217,6 @@ load_fm_timbre:
    rts
 
 
-; expects note pitch in A
-set_fm_note:
-   keycode = mzpbb
-   ; set key code (convert it from note pitch)
-   ; Do this naively by a subtract loop.
-   ldy #0
-   ; adjust pitch to make up for YM2151 running at a different frequency than recommended
-   dea
-   dea
-   dea
-   sec
-@sub_loop:
-   iny
-   sbc #12
-   bcs @sub_loop
-   adc #12
-   ; semitone is in A. Now translate it to stupid YM2151 format
-   tax
-   lda semitones_ym2151, x
-   sta keycode
-   ldx note_channel
-   dey
-   ; octave is in Y
-   tya
-   clc
-   asl
-   asl
-   asl
-   asl
-   clc
-   adc keycode ; carry should be clear from previous operation, where bits were pushed out that are supposed to be zero anyway.
-   tay
-   lda #YM_KC
-   clc
-   adc Voice::fm_voice_map, x
-   jsr write_ym2151
-   rts
-
 
 
 ; Triggers a note on the YM2151.
@@ -318,13 +280,7 @@ trigger_fm_note:
    ; pop running address
    pla
 
-   ; note pitch
-   lda note_pitch
-   jsr set_fm_note
-
-   ; key fraction
-   ; ************
-   ; TODO
+   ; Pitch is done inside synth tick.
 
    ; load trigger
    ; ************
