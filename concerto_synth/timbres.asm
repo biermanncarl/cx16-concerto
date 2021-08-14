@@ -125,6 +125,7 @@ data_start:
       con:              TIMBRE_BYTE_FIELD   ; the connection algorithm of the timbre (3 bits)
       fl:               TIMBRE_BYTE_FIELD   ; feedback level (3 bits)
       op_en:            TIMBRE_BYTE_FIELD   ; operator enable (4 bits) (also acts as FM enable)
+      lr:               TIMBRE_BYTE_FIELD   ; Channels L/R (2 bits) (!!! stored in bits 6 and 7)
    .endscope
 
    .scope operators
@@ -396,9 +397,10 @@ load_default_timbre:
    stz Timbre::operators::ks, x
    lda #31
    sta Timbre::operators::ar, x
-   sta Timbre::operators::d2r, x
    lda #12
    sta Timbre::operators::d1r, x
+   lda #4
+   sta Timbre::operators::d2r, x
    lda #15
    sta Timbre::operators::d1l, x
    sta Timbre::operators::rr, x

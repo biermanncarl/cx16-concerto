@@ -82,8 +82,8 @@ load_fm_timbre:
    asl
    asl
    asl
-   ora timbres::Timbre::fm_general::con, x
-   ora #%11000000 ; set LR bits, constant for now
+   ora timbres::Timbre::fm_general::con, x ; set "Connection" bits
+   ora timbres::Timbre::fm_general::lr, x ; set LR bits
    tay
    pla
    clc

@@ -251,25 +251,12 @@ dummy_data_size = 1
       track_lb: STR_FORMAT "track"
       wvtbl_lb: STR_FORMAT "wvtbl"
       modulation_lb: STR_FORMAT "modulation"
-      channel_lb: .byte 12, 47, 18, 0
       ; stringlist for modsource listboxes
       waveforms_lb:
          STR_FORMAT "pulse"
          STR_FORMAT "saw"
          STR_FORMAT "tri"
          STR_FORMAT "noise"
-      modsources_none_option_lb:
-         .byte 32, 45, 45, 0
-      modsources_lb: 
-         STR_FORMAT "env1"
-         STR_FORMAT "env2"
-         STR_FORMAT "env3"
-         STR_FORMAT "lfo"
-      channel_select_lb:
-         .byte 32, 45, 0
-         STR_FORMAT " l"
-         STR_FORMAT " r"
-         .byte 12, 43, 18, 0
    .endscope
    ; envelope settings panel
    .scope env
@@ -435,6 +422,7 @@ dummy_data_size = 1
          .byte 5, px+18, py+2, 2, 0 ; activate operator 2 checkbox
          .byte 5, px+21, py+2, 2, 0 ; activate operator 3 checkbox
          .byte 5, px+24, py+2, 2, 0 ; activate operator 4 checkbox
+         .byte 6, px+13, py+8, 5, 4, (<channel_select_lb), (>channel_select_lb), 0 ; L/R listbox
          .byte 0
       capts:
          .byte CCOLOR_CAPTION, px+4, py
@@ -453,6 +441,8 @@ dummy_data_size = 1
          .word lb_op3
          .byte CCOLOR_CAPTION, px+25, py+2
          .word lb_op4
+         .byte CCOLOR_CAPTION, px+2, py+8
+         .word channel_lb
          .byte 0 ; empty
       cp: STR_FORMAT "fm general"
       con_select_lb: STR_FORMAT "connection"
@@ -482,6 +472,8 @@ dummy_data_size = 1
          .byte 4, px+20, py+7, %0, 0, 3, 0, 0 ; drag edit - coarse
          .byte 4, px+4, py+3, %0, 0, 127, 0, 0 ; drag edit - level (vol)
          .byte 4, px+17, py+14, %00000000, 0, 3, 0, 0 ; drag edit - key scaling
+         ;.byte 6, modsecx+7, modsecy+2, 8, N_TOT_MODSOURCES+1, (<modsources_none_option_lb), (>modsources_none_option_lb), 0 ; pitch mod select 1
+         ;.byte 6, modsecx+7, modsecy+3, 8, N_TOT_MODSOURCES+1, (<modsources_none_option_lb), (>modsources_none_option_lb), 0 ; pitch mod select 2
          .byte 0
       capts:
          .byte CCOLOR_CAPTION, px+4, py
@@ -532,6 +524,20 @@ dummy_data_size = 1
    lb_decay: STR_FORMAT "dec"
    lb_sustain: STR_FORMAT "sus"
    lb_release: STR_FORMAT "rel"
+   channel_lb: .byte 12, 47, 18, 0 ; L/R
+
+   modsources_none_option_lb:
+      .byte 32, 45, 45, 0
+   modsources_lb: 
+      STR_FORMAT "env1"
+      STR_FORMAT "env2"
+      STR_FORMAT "env3"
+      STR_FORMAT "lfo"
+   channel_select_lb:
+      .byte 32, 45, 0
+      STR_FORMAT " l"
+      STR_FORMAT " r"
+      .byte 12, 43, 18, 0
 
    ; Panel Lookup tables
    ; Each label marks a list of values, one for each panel.
@@ -2580,6 +2586,7 @@ write_fm_gen:
    .word @op2_active
    .word @op3_active
    .word @op4_active
+   .word @lr_select
 @connection:
    plx
    iny
@@ -2627,6 +2634,18 @@ write_fm_gen:
    eor #%11111111
    and concerto_synth::timbres::Timbre::fm_general::op_en, x
 :  sta concerto_synth::timbres::Timbre::fm_general::op_en, x
+   rts
+@lr_select:
+   plx
+   iny
+   iny
+   iny
+   lda fm_gen::comps, y
+   clc
+   ror
+   ror
+   ror
+   sta concerto_synth::timbres::Timbre::fm_general::lr, x
    rts
 
 
@@ -3033,6 +3052,14 @@ refresh_fm_gen:
    bbr3 @rfm_bits, :+
    lda #1
 :  ldy #(4*checkbox_data_size+1*drag_edit_data_size+0*listbox_data_size+1*arrowed_edit_data_size-1)
+   sta fm_gen::comps, y
+   ; LR channel select
+   lda concerto_synth::timbres::Timbre::fm_general::lr, x
+   clc
+   rol
+   rol
+   rol
+   ldy #(4*checkbox_data_size+1*drag_edit_data_size+1*listbox_data_size+1*arrowed_edit_data_size-1)
    sta fm_gen::comps, y
    ; redraw components
    lda #7
