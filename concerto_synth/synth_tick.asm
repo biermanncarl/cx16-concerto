@@ -780,7 +780,10 @@ end_env: ; jump here when done with all envelopes
    ; osc_offset: starting at voice_index, increased by N_VOICES, to access voice dependent oscillator data (PSG index)
    ldy voices::Voice::timbre, x
    lda timbres::Timbre::n_oscs, y
-   sta n_oscs
+   bne :+
+   ldx voice_index
+   jmp next_voice
+:  sta n_oscs
    stz osc_counter
    lda voice_index
    sta osc_offset

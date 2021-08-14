@@ -128,7 +128,7 @@ dummy_data_size = 1
       hg = 24
       ; GUI component string of global settings panel
       comps:
-         .byte 3, px+3, py+3, 1, 6, 1 ; number of oscillators
+         .byte 3, px+3, py+3, 0, 6, 1 ; number of oscillators
          .byte 3, px+3, py+6, 1, 3, 1 ; number of envelopes
          .byte 5, px+2, py+8, 8, 1 ; LFO activate checkbox
          .byte 5, px+2, py+12, 8, 1 ; retrigger checkbox

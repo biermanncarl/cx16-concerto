@@ -378,6 +378,7 @@ start_note:
    ; x: offset in voice data
    ; y: offset in freeosclist (but first, it is timbre index)
    lda timbres::Timbre::n_oscs, y
+   beq @end_loop_osc
    sta stn_loop_counter
 @loop_osc:
    ; get oscillator from list and put it into voice data
@@ -393,7 +394,7 @@ start_note:
    dec Oscmap::nfo
    dec stn_loop_counter
    bne @loop_osc
-
+@end_loop_osc:
 
    ; FM stuff
    ; Check again if FM voice is needed
@@ -514,6 +515,7 @@ stop_note:
    ldy Voice::timbre, x
    stz Voice::active, x
    lda timbres::Timbre::n_oscs, y
+   beq @end_loop_osc
    sta spn_loop_counter
 @loop_osc:
    ; get oscillator from voice and put it into ringlist
@@ -531,6 +533,7 @@ stop_note:
    inc Oscmap::nfo
    dec spn_loop_counter
    bne @loop_osc
+@end_loop_osc:
    
    ; do FM stuff
    ; check if FM was used
