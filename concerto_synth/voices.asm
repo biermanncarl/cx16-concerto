@@ -476,21 +476,6 @@ start_note:
 
 
 
-useless_subroutine:
-   ; minimal set of setup to get a tone (except key on)
-   SET_YM YM_RL_FL_CON, %01000111 ; all parallel setup
-   SET_YM YM_TL, 0 ; max volume
-   SET_YM YM_KC, $50
-   SET_YM YM_KS_AR, 63
-   ; additional stuff
-   SET_YM YM_AMS_EN_D1R, 15
-   SET_YM YM_D1L_RR, %11111011
-   SET_YM YM_DT2_D2R, %00000011
-   SET_YM YM_KON, %0000000 ; key off to safely retrigger the note
-   SET_YM YM_KON, %1111000
-
-
-
 
 ; This subroutine deactivates the voice on a given channel and
 ; releases the oscillators occupied by it, so that they can be used by other notes.

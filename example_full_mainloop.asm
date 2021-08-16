@@ -24,8 +24,6 @@ mainloop:
    ; GUI update
    jsr concerto_gui::gui_tick
 
-   DISPLAY_BYTE concerto_synth::voices::FMmap::nfv, 2, 2
-
    ; keyboard polling
 
    jsr GETIN      ; get charakter from keyboard

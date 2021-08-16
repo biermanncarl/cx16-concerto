@@ -78,6 +78,12 @@ pitchslide_position_fine = r2L
 pitchslide_position_note = r2H
 pitchslide_rate_fine = r3L
 pitchslide_rate_note = r3H
+; Interface read-only
+; These bytes store the number of available voices on the PSG and the FM chip.
+; They are exposed to enable e.g. visual feedback how many voices are free
+; by the host application.
+free_psg_voices = voices::Oscmap::nfo
+free_fm_voices = voices::FMmap::nfv
 
 ; concerto_synth::initialize
 ; subroutine to initialize the synth engine
@@ -143,7 +149,7 @@ release_note = voices::release_note
 stop_note = voices::stop_note
 
 ; concerto_synth::panic
-; Immediately turns off all channels and all VERA PSG voices.
+; Immediately turns off all channels, all VERA PSG voices and FM voices.
 ; PARAMETERS:  none
 ; AFFECTS: A, X, Y
 panic = voices::panic

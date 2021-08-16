@@ -36,6 +36,11 @@ If you have used synthesizers already, most of CONCERTO will be familiar to you.
 In order for you to be able to feel right at home, there are some things you should
 know, because they may at first be irritating to experienced synth users.
 
+* **Concerto uses two different sound sources.** The Commander X16 has 16
+  oscillators that can do either pulse, sawtooth, triangle or noise, and it has
+  eight frequency modulation (FM) voices. In Concerto, the two different sound
+  sources can be used on their own or be combined with one another, which offers
+  great flexibility for sound design.
 * **Envelope rates instead of times.** Attack, Decay and Release specify the slopes,
   with which the envelope approaches its "destination". The higher the setting,
   the faster the envelope. Also the sustain level affects the speed. When it is
@@ -51,10 +56,15 @@ know, because they may at first be irritating to experienced synth users.
   Envelope 1 has reached level 0 during the release phase (i.e. after a note-off
   event), the whole voice will be turned off. Essentially, Envelope 1 controls
   how long the voice will be audible.
+  This even affects the FM layer. When Envelope 1 is finished, it also turns off
+  the FM voice.
 * **Activate oscillators, envelopes and LFO.** This is done in the "Global" area,
   where you can specify how many envelopes and oscillators you need, and whether
   or not the LFO is active. Oscillators 1 to N will be active. If you temporarily
   need to mute oscillators, you can do so with the L/R selection drop-down.
+* **Activate the FM voice.** The FM layer of Concerto gets activated as soon as
+  one of the four operators in the "FM General" Box is activated. If all operators
+  are disabled, no FM voice is used.
 * **Pitch modulation.** Since here we are dealing with a 16-bit modulation, there are
   some optimizations to save precious CPU cycles. As a consequence, the modulation
   depth is only a qualitative representation (higher number gives more modulation)
@@ -62,12 +72,12 @@ know, because they may at first be irritating to experienced synth users.
   source.
 * **Save/Load presets.** Presets are currently saved to the file ```PRESET.COT```
   on the disk. Every save action will overwrite that file, and every load action
-  will load from that file. Use it to copy and paste timbres from one slot to
-  another, or store a preset that you want to use again in a later session.
+  will load from that file. Use it to store a preset that you want to use again
+  in a later session.
 * **There are hard and soft note-offs.** Soft note-offs put the voice into the release
   phase. Hard note-offs turn the voice off immediately. A hard note-off can also
   be used during the release phase (after a soft note-off). Hard note-offs are not
-  available from the GUI, only from the API. (See ```voices.asm```)
+  available from the GUI, only from the API. (See ```concerto_synth.asm```)
 * **Parameter clamping.** This is a feature of the sound engine. For volume and pulse-
   width, the values are clamped to the valid range to the best of its ability, to
   prevent overmodulation. You can deliberately use this, e.g. modulate the volume
@@ -75,6 +85,12 @@ know, because they may at first be irritating to experienced synth users.
   This clamping is done before the "global" volume knob. So you can even make
   quiet sounds that sound compressed ;)
   For maximal modulation depth, the clamping can fail, though.
+* **Finite pitch ranges.** Please note that the pitch values Concerto can handle
+  only have a limited range. If pitch values beyond that range occur due to
+  modulation or simply due to playing a high or low note, there may be unexpected
+  results. Trial and error will lead you the way and show you what can be done and
+  what can't.
+
 
 ## How to include Concerto into your own application
 
