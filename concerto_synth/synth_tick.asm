@@ -703,7 +703,34 @@ end_env: ; jump here when done with all envelopes
    ; --------------
    ; --------------
 
-   stx note_channel
+
+   ; keyboard + portamento
+   lda timbres::Timbre::fm_general::track, y
+   beq @notrack_fm
+   lda voi_fine
+   clc
+   adc timbres::Timbre::fm_general::fine, y
+   sta osc_fine
+   lda voi_pitch
+   adc timbres::Timbre::fm_general::pitch, y
+   sta osc_pitch
+   bra @donetrack_fm
+@notrack_fm:
+   ; modulation
+   ; source indexed by X
+   ; depth indexed by Y
+   lda timbres::Timbre::fm_general::fine, y
+   sta osc_fine
+   lda timbres::Timbre::fm_general::pitch, y
+   sta osc_pitch
+@donetrack_fm:
+   ; pitch mod source
+   ldx timbres::Timbre::fm_general::pitch_mod_sel, y
+   bpl :+
+   jmp @skip_pitchmod_fm
+:  SCALE5_16 voi_modsourcesL, voi_modsourcesH, timbres::Timbre::fm_general::pitch_mod_dep, osc_fine, osc_pitch
+@skip_pitchmod_fm:
+
 
    ; Set note's pitch
    ; We have to convert from continuous internal format to
@@ -711,7 +738,7 @@ end_env: ; jump here when done with all envelopes
    ; Maybe one or two lookup tables can do the trick in the future
    ; (There is already one being used in the NOTE determination)
    ldy #0
-   lda voi_pitch
+   lda osc_pitch
    sec
    sbc #3 ; this is just to correct for wrong YM frequency in the emulation R38
 @sub_loop:
@@ -723,7 +750,7 @@ end_env: ; jump here when done with all envelopes
    tax
    lda semitones_ym2151, x
    sta keycode
-   ldx note_channel
+   ldx voice_index
    dey
    ; octave is in Y
    tya
@@ -741,7 +768,7 @@ end_env: ; jump here when done with all envelopes
    jsr voices::write_ym2151
    ; key fraction
    ; this is trivial
-   ldy voi_fine
+   ldy osc_fine
    lda #YM_KF
    adc voices::Voice::fm_voice_map, x
    jsr voices::write_ym2151

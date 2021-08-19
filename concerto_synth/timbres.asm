@@ -126,10 +126,17 @@ data_start:
       fl:               TIMBRE_BYTE_FIELD   ; feedback level (3 bits)
       op_en:            TIMBRE_BYTE_FIELD   ; operator enable (4 bits) (also acts as FM enable)
       lr:               TIMBRE_BYTE_FIELD   ; Channels L/R (2 bits) (!!! stored in bits 6 and 7)
+      ; pitch related
+      pitch:            TIMBRE_BYTE_FIELD    ; offset (or absolute if no tracking)
+      fine:             TIMBRE_BYTE_FIELD    ; unsigned (only up)
+      track:            TIMBRE_BYTE_FIELD    ; keyboard tracking on/off (also affects portamento on/off)
+      pitch_mod_sel:   TIMBRE_BYTE_FIELD    ; selects source for pitch modulation (bit 7 on means none)
+      pitch_mod_dep:   TIMBRE_BYTE_FIELD    ; pitch modulation depth (Scale5)
    .endscope
 
    .scope operators
       level:            OPERATOR_TIMBRE_BYTE_FIELD  ; volume (needs to be converted to attenuation) (7 bits)
+      sens:             OPERATOR_TIMBRE_BYTE_FIELD  ; volume sensitivity. (How) does the operator respond to the note's volume?
       ; pitch related
       mul:              OPERATOR_TIMBRE_BYTE_FIELD  ; multiplier for the frequency (4 bits)
       dt1:              OPERATOR_TIMBRE_BYTE_FIELD  ; fine detune (?) (didn't work in YM2151 UI program) (3 bits)
@@ -143,8 +150,9 @@ data_start:
       ks:               OPERATOR_TIMBRE_BYTE_FIELD  ; key scaling    (2 bits)
    .endscope
 data_end:
-data_size = data_end - data_start
-data_count = data_size / N_TIMBRES ; 129 currently
+timbre_data_size = data_end - data_start
+.export timbre_data_size  ; 5888 bytes currently
+data_count = timbre_data_size / N_TIMBRES ; 184 currently
 .endscope
 
 ; internal variables
@@ -329,6 +337,7 @@ load_default_timbre:
    lda #1
    sta Timbre::lfo::retrig
    ; FM general
+   sta Timbre::fm_general::track
    lda #7
    sta Timbre::fm_general::con, x
    lda #15
@@ -336,6 +345,12 @@ load_default_timbre:
    stz Timbre::fm_general::fl, x
    lda #%11000000
    sta Timbre::fm_general::lr, x
+   ; select no modulation source
+   lda #128
+   sta Timbre::fm_general::pitch_mod_sel, x
+   ; select minimal modulation depth
+   lda #15
+   sta Timbre::fm_general::pitch_mod_dep, x
    ; envelopes
    ldy #MAX_ENVS_PER_VOICE
 @loop_envs:

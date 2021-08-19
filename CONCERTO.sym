@@ -1,5 +1,5 @@
-al 005B6E .__BSS_LOAD__
-al 005B6E .__BSS_RUN__
+al 005ED2 .__BSS_LOAD__
+al 005ED2 .__BSS_RUN__
 al 000000 .__BSS_SIZE__
 al 000001 .__EXEHDR__
 al 009F00 .__HIMEM__
@@ -8,3 +8,4 @@ al 000000 .__ZP_FILEOFFS__
 al 000038 .__ZP_LAST__
 al 00005E .__ZP_SIZE__
 al 000022 .__ZP_START__
+al 0016C0 .timbre_data_size

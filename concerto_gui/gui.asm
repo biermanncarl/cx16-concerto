@@ -245,10 +245,6 @@ dummy_data_size = 1
       amp_lb: STR_FORMAT "amp env"
       pulsewidth_lb: STR_FORMAT "pulse width"
       pw_lb: STR_FORMAT "pw"
-      pitch_lb: STR_FORMAT "pitch"
-      semi_lb: STR_FORMAT "st"
-      fine_lb: STR_FORMAT "fn"
-      track_lb: STR_FORMAT "track"
       wvtbl_lb: STR_FORMAT "wvtbl"
       modulation_lb: STR_FORMAT "modulation"
       ; stringlist for modsource listboxes
@@ -414,7 +410,7 @@ dummy_data_size = 1
       px = osc::px+osc::wd+1
       py = osc::py
       wd = 29
-      hg = 15
+      hg = 17
       comps:
          .byte 3, px+13, py+4, 0, 7, 0 ; connection scheme number (arrowed edit)
          .byte 4, px+14, py+6, %0, 0, 7, 0, 0 ; feedback level (drag edit)
@@ -423,6 +419,11 @@ dummy_data_size = 1
          .byte 5, px+21, py+2, 2, 0 ; activate operator 3 checkbox
          .byte 5, px+24, py+2, 2, 0 ; activate operator 4 checkbox
          .byte 6, px+13, py+8, 5, 4, (<channel_select_lb), (>channel_select_lb), 0 ; L/R listbox
+         .byte 4, px+5, py+13, %00000100, 128, 127, 0, 0 ; semitone edit ... signed range
+         .byte 4, px+5, py+14, %00000100, 128, 127, 0, 0 ; fine tune edit ... signed range
+         .byte 5, px+13, py+11, 7, 0 ; pitch tracking checkbox
+         .byte 6, px+13, py+13, 8, N_TOT_MODSOURCES+1, (<modsources_none_option_lb), (>modsources_none_option_lb), 0 ; pitch mod select
+         .byte 4, px+21, py+13, %10000100, 256-76, 76, 0, 0 ; drag edit - pitch mod depth
          .byte 0
       capts:
          .byte CCOLOR_CAPTION, px+4, py
@@ -443,6 +444,14 @@ dummy_data_size = 1
          .word lb_op4
          .byte CCOLOR_CAPTION, px+2, py+8
          .word channel_lb
+         .byte CCOLOR_CAPTION, px+2, py+11
+         .word pitch_lb
+         .byte CCOLOR_CAPTION, px+15, py+11
+         .word track_lb
+         .byte CCOLOR_CAPTION, px+2, py+13
+         .word semi_lb
+         .byte CCOLOR_CAPTION, px+2, py+14
+         .word fine_lb
          .byte 0 ; empty
       cp: STR_FORMAT "fm general"
       con_select_lb: STR_FORMAT "connection"
@@ -472,8 +481,6 @@ dummy_data_size = 1
          .byte 4, px+20, py+7, %0, 0, 3, 0, 0 ; drag edit - coarse
          .byte 4, px+4, py+3, %0, 0, 127, 0, 0 ; drag edit - level (vol)
          .byte 4, px+17, py+14, %00000000, 0, 3, 0, 0 ; drag edit - key scaling
-         ;.byte 6, modsecx+7, modsecy+2, 8, N_TOT_MODSOURCES+1, (<modsources_none_option_lb), (>modsources_none_option_lb), 0 ; pitch mod select 1
-         ;.byte 6, modsecx+7, modsecy+3, 8, N_TOT_MODSOURCES+1, (<modsources_none_option_lb), (>modsources_none_option_lb), 0 ; pitch mod select 2
          .byte 0
       capts:
          .byte CCOLOR_CAPTION, px+4, py
@@ -515,6 +522,10 @@ dummy_data_size = 1
 
    ; Recurring Labels
    vol_lb: STR_FORMAT "vol"
+   pitch_lb: STR_FORMAT "pitch"
+   semi_lb: STR_FORMAT "st"
+   fine_lb: STR_FORMAT "fn"
+   track_lb: STR_FORMAT "track"
    wavetable_lb: STR_FORMAT "wavetable"
    waveform_lb: STR_FORMAT "waveform"
    lfo_lb: STR_FORMAT "lfo"
@@ -2587,6 +2598,11 @@ write_fm_gen:
    .word @op3_active
    .word @op4_active
    .word @lr_select
+   .word @semitones
+   .word @finetune
+   .word @keytrack
+   .word @pmsel ; pitch mod select
+   .word @pitchmoddep ; pitch mod depth
 @connection:
    plx
    iny
@@ -2646,6 +2662,62 @@ write_fm_gen:
    ror
    ror
    sta concerto_synth::timbres::Timbre::fm_general::lr, x
+   rts
+@semitones:
+   plx
+   iny
+   iny
+   ; decide if we need to tune down to compensate for fine tuning (because fine tuning internally only goes up)
+   lda concerto_synth::timbres::Timbre::fm_general::fine, x
+   bmi :+
+   lda fm_gen::comps, y
+   sta concerto_synth::timbres::Timbre::fm_general::pitch, x
+   rts
+:  lda fm_gen::comps, y
+   dec
+   sta concerto_synth::timbres::Timbre::fm_general::pitch, x
+   rts
+@finetune:
+   plx
+   iny
+   iny
+   ; if fine tune is now negative, but was non-negative beforehand, we need to decrement semitones
+   ; and the other way round: if fine tune was negative, but now is non-negative, we need to increment semitones
+   lda concerto_synth::timbres::Timbre::fm_general::fine, x
+   bmi @fine_negative
+@fine_positive:
+   lda fm_gen::comps, y
+   bpl @fine_normal
+   dec concerto_synth::timbres::Timbre::fm_general::pitch, x
+   bra @fine_normal
+@fine_negative:
+   lda fm_gen::comps, y
+   bmi @fine_normal
+   inc concerto_synth::timbres::Timbre::fm_general::pitch, x
+@fine_normal:
+   sta concerto_synth::timbres::Timbre::fm_general::fine, x
+   rts
+@keytrack:
+   plx
+   lda fm_gen::comps, y
+   sta concerto_synth::timbres::Timbre::fm_general::track, x
+   rts
+@pmsel:
+   plx
+   iny
+   iny
+   iny
+   lda fm_gen::comps, y
+   jsr map_modsource_from_gui
+   sta concerto_synth::timbres::Timbre::fm_general::pitch_mod_sel, x
+   rts
+@pitchmoddep:
+   plx
+   iny
+   iny
+   lda fm_gen::comps, y
+   jsr map_twos_complement_to_scale5
+   sta concerto_synth::timbres::Timbre::fm_general::pitch_mod_dep, x
    rts
 
 
@@ -3061,6 +3133,36 @@ refresh_fm_gen:
    rol
    ldy #(4*checkbox_data_size+1*drag_edit_data_size+1*listbox_data_size+1*arrowed_edit_data_size-1)
    sta fm_gen::comps, y
+   ; semitones
+   ; we need to check fine tune to get correct semi tones.
+   ; if fine tune is negative, we need to increment one to the semitone value to be displayed on the GUI
+   lda concerto_synth::timbres::Timbre::fm_general::fine, x
+   bmi :+
+   lda concerto_synth::timbres::Timbre::fm_general::pitch, x
+   bra :++
+:  lda concerto_synth::timbres::Timbre::fm_general::pitch, x
+   inc
+:  ldy #(4*checkbox_data_size+2*drag_edit_data_size+1*listbox_data_size+1*arrowed_edit_data_size-2)
+   sta fm_gen::comps, y
+   ; fine tune
+   lda concerto_synth::timbres::Timbre::fm_general::fine, x
+   ldy #(4*checkbox_data_size+3*drag_edit_data_size+1*listbox_data_size+1*arrowed_edit_data_size-2)
+   sta fm_gen::comps, y
+   ; key track
+   lda concerto_synth::timbres::Timbre::fm_general::track, x
+   ldy #(5*checkbox_data_size+3*drag_edit_data_size+1*listbox_data_size+1*arrowed_edit_data_size-1)
+   sta fm_gen::comps, y
+   ; pitch mod select
+   lda concerto_synth::timbres::Timbre::fm_general::pitch_mod_sel, x
+   jsr map_modsource_to_gui
+   ldy #(5*checkbox_data_size+3*drag_edit_data_size+2*listbox_data_size+1*arrowed_edit_data_size-1)
+   sta fm_gen::comps, y
+   ; pitch mod depth
+   lda concerto_synth::timbres::Timbre::fm_general::pitch_mod_dep, x
+   jsr map_scale5_to_twos_complement
+   ldy #(5*checkbox_data_size+4*drag_edit_data_size+2*listbox_data_size+1*arrowed_edit_data_size-2)
+   sta fm_gen::comps, y
+
    ; redraw components
    lda #7
    jsr draw_components
