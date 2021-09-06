@@ -177,20 +177,16 @@ dummy_data_size = 1
       ampsecx = px + 22
       ampsecy = pitsecy
       ; GUI component string of oscillator panel
-      ; TODO: forgot wavetable checkbox for volume (do I want it though? I'll leave it until someone complains.)
       comps:
          .byte 2, px, py, 6, 0 ; tabselector
          .byte 6, wfsecx, wfsecy+2, 8, 4, (<waveforms_lb), (>waveforms_lb), 0 ; waveform listbox
-         .byte 5, wfsecx+2, wfsecy+4, 7, 0 ; waveform modulate by wavetable checkbox
          .byte 4, pwsecx, pwsecy+2, %00000000, 0, 63, 0, 0 ; pulse width drag edit
-         .byte 5, pwsecx+5, pwsecy+2, 7, 0 ; pulse width modulate by wavetable checkbox
          .byte 6, ampsecx, ampsecy+1, 8, N_TOT_MODSOURCES, (<modsources_lb), (>modsources_lb), 0 ; amp listbox
          .byte 4, ampsecx, ampsecy+4, %00000000, 0, 64, 0, 0 ; volume drag edit
          .byte 6, ampsecx+4, ampsecy+4, 5, 4, (<channel_select_lb), (>channel_select_lb), 0 ; channel listbox
          .byte 4, pitsecx+3, pitsecy+2, %00000100, 128, 127, 0, 0 ; semitone edit ... signed range TODO
          .byte 4, pitsecx+3, pitsecy+4, %00000100, 128, 127, 0, 0 ; fine tune edit ... signed range TODO
          .byte 5, pitsecx+8, pitsecy+2, 7, 0 ; pitch tracking checkbox
-         .byte 5, pitsecx+8, pitsecy+4, 7, 0 ; pitch modulate by wavetable checkbox
          .byte 6, modsecx+7, modsecy+2, 8, N_TOT_MODSOURCES+1, (<modsources_none_option_lb), (>modsources_none_option_lb), 0 ; pitch mod select 1
          .byte 6, modsecx+7, modsecy+3, 8, N_TOT_MODSOURCES+1, (<modsources_none_option_lb), (>modsources_none_option_lb), 0 ; pitch mod select 2
          .byte 6, modsecx+7, modsecy+4, 8, N_TOT_MODSOURCES+1, (<modsources_none_option_lb), (>modsources_none_option_lb), 0 ; pw mod select
@@ -206,12 +202,8 @@ dummy_data_size = 1
          .word cp
          .byte CCOLOR_CAPTION, wfsecx, wfsecy
          .word waveform_lb
-         .byte CCOLOR_CAPTION, wfsecx+4, wfsecy+4
-         .word wvtbl_lb
          .byte CCOLOR_CAPTION, pwsecx, pwsecy
          .word pulsewidth_lb
-         .byte CCOLOR_CAPTION, pwsecx+7, pwsecy+2
-         .word wvtbl_lb
          .byte CCOLOR_CAPTION, ampsecx, ampsecy
          .word amp_lb
          .byte CCOLOR_CAPTION, ampsecx, ampsecy+3
@@ -226,8 +218,6 @@ dummy_data_size = 1
          .word fine_lb
          .byte CCOLOR_CAPTION, pitsecx+10, pitsecy+2
          .word track_lb
-         .byte CCOLOR_CAPTION, pitsecx+10, pitsecy+4
-         .word wvtbl_lb
          .byte CCOLOR_CAPTION, modsecx, modsecy
          .word modulation_lb
          .byte CCOLOR_CAPTION, modsecx, modsecy+2
@@ -247,7 +237,6 @@ dummy_data_size = 1
       semi_lb: STR_FORMAT "st"
       fine_lb: STR_FORMAT "fn"
       track_lb: STR_FORMAT "track"
-      wvtbl_lb: STR_FORMAT "wvtbl"
       modulation_lb: STR_FORMAT "modulation"
       channel_lb: .byte 12, 47, 18, 0
       ; stringlist for modsource listboxes
@@ -2005,16 +1994,13 @@ write_osc:
 @jmp_tbl:
    .word @tab_slector
    .word @waveform
-   .word dummy_plx ; waveform via wavetable checkbox
    .word @pulsewidth ; pulse width
-   .word dummy_plx ; pulse width via wave table
    .word @ampsel ; amp listbox
    .word @volume ; oscillator volume
    .word @channelsel ; L/R select
    .word @semitones
    .word @finetune
    .word @keytrack
-   .word dummy_plx ; pitch via wavetable
    .word @pmsel1 ; pitch mod select 1
    .word @pmsel2 ; pitch mod select 2
    .word @pwmsel ; pw mod select
@@ -2486,19 +2472,17 @@ refresh_osc:
    rol
    ldy #(tab_selector_data_size+listbox_data_size-1)
    sta osc::comps, y
-   ; waveform via wavetable
    ; pulse width
    lda concerto_synth::timbres::Timbre::osc::pulse, x
-   ldy #(tab_selector_data_size+listbox_data_size+checkbox_data_size+drag_edit_data_size-2)
+   ldy #(tab_selector_data_size+listbox_data_size+0*checkbox_data_size+drag_edit_data_size-2)
    sta osc::comps, y
-   ; pulse width via wavetable
    ; amplifier select
    lda concerto_synth::timbres::Timbre::osc::amp_sel, x
-   ldy #(tab_selector_data_size+2*listbox_data_size+2*checkbox_data_size+drag_edit_data_size-1)
+   ldy #(tab_selector_data_size+2*listbox_data_size+0*checkbox_data_size+drag_edit_data_size-1)
    sta osc::comps, y
    ; volume
    lda concerto_synth::timbres::Timbre::osc::volume, x
-   ldy #(tab_selector_data_size+2*listbox_data_size+2*checkbox_data_size+2*drag_edit_data_size-2)
+   ldy #(tab_selector_data_size+2*listbox_data_size+0*checkbox_data_size+2*drag_edit_data_size-2)
    sta osc::comps, y
    ; L/R
    lda concerto_synth::timbres::Timbre::osc::lrmid, x
@@ -2506,7 +2490,7 @@ refresh_osc:
    rol
    rol
    rol
-   ldy #(tab_selector_data_size+3*listbox_data_size+2*checkbox_data_size+2*drag_edit_data_size-1)
+   ldy #(tab_selector_data_size+3*listbox_data_size+0*checkbox_data_size+2*drag_edit_data_size-1)
    sta osc::comps, y
    ; semitones
    ; we need to check fine tune to get correct semi tones.
@@ -2517,56 +2501,55 @@ refresh_osc:
    bra :++
 :  lda concerto_synth::timbres::Timbre::osc::pitch, x
    inc
-:  ldy #(tab_selector_data_size+3*listbox_data_size+2*checkbox_data_size+3*drag_edit_data_size-2)
+:  ldy #(tab_selector_data_size+3*listbox_data_size+0*checkbox_data_size+3*drag_edit_data_size-2)
    sta osc::comps, y
    ; fine tune
    lda concerto_synth::timbres::Timbre::osc::fine, x
-   ldy #(tab_selector_data_size+3*listbox_data_size+2*checkbox_data_size+4*drag_edit_data_size-2)
+   ldy #(tab_selector_data_size+3*listbox_data_size+0*checkbox_data_size+4*drag_edit_data_size-2)
    sta osc::comps, y
    ; key track
    lda concerto_synth::timbres::Timbre::osc::track, x
-   ldy #(tab_selector_data_size+3*listbox_data_size+3*checkbox_data_size+4*drag_edit_data_size-1)
+   ldy #(tab_selector_data_size+3*listbox_data_size+1*checkbox_data_size+4*drag_edit_data_size-1)
    sta osc::comps, y
-   ; pitch via wavetable
    ; pitch mod select 1
    lda concerto_synth::timbres::Timbre::osc::pitch_mod_sel1, x
    jsr map_modsource_to_gui
-   ldy #(tab_selector_data_size+4*listbox_data_size+4*checkbox_data_size+4*drag_edit_data_size-1)
+   ldy #(tab_selector_data_size+4*listbox_data_size+1*checkbox_data_size+4*drag_edit_data_size-1)
    sta osc::comps, y
    ; pitch mod select 2
    lda concerto_synth::timbres::Timbre::osc::pitch_mod_sel2, x
    jsr map_modsource_to_gui
-   ldy #(tab_selector_data_size+5*listbox_data_size+4*checkbox_data_size+4*drag_edit_data_size-1)
+   ldy #(tab_selector_data_size+5*listbox_data_size+1*checkbox_data_size+4*drag_edit_data_size-1)
    sta osc::comps, y
    ; pwm select
    lda concerto_synth::timbres::Timbre::osc::pwm_sel, x
    jsr map_modsource_to_gui
-   ldy #(tab_selector_data_size+6*listbox_data_size+4*checkbox_data_size+4*drag_edit_data_size-1)
+   ldy #(tab_selector_data_size+6*listbox_data_size+1*checkbox_data_size+4*drag_edit_data_size-1)
    sta osc::comps, y
    ; vol mod select
    lda concerto_synth::timbres::Timbre::osc::vol_mod_sel, x
    jsr map_modsource_to_gui
-   ldy #(tab_selector_data_size+7*listbox_data_size+4*checkbox_data_size+4*drag_edit_data_size-1)
+   ldy #(tab_selector_data_size+7*listbox_data_size+1*checkbox_data_size+4*drag_edit_data_size-1)
    sta osc::comps, y
    ; pitch mod depth 1
    lda concerto_synth::timbres::Timbre::osc::pitch_mod_dep1, x
    jsr map_scale5_to_twos_complement
-   ldy #(tab_selector_data_size+7*listbox_data_size+4*checkbox_data_size+5*drag_edit_data_size-2)
+   ldy #(tab_selector_data_size+7*listbox_data_size+1*checkbox_data_size+5*drag_edit_data_size-2)
    sta osc::comps, y
    ; pitch mod depth 2
    lda concerto_synth::timbres::Timbre::osc::pitch_mod_dep2, x
    jsr map_scale5_to_twos_complement
-   ldy #(tab_selector_data_size+7*listbox_data_size+4*checkbox_data_size+6*drag_edit_data_size-2)
+   ldy #(tab_selector_data_size+7*listbox_data_size+1*checkbox_data_size+6*drag_edit_data_size-2)
    sta osc::comps, y
    ; pwm depth
    lda concerto_synth::timbres::Timbre::osc::pwm_dep, x
    jsr map_signed_7bit_to_twos_complement
-   ldy #(tab_selector_data_size+7*listbox_data_size+4*checkbox_data_size+7*drag_edit_data_size-2)
+   ldy #(tab_selector_data_size+7*listbox_data_size+1*checkbox_data_size+7*drag_edit_data_size-2)
    sta osc::comps, y
    ; volume mod depth
    lda concerto_synth::timbres::Timbre::osc::vol_mod_dep, x
    jsr map_signed_7bit_to_twos_complement
-   ldy #(tab_selector_data_size+7*listbox_data_size+4*checkbox_data_size+8*drag_edit_data_size-2)
+   ldy #(tab_selector_data_size+7*listbox_data_size+1*checkbox_data_size+8*drag_edit_data_size-2)
    sta osc::comps, y
 
    ; redraw components
