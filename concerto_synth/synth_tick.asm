@@ -738,10 +738,40 @@ next_osc:
    bra @do_volume_knobs
 :  lda #63  ; if carry clear, we set 63
 @do_volume_knobs:
+   ; There are two possibilities of doing the volume knobs
+   ; * multiplying the amp envelope with the volume knobs
+   ; * subtracting the difference to full volume from the amp envelope
+   ; The output value is fed into the VERA, which uses a logarithmic volume scale.
+   ; Hence, the subtraction (or addition) route is mathematically correct, 
+   ; as addition on a logarithmic scale is equivalent to multiplication
+   ; on a linear scale.
+   ; The two routes sound differently:
+   ; * multiplication: quiet sounds sound squashed, not as "plucky" as louder sounds
+   ; * addition: quiet sounds may be truncated (due to the finite length of the logarithmic scale)
+   ; It is a tradeoff.
+   ; Truncated attack phase (the sound becoming audible with a delay when using long attack phase)
+   ; is certainly the most annoying caveat of the additive route. It can, fortunately, be worked around
+   ; by adding a zero-attack envelope to the volume via modulation. This bumps up the volume
+   ; during the attack phase, so that it is audible immediately, even at low volumes.
+   ; 
+
+   ; multiplying route:
    ; multiply with oscillator volume setting, input and output via register A
-   SCALE_U7 timbres::Timbre::osc::volume, 2
+   ;SCALE_U7 timbres::Timbre::osc::volume, 2
    ; multiply with voice's volume
-   SCALE_U7 voi_volume, 0
+   ;SCALE_U7 voi_volume, 0
+
+   ; addition route:
+   clc
+   ; A is in [0, ... 63]
+   adc timbres::Timbre::osc::volume, y ; maximally 64, result can't be above 127
+   adc voi_volume ; maximally 64 (increased by 1 frome the user input), result can't be above 191
+   sec
+   sbc #128
+   bcs :+ ; clamp to 0
+   lda #0
+:
+
    ; do channel selection
 @do_channel_selection:
    clc
