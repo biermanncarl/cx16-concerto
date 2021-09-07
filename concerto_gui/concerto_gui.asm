@@ -23,6 +23,9 @@
 
 .scope concerto_gui
 
+play_volume:
+   .byte 63
+
 .include "../concerto_synth/x16.asm"
 .include "gui_macros.asm"
 .include "gui_variables.asm"

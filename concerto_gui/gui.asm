@@ -306,6 +306,7 @@ dummy_data_size = 1
          .byte 1, 51, 2, 13, (<save_preset_lb), (>save_preset_lb) ; save preset button
          .byte 1, 33, 2, 6, (<copy_preset_lb), (>copy_preset_lb) ; load preset button
          .byte 1, 41, 2, 7, (<paste_preset_lb), (>paste_preset_lb) ; save preset button
+         .byte 4, 75, 30, %00000000, 0, 63, 63, 0 ; note volume
          .byte 0
       ; caption list of the panel
       capts:
@@ -2257,6 +2258,7 @@ write_snav:
    .word @save_preset
    .word @copy_preset
    .word @paste_preset
+   .word @set_play_volume
 @timbre_selector:
    ; read data from component string and write it to the Timbre setting
    lda snav::comps, y
@@ -2286,6 +2288,11 @@ write_snav:
    jsr concerto_synth::timbres::copy_paste
    jsr refresh_gui
    cli
+   rts
+@set_play_volume:
+   iny
+   lda snav::comps, y
+   sta play_volume
    rts
 
 ; since there is only the dummy component on the popup,

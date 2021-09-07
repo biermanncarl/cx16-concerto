@@ -1271,7 +1271,7 @@
    ; set oscillator parameters
    ; oscillator 0
    ldx #(0*N_TIMBRES+patch_no)
-   lda #196
+   lda #192
    sta concerto_synth::timbres::Timbre::osc::waveform, x
    lda #123
    sta concerto_synth::timbres::Timbre::osc::pitch, x
