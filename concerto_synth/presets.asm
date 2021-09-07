@@ -198,9 +198,9 @@
    sta concerto_synth::timbres::Timbre::env::attackL, x
    lda #127
    sta concerto_synth::timbres::Timbre::env::attackH, x
-   lda #155
+   lda #165
    sta concerto_synth::timbres::Timbre::env::decayL, x
-   lda #1
+   lda #0
    sta concerto_synth::timbres::Timbre::env::decayH, x
    lda #0
    sta concerto_synth::timbres::Timbre::env::sustain, x
@@ -814,7 +814,7 @@
    sta concerto_synth::timbres::Timbre::env::attackH, x
    lda #126
    sta concerto_synth::timbres::Timbre::env::decayL, x
-   lda #4
+   lda #1
    sta concerto_synth::timbres::Timbre::env::decayH, x
    lda #0
    sta concerto_synth::timbres::Timbre::env::sustain, x
@@ -943,9 +943,9 @@
    sta concerto_synth::timbres::Timbre::env::attackL, x
    lda #127
    sta concerto_synth::timbres::Timbre::env::attackH, x
-   lda #0
+   lda #110
    sta concerto_synth::timbres::Timbre::env::decayL, x
-   lda #1
+   lda #0
    sta concerto_synth::timbres::Timbre::env::decayH, x
    lda #3
    sta concerto_synth::timbres::Timbre::env::sustain, x
