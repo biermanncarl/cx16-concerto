@@ -102,7 +102,7 @@
    sta concerto_synth::timbres::Timbre::osc::lrmid, x
    lda #0
    sta concerto_synth::timbres::Timbre::osc::amp_sel, x
-   lda #64
+   lda #55
    sta concerto_synth::timbres::Timbre::osc::volume, x
    lda #128
    sta concerto_synth::timbres::Timbre::osc::vol_mod_sel, x
@@ -126,7 +126,7 @@
    sta concerto_synth::timbres::Timbre::osc::lrmid, x
    lda #0
    sta concerto_synth::timbres::Timbre::osc::amp_sel, x
-   lda #64
+   lda #55
    sta concerto_synth::timbres::Timbre::osc::volume, x
    lda #128
    sta concerto_synth::timbres::Timbre::osc::vol_mod_sel, x
@@ -150,7 +150,7 @@
    sta concerto_synth::timbres::Timbre::osc::lrmid, x
    lda #0
    sta concerto_synth::timbres::Timbre::osc::amp_sel, x
-   lda #64
+   lda #55
    sta concerto_synth::timbres::Timbre::osc::volume, x
    lda #128
    sta concerto_synth::timbres::Timbre::osc::vol_mod_sel, x
@@ -204,9 +204,9 @@
    sta concerto_synth::timbres::Timbre::env::attackL, x
    lda #127
    sta concerto_synth::timbres::Timbre::env::attackH, x
-   lda #155
+   lda #165
    sta concerto_synth::timbres::Timbre::env::decayL, x
-   lda #1
+   lda #0
    sta concerto_synth::timbres::Timbre::env::decayH, x
    lda #0
    sta concerto_synth::timbres::Timbre::env::sustain, x
@@ -245,7 +245,7 @@
    sta concerto_synth::timbres::Timbre::osc::lrmid, x
    lda #0
    sta concerto_synth::timbres::Timbre::osc::amp_sel, x
-   lda #64
+   lda #55
    sta concerto_synth::timbres::Timbre::osc::volume, x
    lda #128
    sta concerto_synth::timbres::Timbre::osc::vol_mod_sel, x
@@ -271,7 +271,7 @@
    sta concerto_synth::timbres::Timbre::osc::lrmid, x
    lda #1
    sta concerto_synth::timbres::Timbre::osc::amp_sel, x
-   lda #39
+   lda #30
    sta concerto_synth::timbres::Timbre::osc::volume, x
    lda #128
    sta concerto_synth::timbres::Timbre::osc::vol_mod_sel, x
@@ -299,7 +299,7 @@
    sta concerto_synth::timbres::Timbre::osc::lrmid, x
    lda #2
    sta concerto_synth::timbres::Timbre::osc::amp_sel, x
-   lda #62
+   lda #57
    sta concerto_synth::timbres::Timbre::osc::volume, x
    lda #128
    sta concerto_synth::timbres::Timbre::osc::vol_mod_sel, x
@@ -376,7 +376,7 @@
    sta concerto_synth::timbres::Timbre::osc::lrmid, x
    lda #0
    sta concerto_synth::timbres::Timbre::osc::amp_sel, x
-   lda #64
+   lda #55
    sta concerto_synth::timbres::Timbre::osc::volume, x
    lda #0
    sta concerto_synth::timbres::Timbre::osc::vol_mod_sel, x
@@ -404,7 +404,7 @@
    sta concerto_synth::timbres::Timbre::osc::lrmid, x
    lda #0
    sta concerto_synth::timbres::Timbre::osc::amp_sel, x
-   lda #56
+   lda #47
    sta concerto_synth::timbres::Timbre::osc::volume, x
    lda #128
    sta concerto_synth::timbres::Timbre::osc::vol_mod_sel, x
@@ -428,7 +428,7 @@
    sta concerto_synth::timbres::Timbre::osc::lrmid, x
    lda #0
    sta concerto_synth::timbres::Timbre::osc::amp_sel, x
-   lda #56
+   lda #47
    sta concerto_synth::timbres::Timbre::osc::volume, x
    lda #128
    sta concerto_synth::timbres::Timbre::osc::vol_mod_sel, x
@@ -539,7 +539,7 @@
    sta concerto_synth::timbres::Timbre::osc::lrmid, x
    lda #2
    sta concerto_synth::timbres::Timbre::osc::amp_sel, x
-   lda #64
+   lda #55
    sta concerto_synth::timbres::Timbre::osc::volume, x
    lda #0
    sta concerto_synth::timbres::Timbre::osc::vol_mod_sel, x
@@ -563,7 +563,7 @@
    sta concerto_synth::timbres::Timbre::osc::pitch, x
    lda #0
    sta concerto_synth::timbres::Timbre::osc::fine, x
-   lda #64
+   lda #55
    sta concerto_synth::timbres::Timbre::osc::volume, x
    lda #192
    sta concerto_synth::timbres::Timbre::osc::lrmid, x
@@ -599,7 +599,7 @@
    sta concerto_synth::timbres::Timbre::osc::lrmid, x
    lda #1
    sta concerto_synth::timbres::Timbre::osc::amp_sel, x
-   lda #64
+   lda #55
    sta concerto_synth::timbres::Timbre::osc::volume, x
    lda #128
    sta concerto_synth::timbres::Timbre::osc::vol_mod_sel, x
@@ -610,40 +610,6 @@
    lda #1
    sta concerto_synth::timbres::Timbre::osc::pitch_mod_sel1, x
    lda #(0 * 16 + 2)
-   sta concerto_synth::timbres::Timbre::osc::pitch_mod_dep1, x
-   lda #128
-   sta concerto_synth::timbres::Timbre::osc::pitch_mod_sel2, x
-   lda #(0 * 16 + 6)
-   sta concerto_synth::timbres::Timbre::osc::pitch_mod_dep2, x
-   ; oscillator 3
-   ldx #(3*N_TIMBRES+patch_no)
-   lda #128
-   sta concerto_synth::timbres::Timbre::osc::waveform, x
-   lda #63
-   sta concerto_synth::timbres::Timbre::osc::pulse, x
-   lda #128
-   sta concerto_synth::timbres::Timbre::osc::pwm_sel, x
-   lda #(0)
-   sta concerto_synth::timbres::Timbre::osc::pwm_dep, x
-   lda #42
-   sta concerto_synth::timbres::Timbre::osc::pitch, x
-   lda #0
-   sta concerto_synth::timbres::Timbre::osc::fine, x
-   lda #192
-   sta concerto_synth::timbres::Timbre::osc::lrmid, x
-   lda #2
-   sta concerto_synth::timbres::Timbre::osc::amp_sel, x
-   lda #(0 * 16 + 0)
-   sta concerto_synth::timbres::Timbre::osc::volume, x
-   lda #128
-   sta concerto_synth::timbres::Timbre::osc::vol_mod_sel, x
-   lda #(0)
-   sta concerto_synth::timbres::Timbre::osc::vol_mod_dep, x
-   lda #0
-   sta concerto_synth::timbres::Timbre::osc::track, x
-   lda #128
-   sta concerto_synth::timbres::Timbre::osc::pitch_mod_sel1, x
-   lda #(0 * 16 + 3)
    sta concerto_synth::timbres::Timbre::osc::pitch_mod_dep1, x
    lda #128
    sta concerto_synth::timbres::Timbre::osc::pitch_mod_sel2, x
@@ -733,7 +699,7 @@
    sta concerto_synth::timbres::Timbre::osc::lrmid, x
    lda #0
    sta concerto_synth::timbres::Timbre::osc::amp_sel, x
-   lda #50
+   lda #41
    sta concerto_synth::timbres::Timbre::osc::volume, x
    lda #128
    sta concerto_synth::timbres::Timbre::osc::vol_mod_sel, x
@@ -767,7 +733,7 @@
    sta concerto_synth::timbres::Timbre::osc::lrmid, x
    lda #0
    sta concerto_synth::timbres::Timbre::osc::amp_sel, x
-   lda #52
+   lda #43
    sta concerto_synth::timbres::Timbre::osc::volume, x
    lda #128
    sta concerto_synth::timbres::Timbre::osc::vol_mod_sel, x
@@ -801,7 +767,7 @@
    sta concerto_synth::timbres::Timbre::osc::lrmid, x
    lda #0
    sta concerto_synth::timbres::Timbre::osc::amp_sel, x
-   lda #43
+   lda #34
    sta concerto_synth::timbres::Timbre::osc::volume, x
    lda #128
    sta concerto_synth::timbres::Timbre::osc::vol_mod_sel, x
@@ -862,7 +828,7 @@
    sta concerto_synth::timbres::Timbre::env::attackH, x
    lda #126
    sta concerto_synth::timbres::Timbre::env::decayL, x
-   lda #4
+   lda #1
    sta concerto_synth::timbres::Timbre::env::decayH, x
    lda #0
    sta concerto_synth::timbres::Timbre::env::sustain, x
@@ -901,7 +867,7 @@
    sta concerto_synth::timbres::Timbre::osc::lrmid, x
    lda #0
    sta concerto_synth::timbres::Timbre::osc::amp_sel, x
-   lda #64
+   lda #55
    sta concerto_synth::timbres::Timbre::osc::volume, x
    lda #3
    sta concerto_synth::timbres::Timbre::osc::vol_mod_sel, x
@@ -935,7 +901,7 @@
    sta concerto_synth::timbres::Timbre::osc::lrmid, x
    lda #1
    sta concerto_synth::timbres::Timbre::osc::amp_sel, x
-   lda #32
+   lda #23
    sta concerto_synth::timbres::Timbre::osc::volume, x
    lda #128
    sta concerto_synth::timbres::Timbre::osc::vol_mod_sel, x
@@ -993,9 +959,9 @@
    sta concerto_synth::timbres::Timbre::env::attackL, x
    lda #127
    sta concerto_synth::timbres::Timbre::env::attackH, x
-   lda #0
+   lda #110
    sta concerto_synth::timbres::Timbre::env::decayL, x
-   lda #1
+   lda #0
    sta concerto_synth::timbres::Timbre::env::decayH, x
    lda #3
    sta concerto_synth::timbres::Timbre::env::sustain, x
@@ -1034,7 +1000,7 @@
    sta concerto_synth::timbres::Timbre::osc::lrmid, x
    lda #0
    sta concerto_synth::timbres::Timbre::osc::amp_sel, x
-   lda #64
+   lda #55
    sta concerto_synth::timbres::Timbre::osc::volume, x
    lda #128
    sta concerto_synth::timbres::Timbre::osc::vol_mod_sel, x
@@ -1068,7 +1034,7 @@
    sta concerto_synth::timbres::Timbre::osc::lrmid, x
    lda #1
    sta concerto_synth::timbres::Timbre::osc::amp_sel, x
-   lda #48
+   lda #39
    sta concerto_synth::timbres::Timbre::osc::volume, x
    lda #128
    sta concerto_synth::timbres::Timbre::osc::vol_mod_sel, x
@@ -1175,7 +1141,7 @@
    sta concerto_synth::timbres::Timbre::osc::pitch, x
    lda #0
    sta concerto_synth::timbres::Timbre::osc::fine, x
-   lda #64
+   lda #60
    sta concerto_synth::timbres::Timbre::osc::volume, x
    lda #192
    sta concerto_synth::timbres::Timbre::osc::lrmid, x
@@ -1203,7 +1169,7 @@
    sta concerto_synth::timbres::Timbre::osc::pitch, x
    lda #0
    sta concerto_synth::timbres::Timbre::osc::fine, x
-   lda #48
+   lda #39
    sta concerto_synth::timbres::Timbre::osc::volume, x
    lda #192
    sta concerto_synth::timbres::Timbre::osc::lrmid, x
@@ -1233,7 +1199,7 @@
    sta concerto_synth::timbres::Timbre::osc::pitch, x
    lda #0
    sta concerto_synth::timbres::Timbre::osc::fine, x
-   lda #38
+   lda #29
    sta concerto_synth::timbres::Timbre::osc::volume, x
    lda #192
    sta concerto_synth::timbres::Timbre::osc::lrmid, x
@@ -1325,7 +1291,7 @@
    ; set oscillator parameters
    ; oscillator 0
    ldx #(0*N_TIMBRES+patch_no)
-   lda #196
+   lda #192
    sta concerto_synth::timbres::Timbre::osc::waveform, x
    lda #123
    sta concerto_synth::timbres::Timbre::osc::pitch, x
@@ -1333,7 +1299,7 @@
    sta concerto_synth::timbres::Timbre::osc::lrmid, x
    lda #0
    sta concerto_synth::timbres::Timbre::osc::amp_sel, x
-   lda #64
+   lda #55
    sta concerto_synth::timbres::Timbre::osc::volume, x
    lda #0
    sta concerto_synth::timbres::Timbre::osc::track, x
@@ -1353,7 +1319,7 @@
    sta concerto_synth::timbres::Timbre::osc::lrmid, x
    lda #2
    sta concerto_synth::timbres::Timbre::osc::amp_sel, x
-   lda #64
+   lda #57
    sta concerto_synth::timbres::Timbre::osc::volume, x
    lda #0
    sta concerto_synth::timbres::Timbre::osc::track, x

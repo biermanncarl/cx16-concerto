@@ -182,7 +182,8 @@ play_note:
 
    ; play note
    sta concerto_synth::note_pitch
-   lda #MAX_VOLUME
+   ;lda #MAX_VOLUME
+   lda concerto_gui::play_volume
    sta concerto_synth::note_volume
    lda concerto_gui::Timbre
    sta concerto_synth::note_timbre

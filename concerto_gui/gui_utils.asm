@@ -1060,6 +1060,151 @@ draw_fm_alg:
 @return:
    cli
    rts
+; moves to screen position (.A|.X) (does not preserve .A)
+alternative_gotoxy:
+   stz VERA_ctrl
+   asl
+   sta VERA_addr_low
+   lda #$10
+   sta VERA_addr_high
+   stx VERA_addr_mid
+   rts
+
+
+
+
+
+
+; This function has been adapted from the awesome VTUI library by JimmyDansbo.
+; https://github.com/JimmyDansbo/VTUIlib
+; https://www.commanderx16.com/forum/index.php?/files/file/142-vtui-library/
+
+; Unfortunately, we have to modify it severely because the VERA communication
+; would otherwise get disrupted by the interrupt.
+
+; *****************************************************************************
+; Show a cursor and get a string input from keyboard.
+; *****************************************************************************
+; INPUTS:	r0 = pointer to buffer to hold string (must be pre-allocated)
+;     r2 = screen coordinates
+;     r3 = pointer to buffer holding the screen code 
+;		.Y = maximum length of string
+;		.X = color information for input characters
+; OUPUTS:	.Y = actual length of input
+; USES:		.A & r1
+; *****************************************************************************
+vtui_input_str:
+@ptr	= r0
+@length	= r1L
+@invcol	= r1H
+@pos_x   = r2L
+@pos_y   = r2H
+
+   phx
+	sty	@length		; Store maximum length
+
+   ; move cursor to screen position
+   sei
+   lda @pos_x
+   ldx @pos_y
+   jsr alternative_gotoxy
+
+	lda	#$A0		; Show a "cursor"
+	sta	VERA_data0
+   plx
+	stx	VERA_data0
+	;dec	VERA_addr_low ; only necessary if we do not re-set the cursor later
+	;dec	VERA_addr_low
+   ; clear remaining area for string input
+   phy
+   dey
+   lda #' '
+:  sta VERA_data0
+   stx VERA_data0
+   dey
+   bne :-
+   ply
+
+	ldy	#0
+@inputloop:
+   ; give ISR a moment to interrupt us
+   cli
+
+	phx
+	phy
+	jsr	$FFE4		; Read keyboard input
+	ply
+	plx
+
+   ; now take back control and move VERA cursor back to the position we need
+   sei
+   pha
+   phx
+   tya
+   clc
+   adc @pos_x
+   ldx @pos_y
+   jsr alternative_gotoxy
+   plx
+   pla
+
+	cmp	#$0D		; If RETURN has been pressed, we exit
+	beq	@end
+	cmp	#$14		; We need to handle backspace
+	bne	@istext
+	cpy	#0		; If .Y is 0, we can not delete
+	beq	@inputloop
+	; Here we need to handle backspace
+	dey
+	lda	#' '		; Delete cursor
+	sta	VERA_data0
+
+	lda	VERA_addr_low	; Go 2 chars back = 4 bytes
+	sbc	#3
+	sta	VERA_addr_low
+
+	lda	#$A0		; Overwrite last char with cursor
+	sta	VERA_data0
+
+	dec	VERA_addr_low
+	bra	@inputloop
+@istext:
+	cpy	@length
+	beq	@inputloop	; If .Y = @length, we can not add character
+
+	;sta	(@ptr),y	; Store char in buffer  --  original function stored input petscii. Here, we store screen codes
+	cmp	#$20		; If < $20, we can not use it
+	bcc	@inputloop
+	cmp	#$40		; If < $40 & >= $20, screencode is equal to petscii
+	bcc	@stvera
+	cmp	#$60		; If > $60, we can not use it
+	bcs	@inputloop
+	sbc	#$3F		; When .A >= $40 & < $60, subtract $3F to get screencode
+@stvera:
+   sta	(@ptr),y ; store screen code in buffer
+	sta	VERA_data0	; Write char to screen with colorcode
+	stx	VERA_data0
+
+	lda	#$A0		; Write cursor
+	sta	VERA_data0
+	stx	VERA_data0
+
+	dec	VERA_addr_low	; Set VERA to point at cursor
+	dec	VERA_addr_low
+	iny			; Inc .Y to show a char has been added
+	bra	@inputloop
+
+@end:	lda	#' '
+	sta	VERA_data0
+	stx	VERA_data0
+   lda   #0
+   sta   (@ptr),y ; trailing zero to finish string
+   cli
+	rts
+
+
+
+
 
 
 .endscope ; gui

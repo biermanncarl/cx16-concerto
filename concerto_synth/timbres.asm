@@ -155,11 +155,16 @@ timbre_data_size = data_end - data_start
 data_count = timbre_data_size / N_TIMBRES ; 184 currently
 .endscope
 
-; internal variables
-command_len:
-   .byte 17
+
+file_name: ; caution, this string is in screen code!
+; "@0:filename01.cop,s,<r/w>" --> 21 bytes
+   .byte 32
+   .res MAX_FILENAME_LENGTH, 0
+command_preamble: ; the command string is in petscii
+   .byte 64,"0:" ; these characters never change
 command_string:
-   .byte 64,"0:preset.cop,s,w"
+   ;.byte 64,"0:preset.cop,s,w"
+   .res MAX_FILENAME_LENGTH+8, 0
 copying:
    .byte 128 ; which timbre to copy. negative is none
 pasting:
@@ -167,9 +172,53 @@ pasting:
 
 
 
+; converts the value in .A from screen code to petscii
+screen2petscii:
+   cmp #$20
+   bcs :+   ; set if we're above $20. then we don't need to do anything
+   adc #$40 ; we're below $20. need to add $40
+:  rts
+
+
+
+; takes screen code string as file name and makes a read/write file command from it
+assemble_command_string:
+   ldy #0
+:  lda file_name, y
+   beq @end_loop
+   jsr screen2petscii
+   sta command_string, y
+   iny
+   bra :-
+@end_loop:
+   ; now append ".cop,s," and let the calling routine handle the last "w" or "r"
+   lda #'.'
+   sta command_string, y
+   iny
+   lda #'c'
+   sta command_string, y
+   iny
+   lda #'o'
+   sta command_string, y
+   iny
+   lda #'p'
+   sta command_string, y
+   iny
+   lda #','
+   sta command_string, y
+   iny
+   lda #'s'
+   sta command_string, y
+   iny
+   lda #','
+   sta command_string, y
+   iny
+   rts
 
 ; more info about the Commodore DOS
 ; https://en.wikipedia.org/wiki/Commodore_DOS
+
+; https://www.pagetable.com/c64ref/kernal/
 
 ; opens the file "PRESET.COP" and saves a timbre in it (overwrites existing preset)
 ; WARNING: No proper error handling (yet)!
@@ -177,21 +226,24 @@ pasting:
 ; command_string: string that holds the DOS command to write the file
 ; command_len:    length of the command string
 save_timbre:
+   ;.byte $db
    phx
+   jsr assemble_command_string ; assemble command
    ; put "w" as last character of the command string
-   ldy command_len
-   dey
-   lda #87 ; PETSCII "W"
+   lda #'w'
    sta command_string, y
-   ; set file name
-   lda command_len
-   ldx #(<command_string)
-   ldy #(>command_string)
+   tya
+   ; compute command length
+   clc
+   adc #4 ; including the preamble
+   ; set file name (command)
+   ldx #(<command_preamble)
+   ldy #(>command_preamble)
    jsr SETNAM
    ; setlfs - set logical file number
    lda #1 ; logical file number
    ldx #8 ; device number. 8 is disk drive
-   ldy #2 ; secondary command address, apparently must not be zero
+   ldy #0 ; secondary command address, apparently must not be zero
    jsr SETLFS
    bcs @close_file
    ; open - open the logical file
@@ -249,20 +301,22 @@ save_timbre:
 ; filename_len: length of the file name
 load_timbre:
    phx
-   ; put "r" as last character of the command string
-   ldy command_len
-   dey
-   lda #82 ; PETSCII "R"
+   jsr assemble_command_string ; assemble command
+   ; put "w" as last character of the command string
+   lda #'r'
    sta command_string, y
-   ; set file name
-   lda command_len
-   ldx #(<command_string)
-   ldy #(>command_string)
+   tya
+   ; compute command length
+   clc
+   adc #4 ; including the preamble
+   ; set file name (command)
+   ldx #(<command_preamble)
+   ldy #(>command_preamble)
    jsr SETNAM
    ; setlfs - set logical file number
    lda #1 ; logical file number
    ldx #8 ; device number. 8 is disk drive
-   ldy #2 ; secondary command address, apparently must not be zero
+   ldy #0 ; secondary command address, apparently must not be zero
    jsr SETLFS
    bcs @close_file
    ; open - open the logical file

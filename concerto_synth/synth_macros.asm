@@ -36,6 +36,7 @@
 .define MAX_VOLUME_INTERNAL 64
 .define ENV_PEAK 127
 .define N_OPERATORS 4
+.define MAX_FILENAME_LENGTH 8
 
 
 .macro VOICE_BYTE_FIELD
@@ -683,7 +684,7 @@ SYNTH_MACROS_INC = 1
 
 ; this is used for various modulation depth scalings of 16 bit modulation values (mainly pitch)
 ; modulation depth is assumed to be indexed by register Y
-; modulation source is assumed to be indexed by register X
+; modulation source is assumed to be indexed by register X (not preserved)
 ; result is added to the literal addesses
 ; moddepth is allowed to have a sign bit (bit 7)
 ; moddepth has the format  %SLLLHHHH
@@ -708,25 +709,60 @@ SYNTH_MACROS_INC = 1
    inc mzpbf
 :
 
+   lda moddepth, y
+   sta scale5_moddepth
+
+   ; jump to macro-parameter independent code, which can be reused (hence, it is outside the macro)
+   ; you can read that subroutine as if it was part of this macro.
+   jsr scale5_16_internal
+
+   ; now add/subtract scaling result to modulation destiny, according to sign
+   .local @minusS
+   .local @endS
+   lda mzpbf
+   ror
+   bcs @minusS
+   ; if we're here, sign is positive --> add
+   clc
+   lda mzpwb
+   adc resultL
+   sta resultL
+   lda mzpwb+1
+   adc resultH
+   sta resultH
+   bra @endS
+@minusS:
+   ; if we're here, sign is negative --> sub
+   sec
+   lda resultL
+   sbc mzpwb
+   sta resultL
+   lda resultH
+   sbc mzpwb+1
+   sta resultH
+@endS:
+   ; 35 cycles
+   ; worst case overall: 35 + 64 + 24 + 107 + 14 = 244 cycles ... much more than I hoped. (even more now with proper sign handling)
+.endmacro
+
+
+scale5_moddepth:
+   .byte 0
+; does the heavy lifting of the above macro scale5_16. Reusable code here.
+scale5_16_internal:
    ; do %HHHH rightshifts
    ; cycle counting needs to be redone, because initially, I forgot about LSR, so I CLCed before each ROR
    ; instead of the naive approach of looping over rightshifting a 16 bit variable
    ; we are taking a more efficient approach of testing each bit
    ; of the %HHHH value and perform suitable actions
    ; alternative rightshifts: binary branching
-   .local @skipH3
-   .local @skipH2
-   .local @skipH1
-   .local @skipH0
-   .local @endH
-   .local @loopH
    ; check bit 3
-   lda moddepth, y
+   lda scale5_moddepth
    and #%00001000
    beq @skipH3
    ; 8 rightshifts = copy high byte to low byte, set high byte to 0
    ; the subsequent rightshifting can be done entirely inside accumulator, no memory access needed
-   lda moddepth, y
+   lda scale5_moddepth
    and #%00000111
    bne :+          ; if no other bit is set, we just move the bytes and are done
    lda mzpwb+1
@@ -745,7 +781,7 @@ SYNTH_MACROS_INC = 1
    jmp @endH    ; worst case if bit 3 is set: 15 rightshifts, makes 9*7 + 35 cycles = 98 cycles
 @skipH3:
    ; check bit 2
-   lda moddepth, y
+   lda scale5_moddepth
    and #%00000100
    beq @skipH2
    lda mzpwb
@@ -760,7 +796,7 @@ SYNTH_MACROS_INC = 1
    sta mzpwb
 @skipH2:
    ; check bit 1
-   lda moddepth, y
+   lda scale5_moddepth
    and #%00000010
    beq @skipH1
    lda mzpwb
@@ -771,7 +807,7 @@ SYNTH_MACROS_INC = 1
    sta mzpwb
 @skipH1:
    ; check bit 1
-   lda moddepth, y
+   lda scale5_moddepth
    and #%00000001
    beq @skipH0
    lsr mzpwb+1
@@ -782,14 +818,8 @@ SYNTH_MACROS_INC = 1
    ; still hurts tho.
 
    ; do sublevel scaling
-   .local @endL
-   .local @tableL
-   .local @sublevel_1
-   .local @sublevel_2
-   .local @sublevel_3
-   .local @sublevel_4
    ; select subroutine
-   lda moddepth, y
+   lda scale5_moddepth
    and #%01110000
    beq :+
    clc
@@ -899,42 +929,15 @@ SYNTH_MACROS_INC = 1
    ; 66 cycles ... ouch!!
 @endL:
 
-
    ; determine overall sign (mod source * mod depth)
-   lda moddepth, y
+   lda scale5_moddepth
    and #%10000000
    beq :+
    inc mzpbf
 :  ; now if lowest bit of mzpbf is even, sign is positive and if it's odd, sign is negative
 
-   ; now add/subtract scaling result to modulation destiny, according to sign
-   .local @minusS
-   .local @endS
-   lda mzpbf
-   ror
-   bcs @minusS
-   ; if we're here, sign is positive --> add
-   clc
-   lda mzpwb
-   adc resultL
-   sta resultL
-   lda mzpwb+1
-   adc resultH
-   sta resultH
-   bra @endS
-@minusS:
-   ; if we're here, sign is negative --> sub
-   sec
-   lda resultL
-   sbc mzpwb
-   sta resultL
-   lda resultH
-   sbc mzpwb+1
-   sta resultH
-@endS:
-   ; 35 cycles
-   ; worst case overall: 35 + 64 + 24 + 107 + 14 = 244 cycles ... much more than I hoped. (even more now with proper sign handling)
-.endmacro
+   ; return to macro
+   rts
 
 
 
