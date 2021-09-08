@@ -299,13 +299,18 @@ dummy_data_size = 1
       py = 0
       wd = 80
       hg = 60
+      ; text input position
+      ti_x = 66
+      ti_y = 3
+      ti_l = 8 ; maximum length
       ; GUI component string of the panel
       comps:
          .byte 3, 41, 1, 0, N_TIMBRES-1, 0 ; arrowed edit (timbre selection)
-         .byte 1, 66, 2, 13, (<load_preset_lb), (>load_preset_lb) ; load preset button
-         .byte 1, 51, 2, 13, (<save_preset_lb), (>save_preset_lb) ; save preset button
+         .byte 1, 66, 0, 13, (<load_preset_lb), (>load_preset_lb) ; load preset button
+         .byte 1, 51, 0, 13, (<save_preset_lb), (>save_preset_lb) ; save preset button
          .byte 1, 33, 2, 6, (<copy_preset_lb), (>copy_preset_lb) ; load preset button
          .byte 1, 41, 2, 7, (<paste_preset_lb), (>paste_preset_lb) ; save preset button
+         .byte 1, 51, 2, 13, (<file_lb), (>file_lb) ; set file name button
          .byte 4, 75, 30, %00000000, 0, 63, 63, 0 ; note volume
          .byte 0
       ; caption list of the panel
@@ -314,8 +319,8 @@ dummy_data_size = 1
          .word logo_lb
          .byte CCOLOR_CAPTION, 34, 1
          .word timbre_lb
-         .byte CCOLOR_CAPTION, 53, 1
-         .word load_save_description_lb
+         .byte CCOLOR_CAPTION, ti_x, ti_y
+         .word concerto_synth::timbres::file_name
          .byte 0
       ; data specific to the synth-navigation panel
       timbre_lb: STR_FORMAT "timbre"
@@ -323,7 +328,7 @@ dummy_data_size = 1
       save_preset_lb: STR_FORMAT " save preset"
       copy_preset_lb: STR_FORMAT " copy"
       paste_preset_lb: STR_FORMAT " paste"
-      load_save_description_lb: STR_FORMAT "to/from file preset.cop"
+      file_lb: STR_FORMAT "  file name"
       logo_lb: STR_FORMAT "=== concerto v0.3.0-alpha ==="
    .endscope
    ; listbox popup. shows up when a listbox was clicked.
@@ -2258,6 +2263,7 @@ write_snav:
    .word @save_preset
    .word @copy_preset
    .word @paste_preset
+   .word @change_file_name
    .word @set_play_volume
 @timbre_selector:
    ; read data from component string and write it to the Timbre setting
@@ -2288,6 +2294,26 @@ write_snav:
    jsr concerto_synth::timbres::copy_paste
    jsr refresh_gui
    cli
+   rts
+@change_file_name:
+   ; clear string
+   ldy #12
+   lda #' '
+:  sta concerto_synth::timbres::file_name,y
+   dey
+   bpl :-
+   ; do input string
+   lda #snav::ti_x
+   sta r2L
+   lda #snav::ti_y
+   sta r2H
+   lda #<concerto_synth::timbres::file_name
+   sta r0L
+   lda #>concerto_synth::timbres::file_name
+   sta r0H
+   ldx #CCOLOR_CAPTION
+   ldy #MAX_FILENAME_LENGTH
+   jsr guiutils::vtui_input_str
    rts
 @set_play_volume:
    iny
