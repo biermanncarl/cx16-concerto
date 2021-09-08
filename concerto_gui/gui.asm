@@ -2458,11 +2458,11 @@ write_snav:
    rts
 @change_file_name:
    ; clear string
-   ldy #12
-   lda #' '
-:  sta concerto_synth::timbres::file_name,y
-   dey
-   bpl :-
+   ;ldy #MAX_FILENAME_LENGTH
+   ;lda #' '
+;:  sta concerto_synth::timbres::file_name,y
+   ;dey
+   ;bpl :-
    ; do input string
    lda #snav::ti_x
    sta r2L

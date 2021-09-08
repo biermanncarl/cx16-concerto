@@ -160,6 +160,15 @@ file_name: ; caution, this string is in screen code!
 ; "@0:filename01.cop,s,<r/w>" --> 21 bytes
    .byte 32
    .res MAX_FILENAME_LENGTH, 0
+   ;.byte 0
+   ;.byte 0
+   ;.byte 0
+   ;.byte 0
+   ;.byte 0
+   ;.byte 0
+   ;.byte 0
+   ;.byte 0
+
 command_preamble: ; the command string is in petscii
    .byte 64,"0:" ; these characters never change
 command_string:
@@ -170,7 +179,8 @@ copying:
 pasting:
    .byte 0   ; where to paste
 
-
+.export command_preamble
+.export command_string
 
 ; converts the value in .A from screen code to petscii
 screen2petscii:
@@ -226,7 +236,7 @@ assemble_command_string:
 ; command_string: string that holds the DOS command to write the file
 ; command_len:    length of the command string
 save_timbre:
-   ;.byte $db
+   .byte $db
    phx
    jsr assemble_command_string ; assemble command
    ; put "w" as last character of the command string
@@ -243,7 +253,7 @@ save_timbre:
    ; setlfs - set logical file number
    lda #1 ; logical file number
    ldx #8 ; device number. 8 is disk drive
-   ldy #0 ; secondary command address, apparently must not be zero
+   ldy #2 ; secondary command address, apparently must not be zero
    jsr SETLFS
    bcs @close_file
    ; open - open the logical file
