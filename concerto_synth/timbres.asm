@@ -152,6 +152,9 @@ file_name: ; caution, this string is in screen code!
    ;.byte 0
    ;.byte 0
 
+concerto_preset_char = 'p'
+concerto_bank_char = 'b'
+
 command_preamble: ; the command string is in petscii
    .byte 64,"0:" ; these characters never change
 command_string:
@@ -175,6 +178,7 @@ screen2petscii:
 
 
 ; takes screen code string as file name and makes a read/write file command from it
+; .X: contains 'p' for single preset, contains 'b' for entire bank
 assemble_command_string:
    ldy #0
 :  lda file_name, y
@@ -194,7 +198,7 @@ assemble_command_string:
    lda #'o'
    sta command_string, y
    iny
-   lda #'p'
+   txa ; 'p' or 'b' for preset or bank
    sta command_string, y
    iny
    lda #','
@@ -208,6 +212,11 @@ assemble_command_string:
    iny
    rts
 
+; opens file for 
+open_file:
+
+   rts
+
 ; more info about the Commodore DOS
 ; https://en.wikipedia.org/wiki/Commodore_DOS
 
@@ -215,12 +224,11 @@ assemble_command_string:
 
 ; opens the file "PRESET.COP" and saves a timbre in it (overwrites existing preset)
 ; WARNING: No proper error handling (yet)!
-; X:              timbre number
-; command_string: string that holds the DOS command to write the file
-; command_len:    length of the command string
+; .X:           timbre number
+; file_name:    name of the file to store the timbre in (in screen code, without extension)
 save_timbre:
-   .byte $db
    phx
+   ldx #'p'
    jsr assemble_command_string ; assemble command
    ; put "w" as last character of the command string
    lda #'w'
@@ -236,7 +244,7 @@ save_timbre:
    ; setlfs - set logical file number
    lda #1 ; logical file number
    ldx #8 ; device number. 8 is disk drive
-   ldy #2 ; secondary command address, apparently must not be zero
+   ldy #2 ; secondary command address, I really don't understand this.
    jsr SETLFS
    bcs @close_file
    ; open - open the logical file
@@ -247,13 +255,13 @@ save_timbre:
    ldx #1 ; logical file to be used
    jsr CHKOUT
    ; write magic sequence (aka identifier), last byte is version number
-   lda #67 ; PETSCII "C"
+   lda #'c'
    jsr CHROUT
-   lda #79 ; PETSCII "O"
+   lda #'o'
    jsr CHROUT
-   lda #84 ; PETSCII "T"
+   lda #'p'
    jsr CHROUT
-   lda #0  ; version
+   lda #FILE_VERSION  ; version
    jsr CHROUT
    ; write patch data
    plx
@@ -289,13 +297,13 @@ save_timbre:
 
 ; opens the file "PRESET.COP" and loads a timbre from it (overwrites existing preset)
 ; WARNING: No proper error handling (yet)!
-; X:            timbre number
-; filename:     name of the file to store the timbre in
-; filename_len: length of the file name
+; .X:           timbre number
+; file_name:    name of the file to load the timbre from (in screen code, without extension)
 load_timbre:
    phx
+   ldx #'p'
    jsr assemble_command_string ; assemble command
-   ; put "w" as last character of the command string
+   ; put "r" as last character of the command string
    lda #'r'
    sta command_string, y
    tya
@@ -309,7 +317,7 @@ load_timbre:
    ; setlfs - set logical file number
    lda #1 ; logical file number
    ldx #8 ; device number. 8 is disk drive
-   ldy #0 ; secondary command address, apparently must not be zero
+   ldy #2 ; secondary command address, I really don't understand this.
    jsr SETLFS
    bcs @close_file
    ; open - open the logical file
@@ -321,16 +329,16 @@ load_timbre:
    jsr CHKIN
    ; read and compare magic sequence (aka identifier), last byte is version number
    jsr CHRIN
-   cmp #67 ; PETSCII "C"
+   cmp #'c'
    bne @close_file
    jsr CHRIN
-   cmp #79 ; PETSCII "O"
+   cmp #'o'
    bne @close_file
    jsr CHRIN
-   cmp #84 ; PETSCII "T"
+   cmp #'p'
    bne @close_file
    jsr CHRIN
-   cmp #0  ; version
+   cmp #FILE_VERSION  ; version
    bne @close_file
    ; read patch data
    plx
@@ -356,6 +364,106 @@ load_timbre:
    jsr CLOSE
    jsr CLRCHN
    rts
+
+
+; file_name:    name of the file to load the timbre from (in screen code, without extension)
+save_bank:
+   ldx #'b'
+   jsr assemble_command_string ; assemble command
+   ; put "w" as last character of the command string
+   lda #'w'
+   sta command_string, y
+   tya
+   ; compute command length
+   clc
+   adc #4 ; including the preamble
+   ; set file name (command)
+   ldx #(<command_preamble)
+   ldy #(>command_preamble)
+   jsr SETNAM
+   ; setlfs - set logical file number
+   lda #1 ; logical file number
+   ldx #8 ; device number. 8 is disk drive
+   ldy #2 ; secondary command address, I really don't understand this.
+   jsr SETLFS
+   bcs @close_file
+   ; open - open the logical file
+   lda #1
+   jsr OPEN
+   bcs @close_file
+   ; chkout - open a logical file for output
+   ldx #1 ; logical file to be used
+   jsr CHKOUT
+   ; write magic sequence (aka identifier), last byte is version number
+   lda #'c'
+   jsr CHROUT
+   lda #'o'
+   jsr CHROUT
+   lda #'b'
+   jsr CHROUT
+   lda #FILE_VERSION  ; version
+   jsr CHROUT
+   ; write timbre data
+   jsr dump_to_chrout
+   ; close file
+@close_file:
+   lda #1
+   jsr CLOSE
+   jsr CLRCHN
+   rts
+
+
+
+; file_name:    name of the file to load the timbre from (in screen code, without extension)
+load_bank:
+   ldx #'b'
+   jsr assemble_command_string ; assemble command
+   ; put "r" as last character of the command string
+   lda #'r'
+   sta command_string, y
+   tya
+   ; compute command length
+   clc
+   adc #4 ; including the preamble
+   ; set file name (command)
+   ldx #(<command_preamble)
+   ldy #(>command_preamble)
+   jsr SETNAM
+   ; setlfs - set logical file number
+   lda #1 ; logical file number
+   ldx #8 ; device number. 8 is disk drive
+   ldy #2 ; secondary command address, I really don't understand this.
+   jsr SETLFS
+   bcs @close_file
+   ; open - open the logical file
+   lda #1
+   jsr OPEN
+   bcs @close_file
+   ; chkin - open a logical file for input
+   ldx #1 ; logical file to be used
+   jsr CHKIN
+   ; read and compare magic sequence (aka identifier), last byte is version number
+   jsr CHRIN
+   cmp #'c'
+   bne @close_file
+   jsr CHRIN
+   cmp #'o'
+   bne @close_file
+   jsr CHRIN
+   cmp #'b'
+   bne @close_file
+   jsr CHRIN
+   cmp #FILE_VERSION  ; version
+   bne @close_file
+   ; read timbre data
+   jsr restore_from_chrin
+@close_file:
+   ; close file
+   lda #1
+   jsr CLOSE
+   jsr CLRCHN
+   rts
+
 
 
 ; loads the default sound
@@ -384,7 +492,7 @@ load_default_timbre:
    lda #1
    sta Timbre::lfo::retrig
    ; FM general
-   sta Timbre::fm_general::track
+   sta Timbre::fm_general::track, x
    lda #7
    sta Timbre::fm_general::con, x
    lda #15
@@ -406,7 +514,7 @@ load_default_timbre:
    stz Timbre::env::releaseL, x
    lda #127
    sta Timbre::env::attackH, x
-   lda #63
+   lda #90
    sta Timbre::env::sustain, x
    lda #2
    sta Timbre::env::decayH, x
@@ -469,7 +577,9 @@ load_default_timbre:
    sta Timbre::operators::d1l, x
    sta Timbre::operators::rr, x
    lda #22
-   sta Timbre::operators::level, x ; need to revisit this, once I decided upon a way to scale the levels
+   sta Timbre::operators::level, x
+   lda #1
+   sta Timbre::operators::vol_sens, x
    txa
    clc
    adc #N_TIMBRES

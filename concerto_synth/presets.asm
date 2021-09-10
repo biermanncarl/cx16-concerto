@@ -163,7 +163,7 @@
    lda #1
    sta concerto_synth::timbres::Timbre::retrig, x
    ; set FM stuff
-   lda #%0001
+   lda #%0000
    sta concerto_synth::timbres::Timbre::fm_general::op_en, x
    ; env 0
    ldx #(0*N_TIMBRES+patch_no)
@@ -187,7 +187,7 @@
    sta concerto_synth::timbres::Timbre::env::attackL, x
    lda #127
    sta concerto_synth::timbres::Timbre::env::attackH, x
-   lda #165
+   lda #130
    sta concerto_synth::timbres::Timbre::env::decayL, x
    lda #0
    sta concerto_synth::timbres::Timbre::env::decayH, x

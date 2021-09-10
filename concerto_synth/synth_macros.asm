@@ -11,7 +11,7 @@
 .define N_TIMBRES 32
 .define N_OSCILLATORS 16 ; total number of PSG voices, which correspond to oscillators
 .define N_FM_VOICES 8
-.define MAX_OSCS_PER_VOICE 6
+.define MAX_OSCS_PER_VOICE 4
 .define MAX_ENVS_PER_VOICE 3
 .define MAX_LFOS_PER_VOICE 1
 .define N_TOT_MODSOURCES MAX_ENVS_PER_VOICE+MAX_LFOS_PER_VOICE
@@ -20,6 +20,7 @@
 .define ENV_PEAK 127
 .define N_OPERATORS 4
 .define MAX_FILENAME_LENGTH 8
+.define FILE_VERSION 0 ; 0-255 specifying which version of Concerto presets is used
 
 
 .macro VOICE_BYTE_FIELD

@@ -7,27 +7,14 @@
 
 ; Mouse controls are:
 ; Left click behaves as expected. Can also be used for dragging controls
-; Right klick is only used for fine tuning certain parameters by dragging,
-; While dragging/clicking, the parameter can be reset by also pressing
-; the other mouse button. Depending on whether left or right button was
-; pressed first, either the entire parameter or just the fine part gets reset.
-
-
-; Because mouse buttons can be combined, interpretation of mouse button events
-; is non-trivial. Which button-press-history leads to which events?
-; The following scheme answers this question
+; Right klick is only used for fine tuning certain parameters by dragging.
 
 ; The mouse is a finite-state machine.
 ; On program start, and always when no mouse button is pressed, the mouse is
 ; in the so-called "idle" state.
 ; When the left or right button is pressed, the mouse will be set into 
 ; "hold_L" or "hold_R", respectively.
-; In these states, the mouse will wait for either all mouse buttons to be released
-; or for the other button to be pressed.
-; If the other button is pressed while still holding down, the state of the mouse
-; is changed to one of the "reset" states, which wait for all buttons to be released.
-; NOTE: the reset function has not been implemented on the GUI yet.
-; The GUI currently only reacts to click and drag events.
+; In these states, the mouse will wait for all mouse buttons to be released.
 
 .scope mouse
 

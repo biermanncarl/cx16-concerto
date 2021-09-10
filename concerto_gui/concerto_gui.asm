@@ -35,7 +35,7 @@ hide_mouse = mouse::mouse_hide
 
 ; concerto_gui::gui_tick
 ; Reads the mouse and performs actions according to the mouse input. Call this regularly in your main loop.
-; It is NOT recommended to call this in the interrupt service routine, although it's possible to do so.
+; It is NOT recommended to call this in the interrupt service routine.
 ; PARAMETERS: none
 ; AFFECTS: A, X, Y
 gui_tick = mouse::mouse_tick

@@ -111,7 +111,7 @@ dummy_data_size = 1
       hg = 24
       ; GUI component string of global settings panel
       comps:
-         .byte 3, px+3, py+3, 0, 6, 1 ; number of oscillators
+         .byte 3, px+3, py+3, 0, MAX_OSCS_PER_VOICE, 1 ; number of oscillators
          .byte 3, px+3, py+6, 1, 3, 1 ; number of envelopes
          .byte 5, px+2, py+8, 8, 1 ; LFO activate checkbox
          .byte 5, px+2, py+12, 8, 1 ; retrigger checkbox
@@ -163,7 +163,7 @@ dummy_data_size = 1
       ampsecy = pitsecy
       ; GUI component string of oscillator panel
       comps:
-         .byte 2, px, py, 6, 0 ; tabselector
+         .byte 2, px, py, MAX_OSCS_PER_VOICE, 0 ; tabselector
          .byte 6, wfsecx, wfsecy+2, 8, 4, (<waveforms_lb), (>waveforms_lb), 0 ; waveform listbox
          .byte 4, pwsecx, pwsecy+2, %00000000, 0, 63, 0, 0 ; pulse width drag edit
          .byte 6, ampsecx, ampsecy+1, 8, N_TOT_MODSOURCES, (<modsources_lb), (>modsources_lb), 0 ; amp listbox
@@ -265,17 +265,19 @@ dummy_data_size = 1
       hg = 60
       ; text input position
       ti_x = 66
-      ti_y = 3
+      ti_y = 5
       ti_l = 8 ; maximum length
       ; GUI component string of the panel
       comps:
          .byte 3, 41, 1, 0, N_TIMBRES-1, 0 ; arrowed edit (timbre selection)
          .byte 1, 66, 0, 13, (<load_preset_lb), (>load_preset_lb) ; load preset button
-         .byte 1, 51, 0, 13, (<save_preset_lb), (>save_preset_lb) ; save preset button
-         .byte 1, 33, 2, 6, (<copy_preset_lb), (>copy_preset_lb) ; load preset button
-         .byte 1, 41, 2, 7, (<paste_preset_lb), (>paste_preset_lb) ; save preset button
-         .byte 1, 51, 2, 13, (<file_lb), (>file_lb) ; set file name button
+         .byte 1, 52, 0, 13, (<save_preset_lb), (>save_preset_lb) ; save preset button
+         .byte 1, 34, 2, 6, (<copy_preset_lb), (>copy_preset_lb) ; copy preset button
+         .byte 1, 41, 2, 7, (<paste_preset_lb), (>paste_preset_lb) ; paste preset button
+         .byte 1, 52, 4, 13, (<file_lb), (>file_lb) ; set file name button
          .byte 4, 38, 52, %00000000, 0, 63, 63, 0 ; note volume
+         .byte 1, 66, 2, 13, (<load_bank_lb), (>load_bank_lb) ; load bank button
+         .byte 1, 52, 2, 13, (<save_bank_lb), (>save_bank_lb) ; save bank button
          .byte 0
       ; caption list of the panel
       capts:
@@ -292,6 +294,8 @@ dummy_data_size = 1
       timbre_lb: STR_FORMAT "timbre"
       load_preset_lb: STR_FORMAT " load preset"
       save_preset_lb: STR_FORMAT " save preset"
+      load_bank_lb: STR_FORMAT "  load bank"
+      save_bank_lb: STR_FORMAT "  save bank"
       copy_preset_lb: STR_FORMAT " copy"
       paste_preset_lb: STR_FORMAT " paste"
       file_lb: STR_FORMAT "  file name"
@@ -2416,6 +2420,8 @@ write_snav:
    .word @paste_preset
    .word @change_file_name
    .word @set_play_volume
+   .word @load_bank
+   .word @save_bank
 @timbre_selector:
    ; read data from component string and write it to the Timbre setting
    lda snav::comps, y
@@ -2470,6 +2476,16 @@ write_snav:
    iny
    lda snav::comps, y
    sta play_volume
+   rts
+@load_bank:
+   sei
+   jsr concerto_synth::voices::panic
+   jsr concerto_synth::timbres::load_bank
+   jsr refresh_gui
+   cli
+   rts
+@save_bank:
+   jsr concerto_synth::timbres::save_bank
    rts
 
 ; since there is only the dummy component on the popup,
