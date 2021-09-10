@@ -981,10 +981,10 @@ draw_fm_alg:
    ; finish off numbers
    ldx #CCOLOR_ALG_OP_NUMBERS
    jsr move_cursor_down2
-   lda #51
+   lda #50
    sta VERA_data0
    stx VERA_data0
-   lda #50
+   lda #51
    sta VERA_data0
    stx VERA_data0
    lda #52
@@ -1190,4 +1190,31 @@ vtui_input_str:
 
 
 
-.endscope ; gui
+
+
+
+
+.macro DEBUG_FM_MAP
+   DISPLAY_BYTE concerto_synth::voices::FMmap::freevoicelist, 1,55
+   DISPLAY_BYTE concerto_synth::voices::FMmap::freevoicelist+1, 5,55
+   DISPLAY_BYTE concerto_synth::voices::FMmap::freevoicelist+2, 9,55
+   DISPLAY_BYTE concerto_synth::voices::FMmap::freevoicelist+3, 13,55
+   DISPLAY_BYTE concerto_synth::voices::FMmap::freevoicelist+4, 17,55
+   DISPLAY_BYTE concerto_synth::voices::FMmap::freevoicelist+5, 21,55
+   DISPLAY_BYTE concerto_synth::voices::FMmap::freevoicelist+6, 25,55
+   DISPLAY_BYTE concerto_synth::voices::FMmap::freevoicelist+7, 29,55
+
+   DISPLAY_BYTE concerto_synth::voices::FMmap::timbremap, 1,57
+   DISPLAY_BYTE concerto_synth::voices::FMmap::timbremap+1, 5,57
+   DISPLAY_BYTE concerto_synth::voices::FMmap::timbremap+2, 9,57
+   DISPLAY_BYTE concerto_synth::voices::FMmap::timbremap+3, 13,57
+   DISPLAY_BYTE concerto_synth::voices::FMmap::timbremap+4, 17,57
+   DISPLAY_BYTE concerto_synth::voices::FMmap::timbremap+5, 21,57
+   DISPLAY_BYTE concerto_synth::voices::FMmap::timbremap+6, 25,57
+   DISPLAY_BYTE concerto_synth::voices::FMmap::timbremap+7, 29,57
+   ; ffv, lfv
+   DISPLAY_BYTE concerto_synth::voices::FMmap::ffv, 40,55
+   DISPLAY_BYTE concerto_synth::voices::FMmap::lfv, 44,55
+.endmacro
+
+.endscope ; guiutils

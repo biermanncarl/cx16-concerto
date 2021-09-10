@@ -93,8 +93,8 @@
    ; This is to be able to reuse previously loaded timbres (which saves costly communication with the YM2151 chip)
    freevoicelist: FM_VOICE_BYTE_FIELD
    timbremap:     FM_VOICE_BYTE_FIELD
-   ffv:  .byte 0
-   lfv:  .byte 0
+   ffv:  .byte 0 ; this is the next (first) free voice (as long as there is at least one) in the ring list
+   lfv:  .byte 0 ; this points one past the last free voice, or to the first used voice as long as there is at least one being used
    nfv:  .byte 0
 .endscope
 
@@ -530,14 +530,17 @@ stop_note:
    jsr write_ym2151
 
    ; release FM resources
-   ADVANCE_FVL_POINTER FMmap::lfv
-   tay
+   ldy FMmap::lfv
+   ; put the YM2151 voice back into the ringlist
    lda Voice::fm_voice_map, x
    sta FMmap::freevoicelist, y
+   ; remember which timbre was played so that we may not need to reload it
    lda Voice::timbre, x
    sta FMmap::timbremap, y
+   ; advance the pointer of the first used voice
+   ADVANCE_FVL_POINTER FMmap::lfv
+   ; increment available voices
    inc FMmap::nfv
-
    rts
 
 
