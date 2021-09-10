@@ -28,7 +28,7 @@
 ; One of those annoying things of the YM2151: for the key-on command, the bits are in the order M1, C1, M2, C2,
 ; But in the address space, the operators are ordered M1, M2, C1, C2.
 ; WHY???
-; Anyway, we store stuff in the order as the flags: M1, C1, M2, C2,
+; Anyway, we store stuff in the order as the key-on flags: M1, C1, M2, C2,
 ; That is:
 ;   operator 1 = Modulator 1
 ;   operator 2 = Carrier 1
@@ -59,7 +59,6 @@ invalidate_fm_timbres:
    ; override all timbres with invalid timbre
    ldx #(N_FM_VOICES-1)
 @loop_fm_voices:
-   txa
    lda #N_TIMBRES ; invalid timbre number ... enforce loading onto the YM2151 (invalid timbre won't get reused)
    sta FMmap::timbremap, x
    dex
@@ -133,7 +132,6 @@ load_fm_timbre:
    ; Total level can be skipped since it is set on note trigger.
 
    ; ** KS_AR
-   ; TODO: Key scaling
    ; value
    lda timbres::Timbre::operators::ks, x
    clc
@@ -258,7 +256,13 @@ trigger_fm_note:
 @operator_enabled:
    ; TOTAL LEVEL
    ; value
-   ldy timbres::Timbre::operators::level, x
+   lda timbres::Timbre::operators::level, x
+   ldy timbres::Timbre::operators::vol_sens, x
+   beq :+
+   sec
+   sbc note_volume
+   adc #63 ; 63 - 1 for secretly added one and -1 for carry
+:  tay
    ; address
    pla
    jsr write_ym2151

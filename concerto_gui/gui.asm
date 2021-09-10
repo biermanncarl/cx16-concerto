@@ -302,6 +302,8 @@ dummy_data_size = 1
          .word timbre_lb
          .byte CCOLOR_CAPTION, ti_x, ti_y
          .word concerto_synth::timbres::file_name
+         .byte CCOLOR_CAPTION, 29, 52
+         .word velocity_lb
          .byte 0
       ; data specific to the synth-navigation panel
       timbre_lb: STR_FORMAT "timbre"
@@ -311,6 +313,7 @@ dummy_data_size = 1
       paste_preset_lb: STR_FORMAT " paste"
       file_lb: STR_FORMAT "  file name"
       logo_lb: STR_FORMAT "=== concerto v0.3.0-alpha ==="
+      velocity_lb: STR_FORMAT "velocity"
    .endscope
    ; listbox popup. shows up when a listbox was clicked.
    .scope listbox_popup
@@ -476,6 +479,7 @@ dummy_data_size = 1
          .byte 4, px+20, py+7, %0, 0, 3, 0, 0 ; drag edit - coarse
          .byte 4, px+4, py+3, %0, 0, 127, 0, 0 ; drag edit - level (vol)
          .byte 4, px+17, py+14, %00000000, 0, 3, 0, 0 ; drag edit - key scaling
+         .byte 5, px+10, py+3, 2, 0 ; checkbox - volume sensitivity
          .byte 0
       capts:
          .byte CCOLOR_CAPTION, px+4, py
@@ -502,6 +506,8 @@ dummy_data_size = 1
          .word vol_lb
          .byte CCOLOR_CAPTION, px+4, py+14
          .word lb_ks
+         .byte CCOLOR_CAPTION, px+12, py+3
+         .word lb_vol_sens
          .byte 0
       active_tab: .byte 0
       cp: STR_FORMAT "fm operators"
@@ -513,6 +519,7 @@ dummy_data_size = 1
       lb_dt1: STR_FORMAT "fine"
       lb_dt2: STR_FORMAT "coarse"
       lb_ks: STR_FORMAT "key scaling"
+      lb_vol_sens: STR_FORMAT "vol sens"
    .endscope
 
    ; Recurring Labels
@@ -2777,6 +2784,7 @@ write_fm_op:
    .word @coarse
    .word @vol
    .word @key_scaling
+   .word @vol_sens
 @tab_select:
    plx
    lda ms_curr_data
@@ -2861,6 +2869,11 @@ write_fm_op:
    iny
    lda fm_op::comps, y
    sta concerto_synth::timbres::Timbre::operators::ks, x
+   rts
+@vol_sens:
+   plx
+   lda fm_op::comps, y
+   sta concerto_synth::timbres::Timbre::operators::vol_sens, x
    rts
 
 
@@ -3253,6 +3266,10 @@ refresh_fm_op:
    ; key scaling
    lda concerto_synth::timbres::Timbre::operators::ks, x
    ldy #(tab_selector_data_size + 0*checkbox_data_size+10*drag_edit_data_size+0*listbox_data_size+0*arrowed_edit_data_size-2)
+   sta fm_op::comps, y
+   ; volume sensitivity
+   lda concerto_synth::timbres::Timbre::operators::vol_sens, x
+   ldy #(tab_selector_data_size + 1*checkbox_data_size+10*drag_edit_data_size+0*listbox_data_size+0*arrowed_edit_data_size-1)
    sta fm_op::comps, y
    ; redraw components
    lda #8

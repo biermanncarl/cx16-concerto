@@ -47,9 +47,9 @@
 ; This is for more efficient accessing of the data.
 ; Timbre selection needs to be quick for arbitrary access.
 ; The individual envelopes and oscillators are only parsed from start to finish.
-; To access all three envelope settings of a timbre, one starts by setting X to the
+; To access all three envelope settings of a timbre, one starts by setting .X to the
 ; timbre index, giving the offset of envelope 1.
-; Then, by adding N_TIMBRES to X, we get the offset of envelope 2, and if we do it again,
+; Then, by adding N_TIMBRES to .X, we get the offset of envelope 2, and if we do it again,
 ; we get the offset of envelope 3 of that same patch.
 ; That way, we can avoid multiplications to find the correct indices.
 
@@ -136,7 +136,7 @@ data_start:
 
    .scope operators
       level:            OPERATOR_TIMBRE_BYTE_FIELD  ; volume (needs to be converted to attenuation) (7 bits)
-      sens:             OPERATOR_TIMBRE_BYTE_FIELD  ; volume sensitivity. (How) does the operator respond to the note's volume?
+      vol_sens:             OPERATOR_TIMBRE_BYTE_FIELD  ; volume sensitivity. (How) does the operator respond to the note's volume?
       ; pitch related
       mul:              OPERATOR_TIMBRE_BYTE_FIELD  ; multiplier for the frequency (4 bits)
       dt1:              OPERATOR_TIMBRE_BYTE_FIELD  ; fine detune (?) (didn't work in YM2151 UI program) (3 bits)
