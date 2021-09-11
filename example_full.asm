@@ -36,7 +36,6 @@ start:
    stz ROM_BANK
 
    jsr concerto_synth::initialize
-   CONCERTO_LOAD_FACTORY_PRESETS
    jsr concerto_gui::initialize
 
    jsr concerto_synth::activate_synth

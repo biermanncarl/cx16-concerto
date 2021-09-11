@@ -299,7 +299,7 @@ dummy_data_size = 1
       copy_preset_lb: STR_FORMAT " copy"
       paste_preset_lb: STR_FORMAT " paste"
       file_lb: STR_FORMAT "  file name"
-      logo_lb: STR_FORMAT "=== concerto v0.3.0-alpha ==="
+      logo_lb: STR_FORMAT "=== concerto v0.4.0-alpha ==="
       velocity_lb: STR_FORMAT "velocity"
    .endscope
    ; listbox popup. shows up when a listbox was clicked.
