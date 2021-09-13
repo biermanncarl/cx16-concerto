@@ -394,15 +394,6 @@ save_bank:
    ; chkout - open a logical file for output
    ldx #1 ; logical file to be used
    jsr CHKOUT
-   ; write magic sequence (aka identifier), last byte is version number
-   lda #'c'
-   jsr CHROUT
-   lda #'o'
-   jsr CHROUT
-   lda #'b'
-   jsr CHROUT
-   lda #FILE_VERSION  ; version
-   jsr CHROUT
    ; write timbre data
    jsr dump_to_chrout
    ; close file
@@ -442,24 +433,10 @@ load_bank:
    ; chkin - open a logical file for input
    ldx #1 ; logical file to be used
    jsr CHKIN
-   ; read and compare magic sequence (aka identifier), last byte is version number
-   jsr CHRIN
-   cmp #'c'
-   bne @close_file
-   jsr CHRIN
-   cmp #'o'
-   bne @close_file
-   jsr CHRIN
-   cmp #'b'
-   bne @close_file
-   jsr CHRIN
-   cmp #FILE_VERSION  ; version
-   bne @close_file
    ; read timbre data
    jsr restore_from_chrin
 @close_file:
    ; close file
-   lda #1
    jsr CLOSE
    jsr CLRCHN
    rts
@@ -640,6 +617,16 @@ copy_paste:
 
 ; dumps all timbre data to CHROUT. can be used to write to an already opened file
 dump_to_chrout:
+   ; write magic sequence (aka identifier), last byte is version number
+   lda #'c'
+   jsr CHROUT
+   lda #'o'
+   jsr CHROUT
+   lda #'b'
+   jsr CHROUT
+   lda #FILE_VERSION  ; version
+   jsr CHROUT
+   ; write timbre data
    jsr initialize_timbre_pointer
    ldx #Timbre::data_count
 @loop_parameters:
@@ -658,6 +645,20 @@ dump_to_chrout:
 ; restores all timbres from a data stream from CHRIN (which was previously dumped via dump_to_chrout)
 ; can be used to read from an already opened file
 restore_from_chrin:
+   ; read and compare magic sequence (aka identifier), last byte is version number
+   jsr CHRIN
+   cmp #'c'
+   bne @abort
+   jsr CHRIN
+   cmp #'o'
+   bne @abort
+   jsr CHRIN
+   cmp #'b'
+   bne @abort
+   jsr CHRIN
+   cmp #FILE_VERSION  ; version
+   bne @abort
+   ; read timbre data
    jsr initialize_timbre_pointer
    ldx #Timbre::data_count
 @loop_parameters:
@@ -673,6 +674,11 @@ restore_from_chrin:
 :  jsr advance_timbre_pointer
    dex
    bne @loop_parameters
+   lda #1 ; success
    rts
+@abort:
+   lda #0 ; error
+   rts
+
 
 .endscope

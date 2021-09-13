@@ -90,12 +90,12 @@ activate_synth = my_isr::launch_isr
 ; AFFECTS: A, X, Y
 deactivate_synth:
    jsr voices::panic
-   jsr my_isr::shutdown_isr
+   jsr my_isr::shutdown_isr ; not the other way round? would be safer ...
    rts
 
 ; concerto_synth::play_note
 ; Plays a note on the given channel. Replaces any other note being played previously on that channel.
-; The new note does not get played if there aren't enough VERA PSG voices available.
+; The new note does not get played if there aren't enough voices available at the VERA or the YM2151.
 ; PARAMETERS: 
 ;              channel number: r0L
 ;              note timbre:    r0H
@@ -129,7 +129,7 @@ release_note = voices::release_note
 ;
 ;             SEI
 ;             JSR concerto_synth::stop_note
-;             CLI
+;             CLI ; don't do CLI if the interrupt flag is set anyway!
 stop_note = voices::stop_note
 
 ; concerto_synth::panic
@@ -173,6 +173,8 @@ dump_timbres = timbres::dump_to_chrout
 ; The number of bytes consumed by this function is always the same (within one version of Concerto).
 ; PARAMETERS: none
 ; AFFECTS: A, X, Y
+; RETURNS: 1 in A if successfully loaded
+;          0 in A if an error occurred (e.g. wrong data header)
 restore_timbres = timbres::restore_from_chrin
 
 
