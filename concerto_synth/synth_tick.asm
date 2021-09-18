@@ -267,6 +267,7 @@ env_finish:
    ; therefore, the voice data offset in X can be safely discarded, as it is no longer needed
    ; deactivate voice
    ldx voice_index
+   stx note_channel
    jsr voices::stop_note
    ldx voice_index
    jmp next_voice
@@ -676,6 +677,7 @@ end_env: ; jump here when done with all envelopes
    
 @skip_vibrato:
    ldx voice_index
+   ldy voices::Voice::timbre, x
 
 
 
@@ -686,6 +688,11 @@ end_env: ; jump here when done with all envelopes
    ; --------------
    ; --------------
 
+   ; check if FM is active
+   lda timbres::Timbre::fm_general::op_en, y
+   bne :+
+   jmp @skip_fm_pitch
+:
 
    ; keyboard + portamento
    lda timbres::Timbre::fm_general::track, y
@@ -699,14 +706,14 @@ end_env: ; jump here when done with all envelopes
    sta osc_pitch
    bra @donetrack_fm
 @notrack_fm:
-   ; modulation
-   ; source indexed by X
-   ; depth indexed by Y
    lda timbres::Timbre::fm_general::fine, y
    sta osc_fine
    lda timbres::Timbre::fm_general::pitch, y
    sta osc_pitch
 @donetrack_fm:
+   ; modulation
+   ; source indexed by X
+   ; depth indexed by Y
    ; pitch mod source
    ldx timbres::Timbre::fm_general::pitch_mod_sel, y
    bpl :+
@@ -773,6 +780,7 @@ end_env: ; jump here when done with all envelopes
    lda #YM_KON
    jsr voices::write_ym2151
 @skip_fm_trigger:
+@skip_fm_pitch:
 
 
 

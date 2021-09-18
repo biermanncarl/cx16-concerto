@@ -10,6 +10,10 @@
 
 .scope my_isr
 
+; this variable says whether or not the Concerto synth engine has been activated or not.
+; This is to prevent damage e.g. when launch_isr is called twice instead of once.
+engine_active:
+   .byte 0
 default_isr:
    .word $0000
 ; this variable contains a nonzero value if the ISR is currently running, so as to prevent the ISR interrupting itself
@@ -18,7 +22,10 @@ isr_running:
 
 ; subroutine for launching the ISR
 launch_isr:
-
+   lda engine_active
+   beq :+
+   rts ; engine is already active
+:  inc engine_active
    ; setup the timer
 
    ; prepare playback
@@ -72,6 +79,11 @@ rts
 
 ; subroutine for stopping the ISR
 shutdown_isr:
+   lda engine_active
+   bne :+
+   rts ; engine already inactive
+:  stz engine_active
+
    ; disable AFLOW interrupt
    lda VERA_ien
    and #$F7

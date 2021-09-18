@@ -107,9 +107,10 @@ deactivate_synth:
 ;          Otherwise, the ISR can interfere with this subroutine and cause corruption.
 ;          Example usage:
 ;
+;             PHP
 ;             SEI
 ;             JSR concerto_synth::play_note
-;             CLI
+;             PLP
 play_note = voices::play_note
 
 ; concerto_synth::release_note
@@ -127,9 +128,10 @@ release_note = voices::release_note
 ;          Otherwise, the ISR can interfere with this subroutine and cause corruption.
 ;          Example usage:
 ;
+;             PHP
 ;             SEI
 ;             JSR concerto_synth::stop_note
-;             CLI ; don't do CLI if the interrupt flag is set anyway!
+;             PLP
 stop_note = voices::stop_note
 
 ; concerto_synth::panic

@@ -1,0 +1,194 @@
+; Copyright 2021 Carl Georg Biermann
+
+
+; This file contains the interface to a music player. It plays back linear
+; data in RAM using the Concerto synth engine.
+; The data format is detailed in "specifications.md".
+
+; If you include this file, you do NOT need to include "concerto_synth.asm"
+; BUT you still must include "synth_zeropage.asm" in your zero page segment.
+
+concerto_playback_routine = concerto_player_temp
+.include "../concerto_synth/concerto_synth.asm"
+
+
+.scope concerto_player
+
+; PLAYER INTERFACE
+
+; concerto_player::repeat
+; This variable states whether or not to repeat the song being played.
+; 0 = no repeat. Everything else is repeat.
+repeat:
+   .byte 0
+
+; concerto_player::play_track
+; Enables the player and starts playing from the specified address in RAM.
+; PARAMETERS: .X low byte address
+;             .Y high byte address
+play_track:
+   stz wait_timer
+   stz wait_timer+1
+   php
+   sei
+   stx data_pointer
+   sty data_pointer+1
+   plp
+   stx start_address
+   sty start_address+1
+   jsr concerto_synth::activate_synth
+   rts
+
+
+stop_track:
+   ; TODO
+   rts
+
+
+
+; this counter counts down the ticks until the next event.
+wait_timer:
+   .word 0
+
+; the music data pointer
+; The high byte being 0 is interpreted as player inactive, i.e., the song data
+; cannot be on the zero page.
+data_pointer:
+   .word 0
+; the zeropage pointer. This is "stolen" from the concerto_synth zeropage.
+; However, as the player tick is guaranteed to run BEFORE the synth_tick,
+; we can do this, as long as the variable is not needed for any voice
+; management routines.
+; optimally, one would use a dedicated ZP variable, as this would allow for
+; both faster operation and would eliminate the need to copy the pointer
+; to the ZP in every tick.
+zp_pointer = mzpwf
+
+; remembers the address where the song was started, in case it is repeated
+start_address:
+   .word 0
+
+
+
+
+
+concerto_player_tick:
+   ; check if active
+   lda start_address+1
+   bne :+
+   rts ; HI address byte being zero indicates player inactive
+:  ; do wait timer
+   lda wait_timer
+   beq @check_zero
+   dec
+   sta wait_timer
+   rts
+@check_zero:
+   lda wait_timer+1
+   beq @event_loop
+   dec
+   sta wait_timer+1
+   dec wait_timer
+   rts
+@event_loop:
+   lda data_pointer
+   sta zp_pointer
+   lda data_pointer+1
+   sta zp_pointer+1
+   ldy #0
+   lda (zp_pointer), y
+   and #%11110000 ; extract upper nibble to get command number
+   lsr
+   lsr
+   lsr
+   tax
+   jmp (@jmp_tbl, x)
+@jmp_tbl:
+   .word @wait
+   .word @play_note
+   .word @release_note
+   .word @stop_note
+   .word 0 ; pitchbend rate
+   .word 0 ; pitchbend pos
+   .word 0 ; volume rate
+   .word 0 ; volume pos
+   .word 0 ; vibrato rate
+   .word 0 ; vibrato pos
+   .word 0 ; unused
+   .word 0 ; unused
+   .word 0 ; unused
+   .word 0 ; user callback
+   .word 0 ; panic
+   .word @end_track
+@wait:
+   ; we subtract one from the waiting time to account for this very tick.
+   ; makes computing wait times easier.
+   ; Wait time 0 causes maximum possible wait time.
+   iny
+   lda (zp_pointer), y
+   sec
+   sbc #1
+   sta wait_timer
+   iny
+   lda (zp_pointer), y
+   sbc #0
+   sta wait_timer+1
+   lda #3
+   jmp @increment_address
+@play_note:
+   ; get channel number
+   lda (zp_pointer), y
+   and #%00001111
+   sta concerto_synth::note_channel
+   iny
+   lda (zp_pointer), y
+   sta concerto_synth::note_timbre
+   iny
+   lda (zp_pointer), y
+   sta concerto_synth::note_pitch
+   iny
+   lda (zp_pointer), y
+   sta concerto_synth::note_volume
+   jsr concerto_synth::play_note
+   lda #4
+   jmp @increment_address
+@release_note:
+   lda (zp_pointer), y
+   and #%00001111
+   sta concerto_synth::note_channel
+   jsr concerto_synth::release_note
+   lda #1
+   jmp @increment_address
+@stop_note:
+   lda (zp_pointer), y
+   and #%00001111
+   sta concerto_synth::note_channel
+   jsr concerto_synth::stop_note
+   lda #1
+   jmp @increment_address
+
+@end_track:
+   jsr concerto_synth::panic
+   lda repeat
+   bne :+
+   stz start_address+1
+   rts ; return if there is no repeat
+:  lda start_address
+   sta data_pointer
+   lda start_address+1
+   sta data_pointer+1
+   jmp concerto_player_tick ; continue reading commands if repeat is on
+@increment_address:
+   ; expect address increment in .A
+   clc
+   adc data_pointer
+   sta data_pointer
+   bcc :+
+   inc data_pointer+1
+:  ; process next command, until wait command or song's end
+   jmp concerto_player_tick
+
+.endscope
+
+concerto_player_temp = concerto_player::concerto_player_tick
+
