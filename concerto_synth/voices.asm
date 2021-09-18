@@ -390,7 +390,7 @@ start_note:
    lda note_timbre
    ldx FMmap::ffv
 @search_timbre:
-   cmp FMmap::timbremap, x ; patches that have last been loaded are stored in timbremap
+   cmp FMmap::timbremap, x ; patches that have been loaded are stored in timbremap
    beq @timbre_found
    inx
    cpx #N_FM_VOICES
@@ -407,6 +407,14 @@ start_note:
    pla
    bra @claim_fm_voice
 @timbre_found:
+   ; First check if the timbre found is actually in the next avialable voice.
+   ; in this case, we doe the same as in the case the timbre was not found,
+   ; only we do not load the timbre onto the YM2151.
+   cpx FMmap::ffv
+   bne @rotate_voices
+   lda FMmap::freevoicelist, x
+   bra @claim_fm_voice
+@rotate_voices:
    ; More complicated. need to swap things around.
    ; The situation is as follows:
    ;                               v   unused voice with the same timbre loaded as the new note

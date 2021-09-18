@@ -134,7 +134,7 @@ mainloop:
 ; DATA
 
 timbre_file_command:
-   .byte "0:factory.cob,s,r" ; 17 characters long
+   .byte "0:song02.cob,s,r" ; 17 characters long
 song_file_command:
    .byte "song.bin" ; 8 characters long
 
