@@ -85,12 +85,12 @@ concerto_player_tick:
    rts
 @check_zero:
    lda wait_timer+1
-   beq @event_loop
+   beq @read_event
    dec
    sta wait_timer+1
    dec wait_timer
    rts
-@event_loop:
+@read_event:
    lda data_pointer
    sta zp_pointer
    lda data_pointer+1
@@ -121,19 +121,17 @@ concerto_player_tick:
    .word 0 ; panic
    .word @end_track
 @wait:
-   ; we subtract one from the waiting time to account for this very tick.
-   ; makes computing wait times easier.
-   ; Wait time 0 causes maximum possible wait time.
    iny
    lda (zp_pointer), y
-   sec
-   sbc #1
    sta wait_timer
    iny
    lda (zp_pointer), y
-   sbc #0
    sta wait_timer+1
    lda #3
+   ; We have set the timer to the number of ticks we shall wait until the next event.
+   ; After the event address increment, we will end up at the top of this routine,
+   ; where one tick is decremented from the timer,
+   ; which accounts for this very tick we are in right here.
    jmp @increment_address
 @play_note:
    ; get channel number
