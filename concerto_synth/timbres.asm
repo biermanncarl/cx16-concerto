@@ -630,14 +630,16 @@ dump_to_chrout:
    jsr initialize_timbre_pointer
    ldx #Timbre::data_count
 @loop_parameters:
-   ldy #N_TIMBRES
+   ldy #0
 @loop_timbres:
-   dey
-   bmi :+
    lda (timbre_pointer), y
    jsr CHROUT ; leaves X and Y untouched
+   iny
+   cpy #N_TIMBRES
+   beq @goto_next_parameter
    bra @loop_timbres
-:  jsr advance_timbre_pointer
+@goto_next_parameter:
+   jsr advance_timbre_pointer
    dex
    bne @loop_parameters
    rts
@@ -662,16 +664,18 @@ restore_from_chrin:
    jsr initialize_timbre_pointer
    ldx #Timbre::data_count
 @loop_parameters:
-   ldy #N_TIMBRES
+   ldy #0
 @loop_timbres:
-   dey
-   bmi :+
    phy
    jsr CHRIN ; leaves X untouched, uses Y (as far as I know)
    ply
    sta (timbre_pointer), y
+   iny
+   cpy #N_TIMBRES
+   beq @goto_next_parameter
    bra @loop_timbres
-:  jsr advance_timbre_pointer
+@goto_next_parameter:
+   jsr advance_timbre_pointer
    dex
    bne @loop_parameters
    lda #1 ; success
