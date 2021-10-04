@@ -218,7 +218,6 @@ trigger_fm_note:
    ; set operator volumes
    ; *********************
    ; This is annoyingly complicated ... we basically need to replicate the load timbre loop just for this
-   ; TODO: velocity sensitivity!
    lda #YM_TL
    clc
    adc Voice::fm_voice_map, x
@@ -236,21 +235,25 @@ trigger_fm_note:
    bcs @operator_enabled
 @operator_disabled:
    pla
-   bra @advance_loop
+   bra @advance_in_loop
 @operator_enabled:
    ; TOTAL LEVEL
    ; value
    lda timbres::Timbre::operators::level, x
    ldy timbres::Timbre::operators::vol_sens, x
-   beq :+
+   beq @no_volume_sensitivity
    sec
    sbc note_volume
    adc #63 ; 63 - 1 for secretly added one and -1 for carry
-:  tay
+   bpl @no_volume_sensitivity
+   ; value is negative ... set it to minimum volume
+   lda #127
+@no_volume_sensitivity:
+   tay
    ; address
    pla
    jsr write_ym2151
-@advance_loop:
+@advance_in_loop:
    ; expecting running write address in A
    ; advance running write address by multiple of 8 to get to the next operator
    ldy operator_counter
