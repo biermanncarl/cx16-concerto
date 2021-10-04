@@ -40,6 +40,22 @@
 ;       ...
 ;       rts
 
+
+
+; Loading of timbre data at compile time
+; ======================================
+; Two definitions need to be made in order to use an existing timbre bank (*.COB) file at compile time.
+; The first one, concerto_use_timbres_from_file, needs to be set in order to communicate
+; to the assembler THAT an external file is being used.
+; The second one, CONCERTO_TIMBRES_PATH, is set to the file name containing the timbre data.
+; Both definitions need to be made before the inclusion of this file (concerto_synth.asm).
+; Example:
+;
+;    concerto_use_timbres_from_file = 1
+;    .define CONCERTO_TIMBRES_PATH "FACTORY.COB"
+;    .include "concerto_synth.asm"
+
+
 .scope concerto_synth
 
 .include "x16.asm"
@@ -74,7 +90,9 @@ free_fm_voices = voices::FMmap::nfv
 ; PARAMETERS: none
 ; AFFECTS: A, X, Y
 initialize:
+.ifndef concerto_use_timbres_from_file
    jsr timbres::init_timbres
+.endif
    jsr voices::init_voices
    rts
 

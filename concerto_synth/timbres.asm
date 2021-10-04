@@ -42,100 +42,181 @@
 timbre_pointer = mzpwg
 
 
-.scope Timbre
-data_start:
-
-   ;general
-   n_oscs:  TIMBRE_BYTE_FIELD         ; how many oscillators are used
-   n_envs:  TIMBRE_BYTE_FIELD         ; how many envelopes are used
-   n_lfos:  TIMBRE_BYTE_FIELD
-   porta:   TIMBRE_BYTE_FIELD         ; portamento on/off
-   porta_r: TIMBRE_BYTE_FIELD         ; portamento rate
-   retrig:  TIMBRE_BYTE_FIELD         ; when monophonic, will envelopes be retriggered? (could be combined with mono variable)
-   vibrato: TIMBRE_BYTE_FIELD         ; vibrato amount (a scale5 value but only positive. negative value means inactive)
+.struct TimbreDataStruct
+   n_oscs  .res N_TIMBRES         ; how many oscillators are used
+   n_envs  .res N_TIMBRES         ; how many envelopes are used
+   n_lfos  .res N_TIMBRES
+   porta   .res N_TIMBRES         ; portamento on/off
+   porta_r .res N_TIMBRES         ; portamento rate
+   retrig  .res N_TIMBRES         ; when monophonic, will envelopes be retriggered? (could be combined with mono variable)
+   vibrato .res N_TIMBRES         ; vibrato amount (a scale5 value but only positive. negative value means inactive)
 
    ; envelope rates (not times!)
-   .scope env
-      attackL:  ENVELOPE_TIMBRE_BYTE_FIELD
-      attackH:  ENVELOPE_TIMBRE_BYTE_FIELD
-      decayL:   ENVELOPE_TIMBRE_BYTE_FIELD
-      decayH:   ENVELOPE_TIMBRE_BYTE_FIELD
-      sustain:  ENVELOPE_TIMBRE_BYTE_FIELD
-      releaseL: ENVELOPE_TIMBRE_BYTE_FIELD
-      releaseH: ENVELOPE_TIMBRE_BYTE_FIELD
-   .endscope
+      env_attackL  .res N_TIMBRES * MAX_ENVS_PER_VOICE
+      env_attackH  .res N_TIMBRES * MAX_ENVS_PER_VOICE
+      env_decayL   .res N_TIMBRES * MAX_ENVS_PER_VOICE
+      env_decayH   .res N_TIMBRES * MAX_ENVS_PER_VOICE
+      env_sustain  .res N_TIMBRES * MAX_ENVS_PER_VOICE
+      env_releaseL .res N_TIMBRES * MAX_ENVS_PER_VOICE
+      env_releaseH .res N_TIMBRES * MAX_ENVS_PER_VOICE
 
    ; lfo stuff
-   .scope lfo
-      rateH:   LFO_TIMBRE_BYTE_FIELD
-      rateL:   LFO_TIMBRE_BYTE_FIELD
-      wave:    LFO_TIMBRE_BYTE_FIELD   ; waveform select: triangle, square, ramp up, ramp down, noise (S'n'H)
-      retrig:  LFO_TIMBRE_BYTE_FIELD   ; retrigger
-      offs:    LFO_TIMBRE_BYTE_FIELD   ; offset (high byte only, or seed for SnH)
-   .endscope
+      lfo_rateH   .res N_TIMBRES * MAX_LFOS_PER_VOICE
+      lfo_rateL   .res N_TIMBRES * MAX_LFOS_PER_VOICE
+      lfo_wave    .res N_TIMBRES * MAX_LFOS_PER_VOICE   ; waveform select: triangle, square, ramp up, ramp down, noise (S'n'H)
+      lfo_retrig  .res N_TIMBRES * MAX_LFOS_PER_VOICE   ; retrigger
+      lfo_offs    .res N_TIMBRES * MAX_LFOS_PER_VOICE   ; offset (high byte only, or seed for SnH)
 
    ; oscillators
    ; modulation sources are inactive if negative (bit 7 active)
    ; Except amp_sel: it is assumed to be always active.
    ; modulation depth is assumed to be negative if _depH is negative (bit 7 active)
-   .scope osc
       ; pitch stuff
-      pitch:            OSCILLATOR_TIMBRE_BYTE_FIELD    ; offset (or absolute if no tracking)
-      fine:             OSCILLATOR_TIMBRE_BYTE_FIELD    ; unsigned (only up)
-      track:            OSCILLATOR_TIMBRE_BYTE_FIELD    ; keyboard tracking on/off (also affects portamento on/off)
-      pitch_mod_sel1:   OSCILLATOR_TIMBRE_BYTE_FIELD    ; selects source for pitch modulation (bit 7 on means none)
-      pitch_mod_dep1:   OSCILLATOR_TIMBRE_BYTE_FIELD    ; pitch modulation depth (Scale5)
-      pitch_mod_sel2:   OSCILLATOR_TIMBRE_BYTE_FIELD    ; selects source for pitch modulation (bit 7 on means none)
-      pitch_mod_dep2:   OSCILLATOR_TIMBRE_BYTE_FIELD    ; pitch modulation depth (Scale5)
+      osc_pitch            .res N_TIMBRES * MAX_OSCS_PER_VOICE    ; offset (or absolute if no tracking)
+      osc_fine             .res N_TIMBRES * MAX_OSCS_PER_VOICE    ; unsigned (only up)
+      osc_track            .res N_TIMBRES * MAX_OSCS_PER_VOICE    ; keyboard tracking on/off (also affects portamento on/off)
+      osc_pitch_mod_sel1   .res N_TIMBRES * MAX_OSCS_PER_VOICE    ; selects source for pitch modulation (bit 7 on means none)
+      osc_pitch_mod_dep1   .res N_TIMBRES * MAX_OSCS_PER_VOICE    ; pitch modulation depth (Scale5)
+      osc_pitch_mod_sel2   .res N_TIMBRES * MAX_OSCS_PER_VOICE    ; selects source for pitch modulation (bit 7 on means none)
+      osc_pitch_mod_dep2   .res N_TIMBRES * MAX_OSCS_PER_VOICE    ; pitch modulation depth (Scale5)
 
       ; volume stuff
-      lrmid:            OSCILLATOR_TIMBRE_BYTE_FIELD    ; 0, 64, 128 or 192 for mute, L, R or center
-      volume:           OSCILLATOR_TIMBRE_BYTE_FIELD    ; oscillator volume
-      amp_sel:          OSCILLATOR_TIMBRE_BYTE_FIELD    ; amplifier select: gate, or one of the envelopes
-      vol_mod_sel:      OSCILLATOR_TIMBRE_BYTE_FIELD    ; volume modulation source
-      vol_mod_dep:      OSCILLATOR_TIMBRE_BYTE_FIELD    ; volume modulation depth
+      osc_lrmid            .res N_TIMBRES * MAX_OSCS_PER_VOICE    ; 0, 64, 128 or 192 for mute, L, R or center
+      osc_volume           .res N_TIMBRES * MAX_OSCS_PER_VOICE    ; oscillator volume
+      osc_amp_sel          .res N_TIMBRES * MAX_OSCS_PER_VOICE    ; amplifier select: gate, or one of the envelopes
+      osc_vol_mod_sel      .res N_TIMBRES * MAX_OSCS_PER_VOICE    ; volume modulation source
+      osc_vol_mod_dep      .res N_TIMBRES * MAX_OSCS_PER_VOICE    ; volume modulation depth
 
       ; waveform stuff
-      waveform:         OSCILLATOR_TIMBRE_BYTE_FIELD    ; including pulse width (PSG format)
-      pulse:            OSCILLATOR_TIMBRE_BYTE_FIELD    ; pulse width
-      pwm_sel:          OSCILLATOR_TIMBRE_BYTE_FIELD    ; selects source to modulate pulse width
-      pwm_dep:          OSCILLATOR_TIMBRE_BYTE_FIELD    ; pwm modulation depth
-      ; etc.
+      osc_waveform         .res N_TIMBRES * MAX_OSCS_PER_VOICE    ; including pulse width (PSG format)
+      osc_pulse            .res N_TIMBRES * MAX_OSCS_PER_VOICE    ; pulse width
+      osc_pwm_sel          .res N_TIMBRES * MAX_OSCS_PER_VOICE    ; selects source to modulate pulse width
+      osc_pwm_dep          .res N_TIMBRES * MAX_OSCS_PER_VOICE    ; pwm modulation depth
+
+
+   ; FM general stuff
+      fm_con              .res N_TIMBRES   ; the connection algorithm of the timbre (3 bits)
+      fm_fl               .res N_TIMBRES   ; feedback level (3 bits)
+      fm_op_en            .res N_TIMBRES   ; operator enable (4 bits) (also acts as FM enable)
+      fm_lr               .res N_TIMBRES   ; Channels L/R (2 bits) (!!! stored in bits 6 and 7)
+      ; pitch related
+      fm_pitch            .res N_TIMBRES    ; offset (or absolute if no tracking)
+      fm_fine             .res N_TIMBRES    ; unsigned (only up)
+      fm_track            .res N_TIMBRES    ; keyboard tracking on/off (also affects portamento on/off)
+      fm_pitch_mod_sel    .res N_TIMBRES    ; selects source for pitch modulation (bit 7 on means none)
+      fm_pitch_mod_dep    .res N_TIMBRES    ; pitch modulation depth (Scale5)
+   
+
+   ; FM Operators
+      op_level            .res N_TIMBRES * N_OPERATORS  ; volume (!!! attenuation: higher level means lower output volume) (7 bits)
+      op_vol_sens         .res N_TIMBRES * N_OPERATORS  ; volume sensitivity on/off
+      ; pitch related
+      op_mul              .res N_TIMBRES * N_OPERATORS  ; multiplier for the frequency (4 bits)
+      op_dt1              .res N_TIMBRES * N_OPERATORS  ; fine detune (3 bits)
+      op_dt2              .res N_TIMBRES * N_OPERATORS  ; coarse detune (2 bits)
+      ; envelope
+      op_ar               .res N_TIMBRES * N_OPERATORS  ; attack rate (5 bits)
+      op_d1r              .res N_TIMBRES * N_OPERATORS  ; decay rate 1 (classical decay)  (5 bits)
+      op_d1l              .res N_TIMBRES * N_OPERATORS  ; decay level (or sustain level)  (4 bits)
+      op_d2r              .res N_TIMBRES * N_OPERATORS  ; decay rate 2 (0 for sustain)    (5 bits)
+      op_rr               .res N_TIMBRES * N_OPERATORS  ; release rate    (4 bits)
+      op_ks               .res N_TIMBRES * N_OPERATORS  ; key scaling    (2 bits)
+.endstruct
+
+; allocate the actual memory
+timbre_data_start:
+.ifdef concerto_use_timbres_from_file
+   ; discard magic sequence at the start of the file (first 4 bytes)
+   .incbin CONCERTO_TIMBRES_PATH, 4, .sizeof(TimbreDataStruct)
+.else
+   .res .sizeof(TimbreDataStruct)
+.endif
+
+; communicate the size of the timbre data to other parts of the code
+; the size of the whole timbre bank
+timbre_data_size = .sizeof(TimbreDataStruct)
+.export timbre_data_size  ; 5888 bytes currently
+; the number of bytes per timbre
+timbre_data_count = timbre_data_size / N_TIMBRES ; 184 currently
+.export timbre_data_count
+
+; define the labels to access timbre data
+.scope Timbre
+   n_oscs  = timbre_data_start + TimbreDataStruct::n_oscs
+   n_envs  = timbre_data_start + TimbreDataStruct::n_envs
+   n_lfos  = timbre_data_start + TimbreDataStruct::n_lfos
+   porta   = timbre_data_start + TimbreDataStruct::porta
+   porta_r = timbre_data_start + TimbreDataStruct::porta_r
+   retrig  = timbre_data_start + TimbreDataStruct::retrig
+   vibrato = timbre_data_start + TimbreDataStruct::vibrato
+
+   .scope env
+      attackL = timbre_data_start + TimbreDataStruct::env_attackL
+      attackH = timbre_data_start + TimbreDataStruct::env_attackH
+      decayL = timbre_data_start + TimbreDataStruct::env_decayL
+      decayH = timbre_data_start + TimbreDataStruct::env_decayH
+      sustain = timbre_data_start + TimbreDataStruct::env_sustain
+      releaseL = timbre_data_start + TimbreDataStruct::env_releaseL
+      releaseH = timbre_data_start + TimbreDataStruct::env_releaseH
    .endscope
 
-   ; FM stuff
+   .scope lfo
+      rateH = timbre_data_start + TimbreDataStruct::lfo_rateH
+      rateL = timbre_data_start + TimbreDataStruct::lfo_rateL
+      wave = timbre_data_start + TimbreDataStruct::lfo_wave
+      retrig = timbre_data_start + TimbreDataStruct::lfo_retrig
+      offs = timbre_data_start + TimbreDataStruct::lfo_offs
+   .endscope
+
+   .scope osc
+      pitch = timbre_data_start + TimbreDataStruct::osc_pitch
+      fine = timbre_data_start + TimbreDataStruct::osc_fine
+      track = timbre_data_start + TimbreDataStruct::osc_track
+      pitch_mod_sel1 = timbre_data_start + TimbreDataStruct::osc_pitch_mod_sel1
+      pitch_mod_dep1 = timbre_data_start + TimbreDataStruct::osc_pitch_mod_dep1
+      pitch_mod_sel2 = timbre_data_start + TimbreDataStruct::osc_pitch_mod_sel2
+      pitch_mod_dep2 = timbre_data_start + TimbreDataStruct::osc_pitch_mod_dep2
+
+      lrmid = timbre_data_start + TimbreDataStruct::osc_lrmid
+      volume = timbre_data_start + TimbreDataStruct::osc_volume
+      amp_sel = timbre_data_start + TimbreDataStruct::osc_amp_sel
+      vol_mod_sel = timbre_data_start + TimbreDataStruct::osc_vol_mod_sel
+      vol_mod_dep = timbre_data_start + TimbreDataStruct::osc_vol_mod_dep
+
+      waveform = timbre_data_start + TimbreDataStruct::osc_waveform
+      pulse = timbre_data_start + TimbreDataStruct::osc_pulse
+      pwm_sel = timbre_data_start + TimbreDataStruct::osc_pwm_sel
+      pwm_dep = timbre_data_start + TimbreDataStruct::osc_pwm_dep
+   .endscope
+
    .scope fm_general
-      con:              TIMBRE_BYTE_FIELD   ; the connection algorithm of the timbre (3 bits)
-      fl:               TIMBRE_BYTE_FIELD   ; feedback level (3 bits)
-      op_en:            TIMBRE_BYTE_FIELD   ; operator enable (4 bits) (also acts as FM enable)
-      lr:               TIMBRE_BYTE_FIELD   ; Channels L/R (2 bits) (!!! stored in bits 6 and 7)
-      ; pitch related
-      pitch:            TIMBRE_BYTE_FIELD    ; offset (or absolute if no tracking)
-      fine:             TIMBRE_BYTE_FIELD    ; unsigned (only up)
-      track:            TIMBRE_BYTE_FIELD    ; keyboard tracking on/off (also affects portamento on/off)
-      pitch_mod_sel:   TIMBRE_BYTE_FIELD    ; selects source for pitch modulation (bit 7 on means none)
-      pitch_mod_dep:   TIMBRE_BYTE_FIELD    ; pitch modulation depth (Scale5)
+      con = timbre_data_start + TimbreDataStruct::fm_con
+      fl = timbre_data_start + TimbreDataStruct::fm_fl
+      op_en = timbre_data_start + TimbreDataStruct::fm_op_en
+      lr = timbre_data_start + TimbreDataStruct::fm_lr
+
+      pitch = timbre_data_start + TimbreDataStruct::fm_pitch
+      fine = timbre_data_start + TimbreDataStruct::fm_fine
+      track = timbre_data_start + TimbreDataStruct::fm_track
+      pitch_mod_sel = timbre_data_start + TimbreDataStruct::fm_pitch_mod_sel
+      pitch_mod_dep = timbre_data_start + TimbreDataStruct::fm_pitch_mod_dep
    .endscope
 
    .scope operators
-      level:            OPERATOR_TIMBRE_BYTE_FIELD  ; volume (needs to be converted to attenuation) (7 bits)
-      vol_sens:             OPERATOR_TIMBRE_BYTE_FIELD  ; volume sensitivity. (How) does the operator respond to the note's volume?
-      ; pitch related
-      mul:              OPERATOR_TIMBRE_BYTE_FIELD  ; multiplier for the frequency (4 bits)
-      dt1:              OPERATOR_TIMBRE_BYTE_FIELD  ; fine detune (?) (didn't work in YM2151 UI program) (3 bits)
-      dt2:              OPERATOR_TIMBRE_BYTE_FIELD  ; coarse detune (2 bits)
-      ; envelope
-      ar:               OPERATOR_TIMBRE_BYTE_FIELD  ; attack rate (5 bits)
-      d1r:              OPERATOR_TIMBRE_BYTE_FIELD  ; decay rate 1 (classical decay)  (5 bits)
-      d1l:              OPERATOR_TIMBRE_BYTE_FIELD  ; decay level (or sustain level)  (4 bits)
-      d2r:              OPERATOR_TIMBRE_BYTE_FIELD  ; decay rate 2 (0 for sustain)    (5 bits)
-      rr:               OPERATOR_TIMBRE_BYTE_FIELD  ; release rate    (4 bits)
-      ks:               OPERATOR_TIMBRE_BYTE_FIELD  ; key scaling    (2 bits)
+      level = timbre_data_start + TimbreDataStruct::op_level
+      vol_sens = timbre_data_start + TimbreDataStruct::op_vol_sens
+
+      mul = timbre_data_start + TimbreDataStruct::op_mul
+      dt1 = timbre_data_start + TimbreDataStruct::op_dt1
+      dt2 = timbre_data_start + TimbreDataStruct::op_dt2
+
+      ar = timbre_data_start + TimbreDataStruct::op_ar
+      d1r = timbre_data_start + TimbreDataStruct::op_d1r
+      d1l = timbre_data_start + TimbreDataStruct::op_d1l
+      d2r = timbre_data_start + TimbreDataStruct::op_d2r
+      rr = timbre_data_start + TimbreDataStruct::op_rr
+      ks = timbre_data_start + TimbreDataStruct::op_ks
    .endscope
-data_end:
-timbre_data_size = data_end - data_start
-.export timbre_data_size  ; 5888 bytes currently
-data_count = timbre_data_size / N_TIMBRES ; 184 currently
 .endscope
 
 
@@ -164,9 +245,6 @@ copying:
    .byte 128 ; which timbre to copy. negative is none
 pasting:
    .byte 0   ; where to paste
-
-.export command_preamble
-.export command_string
 
 ; converts the value in .A from screen code to petscii
 screen2petscii:
@@ -212,10 +290,6 @@ assemble_command_string:
    iny
    rts
 
-; opens file for 
-open_file:
-
-   rts
 
 ; more info about the Commodore DOS
 ; https://en.wikipedia.org/wiki/Commodore_DOS
@@ -267,12 +341,12 @@ save_timbre:
    plx
    txa
    clc
-   adc #(<Timbre::data_start)
+   adc #(<timbre_data_start)
    sta timbre_pointer
-   lda #(>Timbre::data_start)
+   lda #(>timbre_data_start)
    adc #0
    sta timbre_pointer+1
-   ldy #Timbre::data_count
+   ldy #timbre_data_count
 @loop:
    lda (timbre_pointer)
    jsr CHROUT
@@ -344,12 +418,12 @@ load_timbre:
    plx
    txa
    clc
-   adc #(<Timbre::data_start)
+   adc #(<timbre_data_start)
    sta timbre_pointer
-   lda #(>Timbre::data_start)
+   lda #(>timbre_data_start)
    adc #0
    sta timbre_pointer+1
-   ldy #Timbre::data_count
+   ldy #timbre_data_count
 @loop:
    jsr CHRIN
    sta (timbre_pointer)
@@ -579,9 +653,9 @@ init_timbres:
 
 ; sets the timbre pointer to the start of the timbre data
 initialize_timbre_pointer:
-   lda #<Timbre::data_start
+   lda #<timbre_data_start
    sta timbre_pointer
-   lda #>Timbre::data_start
+   lda #>timbre_data_start
    sta timbre_pointer+1
    rts
 
@@ -603,7 +677,7 @@ copy_paste:
    bpl :+
    rts    ; exit if no preset is being copied
 :  stx pasting
-   ldx #Timbre::data_count
+   ldx #timbre_data_count
    jsr initialize_timbre_pointer
 @loop:
    ldy copying
@@ -628,7 +702,7 @@ dump_to_chrout:
    jsr CHROUT
    ; write timbre data
    jsr initialize_timbre_pointer
-   ldx #Timbre::data_count
+   ldx #timbre_data_count
 @loop_parameters:
    ldy #0
 @loop_timbres:
@@ -662,7 +736,7 @@ restore_from_chrin:
    bne @abort
    ; read timbre data
    jsr initialize_timbre_pointer
-   ldx #Timbre::data_count
+   ldx #timbre_data_count
 @loop_parameters:
    ldy #0
 @loop_timbres:
