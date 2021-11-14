@@ -30,36 +30,7 @@ osc_panmute:   .byte 0
 ; depth, i.e. the modulation source is added to the destination with a 
 ; prefactor of 1. However, you can go up to 127 aka 1111111 (at your own risk!)
 
-; Pitch modulation depth is defined by a different format that saves some CPU
-; cycles (because it is a 16 bit modulation it's worth it).
-; That format is termed Scale5, which is
-; intended to be a cheap approximation of exponential
-; scaling.
-; An ordinary binary number N and a Scale5 number
-; are multiplied the following way.
-; The Scale5 number format is as follows. The 8 bits are assigned as
-; SLLLHHHH
-; S is the sign of the modulation depth
-; HHHH is a binary number indicating how many
-; times N gets right shifted.
-; LLL is a binary number that must assume a value from 0 to 4.
-; It is one of five sub-levels between powers of 2.
-; Since the right shifts can only produce divisions by powers of 2,
-; these sub-levels are intended to fill in the gaps between powers of 2
-; as evenly as possible.
-; Beware: HHHH denotes how much N is scaled DOWN
-; LLL denotes how much N is scaled UP (but only just below the next power of 2)
-; I know ... a bit complicated. Sorry pals.
-; Believe me, it's faster than plain 8 bit multiplication.
-; Basically, you can multiply with one of the five binary numbers
-; %1.000
-; %1.001
-; %1.010
-; %1.100
-; %1.110
-; and right shift the result up to 15 times. (only in practice, the right shift is done first)
-; These values are chosen to be distributed relatively evenly on a logarithmic scale.
-
+; The scale5 format is used for pitch modulation (see scale5.asm)
 
 ; MODULATION SOURCE NUMBER FORMAT
 ; -------------------------------
@@ -666,13 +637,22 @@ end_env: ; jump here when done with all envelopes
    sta voi_pitch
    stz voi_fine
 @do_vibrato:
+   ; check if channel vibrato is active
+   lda voices::Voice::vibrato::active, x
+   beq @timbre_vibrato
+@channel_vibrato:
+   lda voices::Voice::vibrato::amount, x
+   bra @vibrato_multiplication
+@timbre_vibrato:
    ldy voices::Voice::timbre, x
    lda timbres::Timbre::vibrato, y
+@vibrato_multiplication:
    bpl :+
    jmp @skip_vibrato
-:  ldx #3 ; select LFO as modsource
-   ; actually, this routine could be sloightly optimized for this particular use case... (unsigned mod depth)
-   SCALE5_16 voi_modsourcesL, voi_modsourcesH, timbres::Timbre::vibrato, voi_fine, voi_pitch
+:  sta scale5_moddepth
+   ldx #3 ; select LFO as modsource
+   ; actually, this routine could be slightly optimized for this particular use case... (unsigned mod depth)
+   SCALE5_16 voi_modsourcesL, voi_modsourcesH, voi_fine, voi_pitch
 
    
 @skip_vibrato:
@@ -713,12 +693,14 @@ end_env: ; jump here when done with all envelopes
 @donetrack_fm:
    ; modulation
    ; source indexed by X
-   ; depth indexed by Y
+   ; depth stored in scale5_moddepth
    ; pitch mod source
    ldx timbres::Timbre::fm_general::pitch_mod_sel, y
    bpl :+
    jmp @skip_pitchmod_fm
-:  SCALE5_16 voi_modsourcesL, voi_modsourcesH, timbres::Timbre::fm_general::pitch_mod_dep, osc_fine, osc_pitch
+:  lda timbres::Timbre::fm_general::pitch_mod_dep, y
+   sta scale5_moddepth
+   SCALE5_16 voi_modsourcesL, voi_modsourcesH, osc_fine, osc_pitch
 @skip_pitchmod_fm:
 
 
@@ -903,13 +885,17 @@ next_osc:
    ldx timbres::Timbre::osc::pitch_mod_sel1, y
    bpl :+
    jmp @skip_pitchmod1
-:  SCALE5_16 voi_modsourcesL, voi_modsourcesH, timbres::Timbre::osc::pitch_mod_dep1, osc_fine, osc_pitch
+:  lda timbres::Timbre::osc::pitch_mod_dep1, y
+   sta scale5_moddepth
+   SCALE5_16 voi_modsourcesL, voi_modsourcesH, osc_fine, osc_pitch
 @skip_pitchmod1:
    ; pitch mod source 2
    ldx timbres::Timbre::osc::pitch_mod_sel2, y
    bpl :+
    jmp @skip_pitchmod2
-:  SCALE5_16 voi_modsourcesL, voi_modsourcesH, timbres::Timbre::osc::pitch_mod_dep2, osc_fine, osc_pitch
+:  lda timbres::Timbre::osc::pitch_mod_dep2, y
+   sta scale5_moddepth
+   SCALE5_16 voi_modsourcesL, voi_modsourcesH, osc_fine, osc_pitch
 @skip_pitchmod2:
 
    ; compute frequency

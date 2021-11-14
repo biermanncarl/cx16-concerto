@@ -58,6 +58,12 @@
       posL:    VOICE_BYTE_FIELD   ; current position in slide (fine, note). Overwrites note as long as active
       posH:    VOICE_BYTE_FIELD
    .endscope
+
+   ; vibrato settings, overrides the vibrato setting of the timbre
+   .scope vibrato
+      active:  VOICE_BYTE_FIELD   ; if inactive, the timbre setting is used
+      amount:  VOICE_BYTE_FIELD   ; scale5 value
+   .endscope
 .endscope
 
 
@@ -169,7 +175,7 @@ init_voices:
 ; available.
 ; If a note is currently active on the channel, the action depends on whether it is the same timbre or not.
 ; If it's the same timbre, retrigger and portamento are applied as specified in the timbre settings.
-; If it's a different timbre, the old note is replaced entirely (just as if there was no note).
+; If it's a different timbre, the old note is replaced entirely (just as if there was no note played previously).
 play_note:
    ldx note_channel
    ldy note_timbre
@@ -338,7 +344,7 @@ retrigger_note:
 
 ; checks if there are enough VERA oscillators and FM voices available
 ; and, in that case, reserves them for the new voice.
-; Also resets portamento.
+; Also resets portamento and vibrato.
 ; expects channel index in X, timbre index in Y
 ; returns A=1 if successful, A=0 otherwise (zero flag set accordingly)
 ; doesn't preserve X and Y
@@ -355,8 +361,9 @@ start_note:
    lda FMmap::nfv ; check if there's an FM voice available
    bne :+
    jmp @unsuccessful ; no FM voice available -> can't play note
-:  ; reset portamento
+:  ; reset portamento and vibrato
    stz Voice::pitch_slide::active, x
+   stz Voice::vibrato::active, x
    ; get oscillators from and update free oscillators ringlist
    ; x: offset in voice data
    ; y: offset in freeosclist (but first, it is timbre index)
@@ -674,6 +681,23 @@ set_pitchslide_rate:
 @free_slide:
    lda #3
    sta Voice::pitch_slide::active, x
+   rts
+
+
+; set vibrato amount
+; If vibrato was inactive before, it gets activated by this subroutine.
+set_vibrato_amount:
+   ldx note_channel
+   lda vibrato_amount
+   bne @activate
+@inactivate:
+   stz Voice::vibrato::active, x
+   rts
+@activate:
+   jsr map_twos_complement_to_scale5
+   sta Voice::vibrato::amount, x
+   lda #1
+   sta Voice::vibrato::active, x
    rts
 
 

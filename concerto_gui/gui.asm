@@ -1933,7 +1933,7 @@ draw_fm_op:
 ; utility subroutines
 ; -------------------
 
-; on the GUI, no modsource is 0, but in the synth engine, it is 128 (bit 7 set)
+; on the GUI, "no modulation source" is 0, but in the synth engine, it is 128 (bit 7 set)
 ; The following two routines map between those two formats.
 map_modsource_from_gui:
    cmp #0
@@ -1966,66 +1966,6 @@ map_signed_7bit_to_twos_complement:
    dec
    eor #%01111111
 @done:
-   rts
-
-map_input: .byte 0
-map_result: .byte 0
-map_scale5_to_twos_complement:
-   sta map_input
-   and #%01110000
-   lsr
-   lsr
-   lsr
-   lsr
-   pha
-   lda map_input
-   and #%00001111
-   eor #%00001111 ; higher number means lower magnitude (because more rightshifts)
-   tay
-   pla
-   clc
-   dey
-@loop:
-   bmi @end_loop
-   adc #5
-   dey
-   bra @loop
-@end_loop:
-   inc ; lift by one, because 0 is forbidden (scale5 doesn't support 0 modulation depth, so GUI shouldn't show it either)
-   ldy map_input
-   bpl :+
-   eor #%11111111
-   inc
-:  rts
-
-map_twos_complement_to_scale5:
-   stz map_result
-   cmp #0
-   bpl :+
-   eor #%11111111
-   inc
-   ldy #128
-   sty map_result
-:  ldy #15
-   dec
-   sec
-@loop:
-   sbc #5
-   bcc @end_loop
-   dey
-   bra @loop
-@end_loop:
-   ; carry IS clear
-   adc #5
-   asl
-   asl
-   asl
-   asl
-   adc map_result
-   sta map_result
-   tya
-   clc
-   adc map_result
    rts
 
 
@@ -2119,7 +2059,7 @@ write_global:
    iny
    lda global::comps, y ; if this value is 0, that means vibrato off, which is represented as a negative value internally
    beq :+
-   jsr map_twos_complement_to_scale5
+   jsr concerto_synth::map_twos_complement_to_scale5
    sta concerto_synth::timbres::Timbre::vibrato, x
    rts
 :  lda #$FF
@@ -2302,7 +2242,7 @@ write_osc:
    iny
    iny
    lda osc::comps, y
-   jsr map_twos_complement_to_scale5
+   jsr concerto_synth::map_twos_complement_to_scale5
    sta concerto_synth::timbres::Timbre::osc::pitch_mod_dep1, x
    rts
 @pitchmoddep2:
@@ -2310,7 +2250,7 @@ write_osc:
    iny
    iny
    lda osc::comps, y
-   jsr map_twos_complement_to_scale5
+   jsr concerto_synth::map_twos_complement_to_scale5
    sta concerto_synth::timbres::Timbre::osc::pitch_mod_dep2, x
    rts
 @pwmdep:
@@ -2741,7 +2681,7 @@ write_fm_gen:
    iny
    iny
    lda fm_gen::comps, y
-   jsr map_twos_complement_to_scale5
+   jsr concerto_synth::map_twos_complement_to_scale5
    sta concerto_synth::timbres::Timbre::fm_general::pitch_mod_dep, x
    rts
 
@@ -2915,7 +2855,7 @@ refresh_global:
    ; vibrato amount edit
    lda concerto_synth::timbres::Timbre::vibrato, x
    bmi :+
-   jsr map_scale5_to_twos_complement
+   jsr concerto_synth::map_scale5_to_twos_complement
    bra :++
 :  lda #0
 :  ldy #(3*checkbox_data_size+2*drag_edit_data_size+2*arrowed_edit_data_size-2)
@@ -3008,12 +2948,12 @@ refresh_osc:
    sta osc::comps, y
    ; pitch mod depth 1
    lda concerto_synth::timbres::Timbre::osc::pitch_mod_dep1, x
-   jsr map_scale5_to_twos_complement
+   jsr concerto_synth::map_scale5_to_twos_complement
    ldy #(tab_selector_data_size+7*listbox_data_size+1*checkbox_data_size+5*drag_edit_data_size-2)
    sta osc::comps, y
    ; pitch mod depth 2
    lda concerto_synth::timbres::Timbre::osc::pitch_mod_dep2, x
-   jsr map_scale5_to_twos_complement
+   jsr concerto_synth::map_scale5_to_twos_complement
    ldy #(tab_selector_data_size+7*listbox_data_size+1*checkbox_data_size+6*drag_edit_data_size-2)
    sta osc::comps, y
    ; pwm depth
@@ -3187,7 +3127,7 @@ refresh_fm_gen:
    sta fm_gen::comps, y
    ; pitch mod depth
    lda concerto_synth::timbres::Timbre::fm_general::pitch_mod_dep, x
-   jsr map_scale5_to_twos_complement
+   jsr concerto_synth::map_scale5_to_twos_complement
    ldy #(5*checkbox_data_size+4*drag_edit_data_size+2*listbox_data_size+1*arrowed_edit_data_size-2)
    sta fm_gen::comps, y
 

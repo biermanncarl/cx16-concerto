@@ -23,8 +23,8 @@ command is addressed. If the command does not address a specific channel
 |              5 | Set pitchbend position. | Note | Fine tune | --- |
 |              6 | Set volume increase rate. The rate is a 16 bit number. Negative slopes are done using integer overflow. | Rate low | Rate high | --- |
 |              7 | Set volume | Volume (aka velocity) | --- | --- |
-|              8 | Set vibrato increase rate. | Rate low | Rate high | --- |
-|              9 | Set vibrato amount | Amount | --- | --- |
+|              8 | Set vibrato amount | Amount | --- | --- |
+|              9 | unused | | | |
 |             10 | unused | | | |
 |             11 | unused | | | |
 |             12 | unused | | | |

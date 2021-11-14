@@ -66,6 +66,7 @@
 .include "voices.asm"
 .include "synth_tick.asm"
 .include "my_isr.asm"
+.include "scale5.asm"
 ; This just provides some macros which can be used by the host app. Doesn't do anything on its own:
 .include "presets.asm"
 
@@ -79,6 +80,7 @@ pitchslide_position_note = r2H
 pitchslide_rate_fine = r3L
 pitchslide_rate_note = r3H
 pitchslide_mode = r0H
+vibrato_amount = r2L
 ; Interface read-only
 ; These bytes store the number of available voices on the PSG and the FM chip.
 ; They are exposed to enable e.g. visual feedback how many voices are free
@@ -181,6 +183,20 @@ set_pitchslide_position = voices::set_pitchslide_position
 ;              mode:           r0H
 ; AFFECTS: A, X
 set_pitchslide_rate = voices::set_pitchslide_rate
+
+; concerto_synth::set_vibrato_amount
+; Controls how much the LFO modulates the voice's pitch. Values from 0 to 75
+; are valid. The frequency and waveform of the LFO is dictated by the timbre's
+; settings.
+; Calling this function temporarily overwrites the "vibrato" setting of the
+; timbre.
+; The original setting is restored by passing 0 as the modulation amount,
+; after channel inactivity or upon timbre change on the channel.
+; The LFO must be activated in the timbre for vibrato!
+; PARAMETERS:
+;              channel number: r0L
+;              vibrato amount: r2L
+set_vibrato_amount = voices::set_vibrato_amount
 
 ; concerto_synth::dump_timbres
 ; Dumps the entirety of timbre data as a byte stream to CHROUT.

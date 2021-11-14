@@ -676,7 +676,7 @@ SYNTH_MACROS_INC = 1
 ; and %LLL is the number of the sub-level
 ; skipping is NOT done in this macro if modsource select is "none"
 ; modsourceH is also allowed to have a sign bit (bit 7)
-.macro SCALE5_16 modsourceL, modsourceH, moddepth, resultL, resultH
+.macro SCALE5_16 modsourceL, modsourceH, resultL, resultH
    ; mzpbf will hold the sign
    stz mzpbf
 
@@ -692,9 +692,6 @@ SYNTH_MACROS_INC = 1
    beq :+
    inc mzpbf
 :
-
-   lda moddepth, y
-   sta scale5_moddepth
 
    ; jump to macro-parameter independent code, which can be reused (hence, it is outside the macro)
    ; you can read that subroutine as if it was part of this macro.
