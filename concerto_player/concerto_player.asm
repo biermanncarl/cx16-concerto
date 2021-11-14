@@ -108,8 +108,8 @@ concerto_player_tick:
    .word @play_note
    .word @release_note
    .word @stop_note
-   .word 0 ; pitchbend rate
-   .word 0 ; pitchbend pos
+   .word @pitchbend_rate
+   .word @pitchbend_position
    .word 0 ; volume rate
    .word 0 ; volume pos
    .word 0 ; vibrato rate
@@ -135,9 +135,7 @@ concerto_player_tick:
    jmp @increment_address
 @play_note:
    ; get channel number
-   lda (zp_pointer), y
-   and #%00001111
-   sta concerto_synth::note_channel
+   jsr read_channel
    iny
    lda (zp_pointer), y
    sta concerto_synth::note_timbre
@@ -151,31 +149,53 @@ concerto_player_tick:
    lda #4
    jmp @increment_address
 @release_note:
-   lda (zp_pointer), y
-   and #%00001111
-   sta concerto_synth::note_channel
+   jsr read_channel
    jsr concerto_synth::release_note
    lda #1
    jmp @increment_address
 @stop_note:
-   lda (zp_pointer), y
-   and #%00001111
-   sta concerto_synth::note_channel
+   jsr read_channel
    jsr concerto_synth::stop_note
    lda #1
+   jmp @increment_address
+@pitchbend_rate:
+   jsr read_channel
+   iny
+   lda (zp_pointer), y
+   sta concerto_synth::pitchslide_rate_fine
+   iny
+   lda (zp_pointer), y
+   sta concerto_synth::pitchslide_rate_note
+   iny
+   lda (zp_pointer), y
+   sta concerto_synth::pitchslide_mode
+   jsr concerto_synth::set_pitchslide_rate
+   lda #4
+   jmp @increment_address
+@pitchbend_position:
+   jsr read_channel
+   iny
+   lda (zp_pointer), y
+   sta concerto_synth::pitchslide_position_fine
+   iny
+   lda (zp_pointer), y
+   sta concerto_synth::pitchslide_position_note
+   jsr concerto_synth::set_pitchslide_position
+   lda #3
    jmp @increment_address
 
 @end_track:
    jsr concerto_synth::panic
    lda repeat
    bne :+
-   stz start_address+1
+   stz start_address+1 ; turn player off
    rts ; return if there is no repeat
 :  lda start_address
    sta data_pointer
    lda start_address+1
    sta data_pointer+1
    jmp concerto_player_tick ; continue reading commands if repeat is on
+
 @increment_address:
    ; expect address increment in .A
    clc
@@ -185,6 +205,14 @@ concerto_player_tick:
    inc data_pointer+1
 :  ; process next command, until wait command or song's end
    jmp concerto_player_tick
+
+
+; reads the addressed channel number from the current song position
+read_channel:
+   lda (zp_pointer), y
+   and #%00001111
+   sta concerto_synth::note_channel
+   rts
 
 .endscope
 

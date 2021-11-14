@@ -645,6 +645,7 @@ set_pitchslide_position:
 ; set slide rate
 ; parameters according to labels in concerto_synth.asm
 ; if slide has been inactive, activate and set slide position to the original note
+; The slide stops when it reaches the originally played note.
 set_pitchslide_rate:
    ldx note_channel
    lda pitchslide_rate_fine
@@ -656,7 +657,22 @@ set_pitchslide_rate:
    lda Voice::pitch, x
    sta Voice::pitch_slide::posH, x
    stz Voice::pitch_slide::posL, x
-:  lda #3
+:  ; activate slide and set the mode
+   lda pitchslide_mode
+   beq @free_slide
+@bounded_slide:
+   ; check whether we're going up or down
+   lda pitchslide_rate_note
+   bmi :+
+   ; going up
+   lda #1
+   bra :++
+:  ; going down
+   lda #2
+:  sta Voice::pitch_slide::active, x
+   rts
+@free_slide:
+   lda #3
    sta Voice::pitch_slide::active, x
    rts
 

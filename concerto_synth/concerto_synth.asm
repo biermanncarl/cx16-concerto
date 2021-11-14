@@ -78,6 +78,7 @@ pitchslide_position_fine = r2L
 pitchslide_position_note = r2H
 pitchslide_rate_fine = r3L
 pitchslide_rate_note = r3H
+pitchslide_mode = r0H
 ; Interface read-only
 ; These bytes store the number of available voices on the PSG and the FM chip.
 ; They are exposed to enable e.g. visual feedback how many voices are free
@@ -161,7 +162,7 @@ panic = voices::panic
 ; concerto_synth::set_pitchslide_position
 ; Sets the current pitch for the pitch slide on a given channel.
 ; If pitch slide had been inactive previously, it gets activated and the slide rate is set to zero.
-; If coarse position is set to 255, the pitch of the played note is assumed, instead.
+; If coarse position is set to 255, the pitch of the played note is assumed, instead (such as to easily reset the pitch to the note played).
 ; PARAMETERS:  
 ;              channel number:  r0L
 ;              position coarse: r2H
@@ -172,10 +173,12 @@ set_pitchslide_position = voices::set_pitchslide_position
 ; concerto_synth::set_pitchslide_rate
 ; Sets the rate for the pitch slide on a given channel.
 ; If the pitch slide had been inactive previously, it gets activated and is started at the note's current pitch.
+; mode = 0 yields a free slide, mode = 1 yields a slide that stops at the original note.
 ; PARAMETERS:  
 ;              channel number: r0L
 ;              rate coarse:    r3H
 ;              rate fine:      r3L
+;              mode:           r0H
 ; AFFECTS: A, X
 set_pitchslide_rate = voices::set_pitchslide_rate
 

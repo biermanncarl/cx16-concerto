@@ -68,6 +68,7 @@ set_pitchslide_upwards:
    sta concerto_synth::pitchslide_rate_note
    lda #20
    sta concerto_synth::pitchslide_rate_fine
+   stz concerto_synth::pitchslide_mode
    lda #0
    sta concerto_synth::note_channel
    jsr concerto_synth::set_pitchslide_rate
@@ -81,6 +82,7 @@ set_pitchslide_downwards:
    sta concerto_synth::pitchslide_rate_note
    lda #(255-25) ; +0.9.  
    sta concerto_synth::pitchslide_rate_fine
+   stz concerto_synth::pitchslide_mode
    lda #0
    sta concerto_synth::note_channel
    jsr concerto_synth::set_pitchslide_rate

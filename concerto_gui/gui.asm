@@ -2062,7 +2062,7 @@ write_global:
    clc
    adc #4
    tay ; there's no component type where the data is before this index
-   ; now determine which component has been dragged
+   ; now jump to component which has been clicked/dragged
    phx
    lda ms_curr_component_id
    asl
