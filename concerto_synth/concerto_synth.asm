@@ -61,6 +61,7 @@
 .include "x16.asm"
 .include "ym2151.asm"
 .include "pitch_data.asm"
+.include "vibrato_lut.asm"
 .include "synth_macros.asm"
 .include "timbres.asm"
 .include "voices.asm"
@@ -197,6 +198,15 @@ set_pitchslide_rate = voices::set_pitchslide_rate
 ;              channel number: r0L
 ;              vibrato amount: r2L
 set_vibrato_amount = voices::set_vibrato_amount
+
+; concerto_synth::set_vibrato_ramp
+; The vibrato amount can be set to increase over time. This command sets the
+; increase rate and the maximum vibrato level that shall be reached.
+; PARAMETERS:
+;              channel number: r0L
+;              slope:          .A
+;              maximum level:  .Y (values 1 to 22)
+set_vibrato_ramp = voices::set_vibrato_ramp
 
 ; concerto_synth::dump_timbres
 ; Dumps the entirety of timbre data as a byte stream to CHROUT.

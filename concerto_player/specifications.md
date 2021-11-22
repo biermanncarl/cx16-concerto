@@ -23,8 +23,8 @@ command is addressed. If the command does not address a specific channel
 |              5 | Set pitchbend rate. The rate is a 16 bit number. Negative slopes are done using integer overflow. | Rate low | Rate high | mode |
 |              6 | Set volume | Volume (aka velocity) | --- | --- |
 |              7 | Set volume increase rate. The rate is a 16 bit number. Negative slopes are done using integer overflow. | Rate low | Rate high | --- |
-|              8 | Set vibrato amount | Amount | --- | --- |
-|              9 | unused | | | |
+|              8 | Set vibrato amount | Amount (0 to 27) | --- | --- |
+|              9 | Set vibrato ramp | Slope | Maximum amount (0 to 27) | --- |
 |             10 | unused | | | |
 |             11 | unused | | | |
 |             12 | unused | | | |
@@ -53,6 +53,33 @@ slide that descends 30 fine steps each tick, use the values 226 for rate low
 and 255 for rate high. Or to descend 2 semitones per tick, use 0 for rate low
 and 254 for rate high.
 
+
+8: Set vibrato amount
+---------------------
+
+This command sets the amount of vibrato on a note. If vibrato is active in the
+timbre, it gets overridden temporarily. The effect will last until one of the
+three conditions is fulfilled:
+* the vibrato is set to 0,
+* a hard note-off,
+* the channel is inactive for at least one tick,
+* the timbre is changed.
+Value 0 deactivates vibrato, the values 1 to 27 correspond to a pitch
+modulation of 28 to 54. This shift of values and the limited vibrato range is
+due to the way the vibrato amount is represented internally and how the vibrato
+ramp is being done.
+
+If a vibrato ramp was set previously, the ramp is cancelled and needs to be set
+again afterwards if desired.
+
+
+9: Set vibrato ramp
+-------------------
+
+This command allows to let the vibrato amount gradually increase. The slope
+defines how quick the amount rises. The maximum value sets the amount at which
+the vibrato does not further increase. Negative slopes are currently not
+supported.
 
 
 Copyright 2021 Carl Georg Biermann

@@ -113,7 +113,7 @@ concerto_player_tick:
    .word 0 ; volume pos
    .word 0 ; volume rate
    .word @vibrato_amount
-   .word 0 ; unused
+   .word @vibrato_ramp
    .word 0 ; unused
    .word 0 ; unused
    .word 0 ; unused
@@ -191,6 +191,18 @@ concerto_player_tick:
    sta concerto_synth::vibrato_amount
    jsr concerto_synth::set_vibrato_amount
    lda #2
+   jmp @increment_address
+@vibrato_ramp:
+   jsr read_channel
+   iny
+   lda (zp_pointer), y ; slope
+   tax
+   iny
+   lda (zp_pointer), y ; maximum level
+   tay
+   txa
+   jsr concerto_synth::set_vibrato_ramp
+   lda #3
    jmp @increment_address
 
 @end_track:

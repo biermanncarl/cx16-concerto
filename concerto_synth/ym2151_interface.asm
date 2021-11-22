@@ -25,6 +25,13 @@ operator_stride:
    .byte (2*N_FM_VOICES), (256-N_FM_VOICES), (2*N_FM_VOICES)
 
 
+; Lookup table that converts notes from 0..11 semitones to 0..15 semitones,
+; because, for some reason, the YM2151 spreads 12 semitones over the range of 0..15
+; Mathematically speaking, one would have to multiply by 4/3 and round down to get the YM2151 note value.
+semitones_ym2151:
+   .byte 0,1,2,3,5,6,7,9,10,11,13,14
+
+
 
 ; naive writing procedure to the YM2151
 ; potentially burns a lot of cycles in the waiting loop

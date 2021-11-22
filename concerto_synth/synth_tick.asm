@@ -73,6 +73,8 @@ lfo_counter = mzpbc
 bittest     = mzpbd  ; for Sample and Hold RNG
 ; all modulation sources
 modsource_index = mzpbe ; keeps track of which modsource we're processing
+; vibrato
+max_level = mzpbc
 ; FM
 keycode     = mzpbc 
 ; PSG Oscillators
@@ -636,13 +638,46 @@ end_env: ; jump here when done with all envelopes
    lda voices::Voice::pitch, x
    sta voi_pitch
    stz voi_fine
+
 @do_vibrato:
    ; check if channel vibrato is active
-   lda voices::Voice::vibrato::active, x
-   beq @timbre_vibrato
-@channel_vibrato:
-   lda voices::Voice::vibrato::amount, x
-   bra @vibrato_multiplication
+   lda voices::Voice::vibrato::current_level, x
+   bmi @timbre_vibrato
+@channel_vibrato: ; sorry for the spaghetti code in this section (lasts until @timbre_vibrato)
+   ; channel vibrato, with possible vibrato ramp being active.
+   lda voices::Voice::vibrato::max_level, x
+   sta max_level
+   lda voices::Voice::vibrato::ticks, x
+   sec
+   sbc voices::Voice::vibrato::slope, x
+   bcs @update_vibrato_slope_ticks ; when the result is >= 0, we do not need to advance to the next level
+   ; overflow: go to next level(s)
+   ; determine next level and new vibrato tick count
+   ldy voices::Voice::vibrato::current_level, x
+:  adc vibrato_delays_lut, y ; carry is clear, because subtraction overflow occurred
+   bcs @ticks_positive_again ; check if we're back to positive.
+   iny
+   cpy max_level ; check if maximum level is reached
+   bcc :- ; add delay times for successive vibrato levels until we're back in the positive range
+@max_level_reached:
+   lda max_level
+   sta voices::Voice::vibrato::current_level, x
+   stz voices::Voice::vibrato::slope, x
+   bra @load_channel_vibrato_amount
+@ticks_positive_again:
+   sta voices::Voice::vibrato::ticks, x
+   iny ; do the final level increase
+   cpy max_level
+   beq @max_level_reached
+   tya
+   sta voices::Voice::vibrato::current_level, x
+@update_vibrato_slope_ticks:
+   sta voices::Voice::vibrato::ticks, x
+   ldy voices::Voice::vibrato::current_level, x
+@load_channel_vibrato_amount:
+   ; load vibrato amount
+   lda vibrato_scale5_lut, y
+   bra @vibrato_multiplication ; scale5 vibrato amount is in A
 @timbre_vibrato:
    ldy voices::Voice::timbre, x
    lda timbres::Timbre::vibrato, y
@@ -712,7 +747,7 @@ end_env: ; jump here when done with all envelopes
    ldy #0
    lda osc_pitch
    sec
-   sbc #3 ; this is just to correct for wrong YM frequency in the emulation R38
+   sbc #3 ; this is just to correct for YM octaves starting at C# and not C, and wrong YM frequency in the emulation R38
 @sub_loop:
    iny
    sbc #12
@@ -720,7 +755,7 @@ end_env: ; jump here when done with all envelopes
    adc #12
    ; semitone is in A. Now translate it to stupid YM2151 format
    tax
-   lda semitones_ym2151, x
+   lda voices::semitones_ym2151, x
    sta keycode
    ldx voice_index
    dey

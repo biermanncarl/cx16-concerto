@@ -70,6 +70,12 @@ map_scale5_to_twos_complement:
    inc
 :  rts
 
+; human readable conversion:
+; let X be the binary number (only positive for the sake of this formula)
+; then the high nibble of the result is the number of the sub-level (X-1) mod 5
+; and the low nibble of the result is the number of right-shifts 15 - (X-1) // 5
+; so that the resulting byte looks like
+; $ ((X-1) mod 5) (15 - (X-1)//5)
 map_twos_complement_to_scale5:
    stz scale5_temp_number
    cmp #0

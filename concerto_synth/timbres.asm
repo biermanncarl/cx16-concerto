@@ -535,7 +535,7 @@ load_default_timbre:
    lda #$FF
    sta Timbre::vibrato, x
    ; LFO
-   lda #10
+   lda #13
    sta Timbre::lfo::rateH, x
    stz Timbre::lfo::rateL, x
    stz Timbre::lfo::wave, x

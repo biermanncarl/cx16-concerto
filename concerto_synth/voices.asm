@@ -61,8 +61,10 @@
 
    ; vibrato settings, overrides the vibrato setting of the timbre
    .scope vibrato
-      active:  VOICE_BYTE_FIELD   ; if inactive, the timbre setting is used
-      amount:  VOICE_BYTE_FIELD   ; scale5 value
+      current_level: VOICE_BYTE_FIELD ; refers to vibrato lookup-table, 128 or higher means inactive
+      ticks:         VOICE_BYTE_FIELD ; current "vibrato tick" countdown until the next vibrato level
+      slope:         VOICE_BYTE_FIELD ; how many "vibrato ticks" per "synth tick" are counted?
+      max_level:     VOICE_BYTE_FIELD ; this is where the slope stops
    .endscope
 .endscope
 
@@ -363,7 +365,8 @@ start_note:
    jmp @unsuccessful ; no FM voice available -> can't play note
 :  ; reset portamento and vibrato
    stz Voice::pitch_slide::active, x
-   stz Voice::vibrato::active, x
+   lda #128
+   sta Voice::vibrato::current_level, x
    ; get oscillators from and update free oscillators ringlist
    ; x: offset in voice data
    ; y: offset in freeosclist (but first, it is timbre index)
@@ -691,14 +694,33 @@ set_vibrato_amount:
    lda vibrato_amount
    bne @activate
 @inactivate:
-   stz Voice::vibrato::active, x
+   lda #128
+   sta Voice::vibrato::current_level, x
    rts
 @activate:
-   jsr map_twos_complement_to_scale5
-   sta Voice::vibrato::amount, x
+   dec ; amount 1 actually means 0+MINIMAL_VIBRATO_DEPTH
+   sta Voice::vibrato::current_level, x
+   stz Voice::vibrato::slope, x
    lda #1
-   sta Voice::vibrato::active, x
+   sta Voice::vibrato::ticks, x
    rts
+
+; set vibrato slope
+; If vibrato was inactive before, it gets activated by this subroutine
+; note channel: note_channel
+; slope: .A
+; max level: .Y
+set_vibrato_ramp:
+   ldx note_channel
+   sta Voice::vibrato::slope, x
+   dey ; shift maximum amount to zero-based (instead of 1-based)
+   tya
+   sta Voice::vibrato::max_level, x
+   stz Voice::vibrato::ticks, x
+   lda Voice::vibrato::current_level, x
+   bpl :+
+   stz Voice::vibrato::current_level, x ; reset to zero when inactive previously
+:  rts
 
 
 
