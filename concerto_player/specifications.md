@@ -19,7 +19,7 @@ command is addressed. If the command does not address a specific channel
 |              1 | Play note | Timbre number | pitch | velocity (0...63) |
 |              2 | Release note (aka soft note-off) | --- | --- | --- |
 |              3 | Stop note (aka hard note-off) | --- | --- | --- |
-|              4 | Set pitchbend position. | Note | Fine tune | --- |
+|              4 | Set pitchbend position. | Fine tune | Note | --- |
 |              5 | Set pitchbend rate. The rate is a 16 bit number. Negative slopes are done using integer overflow. | Rate low | Rate high | mode |
 |              6 | Set volume | Volume (aka velocity) | --- | --- |
 |              7 | Set volume increase rate. The rate is a 16 bit number. Negative slopes are done using integer overflow. | Rate low | Rate high | --- |
