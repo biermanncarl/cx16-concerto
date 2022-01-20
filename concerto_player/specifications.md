@@ -24,7 +24,7 @@ command is addressed. If the command does not address a specific channel
 |              6 | Set volume | Volume (aka velocity) | --- | --- |
 |              7 | Set volume increase rate. The rate is a 16 bit number. Negative slopes are done using integer overflow. | Rate low | Rate high | --- |
 |              8 | Set vibrato amount | Amount (0 to 27) | --- | --- |
-|              9 | Set vibrato ramp | Slope | Maximum amount (0 to 27) | --- |
+|              9 | Set vibrato ramp | Slope | Threshold amount (0 to 27) | --- |
 |             10 | unused | | | |
 |             11 | unused | | | |
 |             12 | unused | | | |
@@ -77,9 +77,8 @@ again afterwards if desired.
 -------------------
 
 This command allows to let the vibrato amount gradually increase. The slope
-defines how quick the amount rises. The maximum value sets the amount at which
-the vibrato does not further increase. Negative slopes are currently not
-supported.
+defines how quick the amount changes. The threshold sets the vibrato amount at
+which the slope is stopped. Negative slopes are supported.
 
 
-Copyright 2021 Carl Georg Biermann
+Copyright 2021-2022 Carl Georg Biermann

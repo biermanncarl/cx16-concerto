@@ -60,7 +60,7 @@ voi_modsourcesH:
 ; ZERO PAGE USAGE
 ; ***************
 ; give zero page variables more understandable names
-; mzpbb stays constant throughout the whole voice being processed
+; mzpbb stays constant throughout the whole voice being processed (voice index)
 ; mzpbc and mzpbd are reused per code section
 ; mzpbf and mzpbg are reserved for multiplications
 ; mzpbe is used for all modulation sources, but is reused afterwards
@@ -74,7 +74,8 @@ bittest     = mzpbd  ; for Sample and Hold RNG
 ; all modulation sources
 modsource_index = mzpbe ; keeps track of which modsource we're processing
 ; vibrato
-max_level = mzpbc
+threshold_level = mzpbc
+slope = mzpbd
 ; FM
 keycode     = mzpbc 
 ; PSG Oscillators
@@ -592,6 +593,7 @@ end_env: ; jump here when done with all envelopes
 
    ; This section of code determines the *voice* pitch. Voice pitch depends
    ; only on the note played, on the (global) vibrato and on the porta settings.
+   ; I.e. it does not depend on the individual oscillators' pitch settings.
    ; The resulting pitch will be added to all oscillators with enabled
    ; keyboard tracking.
 
@@ -645,30 +647,62 @@ end_env: ; jump here when done with all envelopes
    bmi @timbre_vibrato
 @channel_vibrato: ; sorry for the spaghetti code in this section (lasts until @timbre_vibrato)
    ; channel vibrato, with possible vibrato ramp being active.
-   lda voices::Voice::vibrato::max_level, x
-   sta max_level
-   lda voices::Voice::vibrato::ticks, x
+   ; The idea here is that we want to get a linear increase / decrease of modulation depth over time.
+   ; This is challenging, since Scale5 is an exponential format, and it is non-trivial to figure out how long
+   ; to wait in between individual Scale5 modulation depth levels.
+   ; This is what the table at the label "vibrato_delays_lut" is for.
+   ; The following code takes care of advancing as many ticks as specified by the "slope" set by the user
+   ; and advancing modulation depth levels in the case of overflow.
+   ; Multiple levels are advanced if necessary.
+   lda voices::Voice::vibrato::threshold_level, x ; read the threshold up to which the slope shall go.
+   sta threshold_level
+   lda voices::Voice::vibrato::slope, x ; read slope and check if we're going up or down
+   sta slope
+   bpl @vibrato_slope_going_up
+@vibrato_slope_going_down:
+   ; TODO: special case for crossing zero -> inactivate vibrato?
+   lda voices::Voice::vibrato::ticks, x ; this is the internal countdown to the next modulation level.
+   clc
+   adc slope
+   bcs @update_vibrato_slope_ticks ; when that did wrap around, we do not need to advance to the next level
+   ; no wrap around: go to next level(s)
+   ; determine next level and new vibrato tick count
+   ldy voices::Voice::vibrato::current_level, x
+   beq @threshold_level_reached ; catch the case where we're at level zero and the next step will be inactivating vibrato. We will not inactivat vibrato in this tick, but stay at the lowest nonzero amount for one tick longer and avoid an annoying glitch that way.
+:  dey
+   adc vibrato_delays_lut, y
+   bcs @ticks_positive_again_sldown
+   cpy threshold_level ; check if minimum level is reached 
+   bne :- ; add delay times for successive vibrato levels until we're back in the positive range
+   bra @threshold_level_reached
+@ticks_positive_again_sldown:
+   sta voices::Voice::vibrato::ticks, x
+   tya
+   sta voices::Voice::vibrato::current_level, x
+   bra @update_vibrato_slope_ticks
+@vibrato_slope_going_up:
+   lda voices::Voice::vibrato::ticks, x ; this is the internal countdown to the next modulation level.
    sec
-   sbc voices::Voice::vibrato::slope, x
+   sbc slope
    bcs @update_vibrato_slope_ticks ; when the result is >= 0, we do not need to advance to the next level
    ; overflow: go to next level(s)
    ; determine next level and new vibrato tick count
    ldy voices::Voice::vibrato::current_level, x
 :  adc vibrato_delays_lut, y ; carry is clear, because subtraction overflow occurred
-   bcs @ticks_positive_again ; check if we're back to positive.
+   bcs @ticks_positive_again_slup ; check if we're back to positive.
    iny
-   cpy max_level ; check if maximum level is reached
+   cpy threshold_level ; check if maximum level is reached
    bcc :- ; add delay times for successive vibrato levels until we're back in the positive range
-@max_level_reached:
-   lda max_level
+@threshold_level_reached:
+   lda threshold_level
    sta voices::Voice::vibrato::current_level, x
    stz voices::Voice::vibrato::slope, x
    bra @load_channel_vibrato_amount
-@ticks_positive_again:
+@ticks_positive_again_slup:
    sta voices::Voice::vibrato::ticks, x
    iny ; do the final level increase
-   cpy max_level
-   beq @max_level_reached
+   cpy threshold_level
+   beq @threshold_level_reached
    tya
    sta voices::Voice::vibrato::current_level, x
 @update_vibrato_slope_ticks:

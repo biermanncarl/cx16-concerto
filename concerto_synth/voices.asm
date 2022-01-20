@@ -64,7 +64,7 @@
       current_level: VOICE_BYTE_FIELD ; refers to vibrato lookup-table, 128 or higher means inactive
       ticks:         VOICE_BYTE_FIELD ; current "vibrato tick" countdown until the next vibrato level
       slope:         VOICE_BYTE_FIELD ; how many "vibrato ticks" per "synth tick" are counted?
-      max_level:     VOICE_BYTE_FIELD ; this is where the slope stops
+      threshold_level:     VOICE_BYTE_FIELD ; this is where the slope stops
    .endscope
 .endscope
 
@@ -713,9 +713,10 @@ set_vibrato_amount:
 set_vibrato_ramp:
    ldx note_channel
    sta Voice::vibrato::slope, x
-   dey ; shift maximum amount to zero-based (instead of 1-based)
+   dey ; shift maximum amount to zero-based (instead of 1-based, i.e. range 0-26 internal instead of 1-27 user)
+   ; the edge-case where the user might want to set 0 as the lower threshold for a downward slope must be considered. Then we get 255 as threshold.
    tya
-   sta Voice::vibrato::max_level, x
+   sta Voice::vibrato::threshold_level, x
    stz Voice::vibrato::ticks, x
    lda Voice::vibrato::current_level, x
    bpl :+
