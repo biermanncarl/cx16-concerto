@@ -177,9 +177,7 @@ play_note:
    sta concerto_synth::note_timbre
    lda #0
    sta concerto_synth::note_channel
-   sei
    jsr concerto_synth::play_note
-   cli
 
 end_mainloop:
 

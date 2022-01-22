@@ -192,7 +192,7 @@ SYNTH_MACROS_INC = 1
 ; two notes are apart.
 ; Expects voice index in X, timbre index in Y, slide distance in mzpbb
 .macro MUL8x8_PORTA ; uses ZP variables in the process
-   mp_slide_distance = mzpbb ; must be the same as in "continue_note"!
+   mp_slide_distance = cn_slide_distance ; must be the same as in "continue_note"!
    mp_return_value = mzpwb
    ; the idea is that portamento is finished in a constant time
    ; that means, rate must be higher, the larger the porta distance is

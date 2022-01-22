@@ -167,9 +167,6 @@ init_voices:
 
 ; Plays a note. needs info for channel, timbre, pitch and volume.
 ; Can be called from within the ISR and the main program.
-; Zero-Page variables used in this routine are the ones belonging to the ISR.
-; However, by calling SEI-CLI, it is prevented that they get messed up by the ISR, if the main program
-; calls this function. (If calling this from the main program, you MUST do SEI before! And CLI after)
 ; In this subroutine, register X usually contains the index of the voice.
 ; What exactly does this routine do?
 ; If no note is currently active on the channel, it plays a new note with retriggering envelopes,
@@ -226,7 +223,7 @@ play_note:
 ; expects channel index in X, timbre index in Y (additionally to the note_ variables)
 ; doesn't preserve X and Y
 continue_note:
-   cn_slide_distance = mzpbb
+   cn_slide_distance = mzpbe
    ; check if porta active
    lda timbres::Timbre::porta, y
    bne @setup_porta
@@ -274,7 +271,7 @@ retrigger_note:
    ; x: starts as voice index, becomes env1, env2, env3 sublattice offset by addition of N_VOICES
    ; ZP variable: is set to n_envs
    ; y: counter (and timbre index before that)
-   rn_number = mzpbb
+   rn_number = mzpbe
    stz Voice::fm::trigger_loaded, x
    phx
    phy
@@ -286,7 +283,7 @@ retrigger_note:
    stz Voice::env::phaseL, x
    stz Voice::env::phaseH, x
    ; figure out if envelope is active. If yes, set step to 1, if not set it to 0
-   cpy rn_number ;   if index<n_envs, env is active, i.e. if carry clear (that means, y<mzpba)
+   cpy rn_number ;   if index<n_envs, env is active, i.e. if carry clear (that means, y<rn_number)
    bcc :+
    stz Voice::env::step, x
    bra :++
@@ -352,7 +349,7 @@ retrigger_note:
 ; doesn't preserve X and Y
 ; This function is used within play_note.
 start_note:
-   stn_loop_counter = mzpbb
+   stn_loop_counter = mzpbe
    lda Oscmap::nfo
    cmp timbres::Timbre::n_oscs, y ; carry is set if nfo>=non (number of free oscillators >= number of oscillators needed)
    bcs :+
@@ -482,8 +479,6 @@ start_note:
 ; releases the oscillators occupied by it, so that they can be used by other notes.
 ; (and also mutes the PSG and FM voices)
 ; This subroutine can be called from within the ISR, or from the main program.
-; To ensure that the variables used by this function aren't messed up by the ISR,
-; SEI has to be done before this function is called in the main program.
 ; r0L: channel of note
 ; doesn't preserve X and Y
 stop_note:
@@ -497,7 +492,7 @@ stop_note:
    ; get oscillators from voice and put them back into free oscillators ringlist
    ; x: offset in voice data
    ; y: offset in freeosclist (but first, it is timbre index)
-   spn_loop_counter = mzpbe ; e and not b because it is also called from within synth_tick
+   spn_loop_counter = mzpbe ; e and not b because stop_note is also called from within synth_tick
    ldy Voice::timbre, x
    stz Voice::active, x
    lda timbres::Timbre::n_oscs, y
@@ -508,7 +503,6 @@ stop_note:
    ldy Oscmap::lfo
    lda Voice::osc_psg_map, x
    sta Oscmap::freeosclist, y
-   ; no sei/cli before/after this because: if stop_note is called from within the ISR it's unnecessary. if it's called from the main program, the whole rutine call needs to be braced by sei-cli
    VERA_MUTE_VOICE_A
    ; advance indices
    txa
@@ -567,7 +561,7 @@ stop_note:
 ; expects channel of note in r0L
 ; doesn't preserve X and Y
 release_note:
-   rln_env_counter = mzpbb
+   rln_env_counter = mzpbe
    ldx note_channel
    ; load timbre number
    ldy Voice::timbre, x
@@ -612,13 +606,14 @@ panic:
    bpl @loop
    jsr init_voices
    ; PSG Mute all
+   php
    sei
    ldx #(N_VOICES-1)
 @loop2:
    VERA_MUTE_VOICE_X
    dex
    bpl @loop2
-   cli
+   plp
    rts
 
 
