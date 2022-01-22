@@ -203,9 +203,9 @@ set_vibrato_amount = voices::set_vibrato_amount
 ; The vibrato amount can be set to increase over time. This command sets the
 ; increase rate and the maximum vibrato level that shall be reached.
 ; PARAMETERS:
-;              channel number: r0L
-;              slope:          .A
-;              maximum level:  .Y (values 1 to 22)
+;              channel number:  r0L
+;              slope:           .A
+;              threshold level: .Y (values 1 to 27 for positive slopes, values 0 to 26 for negative slopes)
 set_vibrato_ramp = voices::set_vibrato_ramp
 
 ; concerto_synth::dump_timbres

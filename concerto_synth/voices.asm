@@ -26,8 +26,14 @@
 
    ; general
    pitch:     VOICE_BYTE_FIELD
-   volume:    VOICE_BYTE_FIELD   ; voice's volume can be modified in real time. 128 is full volume, everything below is more quiet.
    timbre:    VOICE_BYTE_FIELD   ; which synth patch to use
+
+   ; volume
+   .scope vol
+      volume:     VOICE_BYTE_FIELD   ; voice's volume can be modified in real time. 128 is full volume, everything below is more quiet.
+      volume_low: VOICE_BYTE_FIELD   ; sublevels of volume, only relevant when working with slopes
+      slope:      VOICE_BYTE_FIELD   ; 0 is inactive, positive numbers go up, negative numbers go down
+   .endscope
 
    ; envelopes
    .scope env
@@ -685,6 +691,19 @@ set_pitchslide_rate:
    lda #3
    sta Voice::pitch_slide::active, x
    rts
+
+
+; set volume of a note on a channel
+; channel number in note_channel
+; new volume in .A
+set_volume:
+   ldx note_channel
+   sta Voice::vol::volume, x
+   stz Voice::vol::volume_low, x
+   stz Voice::vol::slope, x
+   ; update FM voice
+   lda Voice::active, x
+
 
 
 ; set vibrato amount

@@ -206,16 +206,19 @@ load_fm_timbre:
    rts
 
 
-
-
-; Triggers a note on the YM2151.
-; Expects note_timbre, note_channel, note_pitch and note_volume to be set accordingly.
-; This function is called from within retrigger_note
-trigger_fm_note:
+; Sets the volume of an FM voice
+; Only the operators that are marked as velocity-sensitive will be affected by
+; a change of volume.
+; Expects note_timbre and note_channel to be set accordingly.
+; The volume is read from the respective channel.
+; This function is called when a new note is being triggered, or upon volume updates
+; during a note.
+set_fm_voice_volume:
    tfm_operator_counter = mzpbb
    tfm_op_en = mzpbc
    ; (re)trigger FM voice (TBD later if it's done here)
    ldx note_channel
+   lda voices::Voice::note_volume, x
 
    ; key off
    lda #YM_KON
@@ -265,7 +268,7 @@ trigger_fm_note:
    ; advance running write address by multiple of 8 to get to the next operator
    ldy operator_counter
    clc
-   adc operator_stride-2, y ; -1 because operator_counter goes from 1-4, another -1 since 4 operators = 3 steps in between --> one less stride needed
+   adc operator_stride-2, y ; -1 because operator_counter goes from 1 to 4, another -1 since 4 operators = 3 steps in between --> one less stride needed
    pha
    ; advance read address offset
    txa
@@ -278,10 +281,13 @@ trigger_fm_note:
    ; pop running address
    pla
 
-   ; Pitch is done inside synth tick.
+   rts
 
-   ; load trigger
-   ; ************
+
+; Triggers a note on the YM2151.
+; Expects note_channel to be set accordingly.
+; This function is called from within retrigger_note
+trigger_fm_note:
    ldx note_channel
    lda #1
    sta Voice::fm::trigger_loaded, x
