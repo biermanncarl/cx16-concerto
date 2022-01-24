@@ -758,7 +758,9 @@ end_env: ; jump here when done with all envelopes
 @notrack_fm:
    lda timbres::Timbre::fm_general::fine, y
    sta osc_fine
-   lda timbres::Timbre::fm_general::pitch, y
+   lda #NOTRACK_CENTER
+   clc
+   adc timbres::Timbre::fm_general::pitch, y
    sta osc_pitch
 @donetrack_fm:
    ; modulation
@@ -948,7 +950,9 @@ next_osc:
    ; depth indexed by Y
    lda timbres::Timbre::osc::fine, y
    sta osc_fine
-   lda timbres::Timbre::osc::pitch, y
+   lda #NOTRACK_CENTER
+   clc
+   adc timbres::Timbre::osc::pitch, y
    sta osc_pitch
 @donetrack:
    ; pitch mod source 1

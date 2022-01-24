@@ -21,7 +21,8 @@
 .define N_OPERATORS 4
 .define MINIMAL_VIBRATO_DEPTH 28 ; when changing this, update create_vibrato_table.py accordingly (and run the script to generate a new table)!
 .define MAX_FILENAME_LENGTH 8
-.define FILE_VERSION 0 ; 0-255 specifying which version of Concerto presets is used
+.define NOTRACK_CENTER 60 ; when oscillator tracking is disabled, this is the default pitch value
+.define FILE_VERSION 0 ; 0-255 specifying which version of Concerto presets is used, stays zero during alpha releases despite possibly breaking changes in between
 
 
 .macro VOICE_BYTE_FIELD
