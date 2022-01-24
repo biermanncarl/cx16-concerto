@@ -41,6 +41,7 @@ write_ym2151:
 :  bit YM_data
    bmi :-  ; wait until ready flag is set
    sta YM_reg
+   nop
    sty YM_data
    rts
 
