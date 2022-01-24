@@ -68,6 +68,7 @@ voice_index = mzpbb
 ; envelopes
 env_counter = mzpbc
 n_envs      = mzpbd
+; mzpbe is used in the envelopes section indirectly, through the stop_note subroutine
 ; LFOs
 lfo_counter = mzpbc
 bittest     = mzpbd  ; for Sample and Hold RNG

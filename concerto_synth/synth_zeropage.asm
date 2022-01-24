@@ -15,13 +15,14 @@ mzpwf:   .word 0
 mzpwg:   .word 0
 
 ; my zero page bytes (ISR)
+mzpba:   .byte 0 ; concerto API register
 mzpbb:   .byte 0
 mzpbc:   .byte 0
 mzpbd:   .byte 0
-mzpbf:   .byte 0
+mzpbg:   .byte 0 ; concerto API register
 
 ; variables that are backed up before the ISR, and thus are save to use in the main program, too
 ; This is especially important for subroutines that shall be callable from both ISR and main program
 mzpbe:   .byte 0
-mzpbg:   .byte 0
+mzpbf:   .byte 0 ; concerto API register
 

@@ -597,7 +597,7 @@ draw_arrowed_edit:
 ; data1: number on display
 ; data2: bit 0: coarse/fine available, bit1: coarse/fine switch, bit2: signed
 draw_drag_edit:
-   dde_bittest = mzpbg ; mzpbg used! (use something else for bit-testing in this routine if this clashes with something else)
+   dde_bittest = mzpbf ; mzpbf used! (use something else for bit-testing in this routine if this clashes with something else)
    lda draw_x
    sta cur_x
    lda draw_y
@@ -741,7 +741,7 @@ draw_listbox:
 ; width in draw_width, height in draw_height (also marks number of strings)
 ; pointer to stringlist in str_pointer
 draw_lb_popup:
-   dlbp_line_counter = mzpbg
+   dlbp_line_counter = mzpbf
    lda draw_x
    sta cur_x
    lda draw_y

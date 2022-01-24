@@ -209,7 +209,7 @@ load_fm_timbre:
 
 
 ; Triggers a note on the YM2151.
-; Expects note_timbre, note_channel, note_pitch and note_volume to be set accordingly.
+; Expects note_timbre, note_channel, note_pitch and pln_volume to be set accordingly.
 ; This function is called from within retrigger_note
 trigger_fm_note:
    tfm_operator_counter = mzpbb
@@ -249,9 +249,10 @@ trigger_fm_note:
    lda timbres::Timbre::operators::level, x
    ldy timbres::Timbre::operators::vol_sens, x
    beq @no_volume_sensitivity
+   clc
+   adc #64 ; when note volume is minimal, this is how much the level gets reduced
    sec
-   sbc note_volume
-   adc #63 ; 63 - 1 for secretly added one and -1 for carry
+   sbc pln_volume ; note volume, range 1 to 64
    bpl @no_volume_sensitivity
    ; value is negative ... set it to minimum volume
    lda #127

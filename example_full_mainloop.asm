@@ -171,12 +171,11 @@ play_note:
    ; play note
    sta concerto_synth::note_pitch
    ;lda #MAX_VOLUME
-   lda concerto_gui::play_volume
-   sta concerto_synth::note_volume
    lda concerto_gui::Timbre
    sta concerto_synth::note_timbre
    lda #0
    sta concerto_synth::note_channel
+   lda concerto_gui::play_volume
    jsr concerto_synth::play_note
 
 end_mainloop:

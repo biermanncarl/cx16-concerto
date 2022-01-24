@@ -136,6 +136,7 @@ concerto_player_tick:
 @play_note:
    ; get channel number
    jsr read_channel
+   sta concerto_synth::note_channel
    iny
    lda (zp_pointer), y
    sta concerto_synth::note_timbre
@@ -143,64 +144,70 @@ concerto_player_tick:
    lda (zp_pointer), y
    sta concerto_synth::note_pitch
    iny
-   lda (zp_pointer), y
-   sta concerto_synth::note_volume
+   lda (zp_pointer), y ; load note volume
    jsr concerto_synth::play_note
    lda #4
    jmp @increment_address
 @release_note:
    jsr read_channel
+   sta concerto_synth::note_channel
    jsr concerto_synth::release_note
    lda #1
    jmp @increment_address
 @stop_note:
    jsr read_channel
+   sta concerto_synth::note_channel
    jsr concerto_synth::stop_note
    lda #1
    jmp @increment_address
 @pitchbend_position:
    jsr read_channel
+   tax
    iny
-   lda (zp_pointer), y
-   sta concerto_synth::pitchslide_position_fine
+   lda (zp_pointer), y ; fine position
+   pha
    iny
-   lda (zp_pointer), y
-   sta concerto_synth::pitchslide_position_note
+   lda (zp_pointer), y ; coarse position
+   ply
    jsr concerto_synth::set_pitchslide_position
    lda #3
    jmp @increment_address
 @pitchbend_rate:
    jsr read_channel
+   tax
    iny
    lda (zp_pointer), y
-   sta concerto_synth::pitchslide_rate_fine
+   pha ; fine rate
    iny
    lda (zp_pointer), y
-   sta concerto_synth::pitchslide_rate_note
+   pha ; coarse rate
    iny
    lda (zp_pointer), y
    sta concerto_synth::pitchslide_mode
+   ply ; coarse rate
+   pla ; fine rate
    jsr concerto_synth::set_pitchslide_rate
    lda #4
    jmp @increment_address
 
 @vibrato_amount:
    jsr read_channel
+   tax
    iny
    lda (zp_pointer), y
-   sta concerto_synth::vibrato_amount
    jsr concerto_synth::set_vibrato_amount
    lda #2
    jmp @increment_address
 @vibrato_ramp:
    jsr read_channel
-   iny
-   lda (zp_pointer), y ; slope
    tax
    iny
-   lda (zp_pointer), y ; maximum level
-   tay
-   txa
+   lda (zp_pointer), y
+   pha ; slope
+   iny
+   lda (zp_pointer), y
+   tay ; threshold level
+   pla ; slope
    jsr concerto_synth::set_vibrato_ramp
    lda #3
    jmp @increment_address
@@ -228,11 +235,10 @@ concerto_player_tick:
    jmp concerto_player_tick
 
 
-; reads the addressed channel number from the current song position
+; reads the number of the channel being addressed from the current song position
 read_channel:
    lda (zp_pointer), y
    and #%00001111
-   sta concerto_synth::note_channel
    rts
 
 .endscope

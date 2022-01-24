@@ -1470,7 +1470,7 @@ check_button:
    ; check if mouse is over the button
    ; this code is nearly identical to the check_checkbox bit,
    ; apart from the number of INYs required, and the different Y position (off by 1)
-   cb_width = mzpbg
+   cb_width = mzpbf
    ; this is basically an "mouse is inside box" check
    ; with variable width
    ; get the width of the checkbox
@@ -1620,7 +1620,7 @@ check_arrowed_edit:
 
 ; check drag edit for mouse click
 check_drag_edit:
-   cde_bittest = mzpbg
+   cde_bittest = mzpbf
    ; this is basically an "mouse is inside box" check
    ; with variable width
    ; get edit's options
@@ -1675,7 +1675,7 @@ check_drag_edit:
    rts
 
 check_checkbox:
-   ccb_width = mzpbg
+   ccb_width = mzpbf
    ; this is basically an "mouse is inside box" check
    ; with variable width
    ; get the width of the checkbox
@@ -1720,7 +1720,7 @@ check_checkbox:
 ; actually, we should reuse this code!
 ; need some sort of universal "mouse is on line Y and within X range" test
 check_listbox:
-   clb_width = mzpbg
+   clb_width = mzpbf
    ; this is basically an "mouse is inside box" check
    ; with variable width
    ; get the width of the listbox
