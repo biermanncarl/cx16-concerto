@@ -600,7 +600,7 @@ load_synth_gui:
 
 ; reads through the stack and draws everything
 draw_gui:
-   dg_counter = mzpba ; counter variable
+   dg_counter = mzpbe ; counter variable
    stz dg_counter
 @loop:
    ; TODO: clear area on screen (but when exactly is it needed?)
@@ -937,7 +937,7 @@ click_tab_select:
    rts
 
 click_arrowed_edit:
-   cae_value = mzpba
+   cae_value = mzpbe
    ; check if one of the arrows has been clicked
    lda ms_curr_data
    bne :+
@@ -1278,7 +1278,7 @@ drag_drag_edit:
 
 ; goes through the stack of active GUI panels and refreshes every one of them
 refresh_gui:
-   rfg_counter = mzpba ; counter variable
+   rfg_counter = mzpbe ; counter variable
    stz rfg_counter
 @loop:
    ; call panel-specific drawing subroutine
@@ -1392,7 +1392,7 @@ mouse_get_component:
    gc_pointer = mzpwa
    gc_cx = mzpwd     ; x and y in multiples of 4 (!) pixels to support half character grid
    gc_cy = mzpwd+1
-   gc_counter = mzpba
+   gc_counter = mzpbe
    ; determine mouse position in multiples of 4 pixels (divide by 4)
    lda ms_curr_x+1
    lsr
@@ -1470,7 +1470,7 @@ check_button:
    ; check if mouse is over the button
    ; this code is nearly identical to the check_checkbox bit,
    ; apart from the number of INYs required, and the different Y position (off by 1)
-   cb_width = mzpbg
+   cb_width = mzpbf
    ; this is basically an "mouse is inside box" check
    ; with variable width
    ; get the width of the checkbox
@@ -1620,7 +1620,7 @@ check_arrowed_edit:
 
 ; check drag edit for mouse click
 check_drag_edit:
-   cde_bittest = mzpbg
+   cde_bittest = mzpbf
    ; this is basically an "mouse is inside box" check
    ; with variable width
    ; get edit's options
@@ -1675,7 +1675,7 @@ check_drag_edit:
    rts
 
 check_checkbox:
-   ccb_width = mzpbg
+   ccb_width = mzpbf
    ; this is basically an "mouse is inside box" check
    ; with variable width
    ; get the width of the checkbox
@@ -1720,7 +1720,7 @@ check_checkbox:
 ; actually, we should reuse this code!
 ; need some sort of universal "mouse is on line Y and within X range" test
 check_listbox:
-   clb_width = mzpbg
+   clb_width = mzpbf
    ; this is basically an "mouse is inside box" check
    ; with variable width
    ; get the width of the listbox
@@ -2539,7 +2539,7 @@ write_lfo:
    rts
 
 write_fm_gen:
-   wfm_bits = mzpba
+   wfm_bits = mzpbe
    ; invalidate all FM timbres that have been loaded onto the YM2151 (i.e. enforce reload after timbre has been changed)
    jsr concerto_synth::voices::panic
    jsr concerto_synth::voices::invalidate_fm_timbres

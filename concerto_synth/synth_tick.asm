@@ -62,12 +62,13 @@ voi_modsourcesH:
 ; give zero page variables more understandable names
 ; mzpbb stays constant throughout the whole voice being processed (voice index)
 ; mzpbc and mzpbd are reused per code section
-; mzpbf and mzpbg are reserved for multiplications
-; mzpbe is used for all modulation sources, but is reused afterwards
+; mzpbf is reserved for multiplications
+; mzpbe is used for all modulation sources, but is reused afterwards, and is also used in all voice-handling subroutines
 voice_index = mzpbb
 ; envelopes
 env_counter = mzpbc
 n_envs      = mzpbd
+; mzpbe is used in the envelopes section indirectly, through the stop_note subroutine
 ; LFOs
 lfo_counter = mzpbc
 bittest     = mzpbd  ; for Sample and Hold RNG
@@ -757,7 +758,9 @@ end_env: ; jump here when done with all envelopes
 @notrack_fm:
    lda timbres::Timbre::fm_general::fine, y
    sta osc_fine
-   lda timbres::Timbre::fm_general::pitch, y
+   lda #NOTRACK_CENTER
+   clc
+   adc timbres::Timbre::fm_general::pitch, y
    sta osc_pitch
 @donetrack_fm:
    ; modulation
@@ -947,7 +950,9 @@ next_osc:
    ; depth indexed by Y
    lda timbres::Timbre::osc::fine, y
    sta osc_fine
-   lda timbres::Timbre::osc::pitch, y
+   lda #NOTRACK_CENTER
+   clc
+   adc timbres::Timbre::osc::pitch, y
    sta osc_pitch
 @donetrack:
    ; pitch mod source 1

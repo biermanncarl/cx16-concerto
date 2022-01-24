@@ -41,6 +41,7 @@ write_ym2151:
 :  bit YM_data
    bmi :-  ; wait until ready flag is set
    sta YM_reg
+   nop
    sty YM_data
    rts
 
@@ -252,9 +253,10 @@ set_fm_voice_volume:
    lda timbres::Timbre::operators::level, x
    ldy timbres::Timbre::operators::vol_sens, x
    beq @no_volume_sensitivity
+   clc
+   adc #64 ; when note volume is minimal, this is how much the level gets reduced
    sec
-   sbc note_volume
-   adc #63 ; 63 - 1 for secretly added one and -1 for carry
+   sbc pln_volume ; note volume, range 1 to 64
    bpl @no_volume_sensitivity
    ; value is negative ... set it to minimum volume
    lda #127

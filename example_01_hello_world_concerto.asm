@@ -27,15 +27,12 @@ start:
    ; play a note
    lda #60
    sta concerto_synth::note_pitch
-   lda #63
-   sta concerto_synth::note_volume
    lda #0
    sta concerto_synth::note_channel
    lda #0
    sta concerto_synth::note_timbre
-   sei
+   lda #63 ; note volume
    jsr concerto_synth::play_note
-   cli
 
    ; and wait until key is pressed
 mainloop:

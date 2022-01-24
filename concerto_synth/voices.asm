@@ -10,6 +10,7 @@
 ; release_note
 ; stop_note       - release note puts a note into release phase, whereas stop_note stops it immediately
 ; panic
+; TODO: add pitch slide, vibrato and volume routines here
 
 ; NOTE: synth voices DO NOT correspond to PSG voices.
 ; Instead, the single oscillators of a synth voice correspond
@@ -133,6 +134,8 @@
 .endmacro
 
 
+pln_volume = mzpbd ; note volume backup for play_note subroutine
+
 .include "ym2151_interface.asm"
 
 
@@ -173,9 +176,6 @@ init_voices:
 
 ; Plays a note. needs info for channel, timbre, pitch and volume.
 ; Can be called from within the ISR and the main program.
-; Zero-Page variables used in this routine are the ones belonging to the ISR.
-; However, by calling SEI-CLI, it is prevented that they get messed up by the ISR, if the main program
-; calls this function. (If calling this from the main program, you MUST do SEI before! And CLI after)
 ; In this subroutine, register X usually contains the index of the voice.
 ; What exactly does this routine do?
 ; If no note is currently active on the channel, it plays a new note with retriggering envelopes,
@@ -185,6 +185,10 @@ init_voices:
 ; If it's the same timbre, retrigger and portamento are applied as specified in the timbre settings.
 ; If it's a different timbre, the old note is replaced entirely (just as if there was no note played previously).
 play_note:
+   php
+   sei
+   inc ; compensate for max volume being 63, but the synth engine can handle 64. Consequently, volume 0 won't be silent.
+   sta pln_volume
    ldx note_channel
    ldy note_timbre
    ; check if there is an active note on the channel
@@ -215,8 +219,7 @@ play_note:
    ldx note_channel
    lda note_pitch
    sta Voice::pitch, x
-   lda note_volume
-   inc ; compensate for max volume being 63, but the synth engine can handle 64. Consequently, volume 0 won't be silent.
+   lda pln_volume
    sta Voice::volume, x
    lda note_timbre
    sta Voice::timbre, x
@@ -225,6 +228,7 @@ play_note:
    lda #1
    sta Voice::active,x
 @skip_play:
+   plp
    rts
 
 ; This subroutine is used in play_note in the case that a note with the same timbre as played is
@@ -232,7 +236,7 @@ play_note:
 ; expects channel index in X, timbre index in Y (additionally to the note_ variables)
 ; doesn't preserve X and Y
 continue_note:
-   cn_slide_distance = mzpbb
+   cn_slide_distance = mzpbe
    ; check if porta active
    lda timbres::Timbre::porta, y
    bne @setup_porta
@@ -280,7 +284,7 @@ retrigger_note:
    ; x: starts as voice index, becomes env1, env2, env3 sublattice offset by addition of N_VOICES
    ; ZP variable: is set to n_envs
    ; y: counter (and timbre index before that)
-   rn_number = mzpbb
+   rn_number = mzpbe
    stz Voice::fm::trigger_loaded, x
    phx
    phy
@@ -292,7 +296,7 @@ retrigger_note:
    stz Voice::env::phaseL, x
    stz Voice::env::phaseH, x
    ; figure out if envelope is active. If yes, set step to 1, if not set it to 0
-   cpy rn_number ;   if index<n_envs, env is active, i.e. if carry clear (that means, y<mzpba)
+   cpy rn_number ;   if index<n_envs, env is active, i.e. if carry clear (that means, y<rn_number)
    bcc :+
    stz Voice::env::step, x
    bra :++
@@ -358,7 +362,7 @@ retrigger_note:
 ; doesn't preserve X and Y
 ; This function is used within play_note.
 start_note:
-   stn_loop_counter = mzpbb
+   stn_loop_counter = mzpbe
    lda Oscmap::nfo
    cmp timbres::Timbre::n_oscs, y ; carry is set if nfo>=non (number of free oscillators >= number of oscillators needed)
    bcs :+
@@ -488,9 +492,7 @@ start_note:
 ; releases the oscillators occupied by it, so that they can be used by other notes.
 ; (and also mutes the PSG and FM voices)
 ; This subroutine can be called from within the ISR, or from the main program.
-; To ensure that the variables used by this function aren't messed up by the ISR,
-; SEI has to be done before this function is called in the main program.
-; r0L: channel of note
+; Expects note channel in note_channel
 ; doesn't preserve X and Y
 stop_note:
    ldx note_channel
@@ -499,11 +501,13 @@ stop_note:
    bne :+
    rts
 :
+   php
+   sei
    ; update freeosclist
    ; get oscillators from voice and put them back into free oscillators ringlist
    ; x: offset in voice data
    ; y: offset in freeosclist (but first, it is timbre index)
-   spn_loop_counter = mzpbe ; e and not b because it is also called from within synth_tick
+   spn_loop_counter = mzpbe ; e and not b because stop_note is also called from within synth_tick
    ldy Voice::timbre, x
    stz Voice::active, x
    lda timbres::Timbre::n_oscs, y
@@ -514,7 +518,6 @@ stop_note:
    ldy Oscmap::lfo
    lda Voice::osc_psg_map, x
    sta Oscmap::freeosclist, y
-   ; no sei/cli before/after this because: if stop_note is called from within the ISR it's unnecessary. if it's called from the main program, the whole rutine call needs to be braced by sei-cli
    VERA_MUTE_VOICE_A
    ; advance indices
    txa
@@ -533,6 +536,7 @@ stop_note:
    ldy Voice::timbre, x
    lda timbres::Timbre::fm_general::op_en, y
    bne :+
+   plp
    rts
 :  ; FM was used
    ; FM key off
@@ -565,15 +569,18 @@ stop_note:
    ADVANCE_FVL_POINTER FMmap::lfv
    ; increment available voices
    inc FMmap::nfv
+   plp
    rts
 
 
 ; Puts a note into its release phase.
 ; Basically just puts every envelope into the release phase.
-; expects channel of note in r0L
+; expects channel of note in note_channel
 ; doesn't preserve X and Y
 release_note:
-   rln_env_counter = mzpbb
+   rln_env_counter = mzpbe
+   php
+   sei
    ldx note_channel
    ; load timbre number
    ldy Voice::timbre, x
@@ -594,11 +601,13 @@ release_note:
    ; FM key off
    lda timbres::Timbre::fm_general::op_en, y
    bne :+
+   plp
    rts
 :  ldx note_channel
    lda #YM_KON
    ldy Voice::fm_voice_map, x
    jsr write_ym2151
+   plp
    rts
 
 
@@ -606,6 +615,8 @@ release_note:
 
 ; stop all voices (aka panic off)
 panic:
+   php
+   sei
    ldx #(N_VOICES-1)
 @loop:
    lda Voice::active, x
@@ -618,13 +629,12 @@ panic:
    bpl @loop
    jsr init_voices
    ; PSG Mute all
-   sei
    ldx #(N_VOICES-1)
 @loop2:
    VERA_MUTE_VOICE_X
    dex
    bpl @loop2
-   cli
+   plp
    rts
 
 
@@ -633,9 +643,8 @@ panic:
 ; if slide was inactive beforehand, it is activated and its rate set to 0
 ; if position is set to 255, it will automatically set the slide position to
 ; the note that was originally played.
+; Expects channel in .X, coarse position in .A, fine position in .Y
 set_pitchslide_position:
-   ldx note_channel
-   lda pitchslide_position_note
    cmp #255
    bne :+
 @reset:
@@ -645,7 +654,7 @@ set_pitchslide_position:
    beq :++
 @normal:
 :  sta Voice::pitch_slide::posH, x
-   lda pitchslide_position_fine
+   tya
    sta Voice::pitch_slide::posL, x
 :  ; check if slide was active beforehand
    ; if yes, keep it going with the previously set slide rate (i.e. do nothing)
@@ -662,11 +671,10 @@ set_pitchslide_position:
 ; parameters according to labels in concerto_synth.asm
 ; if slide has been inactive, activate and set slide position to the original note
 ; The slide stops when it reaches the originally played note.
+; Expects channel in .X, coarse position in .Y, fine position in .A, mode in pitchslide_mode
 set_pitchslide_rate:
-   ldx note_channel
-   lda pitchslide_rate_fine
    sta Voice::pitch_slide::rateL, x
-   lda pitchslide_rate_note
+   tya
    sta Voice::pitch_slide::rateH, x
    lda Voice::pitch_slide::active, x
    bne :+
@@ -678,7 +686,7 @@ set_pitchslide_rate:
    beq @free_slide
 @bounded_slide:
    ; check whether we're going up or down
-   lda pitchslide_rate_note
+   lda Voice::pitch_slide::rateL, x
    bmi :+
    ; going up
    lda #1
@@ -708,9 +716,9 @@ set_volume:
 
 ; set vibrato amount
 ; If vibrato was inactive before, it gets activated by this subroutine.
+; Expects channel in .X, amount in .A
 set_vibrato_amount:
-   ldx note_channel
-   lda vibrato_amount
+   cmp #0
    bne @activate
 @inactivate:
    lda #128
@@ -726,15 +734,14 @@ set_vibrato_amount:
 
 ; set vibrato slope
 ; If vibrato was inactive before, it gets activated by this subroutine
-; note channel: note_channel
+; note channel: .X
 ; slope: .A
 ; max level: .Y
 set_vibrato_ramp:
-   ldx note_channel
    sta Voice::vibrato::slope, x
-   dey ; shift maximum amount to zero-based (instead of 1-based, i.e. range 0-26 internal instead of 1-27 user)
-   ; the edge-case where the user might want to set 0 as the lower threshold for a downward slope must be considered. Then we get 255 as threshold.
    tya
+   dec ; shift maximum amount to zero-based (instead of 1-based, i.e. range 0-26 internal instead of 1-27 user)
+   ; the edge-case where the user might want to set 0 as the lower threshold for a downward slope must be considered. Then we get 255 as threshold.
    sta Voice::vibrato::threshold_level, x
    stz Voice::vibrato::ticks, x
    lda Voice::vibrato::current_level, x

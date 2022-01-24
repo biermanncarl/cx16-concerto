@@ -35,15 +35,12 @@ my_custom_playback_routine:
    ; now play the note
    lda playback_note
    sta concerto_synth::note_pitch
-   lda #63
-   sta concerto_synth::note_volume
    lda #0
    sta concerto_synth::note_channel
    lda #0
    sta concerto_synth::note_timbre
-   sei
+   lda #63 ; note volume
    jsr concerto_synth::play_note
-   cli
    ; and play another note at another channel
    lda playback_note
    clc
@@ -51,9 +48,8 @@ my_custom_playback_routine:
    sta concerto_synth::note_pitch
    lda #1
    sta concerto_synth::note_channel
-   sei
+   lda #63 ; note volume
    jsr concerto_synth::play_note
-   cli
    ; increase pitch
    inc playback_note
    rts

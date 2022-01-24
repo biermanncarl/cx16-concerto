@@ -71,17 +71,16 @@
 ; This just provides some macros which can be used by the host app. Doesn't do anything on its own:
 .include "presets.asm"
 
+; Concerto API registers
+creg0 = mzpba
+creg1 = mzpbf
+creg2 = mzpbg
+
 ; Interface parameters
-note_channel = r0L
-note_timbre  = r0H
-note_pitch   = r1L
-note_volume  = r1H
-pitchslide_position_fine = r2L
-pitchslide_position_note = r2H
-pitchslide_rate_fine = r3L
-pitchslide_rate_note = r3H
-pitchslide_mode = r0H
-vibrato_amount = r2L
+note_channel = creg0
+note_timbre  = creg1
+note_pitch   = creg2
+pitchslide_mode = creg1
 ; Interface read-only
 ; These bytes store the number of available voices on the PSG and the FM chip.
 ; They are exposed to enable e.g. visual feedback how many voices are free
@@ -92,7 +91,7 @@ free_fm_voices = voices::FMmap::nfv
 ; concerto_synth::initialize
 ; subroutine to initialize the synth engine
 ; PARAMETERS: none
-; AFFECTS: A, X, Y
+; AFFECTS: .A, .X, .Y
 initialize:
 .ifndef concerto_use_timbres_from_file
    jsr timbres::init_timbres
@@ -103,13 +102,13 @@ initialize:
 ; concerto_synth::activate_synth
 ; subroutine to activate the synth engine (i.e. install the interrupt service routine)
 ; PARAMETERS: none
-; AFFECTS: A, X, Y
+; AFFECTS: .A, .X, .Y
 activate_synth = my_isr::launch_isr
 
 ; concerto_synth::deactivate_synth
 ; subroutine to deactivate the synth engine (i.e. stop voices and uninstall the interrupt service routine)
 ; PARAMETERS: none
-; AFFECTS: A, X, Y
+; AFFECTS: .A, .X, .Y
 deactivate_synth:
    jsr voices::panic
    jsr my_isr::shutdown_isr ; not the other way round? would be safer ...
@@ -119,47 +118,29 @@ deactivate_synth:
 ; Plays a note on the given channel. Replaces any other note being played previously on that channel.
 ; The new note does not get played if there aren't enough voices available at the VERA or the YM2151.
 ; PARAMETERS: 
-;              channel number: r0L
-;              note timbre:    r0H
-;              note pitch:     r1L
-;              note volume:    r1H
-; AFFECTS: A, X, Y
-; CAUTION: When calling this routine from outside the concerto_playback_routine (e.g. from the program's main loop)
-;          you have to ensure that the interrupt flag is set during the subroutine call.
-;          Otherwise, the ISR can interfere with this subroutine and cause corruption.
-;          Example usage:
-;
-;             PHP
-;             SEI
-;             JSR concerto_synth::play_note
-;             PLP
+;              channel number: note_channel
+;              note timbre:    note_timbre
+;              note pitch:     note_pitch
+;              note volume:    .A
+; AFFECTS: .A, .X, .Y
 play_note = voices::play_note
 
 ; concerto_synth::release_note
 ; Triggers the release phase of the note on a given channel. Even does it if the channel is inactive, but that shouldn't have an effect.
-; PARAMETERS:  channel number: r0L
-; AFFECTS: A, X, Y
+; PARAMETERS:  channel number: note_channel
+; AFFECTS: .A, .X, .Y
 release_note = voices::release_note
 
 ; concerto_synth::stop_note
 ; Immediately turns off the given channel.
-; PARAMETERS:  channel number: r0L
-; AFFECTS: A, X, Y
-; CAUTION: When calling this routine from outside the concerto_playback_routine (e.g. from the program's main loop)
-;          you have to ensure that the interrupt flag is set during the subroutine call.
-;          Otherwise, the ISR can interfere with this subroutine and cause corruption.
-;          Example usage:
-;
-;             PHP
-;             SEI
-;             JSR concerto_synth::stop_note
-;             PLP
+; PARAMETERS:  channel number: note_channel
+; AFFECTS: .A, .X, .Y
 stop_note = voices::stop_note
 
 ; concerto_synth::panic
 ; Immediately turns off all channels, all VERA PSG voices and FM voices.
 ; PARAMETERS:  none
-; AFFECTS: A, X, Y
+; AFFECTS: .A, .X, .Y
 panic = voices::panic
 
 ; concerto_synth::set_pitchslide_position
@@ -167,10 +148,10 @@ panic = voices::panic
 ; If pitch slide had been inactive previously, it gets activated and the slide rate is set to zero.
 ; If coarse position is set to 255, the pitch of the played note is assumed, instead (such as to easily reset the pitch to the note played).
 ; PARAMETERS:  
-;              channel number:  r0L
-;              position coarse: r2H
-;              position fine:   r2L
-; AFFECTS: A, X
+;              channel number:  .X
+;              position coarse: .A
+;              position fine:   .Y
+; AFFECTS: .A
 set_pitchslide_position = voices::set_pitchslide_position
 
 ; concerto_synth::set_pitchslide_rate
@@ -178,11 +159,11 @@ set_pitchslide_position = voices::set_pitchslide_position
 ; If the pitch slide had been inactive previously, it gets activated and is started at the note's current pitch.
 ; mode = 0 yields a free slide, mode = 1 yields a slide that stops at the original note.
 ; PARAMETERS:  
-;              channel number: r0L
-;              rate coarse:    r3H
-;              rate fine:      r3L
-;              mode:           r0H
-; AFFECTS: A, X
+;              channel number: .X
+;              rate coarse:    .Y
+;              rate fine:      .A
+;              mode:           pitchslide_mode
+; AFFECTS: .A
 set_pitchslide_rate = voices::set_pitchslide_rate
 
 ; concerto_synth::set_vibrato_amount
@@ -195,17 +176,19 @@ set_pitchslide_rate = voices::set_pitchslide_rate
 ; after channel inactivity or upon timbre change on the channel.
 ; The LFO must be activated in the timbre for vibrato!
 ; PARAMETERS:
-;              channel number: r0L
-;              vibrato amount: r2L
+;              channel number: .X
+;              vibrato amount: .A (values 0 to 27)
+; AFFECTS: .A
 set_vibrato_amount = voices::set_vibrato_amount
 
 ; concerto_synth::set_vibrato_ramp
 ; The vibrato amount can be set to increase over time. This command sets the
 ; increase rate and the maximum vibrato level that shall be reached.
 ; PARAMETERS:
-;              channel number:  r0L
-;              slope:           .A
-;              threshold level: .Y (values 1 to 27 for positive slopes, values 0 to 26 for negative slopes)
+;              channel number:   .X
+;              slope:            .A
+;              threshold level:  .Y (values 1 to 27 on positive slope, 0 to 26 on negative slope)
+; AFFECTS: .A
 set_vibrato_ramp = voices::set_vibrato_ramp
 
 ; concerto_synth::dump_timbres
@@ -213,7 +196,7 @@ set_vibrato_ramp = voices::set_vibrato_ramp
 ; Use this to save all timbre data to an already opened file.
 ; The number of bytes emitted by this function is always the same (within one version of Concerto).
 ; PARAMETERS: none
-; AFFECTS: A, X, Y
+; AFFECTS: .A, .X, .Y
 dump_timbres = timbres::dump_to_chrout
 
 ; concerto_synth::restore_timbres
@@ -221,9 +204,9 @@ dump_timbres = timbres::dump_to_chrout
 ; Use this to load all timbre data from an already opened file.
 ; The number of bytes consumed by this function is always the same (within one version of Concerto).
 ; PARAMETERS: none
-; AFFECTS: A, X, Y
-; RETURNS: 1 in A if successfully loaded
-;          0 in A if an error occurred (e.g. wrong data header)
+; AFFECTS: .A, .X, .Y
+; RETURNS: 1 in .A if successfully loaded
+;          0 in .A if an error occurred (e.g. wrong data header)
 restore_timbres = timbres::restore_from_chrin
 
 
