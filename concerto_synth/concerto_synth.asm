@@ -63,11 +63,8 @@
 .include "x16.asm"
 .include "ym2151.asm"
 .include "synth_zeropage.asm"
-.pushseg
-   .segment "RODATA"
-   .include "pitch_data.asm"
-   .include "vibrato_lut.asm"
-   .popseg
+.include "pitch_data.asm"
+.include "vibrato_lut.asm"
 .include "synth_macros.asm"
 .include "timbres.asm"
 .include "voices.asm"
