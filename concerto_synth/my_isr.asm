@@ -137,9 +137,13 @@ the_isr:
    lda #1
    sta isr_running
    ; backup shared variables (shared means: both main program and ISR can use them)
+   lda mzpba
+   pha
    lda mzpbe
    pha
    lda mzpbf
+   pha
+   lda mzpbg
    pha
    lda VERA_addr_low
    pha
@@ -159,9 +163,13 @@ the_isr:
    pla
    sta VERA_addr_low
    pla
+   sta mzpbg
+   pla
    sta mzpbf
    pla
    sta mzpbe
+   pla
+   sta mzpba
    ; release ISR
    stz isr_running
 

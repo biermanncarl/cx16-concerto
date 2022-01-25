@@ -166,6 +166,26 @@ set_pitchslide_position = voices::set_pitchslide_position
 ; AFFECTS: .A
 set_pitchslide_rate = voices::set_pitchslide_rate
 
+; concerto_synth::set_volume
+; Sets the volume of the note playing at a channel.
+; The effect lasts until the next note is played, which overwrites the volume set previously.
+; PARAMETERS:
+;              channel number: .X
+;              volume:         .A  (0 to 63)
+; AFFECTS: .A, .X, .Y
+set_volume = voices::set_volume
+
+; concerto_synth::set_volume_ramp
+; Ramps the volume from the current value up or down, until it reaches the given
+; threshold, or until the next note trigger.
+; The slope may be positive or negative.
+; PARAMETERS:
+;              channel number: .X
+;              slope:          .A  (-127 to 128)
+;              threshold:      .Y  (0 to 63)
+; AFFECTS: .A
+set_volume_ramp = voices::set_volume_ramp
+
 ; concerto_synth::set_vibrato_amount
 ; Controls how much the LFO modulates the voice's pitch. Values from 0 to 75
 ; are valid. The frequency and waveform of the LFO is dictated by the timbre's

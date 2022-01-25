@@ -34,6 +34,7 @@
       volume:     VOICE_BYTE_FIELD   ; voice's volume can be modified in real time. 128 is full volume, everything below is more quiet.
       volume_low: VOICE_BYTE_FIELD   ; sublevels of volume, only relevant when working with slopes
       slope:      VOICE_BYTE_FIELD   ; 0 is inactive, positive numbers go up, negative numbers go down
+      threshold:  VOICE_BYTE_FIELD   ; the threshold up to which the slope will last
    .endscope
 
    ; envelopes
@@ -134,8 +135,6 @@
 .endmacro
 
 
-pln_volume = mzpbd ; note volume backup for play_note subroutine
-
 .include "ym2151_interface.asm"
 
 
@@ -187,10 +186,10 @@ init_voices:
 play_note:
    php
    sei
-   inc ; compensate for max volume being 63, but the synth engine can handle 64. Consequently, volume 0 won't be silent.
-   sta pln_volume
    ldx note_channel
    ldy note_timbre
+   inc ; compensate for max volume being 63, but the synth engine can handle 64. Consequently, volume 0 won't be silent.
+   sta Voice::vol::volume, x
    ; check if there is an active note on the channel
    lda Voice::active, x
    beq @new_note
@@ -219,8 +218,6 @@ play_note:
    ldx note_channel
    lda note_pitch
    sta Voice::pitch, x
-   lda pln_volume
-   sta Voice::volume, x
    lda note_timbre
    sta Voice::timbre, x
 
@@ -271,10 +268,16 @@ continue_note:
 cn_check_retrigger:
    ; retrigger or continue?
    lda timbres::Timbre::retrig, y
-   bne :+
+   beq :+
+   ; do retrigger
+   jsr retrigger_note
    rts
-:  jsr retrigger_note
-rts
+:  ; if not retriggered, we still need to update the FM volume
+   lda timbres::Timbre::fm_general::op_en, y
+   beq :+
+   jsr set_fm_voice_volume
+:  rts
+
 
 ; retriggers note (envelopes and LFOs). This subroutine is called in play_note.
 ; expects channel index in X and timbre index in Y
@@ -286,6 +289,7 @@ retrigger_note:
    ; y: counter (and timbre index before that)
    rn_number = mzpbe
    stz Voice::fm::trigger_loaded, x
+   stz Voice::vol::slope, x
    phx
    phy
    lda timbres::Timbre::n_envs, y
@@ -348,7 +352,10 @@ retrigger_note:
    ldy note_timbre
    lda timbres::Timbre::fm_general::op_en, y
    beq @skip_fm  ; no voice is needed.
-   jsr trigger_fm_note
+   jsr set_fm_voice_volume
+   ldx note_channel
+   lda #1
+   sta Voice::fm::trigger_loaded, x
 @skip_fm:
    lda #1 ; return successfully
    rts
@@ -701,19 +708,6 @@ set_pitchslide_rate:
    rts
 
 
-; set volume of a note on a channel
-; channel number in note_channel
-; new volume in .A
-set_volume:
-   ldx note_channel
-   sta Voice::vol::volume, x
-   stz Voice::vol::volume_low, x
-   stz Voice::vol::slope, x
-   ; update FM voice
-   lda Voice::active, x
-
-
-
 ; set vibrato amount
 ; If vibrato was inactive before, it gets activated by this subroutine.
 ; Expects channel in .X, amount in .A
@@ -748,6 +742,51 @@ set_vibrato_ramp:
    bpl :+
    stz Voice::vibrato::current_level, x ; reset to zero when inactive previously
 :  rts
+
+
+; set note volume
+; channel: .X
+; volume: .A
+; affects: .A, .X, .Y
+set_volume:
+   php
+   sei
+   inc ; put volume into range 1 to 64
+   sta Voice::vol::volume, x
+   stz Voice::vol::volume_low, x
+   lda Voice::active, x
+   beq :+ ; skip FM part if channel is inactive
+   ldy Voice::timbre, x
+   lda timbres::Timbre::fm_general::op_en, y
+   beq :+ ; skip FM part if FM part is inactive
+   stx note_channel
+   jsr voices::set_fm_voice_volume
+:  plp
+   rts
+
+
+; set volume ramp (lasts until the threshold is hit, or until the next retrigger event)
+; channel: .X
+; slope: .A
+; threshold: .Y
+set_volume_ramp:
+   ; First, we need to left rotate .A four times before we store it,
+   ; because that is the format that the slope calculation expects.
+   clc
+   rol
+   adc #0
+   rol
+   adc #0
+   rol
+   adc #0
+   rol
+   adc #0
+   sta Voice::vol::slope, x
+   tya
+   inc
+   sta Voice::vol::threshold, x
+   stz Voice::vol::volume_low, x
+   rts
 
 
 

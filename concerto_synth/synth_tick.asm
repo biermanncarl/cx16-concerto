@@ -74,11 +74,13 @@ lfo_counter = mzpbc
 bittest     = mzpbd  ; for Sample and Hold RNG
 ; all modulation sources
 modsource_index = mzpbe ; keeps track of which modsource we're processing
+; volume slope
+;     mzpbc and mzpbd are used during setting the volume of the FM voice
 ; vibrato
 threshold_level = mzpbc
 slope = mzpbd
 ; FM
-keycode     = mzpbc 
+keycode     = mzpbc
 ; PSG Oscillators
 osc_counter = mzpbc
 n_oscs      = mzpbd
@@ -585,6 +587,63 @@ end_env: ; jump here when done with all envelopes
 
 
 
+   ; ----------------
+   ; ----------------
+   ; - VOICE VOLUME -
+   ; ----------------
+   ; ----------------
+
+   ; This section determines the voice's overall volume.
+   ; Typically, it stays constant once set at the beginning of a note,
+   ; but a volume slope can be set, which will be updated here.
+   ; ! Spaghetti Code Alert !
+
+   ; x: voice index
+   lda voices::Voice::vol::slope, x
+   beq @end_volume_slope
+   ; the higher 4 bits will be added to the low byte
+   and #%11110000
+   clc
+   adc voices::Voice::vol::volume_low, x
+   sta voices::Voice::vol::volume_low, x
+   ; the lower 3 bits will be added to the high byte
+   lda voices::Voice::vol::slope, x
+   and #%00000111
+   adc voices::Voice::vol::volume, x
+   sta voices::Voice::vol::volume, x
+   ; and the (former) most significant bit will decide upon the sign of the slope
+   lda voices::Voice::vol::slope, x
+   and #%00001000
+   bne @downward_slope
+   ; bra @upward_slope
+@upward_slope:
+   lda voices::Voice::vol::volume, x
+   cmp voices::Voice::vol::threshold, x
+   bcs @hit_threshold
+   bra @store_new_volume
+@downward_slope:
+   lda voices::Voice::vol::volume, x
+   sec
+   sbc #%00001000
+   bmi @hit_threshold
+   cmp voices::Voice::vol::threshold, x
+   bcs @store_new_volume
+   ; bra @hit_threshold
+@hit_threshold:
+   stz voices::Voice::vol::slope, x
+   lda voices::Voice::vol::threshold, x
+   ; bra @store_new_volume
+@store_new_volume:
+   sta voices::Voice::vol::volume, x
+   stx note_channel
+   ldy voices::Voice::timbre, x
+   lda timbres::Timbre::fm_general::op_en, y
+   jsr voices::set_fm_voice_volume
+@end_volume_slope:
+   ldx voice_index
+
+
+
 
    ; ---------------
    ; ---------------
@@ -823,6 +882,11 @@ end_env: ; jump here when done with all envelopes
    lda voices::Voice::fm::trigger_loaded, x
    beq @skip_fm_trigger
 @do_fm_trigger:
+   ; key off
+   lda #YM_KON
+   ldy voices::Voice::fm_voice_map, x
+   jsr voices::write_ym2151
+   ; key on
    stz voices::Voice::fm::trigger_loaded, x
    ldy voices::Voice::timbre, x
    lda timbres::Timbre::fm_general::op_en, y
@@ -859,7 +923,7 @@ end_env: ; jump here when done with all envelopes
    stz osc_counter
    lda voice_index
    sta osc_offset
-   lda voices::Voice::volume, x
+   lda voices::Voice::vol::volume, x
    sta voi_volume
 
 next_osc:

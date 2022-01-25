@@ -1,5 +1,5 @@
-al 0050C6 .__BSS_LOAD__
-al 0050C6 .__BSS_RUN__
+al 005192 .__BSS_LOAD__
+al 005192 .__BSS_RUN__
 al 000000 .__BSS_SIZE__
 al 000001 .__EXEHDR__
 al 009F00 .__HIMEM__

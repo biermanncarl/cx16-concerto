@@ -22,7 +22,7 @@ command is addressed. If the command does not address a specific channel
 |              4 | Set pitchbend position. | Fine tune | Note | --- |
 |              5 | Set pitchbend rate. The rate is a 16 bit number. Negative slopes are done using integer overflow. | Rate low | Rate high | mode |
 |              6 | Set volume | Volume (aka velocity) | --- | --- |
-|              7 | Set volume increase rate. The rate is a 16 bit number. Negative slopes are done using integer overflow. | Rate low | Rate high | --- |
+|              7 | Set volume increase rate. Negative slopes are supported. | Slope | Threshold | --- |
 |              8 | Set vibrato amount | Amount (0 to 27) | --- | --- |
 |              9 | Set vibrato ramp | Slope | Threshold amount (0 to 27) | --- |
 |             10 | unused | | | |
@@ -35,7 +35,7 @@ command is addressed. If the command does not address a specific channel
 
 
 
-4: Set pitchbend rate
+5: Set pitchbend rate
 ----------------------
 
 This command activates the pitch slide on a channel. If the pitch slide was
@@ -52,6 +52,17 @@ Set negative slopes by using integer overflow. For example, to generate a pitch
 slide that descends 30 fine steps each tick, use the values 226 for rate low
 and 255 for rate high. Or to descend 2 semitones per tick, use 0 for rate low
 and 254 for rate high.
+
+
+7: Set volume ramp
+------------------
+
+A gradual increase or decrease in volume can be activated with this command.
+The slope is signed 8-bit, meaning that values from 128 to 255 are negative
+and therefore produce downward slopes. The threshold indicates the value at
+which the ramp should stop. The ramp will stop whenever a new note is
+triggered. It should continue across several notes as long as they are not
+retriggered (i.e. tied together).
 
 
 8: Set vibrato amount

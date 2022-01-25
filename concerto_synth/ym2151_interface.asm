@@ -62,7 +62,7 @@ invalidate_fm_timbres:
 ; Expects voice index in A
 ; Expects note_timbre and note_channel to be set accordingly.
 load_fm_timbre:
-   operator_counter = mzpbb
+   lfmt_operator_counter = mzpbd
    lfmt_op_en = mzpbc
    pha
    ldx note_timbre
@@ -91,7 +91,7 @@ load_fm_timbre:
    adc #(YM_DT1_MUL-YM_RL_FL_CON)
    pha ; push running address
    lda #4
-   sta operator_counter
+   sta lfmt_operator_counter
    ; Load operator enabled register
    lda timbres::Timbre::fm_general::op_en, x
    ; Data offset
@@ -189,9 +189,9 @@ load_fm_timbre:
 @advance_loop:
    ; expecting running write address in A
    ; advance running write address by multiple of 8 to get to the next operator
-   ldy operator_counter
+   ldy lfmt_operator_counter
    clc
-   adc operator_stride-2, y ; -1 because operator_counter goes from 1-4, another -1 since 4 operators = 3 steps in between --> one less stride needed
+   adc operator_stride-2, y ; -1 because lfmt_operator_counter goes from 1-4, another -1 since 4 operators = 3 steps in between --> one less stride needed
    pha
    ; advance read address offset
    txa
@@ -199,7 +199,7 @@ load_fm_timbre:
    adc #N_TIMBRES
    tax
    lda lfmt_op_en
-   dec operator_counter
+   dec lfmt_operator_counter
    bpl @loop
 
    ; pop running address
@@ -215,16 +215,10 @@ load_fm_timbre:
 ; This function is called when a new note is being triggered, or upon volume updates
 ; during a note.
 set_fm_voice_volume:
-   tfm_operator_counter = mzpbb
-   tfm_op_en = mzpbc
+   sfmv_operator_counter = mzpbd
+   sfmv_op_en = mzpbc
    ; (re)trigger FM voice (TBD later if it's done here)
    ldx note_channel
-   lda voices::Voice::note_volume, x
-
-   ; key off
-   lda #YM_KON
-   ldy Voice::fm_voice_map, x
-   jsr write_ym2151
 
    ; set operator volumes
    ; *********************
@@ -234,7 +228,7 @@ set_fm_voice_volume:
    adc Voice::fm_voice_map, x
    pha ; push running address
    lda #4
-   sta tfm_operator_counter
+   sta sfmv_operator_counter
    ; Load operator enabled register
    ldx note_timbre
    lda timbres::Timbre::fm_general::op_en, x
@@ -242,7 +236,7 @@ set_fm_voice_volume:
 @vol_loop:
    ; Check if operator is enabled, only then copy parameters
    lsr
-   sta tfm_op_en
+   sta sfmv_op_en
    bcs @operator_enabled
 @operator_disabled:
    pla
@@ -255,8 +249,9 @@ set_fm_voice_volume:
    beq @no_volume_sensitivity
    clc
    adc #64 ; when note volume is minimal, this is how much the level gets reduced
+   ldy note_channel
    sec
-   sbc pln_volume ; note volume, range 1 to 64
+   sbc voices::Voice::vol::volume, y ; note volume, range 1 to 64
    bpl @no_volume_sensitivity
    ; value is negative ... set it to minimum volume
    lda #127
@@ -268,7 +263,7 @@ set_fm_voice_volume:
 @advance_in_loop:
    ; expecting running write address in A
    ; advance running write address by multiple of 8 to get to the next operator
-   ldy operator_counter
+   ldy sfmv_operator_counter
    clc
    adc operator_stride-2, y ; -1 because operator_counter goes from 1 to 4, another -1 since 4 operators = 3 steps in between --> one less stride needed
    pha
@@ -277,21 +272,10 @@ set_fm_voice_volume:
    clc
    adc #N_TIMBRES
    tax
-   lda tfm_op_en
-   dec tfm_operator_counter
+   lda sfmv_op_en
+   dec sfmv_operator_counter
    bpl @vol_loop
    ; pop running address
    pla
-
-   rts
-
-
-; Triggers a note on the YM2151.
-; Expects note_channel to be set accordingly.
-; This function is called from within retrigger_note
-trigger_fm_note:
-   ldx note_channel
-   lda #1
-   sta Voice::fm::trigger_loaded, x
 
    rts

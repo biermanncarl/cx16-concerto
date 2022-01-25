@@ -110,8 +110,8 @@ concerto_player_tick:
    .word @stop_note
    .word @pitchbend_position
    .word @pitchbend_rate
-   .word 0 ; volume pos
-   .word 0 ; volume rate
+   .word @volume
+   .word @volume_ramp
    .word @vibrato_amount
    .word @vibrato_ramp
    .word 0 ; unused
@@ -189,7 +189,27 @@ concerto_player_tick:
    jsr concerto_synth::set_pitchslide_rate
    lda #4
    jmp @increment_address
-
+@volume:
+   jsr read_channel
+   tax
+   iny
+   lda (zp_pointer), y ; volume
+   jsr concerto_synth::set_volume
+   lda #2
+   jmp @increment_address
+@volume_ramp:
+   jsr read_channel
+   tax
+   iny
+   lda (zp_pointer), y
+   pha ; slope
+   iny
+   lda (zp_pointer), y
+   tay ; threshold
+   pla ; slope
+   jsr concerto_synth::set_volume_ramp
+   lda #3
+   jmp @increment_address
 @vibrato_amount:
    jsr read_channel
    tax
