@@ -541,7 +541,7 @@ load_default_timbre:
    stz Timbre::lfo::wave, x
    stz Timbre::lfo::offs, x
    lda #1
-   sta Timbre::lfo::retrig
+   sta Timbre::lfo::retrig, x
    ; FM general
    sta Timbre::fm_general::track, x
    lda #7
