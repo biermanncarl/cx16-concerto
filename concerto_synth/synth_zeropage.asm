@@ -1,4 +1,4 @@
-; Copyright 2021 Carl Georg Biermann
+; Copyright 2021-2022 Carl Georg Biermann
 
 ; These are variables located at the zero page.
 ; The abbreviations stand for "my zero page word B" or "my zero page byte D" and so on
@@ -6,6 +6,9 @@
 
 ; Three 16-bit variables (mzpwb, mzpwc and mzpwf) are used in multiplication routines.
 ; Some details about their usage is found in synth_tick.asm near the top
+
+.pushseg
+.zeropage
 
 ; my zero page words (ISR)
 mzpwb:   .word 0
@@ -26,3 +29,4 @@ mzpbe:   .byte 0
 mzpbf:   .byte 0 ; concerto API register
 mzpbg:   .byte 0 ; concerto API register
 
+.popseg

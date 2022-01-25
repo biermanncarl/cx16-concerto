@@ -121,12 +121,12 @@ display_1s:         .byte 0
 
    ; print message
    lda #<msg_start
-   sta mzpwa
+   sta concerto_gui::mzpwa
    lda #>msg_start
-   sta mzpwa+1
+   sta concerto_gui::mzpwa+1
    ldy #0
 @loop_msg:
-   lda (mzpwa),y
+   lda (concerto_gui::mzpwa),y
    beq @done_msg
    sta VERA_data0
    lda #CCOLOR_CAPTION    ; set color

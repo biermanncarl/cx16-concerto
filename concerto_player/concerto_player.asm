@@ -11,6 +11,8 @@
 concerto_playback_routine = concerto_player_temp
 .include "../concerto_synth/concerto_synth.asm"
 
+.pushseg
+.code
 
 .scope concerto_player
 
@@ -62,7 +64,7 @@ data_pointer:
 ; optimally, one would use a dedicated ZP variable, as this would allow for
 ; both faster operation and would eliminate the need to copy the pointer
 ; to the ZP in every tick.
-zp_pointer = mzpwf
+zp_pointer = concerto_synth::mzpwf ; safe to use, since this comes IN the ISR, before the synth_tick subroutine, so it is impossible to get interrupted by the ISR.
 
 ; remembers the address where the song was started, in case it is repeated
 start_address:
@@ -262,6 +264,8 @@ read_channel:
    rts
 
 .endscope
+
+.popseg
 
 concerto_player_temp = concerto_player::concerto_player_tick
 

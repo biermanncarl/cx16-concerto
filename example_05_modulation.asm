@@ -4,10 +4,6 @@
 ; Compile with: cl65 -t cx16 -o EXAMPLE05.PRG -C cx16-asm.cfg -u __EXEHDR__ "example_05_modulation.asm"
 
 
-.zeropage
-.include "concerto_synth/synth_zeropage.asm"
-
-
 .code
 
    jmp start

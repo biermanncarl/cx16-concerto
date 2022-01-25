@@ -55,13 +55,19 @@
 ;    .define CONCERTO_TIMBRES_PATH "FACTORY.COB"
 ;    .include "concerto_synth.asm"
 
+.pushseg
+.code
 
 .scope concerto_synth
 
 .include "x16.asm"
 .include "ym2151.asm"
-.include "pitch_data.asm"
-.include "vibrato_lut.asm"
+.include "synth_zeropage.asm"
+.pushseg
+   .segment "RODATA"
+   .include "pitch_data.asm"
+   .include "vibrato_lut.asm"
+   .popseg
 .include "synth_macros.asm"
 .include "timbres.asm"
 .include "voices.asm"
@@ -241,3 +247,5 @@ default_playback:
 .endif
 
 .endscope
+
+.popseg

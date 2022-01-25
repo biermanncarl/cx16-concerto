@@ -3,12 +3,6 @@
 
 ; Compile with: cl65 -t cx16 -o CONCERTO.PRG -C cx16-asm.cfg -u __EXEHDR__ "example_full.asm"
 
-.zeropage
-; define zero page variables of the submodules
-.include "concerto_synth/synth_zeropage.asm"
-.include "concerto_gui/gui_zeropage.asm"
-
-
 .code
 
    jmp start

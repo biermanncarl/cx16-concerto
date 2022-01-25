@@ -4,10 +4,6 @@
 ; Compile with: cl65 -t cx16 -o EXAMPLE04.PRG -C cx16-asm.cfg -u __EXEHDR__ "example_04_player.asm"
 
 
-.zeropage
-.include "concerto_synth/synth_zeropage.asm"
-
-
 .code
 
    jmp start

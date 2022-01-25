@@ -4,9 +4,6 @@
 ; Compile with: cl65 -t cx16 -o EXAMPLE03.PRG -C cx16-asm.cfg -u __EXEHDR__ "example_03_pitchbend.asm"
 
 
-.zeropage
-.include "concerto_synth/synth_zeropage.asm"
-
 
 .code
 

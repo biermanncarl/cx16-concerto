@@ -1,9 +1,12 @@
-; Copyright 2021 Carl Georg Biermann
+; Copyright 2021-2022 Carl Georg Biermann
 
 
 ; Include this file to your program to include the concerto synth GUI.
 ;
 ; For more information, see readme.md
+
+.pushseg
+.code
 
 .scope concerto_gui
 
@@ -11,6 +14,7 @@ play_volume:
    .byte 63
 
 .include "../concerto_synth/x16.asm"
+.include "gui_zeropage.asm"
 .include "gui_macros.asm"
 .include "gui_variables.asm"
 .include "gui_utils.asm"
@@ -45,3 +49,5 @@ Timbre:
    .byte 0
 
 .endscope
+
+.popseg
