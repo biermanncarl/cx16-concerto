@@ -16,9 +16,6 @@ engine_active:
    .byte 0
 default_isr:
    .word $0000
-; this variable contains a nonzero value if the ISR is currently running, so as to prevent the ISR interrupting itself
-isr_running:
-   .byte 0
 
 ; subroutine for launching the ISR
 launch_isr:
@@ -111,6 +108,9 @@ shutdown_isr:
 
 ; The ISR doing the realtime synth stuff
 the_isr:
+   php
+   sei
+
    ; first check if interrupt is an AFLOW interrupt
    lda VERA_isr
    and #$08
@@ -126,16 +126,7 @@ the_isr:
    sta VERA_audio_data
    sta VERA_audio_data
 
-   ; safety check, if my ISR is already running. If so, skip sound engine tick.
-   lda isr_running
-   beq @do_tick
-@isr_choke:
-   jmp @end_aflow
-
 @do_tick:
-   ; lock ISR
-   lda #1
-   sta isr_running
    ; backup shared variables (shared means: both main program and ISR can use them)
    lda mzpba
    pha
@@ -170,12 +161,11 @@ the_isr:
    sta mzpbe
    pla
    sta mzpba
-   ; release ISR
-   stz isr_running
 
 @end_aflow:
    ; call default interrupt handler
    ; for keyboard service
+   plp
    jmp (default_isr)
 
 
