@@ -6,7 +6,6 @@
 ; The data format is detailed in "specifications.md".
 
 ; If you include this file, you do NOT need to include "concerto_synth.asm"
-; BUT you still must include "synth_zeropage.asm" in your zero page segment.
 
 concerto_playback_routine = concerto_player_temp
 .include "../concerto_synth/concerto_synth.asm"
@@ -24,6 +23,12 @@ concerto_playback_routine = concerto_player_temp
 repeat:
    .byte 0
 
+; This variable holds the vector to a customizable callback function.
+; Player command 13 calls this with one data byte in .A as a parameter.
+callback_vector:
+   .word dummy_subroutine
+
+
 ; concerto_player::play_track
 ; Enables the player and starts playing from the specified address in RAM.
 ; PARAMETERS: .X low byte address
@@ -39,11 +44,13 @@ play_track:
    stx start_address
    sty start_address+1
    jsr concerto_synth::activate_synth
+dummy_subroutine: ; I just need a label pointing to an RTS instruction for this, so I take the one from play_track.
    rts
 
 
 stop_track:
-   ; TODO
+   stz start_address+1 ; turn player off
+   jsr concerto_synth::panic ; turn off all voices
    rts
 
 
@@ -119,8 +126,8 @@ concerto_player_tick:
    .word 0 ; unused
    .word 0 ; unused
    .word 0 ; unused
-   .word 0 ; user callback
-   .word 0 ; panic
+   .word @user_callback
+   .word @panic
    .word @end_track
 @wait:
    iny
@@ -233,7 +240,22 @@ concerto_player_tick:
    jsr concerto_synth::set_vibrato_ramp
    lda #3
    jmp @increment_address
-
+@user_callback:
+   iny
+   lda (zp_pointer), y ; load callback parameter into .A
+   ; indirect JSR
+   ldx #>(@return_addr-1)
+   phx
+   ldx #<(@return_addr-1)
+   phx
+   jmp (callback_vector)
+@return_addr:
+   lda #2
+   jmp @increment_address
+@panic:
+   jsr concerto_synth::panic
+   lda #1
+   jmp @increment_address
 @end_track:
    jsr concerto_synth::panic
    lda repeat

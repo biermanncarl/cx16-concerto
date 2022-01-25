@@ -92,4 +92,30 @@ defines how quick the amount changes. The threshold sets the vibrato amount at
 which the slope is stopped. Negative slopes are supported.
 
 
+13: User callback
+-----------------
+
+This command calls a user definable subroutine. One data byte is loaded into
+the processor register .A and passed to the user subroutine. This can be useful
+to synchronize visual effects with the music, or anything you have in mind,
+really.
+
+The callback function can be defined by setting the variable
+concerto_player::callback_vector to the starting address of your callback
+function.
+
+
+14: Stop all channels (aka Panic)
+---------------------------------
+
+This command deactivates all voices on all channels immediately.
+
+
+15: End song
+---------------------------------
+
+This ends the song. Depending on the variable concerto_player::repeat, the song
+will be played again or the player will be deactivated.
+
+
 Copyright 2021-2022 Carl Georg Biermann
