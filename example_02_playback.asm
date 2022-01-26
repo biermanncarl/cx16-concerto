@@ -1,4 +1,4 @@
-; Copyright 2021 Carl Georg Biermann
+; Copyright 2021-2022 Carl Georg Biermann
 
 
 ; Compile with: cl65 -t cx16 -o EXAMPLE02.PRG -C cx16-asm.cfg -u __EXEHDR__ "example_02_playback.asm"

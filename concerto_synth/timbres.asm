@@ -1,4 +1,4 @@
-; Copyright 2021 Carl Georg Biermann
+; Copyright 2021-2022 Carl Georg Biermann
 
 
 ; This file manages the synth patches.

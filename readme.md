@@ -104,8 +104,8 @@ source files ```concerto_synth/concerto_synth.asm``` and
 
 Synth engine:
 * Copy the folder ```concerto_synth``` into the folder of your project
-* In your zero page segment, ```.INCLUDE "concerto_synth/synth_zeropage.asm"```
-* In your code segment, ```.INCLUDE "concerto_synth/concerto_synth.asm"```
+* Anywhere in your code that is not directly in the path of execution, do
+  ```.INCLUDE "concerto_synth/concerto_synth.asm"```
 * Do ```JSR concerto_synth::initialize``` to initialize the synth engine
 * Do ```JSR concerto_synth::activate_synth``` to start the synth engine
 * Call functions from ```concerto_synth/concerto_synth.asm``` to play notes
@@ -117,8 +117,9 @@ Synth engine:
 
 Graphical user interface:
 * Copy the folder ```concerto_gui``` into the folder of your project
-* In your zero page segment, ```.INCLUDE "concerto_gui/gui_zeropage.asm"```
-* In your code segment, ```.INCLUDE "concerto_gui/concerto_gui.asm"```
+* Anywhere in your code that is not directly in the path of execution, do
+  ```.INCLUDE "concerto_gui/concerto_gui.asm"```, additionally to the
+  inclusion of the synth engine.
 * Do ```JSR concerto_gui::initialize``` to initialize and draw the UI
 * Do ```JSR concerto_gui::gui_tick``` *regularly* to let the user interact
   using the mouse
@@ -126,3 +127,19 @@ Graphical user interface:
 * You may stop calling ```gui_tick``` regularly at any time without the danger
   of corruption. (E.g. if you want to bring up a different UI). Simply
   ```initialize``` again before continuing the regular calls of ```gui_tick```.
+
+Player module:
+* Copy both folders ```concerto_synth``` and ```concerto_player``` into the
+  folder of your project
+* Anywhere in your code that is not directly in the path of execution, do
+  ```.INCLUDE "concerto_player/concerto_player.asm"```. Separate inclusion of
+  the synth engine is not necessary in this case, since the player module
+  already includes it.
+* Do ```JSR concerto_synth::initialize``` to initialize the synth engine.
+* Do ```JSR concerto_player::play_track``` to start playing the track.
+  The function call expects the starting address of your music/sound data
+  in .X/.Y (low byte in .X, high byte in .Y).
+* Calling ```JSR concerto_synth::activate_synth``` is NOT necessary, since
+  ```concerto_player::play_track``` activates the synth engine if necessary.
+* Do ```JSR concerto_player::stop_track``` and/or 
+  ```JSR concerto_synth::deactivate_synth``` to stop playing sounds.
