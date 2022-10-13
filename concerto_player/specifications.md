@@ -44,7 +44,7 @@ played.
 
 The mode is either 0 or 1. Set it to 0 if you want a free slide. Set it to 1 if
 you want the slide to stop at the note that was originally played. This can be
-useful if you want to slide up/down to a note. In this use case work, you need
+useful if you want to slide up/down to a note. In this case, you need
 to activate the slide and THEN set the slide position with command 5, since
 otherwise, the slide position would be reset.
 

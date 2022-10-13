@@ -34,13 +34,16 @@ semitones_ym2151:
 
 
 ; naive writing procedure to the YM2151
-; potentially burns a lot of cycles in the waiting loop
+; potentially burns a lot of CPU cycles (up to ~150) in the waiting loop
 ; A: register
 ; Y: data
 write_ym2151:
 :  bit YM_data
    bmi :-  ; wait until ready flag is set
    sta YM_reg
+   nop ; short pause to let the YM2151 react before writing to the data register
+   nop
+   nop
    nop
    sty YM_data
    rts

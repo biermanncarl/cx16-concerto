@@ -61,12 +61,6 @@ r15               = $20
 r15L              = r15
 r15H              = r15+1
 
-; Zero-Page userspace
-ZP_PTR_1          = $00	; first four pointers for temporary use only
-ZP_PTR_2          = $22
-ZP_PTR_3          = $24
-ZP_PTR_4          = $26
-
 ; I/O Registers
 VERA_addr_low     = $9F20
 VERA_addr_mid     = $9F21
@@ -106,11 +100,11 @@ VERA_spi_data     = $9F3E
 VERA_spi_ctrl     = $9F3F
 
 
-ROM_BANK          = $9F60
-RAM_BANK          = $9F61
+ROM_BANK          = $0001
+RAM_BANK          = $0000
 
-YM_reg            = $9FE0
-YM_data           = $9FE1
+YM_reg            = $9F40
+YM_data           = $9F41
 
 ; Emulator Registers
 GIF_ctrl          = $9FB5

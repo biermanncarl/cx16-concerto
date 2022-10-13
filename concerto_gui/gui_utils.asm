@@ -288,16 +288,31 @@ print_byte_simple:
 
 ; clear screen in my own background color
 cls:
-   ; set background color in a dirty manner (we did not hear that from Greg King)
-   ; https://www.commanderx16.com/forum/index.php?/topic/469-change-background-color-using-vpoke/&do=findComment&comment=3084
+   ; set tilemap base address to zero
+   lda #0
+   sta VERA_L1_mapbase
+   ; clear the screen
+   ldy #0
+@loop_y:
+   lda #0
+   sta cur_x
+   sty cur_y
+   jsr set_cursor
+   ldx #0
+@loop_x:
+   lda #32
+   sta VERA_data0
    lda #(11*16+1)
-   sta $376
+   sta VERA_data0
+   inx
+   cpx #80
+   bne @loop_x
+   iny
+   cpy #60
+   bne @loop_y
 
    ; actually, I'd like a dark green or something
    ; TODO: set custom palette
-   ; do the screen clear
-   lda #$93
-   jsr CHROUT
    rts
 
 

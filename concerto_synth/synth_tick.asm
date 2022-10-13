@@ -842,8 +842,8 @@ end_env: ; jump here when done with all envelopes
    ; (There is already one being used in the NOTE determination)
    ldy #0
    lda osc_pitch
+   dec ; this is just to correct for YM octaves starting at C# and not C
    sec
-   sbc #3 ; this is just to correct for YM octaves starting at C# and not C, and wrong YM frequency in the emulation R38
 @sub_loop:
    iny
    sbc #12

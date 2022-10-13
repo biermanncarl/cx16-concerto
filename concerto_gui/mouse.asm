@@ -30,7 +30,8 @@ mouse_init:
    stz ms_status
    ; KERNAL call
    lda #1
-   ldx #1
+   ldx #80
+   ldy #60
    jsr MOUSE_CONFIG
    rts
 

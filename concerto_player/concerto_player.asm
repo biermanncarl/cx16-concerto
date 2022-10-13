@@ -1,11 +1,11 @@
 ; Copyright 2021-2022 Carl Georg Biermann
 
 
-; This file contains the interface to a music player. It plays back linear
+; This file contains the API to a music player. It plays back linear
 ; data in RAM using the Concerto synth engine.
-; The data format is detailed in "specifications.md".
+; The music data format is detailed in "specifications.md".
 
-; If you include this file, you do NOT need to include "concerto_synth.asm"
+; If you include this file, you do NOT need to include "concerto_synth.asm" separately.
 
 concerto_playback_routine = concerto_player_temp
 .include "../concerto_synth/concerto_synth.asm"
@@ -16,6 +16,7 @@ concerto_playback_routine = concerto_player_temp
 .scope concerto_player
 
 ; PLAYER INTERFACE
+; ****************
 
 ; concerto_player::repeat
 ; This variable states whether or not to repeat the song being played.
@@ -53,6 +54,8 @@ stop_track:
    jsr concerto_synth::panic ; turn off all voices
    rts
 
+; ***********************
+; END OF PLAYER INTERFACE
 
 
 ; this counter counts down the ticks until the next event.
@@ -67,7 +70,7 @@ data_pointer:
 ; the zeropage pointer. This is "stolen" from the concerto_synth zeropage.
 ; However, as the player tick is guaranteed to run BEFORE the synth_tick,
 ; we can do this, as long as the variable is not needed for any voice
-; management routines.
+; management routines, which might get called from within the player tick.
 ; optimally, one would use a dedicated ZP variable, as this would allow for
 ; both faster operation and would eliminate the need to copy the pointer
 ; to the ZP in every tick.
