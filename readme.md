@@ -12,19 +12,16 @@ the structure of the source code.
 The recommended way of starting the emulator for using CONCERTO is:
 
 ```shell
-x16emu -prg CONCERTO.PRG -run -abufs 12 -sdcard <SD_CARD_IMAGE>
+x16emu -prg CONCERTO.PRG -run -abufs 16
 ```
 
 However, you can load and run concerto from inside the emulator as with most
-```.PRG``` files. The ```abufs``` option is necessary in some environments to
-reduce audio dropouts. If audio dropouts persist, increase the number.
-
-You can also run CONCERTO without an SD card image. However, then the load/save
-function for your preset is unavailable. (It simply does nothing.)
+```.PRG``` files. The ```abufs``` option is recommended to reduce audio dropouts.
+If audio dropouts persist, increase the number.
 
 ## How to build CONCERTO from source
 
-CONCERTO is built using the ca65 assembler. I built it with the command
+CONCERTO is built using the ca65 assembler. It can be built using the CC65 command
 
 ```shell
 cl65 -t cx16 -o CONCERTO.PRG -C cx16-asm.cfg -u __EXEHDR__ "example_full.asm"
