@@ -59,10 +59,7 @@ display_1s:         .byte 0
    bcs @loop10s
    adc #10
    dex
-   cpx #48
-   bne :+
-   ldx #32
-:  stx concerto_gui::guiutils::display_10s
+   stx concerto_gui::guiutils::display_10s
 
    ldx #48
 @loop1s:
@@ -74,6 +71,7 @@ display_1s:         .byte 0
    dex
    stx concerto_gui::guiutils::display_1s
 
+   php
    sei
    ; set VERA address
    stz VERA_ctrl
@@ -99,7 +97,7 @@ display_1s:         .byte 0
    sta VERA_data0
    lda #$21    ; set color
    sta VERA_data0
-   cli
+   plp
 .endmacro
 
 ; displays the 0-terminated message at position db_x and db_y

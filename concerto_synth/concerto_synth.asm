@@ -69,7 +69,7 @@
 .include "timbres.asm"
 .include "voices.asm"
 .include "synth_tick.asm"
-.include "my_isr.asm"
+.include "isr.asm"
 .include "scale5.asm"
 ; This just provides some macros which can be used by the host app. Doesn't do anything on its own:
 .include "presets.asm"
@@ -106,7 +106,7 @@ initialize:
 ; subroutine to activate the synth engine (i.e. install the interrupt service routine)
 ; PARAMETERS: none
 ; AFFECTS: .A, .X, .Y
-activate_synth = my_isr::launch_isr
+activate_synth = isr::launch_isr
 
 ; concerto_synth::deactivate_synth
 ; subroutine to deactivate the synth engine (i.e. stop voices and uninstall the interrupt service routine)
@@ -114,7 +114,7 @@ activate_synth = my_isr::launch_isr
 ; AFFECTS: .A, .X, .Y
 deactivate_synth:
    jsr voices::panic
-   jsr my_isr::shutdown_isr ; not the other way round? would be safer ...
+   jsr isr::shutdown_isr ; not the other way round? would be safer ...
    rts
 
 ; concerto_synth::play_note

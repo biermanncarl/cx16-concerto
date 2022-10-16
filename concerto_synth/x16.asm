@@ -209,3 +209,22 @@ VRAM_sprattr   = $1FC00
 IRQVec         := $0314
 BRKVec         := $0316
 NMIVec         := $0318
+
+; VIA
+; $9F60 to $9F6F or $9F00 to $9F0F ?
+VIA_ORB_IRB_B      := $9F00  ; input/output register byte B
+VIA_ORB_IRB_A      := $9F01  ; input/output register byte A
+VIA_DDR_B          := $9F02  ; data direction register B
+VIA_DDR_A          := $9F03  ; data direction register A
+VIA_T1C_L          := $9F04  ; T1 Low-Order Latches (write) and T1 Low-Order Counter (read)
+VIA_T1C_H          := $9F05  ; T1 High-Order Counter
+VIA_T1L_L          := $9F06  ; T1 Low-Order Latches (reading does not reset timer interrupt flag)
+VIA_T1L_H          := $9F07  ; T1 High-Order Latches
+VIA_T2C_L          := $9F08  ; T2 Low-Order Latches (write) and T2 Low-Order Counter (read)
+VIA_T2C_H          := $9F09  ; T2 High-Order Counter
+VIA_SR             := $9F0A  ; Shift Register
+VIA_ACR            := $9F0B  ; Auxiliary Control Register
+VIA_PCR            := $9F0C  ; Peripheral Control Register
+VIA_IFR            := $9F0D  ; Interrupt Flag Register
+VIA_IER            := $9F0E  ; Interrupt Enable Register
+VIA_ORA_IRA        := $9F0F  ; Same as Reg 1 except no "Handshake"

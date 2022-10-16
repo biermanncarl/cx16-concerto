@@ -23,7 +23,9 @@
 .define MAX_FILENAME_LENGTH 8
 .define NOTRACK_CENTER 60 ; when oscillator tracking is disabled, this is the default pitch value
 .define FILE_VERSION 0 ; 0-255 specifying which version of Concerto presets is used, stays zero during alpha releases despite possibly breaking changes in between
-
+; clock sources
+.define CONCERTO_CLOCK_AFLOW 1
+.define CONCERTO_CLOCK_VIA1_T1 2
 
 .macro VOICE_BYTE_FIELD
    .repeat N_VOICES, I
