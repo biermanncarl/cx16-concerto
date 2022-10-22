@@ -313,40 +313,7 @@ the_isr:
    bra @end_tick
 
 @do_tick:
-   ; backup shared variables (shared means: both main program and ISR can use them)
-   lda mzpba
-   pha
-   lda mzpbe
-   pha
-   lda mzpbf
-   pha
-   lda mzpbg
-   pha
-   lda VERA_addr_low
-   pha
-   lda VERA_addr_mid
-   pha
-   lda VERA_addr_high
-   pha
-   ; call playback routine
-   jsr concerto_playback_routine
-   ; do synth tick updates
-   jsr synth_engine::synth_tick
-   ; restore shared variables
-   pla
-   sta VERA_addr_high
-   pla
-   sta VERA_addr_mid
-   pla
-   sta VERA_addr_low
-   pla
-   sta mzpbg
-   pla
-   sta mzpbf
-   pla
-   sta mzpbe
-   pla
-   sta mzpba
+   jsr do_tick
 
 
 @end_tick:
@@ -396,6 +363,18 @@ aux_isr_hook:
    lda do_tick_flag
    beq @end_aux
 
+   jsr do_tick
+
+   stz do_tick_flag
+@end_aux:
+   ply
+   plx
+   pla
+   plp
+   rti
+
+
+do_tick:
    ; backup shared variables (shared means: both main program and ISR can use them)
    lda mzpba
    pha
@@ -431,14 +410,7 @@ aux_isr_hook:
    pla
    sta mzpba
 
-   stz do_tick_flag
-@end_aux:
-   ply
-   plx
-   pla
-   plp
-   rti
-
+   rts
 
    ; VIA notes
    ; VIA #1's IRQ line is connected to the CPU's NMI line
