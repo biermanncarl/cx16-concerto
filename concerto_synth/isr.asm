@@ -20,9 +20,8 @@
 ; This is to prevent damage e.g. when launch_isr is called twice instead of once.
 engine_active:
    .byte 0
-default_isr:
+default_irq_isr:
    .word $0000
-
 
 ; AFLOW routines
 ; ==============
@@ -64,9 +63,9 @@ launch_isr:
 
    ; copy address of default interrupt handler
    lda IRQVec
-   sta default_isr
+   sta default_irq_isr
    lda IRQVec+1
-   sta default_isr+1
+   sta default_irq_isr+1
    ; replace irq handler
    sei            ; block interrupts
    lda #<the_isr
@@ -105,9 +104,9 @@ shutdown_isr:
 
    ; restore interrupt handler
    sei            ; block interrupts
-   lda default_isr
+   lda default_irq_isr
    sta IRQVec
-   lda default_isr+1
+   lda default_irq_isr+1
    sta IRQVec+1
    cli            ; allow interrupts
 
@@ -190,10 +189,11 @@ the_isr:
 .if concerto_clock_select = CONCERTO_CLOCK_VIA1_T1
 
 ; flag which signals that a tick should be executed
-do_tick:
+do_tick_flag:
    .byte 0
 
-
+default_nmi_isr:
+   .word 0
 
 
 ; subroutine for launching the ISR
@@ -203,12 +203,29 @@ launch_isr:
    rts ; engine is already active
 :  inc engine_active
 
-   ; setup the timer
+   ; replace irq handler with the auxiliary ISR first
+   ; copy address of default interrupt handler
+   ; since we are actively using it by doing a JMP to it, we need to decrement the address.
+   lda IRQVec
+   ;sec
+   ;sbc #1
+   sta default_irq_isr
+   lda IRQVec+1
+   ;sbc #0
+   sta default_irq_isr+1
+   ; overwrite vector with new address
+   lda #<aux_isr
+   ldx #>aux_isr
+   sei            ; block interrupts
+   sta IRQVec
+   stx IRQVec+1
+   cli            ; allow interrupts
+
    ; backup original NMI routine
    lda NMIVec
-   sta default_isr
+   sta default_nmi_isr
    lda NMIVec+1
-   sta default_isr+1
+   sta default_nmi_isr+1
    ; overwrite NMI vector with our own routine
    lda #<the_isr
    ldy #>the_isr
@@ -230,7 +247,6 @@ launch_isr:
    ; mode 01 - continuous operation, but no operation of PB7 pinout of the VIA.
    and #%01111111 ; deactivate bit 7
    ora #%01000000 ; activate bit 6
-   ;and #%10111111 ; deactivate bit 6
    sta VIA_ACR
 
    rts
@@ -242,11 +258,19 @@ shutdown_isr:
    and #%10111111
    sta VIA_IER
 
-   ; restore original interrupt handler
-   lda default_isr
-   ldx default_isr+1
+   ; restore original NMI interrupt handler
+   lda default_nmi_isr
+   ldx default_nmi_isr+1
    sta NMIVec
    stx NMIVec+1
+
+   ; restore IRQ interrupt handler
+   sei            ; block interrupts
+   lda default_irq_isr
+   sta IRQVec
+   lda default_irq_isr+1
+   sta IRQVec+1
+   cli            ; allow interrupts
 
    rts
 
@@ -268,27 +292,24 @@ the_isr:
    ; For that, look at the stack whether the Interrupt flag has been set prior to this NMI call.
    ; Status register is the last one that has been pushed to the stack before this ISR
    tsx
-   inx
-   inx
-   inx
-   inx
-   lda $0100,x
+   lda $0104,x
    and #%00000100
    ;.byte $db
    beq @do_tick ; If I flag was reset, we did not interrupt an ISR for sure. It's safe to do the tick.
-   
+
+   lda do_tick_flag
+   bne @set_signal
+
    ; I flag was set. Now we hafe to dig deeper. We actually want to prevent interruptions of PS/2 operations.
-   ; The resective code is located in ROM (addr >= $C000). To check that, look up high byte of return address.
-   inx
-   inx
-   lda $0100,x
+   ; The respective code is located in ROM (addr >= $C000). To check that, look up high byte of return address.
+   lda $0106,x
    cmp #$C0
    bcc  @do_tick; If carry is clear, the return address is lower than $C000, hence not in ROM. Therefore, we did not interrupt PS/2 code.
 
    ; otherwise, we'll have to wait for the ISR to finish.
 @set_signal:
    lda #1
-   sta do_tick
+   sta do_tick_flag
    bra @end_tick
 
 @do_tick:
@@ -336,9 +357,87 @@ the_isr:
 
 
 
+   ; auxiliary ISR for normal IRQs.
+   ; This is incase we did interrupt PS/2 communication.
+   ; By intercepting the normal IRQ, we can give ourselves a "hook" at the end of the Kernal's ISR,
+   ; check there if the do_tick_flag has been set, and then do the tick after the normal ISR has finished.
+aux_isr:
+   ; Situation: an IRQ has occurred.
+   ; The Kernal Code has called us and has pushed A, X and Y before this piece of code is reached.
+   ; We now simulate an IRQ to the Kernel that gives us the hook at the end.
+   ; To achieve this, we need to insert three bytes into the stack. (This *should* be safe).
 
+   ; push A, X and Y to the top of the stack
+   ;.byte $db
+   tsx
+   lda $0103,x
+   pha
+   lda $0102,x
+   pha
+   lda $0101,x
+   pha
 
+   ; store our stuff in the stack
+   lda #>aux_isr_hook
+   sta $0103,x
+   lda #<aux_isr_hook
+   sta $0102,x
+   php
+   pla
+   sta $0101,x
+   jmp (default_irq_isr)
 
+aux_isr_hook:
+   php
+   pha
+   phx
+   phy
+   ; when the Kernal's IRQ is done, it will return here.
+   lda do_tick_flag
+   beq @end_aux
+
+   ; backup shared variables (shared means: both main program and ISR can use them)
+   lda mzpba
+   pha
+   lda mzpbe
+   pha
+   lda mzpbf
+   pha
+   lda mzpbg
+   pha
+   lda VERA_addr_low
+   pha
+   lda VERA_addr_mid
+   pha
+   lda VERA_addr_high
+   pha
+   ; call playback routine
+   jsr concerto_playback_routine
+   ; do synth tick updates
+   jsr synth_engine::synth_tick
+   ; restore shared variables
+   pla
+   sta VERA_addr_high
+   pla
+   sta VERA_addr_mid
+   pla
+   sta VERA_addr_low
+   pla
+   sta mzpbg
+   pla
+   sta mzpbf
+   pla
+   sta mzpbe
+   pla
+   sta mzpba
+
+   stz do_tick_flag
+@end_aux:
+   ply
+   plx
+   pla
+   plp
+   rti
 
 
    ; VIA notes
