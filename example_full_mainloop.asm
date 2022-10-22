@@ -180,6 +180,18 @@ play_note:
 
 end_mainloop:
 
+.if 0; concerto_synth::isr::concerto_clock_select = CONCERTO_CLOCK_VIA1_T1
+   wai
+   lda concerto_synth::isr::do_tick
+   beq :+
+   ; call playback routine
+   jsr concerto_synth::concerto_playback_routine
+   ; do synth tick updates
+   jsr concerto_synth::synth_engine::synth_tick
+   stz concerto_synth::isr::do_tick
+:  nop
+.endif
+
    jmp mainloop
 
 ; data

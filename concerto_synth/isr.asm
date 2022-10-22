@@ -23,16 +23,18 @@ engine_active:
 default_isr:
    .word $0000
 
-; subroutine for launching the ISR
+
+; AFLOW routines
+; ==============
+.if concerto_clock_select = CONCERTO_CLOCK_AFLOW
+
 launch_isr:
    lda engine_active
    beq :+
    rts ; engine is already active
 :  inc engine_active
 
-   ; setup the timer
-.if concerto_clock_select = CONCERTO_CLOCK_AFLOW
-   ; prepare playback
+   ; prepare FIFO (PCM) playback
    lda #$8F       ; reset PCM buffer, 8 bit mono, 0 volume
    sta VERA_audio_ctrl
 
@@ -78,37 +80,7 @@ launch_isr:
    ; set sample rate in multiples of 381.5 Hz = 25 MHz / (512*128)
    lda #1
    sta VERA_audio_rate
-.endif ; concerto_clock_select = CONCERTO_CLOCK_AFLOW
 
-.if concerto_clock_select = CONCERTO_CLOCK_VIA1_T1
-   ; backup original NMI routine
-   lda NMIVec
-   sta default_isr
-   lda NMIVec+1
-   sta default_isr+1
-   ; overwrite NMI vector with our own routine
-   lda #<the_isr
-   ldy #>the_isr
-   sta NMIVec  ; let's just hope that no NMI occurs between those two instructions  ...
-   sty NMIVec+1
-
-   ; initialize VIA Timer 1
-   ; enable timer interrupts
-   lda VIA_IER
-   ora #%01000000 ; set bit 6 to enable T1 to issue NMIs
-   sta VIA_IER
-   ;load time interval into latches ($F5BE should generate a 127.17 Hz timer with an 8 MHz clock)
-   lda #$BE
-   sta VIA_T1C_L
-   lda #$F5
-   sta VIA_T1C_H ; this causes the latched values to be loaded into the counter and thus starts the timer
-   ; select operation mode of T1
-   lda VIA_ACR
-   ; mode 01 - continuous operation, but no operation of PB7 pinout of the VIA.
-   and #%01111111 ; deactivate bit 7
-   ora #%01000000 ; activate bit 6
-   sta VIA_ACR
-.endif ; concerto_clock_select = CONCERTO_CLOCK_VIA1_T1
    rts
 
 ; subroutine for stopping the ISR
@@ -147,13 +119,6 @@ shutdown_isr:
 the_isr:
    php
 
-.if concerto_clock_select = CONCERTO_CLOCK_VIA1_T1
-   pha
-   phx
-   phy
-.endif
-
-.if concerto_clock_select = CONCERTO_CLOCK_AFLOW
    ; first check if interrupt is an AFLOW interrupt
    lda VERA_isr
    and #$08
@@ -168,16 +133,6 @@ the_isr:
    sta VERA_audio_data
    sta VERA_audio_data
    sta VERA_audio_data
-.endif
-
-.if concerto_clock_select = CONCERTO_CLOCK_VIA1_T1
-   ; most importantly: check if the timer is the culprit and clear interrupt flag
-   lda VIA_IFR
-   and #%01000000 ; when bit 6 is set, the timer was the culprit
-   beq @end_tick
-   ; timer was the culprit. reset timer interrupt flag
-   lda VIA_T1C_L
-.endif
 
 @do_tick:
    ; backup shared variables (shared means: both main program and ISR can use them)
@@ -216,22 +171,169 @@ the_isr:
    sta mzpba
 
 @end_tick:
-.if concerto_clock_select = CONCERTO_CLOCK_AFLOW
    plp
    ; call default interrupt handler
    ; for keyboard service
    jmp (default_isr)
-.endif
+.
+
+.endif ; .if concerto_clock_select = CONCERTO_CLOCK_AFLOW
+
+
+
+
+
+
+
+; VIA1_T1 routines
+; ================
 .if concerto_clock_select = CONCERTO_CLOCK_VIA1_T1
+
+; flag which signals that a tick should be executed
+do_tick:
+   .byte 0
+
+
+
+
+; subroutine for launching the ISR
+launch_isr:
+   lda engine_active
+   beq :+
+   rts ; engine is already active
+:  inc engine_active
+
+   ; setup the timer
+   ; backup original NMI routine
+   lda NMIVec
+   sta default_isr
+   lda NMIVec+1
+   sta default_isr+1
+   ; overwrite NMI vector with our own routine
+   lda #<the_isr
+   ldy #>the_isr
+   sta NMIVec  ; let's just hope that no NMI occurs between those two instructions  ...
+   sty NMIVec+1
+
+   ; initialize VIA Timer 1
+   ; enable timer interrupts
+   lda VIA_IER
+   ora #%01000000 ; set bit 6 to enable T1 to issue NMIs
+   sta VIA_IER
+   ;load time interval into latches ($F5BE should generate a 127.17 Hz timer with an 8 MHz clock)
+   lda #$BE
+   sta VIA_T1C_L
+   lda #$F5
+   sta VIA_T1C_H ; this causes the latched values to be loaded into the counter and thus starts the timer
+   ; select operation mode of T1
+   lda VIA_ACR
+   ; mode 01 - continuous operation, but no operation of PB7 pinout of the VIA.
+   and #%01111111 ; deactivate bit 7
+   ora #%01000000 ; activate bit 6
+   ;and #%10111111 ; deactivate bit 6
+   sta VIA_ACR
+
+   rts
+
+; subroutine for stopping the ISR
+shutdown_isr:
+   ; disable VIA#1 T1 timer interrupts
+   lda VIA_IER
+   and #%10111111
+   sta VIA_IER
+
+   ; restore original interrupt handler
+   lda default_isr
+   ldx default_isr+1
+   sta NMIVec
+   stx NMIVec+1
+
+   rts
+
+
+
+; The ISR doing the realtime synth stuff
+the_isr:
+   pha
+   phx
+   phy
+
+   ; most importantly: check if the timer is the culprit and clear interrupt flag
+   lda VIA_IFR
+   and #%01000000 ; when bit 6 is set, the timer was the culprit
+   beq @end_tick
+   ; timer was the culprit. reset timer interrupt flag
+   lda VIA_T1C_L
+   ; Now, check if the NMI interrupted another ISR (or code that should not be interrupted by an ISR)
+   ; For that, look at the stack whether the Interrupt flag has been set prior to this NMI call.
+   ; Status register is the last one that has been pushed to the stack before this ISR
+   tsx
+   inx
+   inx
+   inx
+   inx
+   lda $0100,x
+   and #%00000100
+   ;.byte $db
+   beq @do_tick ; If I flag was reset, we did not interrupt an ISR for sure. It's safe to do the tick.
+   
+   ; I flag was set. Now we hafe to dig deeper. We actually want to prevent interruptions of PS/2 operations.
+   ; The resective code is located in ROM (addr >= $C000). To check that, look up high byte of return address.
+   inx
+   inx
+   lda $0100,x
+   cmp #$C0
+   bcc  @do_tick; If carry is clear, the return address is lower than $C000, hence not in ROM. Therefore, we did not interrupt PS/2 code.
+
+   ; otherwise, we'll have to wait for the ISR to finish.
+@set_signal:
+   lda #1
+   sta do_tick
+   bra @end_tick
+
+@do_tick:
+   ; backup shared variables (shared means: both main program and ISR can use them)
+   lda mzpba
+   pha
+   lda mzpbe
+   pha
+   lda mzpbf
+   pha
+   lda mzpbg
+   pha
+   lda VERA_addr_low
+   pha
+   lda VERA_addr_mid
+   pha
+   lda VERA_addr_high
+   pha
+   ; call playback routine
+   jsr concerto_playback_routine
+   ; do synth tick updates
+   jsr synth_engine::synth_tick
+   ; restore shared variables
+   pla
+   sta VERA_addr_high
+   pla
+   sta VERA_addr_mid
+   pla
+   sta VERA_addr_low
+   pla
+   sta mzpbg
+   pla
+   sta mzpbf
+   pla
+   sta mzpbe
+   pla
+   sta mzpba
+
+
+@end_tick:
    ply
    plx
    pla
-   plp
-   ; Strangely, the computer freezes up when the original NMI routine is called.
-   ; If RTI is done instead, everything just works fine.
-   rti
-   ;jmp (original_nmi_routine)
-.endif
+   rti ; in this case, the original NMI routine doesn't have to be called. It seems to just be a placeholder that can be overwritten.
+
 
 
 
@@ -261,84 +363,15 @@ the_isr:
    ; Need counter of 62909.568 ~= 62910 = $F5BE
 
    
-   ; create custom NMI routine
-   lda NMIVec
-   sta original_nmi_routine
-   lda NMIVec+1
-   sta original_nmi_routine+1
-   lda #<my_nmi_routine
-   ldy #>my_nmi_routine
-   sta NMIVec  ; let's just hope that no NMI occurs between those two instructions  ...
-   sty NMIVec+1
+   ; Problem with NMIs: they are non-maskable.
+   ; They can therefore interrupt other interrupt service routines.
+   ; For example, when reading out keyboard or mouse data is done in a normal IRQ, it can be interrupted
+   ; by a NMI, and if the NMI takes too long, the keyboard or mouse data gets lost while the NMI is still executing.
+   ; This has been observed when using the NMI as timing source.
+   ; Despite using the NMI as timing source, the actual execution of the sound engine
+   ; should therefore be prioritized lower than the normal IRQ routine.
 
-   jmp continue
-
-original_nmi_routine: .word 0
-nmi_counter: .byte 0
-
-my_nmi_routine:
-   ; push registers on stack
-   php
-   pha
-   phx
-   phy
-   lda VERA_addr_low
-   pha
-   lda VERA_addr_mid
-   pha
-   lda VERA_addr_high
-   pha
-   ; most importantly: check if the timer is the culprit and clear interrupt flag
-   lda VIA_IFR
-   and #%01000000 ; when bit 6 is set, the timer was the culprit
-   beq forward_nmi
-   ; timer was the culprit. reset timer interrupt flag
-   lda VIA_T1C_L
-   inc nmi_counter
-   ;DISPLAY_BYTE nmi_counter, 0, 0
-forward_nmi:
-   pla
-   sta VERA_addr_high
-   pla
-   sta VERA_addr_mid
-   pla
-   sta VERA_addr_low
-   ply
-   plx
-   pla
-   plp
-   ; Strangely, the computer freezes up when I call the original NMI function. If I do RTI instead, everything just works fine.
-   rti
-   ;jmp (original_nmi_routine)
-   ;jmp $E343 ; original NMI vector (R41)
-   
-
-continue:
-   ;DISPLAY_BYTE nmi_counter, 0, 0
-
-   ; initialize VIA Timer 1
-   ; enable interrupts
-   lda VIA_IER
-   ora #%01000000 ; set bit 6 to enable T1 to issue NMIs
-   sta VIA_IER
-   ; select operation mode of T1
-   lda VIA_ACR
-   ; mode 01 - continuous operation, but no operation of PB7 pinout of the VIA.
-   and #%01111111 ; deactivate bit 7
-   ;and #%10111111 ; deactivate bit 6
-   ora #%01000000 ; activate bit 6
-   sta VIA_ACR
-   ;load time interval into latches
-   lda #$BE
-   sta VIA_T1C_L
-   lda #$F5
-   sta VIA_T1C_H ; this should start the timer
-
-
-
-
-
-
+.endif ; .if concerto_clock_select = CONCERTCONCERTO_CLOCK_VIA1_T1O_CLOCK_AFLOW
 
 
 .endscope
