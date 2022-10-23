@@ -11,9 +11,16 @@ dont_tick_flag:
 default_nmi_isr:
    .word 0
 
+default_rom_page:
+   .byte 0
 
 ; subroutine for launching the ISR
 launch_isr:
+   ; set ROM page to zero
+   lda ROM_BANK
+   sta default_rom_page
+   stz ROM_BANK
+
    lda engine_active
    beq :+
    rts ; engine is already active
@@ -74,6 +81,12 @@ shutdown_isr:
    and #%10111111
    sta VIA_IER
 
+   ; select operation mode of T1
+   lda VIA_ACR
+   ; mode 00 - continuous operation, but no operation of PB7 pinout of the VIA.
+   and #%00111111 ; deactivate bits 7 and 6
+   sta VIA_ACR
+
    ; restore original NMI interrupt handler
    lda default_nmi_isr
    ldx default_nmi_isr+1
@@ -88,6 +101,10 @@ shutdown_isr:
    sta IRQVec+1
    cli            ; allow interrupts
 
+   ; set ROM bank back to original
+   lda default_rom_page
+   sta ROM_BANK
+
    rts
 
 
@@ -97,7 +114,6 @@ the_isr:
    pha
    phx
    phy
-
    ; most importantly: check if the timer is the culprit and clear interrupt flag
    lda VIA_IFR
    and #%01000000 ; when bit 6 is set, the timer was the culprit

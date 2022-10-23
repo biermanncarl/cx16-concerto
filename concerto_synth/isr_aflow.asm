@@ -146,4 +146,4 @@ the_isr:
    plp
    ; call default interrupt handler
    ; for keyboard service
-   jmp (default_isr)
+   jmp (default_irq_isr)

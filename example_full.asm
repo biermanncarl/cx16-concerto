@@ -29,10 +29,6 @@ Note:
 
 
 start:
-   ; set ROM bank to 0 (from 4, the BASIC ROM)
-   ; this is for better performance (the BASIC ROM has shown to have a hit on performance over the 0 ROM)
-   stz ROM_BANK
-
    jsr concerto_synth::initialize
    jsr concerto_gui::initialize
 
@@ -42,9 +38,5 @@ start:
 
    jsr concerto_synth::deactivate_synth
    jsr concerto_gui::hide_mouse
-
-   ; restore BASIC ROM page
-   lda #4
-   sta ROM_BANK
 
    rts            ; return to BASIC
