@@ -105,22 +105,8 @@ the_isr:
    ; timer was the culprit. reset timer interrupt flag
    lda VIA_T1C_L
    ; Now, check if the NMI interrupted another ISR (or code that should not be interrupted by an ISR)
-   ; For that, look at the stack whether the Interrupt flag has been set prior to this NMI call.
-   ; Status register is the last one that has been pushed to the stack before this ISR
-   tsx
-   lda $0104,x
-   and #%00000100
-   ;.byte $db
-   beq @do_tick ; If I flag was reset, we did not interrupt an ISR for sure. It's safe to do the tick.
-
-   lda do_tick_flag
-   bne @set_signal
-
-   ; I flag was set. Now we hafe to dig deeper. We actually want to prevent interruptions of PS/2 operations.
-   ; The respective code is located in ROM (addr >= $C000). To check that, look up high byte of return address.
-   lda $0106,x
-   cmp #$C0
-   bcc  @do_tick; If carry is clear, the return address is lower than $C000, hence not in ROM. Therefore, we did not interrupt PS/2 code.
+   lda dont_tick_flag
+   beq @do_tick
 
    ; otherwise, we'll have to wait for the ISR to finish.
 @set_signal:
