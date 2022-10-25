@@ -55,6 +55,16 @@
 ;    .define CONCERTO_TIMBRES_PATH "FACTORY.COB"
 ;    .include "concerto_synth.asm"
 
+; Enabling the Zsound recorder
+; ============================
+; Concerto's output can be recorded into Zsound data. (https://github.com/ZeroByteOrg/zsound)
+; As this comes with a runtime and memory overhead, it must be enabled via a compiler variable.
+; Before including this file, set the variable, for example as follows:
+;
+;    concerto_enable_zsound_recorder = 1
+;    .include "concerto_synth.asm"
+;
+
 .pushseg
 .code
 
@@ -71,6 +81,9 @@
 .include "synth_tick.asm"
 .include "isr.asm"
 .include "scale5.asm"
+.ifdef concerto_enable_zsound_recorder
+   .include "zsound_recorder.asm"
+.endif
 ; This just provides some macros which can be used by the host app. Doesn't do anything on its own:
 .include "presets.asm"
 
@@ -85,7 +98,7 @@ note_timbre  = creg1
 note_pitch   = creg2
 pitchslide_mode = creg1
 ; Interface read-only
-; These bytes store the number of available voices on the PSG and the FM chip.
+; These bytes store the number of currently available voices on the PSG and the FM chip.
 ; They are exposed to enable e.g. visual feedback how many voices are free
 ; by the host application.
 free_psg_voices = voices::Oscmap::nfo
