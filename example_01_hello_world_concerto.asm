@@ -8,12 +8,14 @@
 .code
    jmp start
 
+concerto_enable_zsound_recording = 1
 .include "concerto_synth/concerto_synth.asm"
 
 start:
    jsr concerto_synth::initialize
    jsr concerto_synth::activate_synth
 
+   jsr concerto_synth::zsm_recording::start_recording
 
    ; play a note
    lda #60
@@ -29,6 +31,8 @@ start:
 mainloop:
    jsr $FFE4 ; GETIN
    beq mainloop
+
+   jsr concerto_synth::zsm_recording::stop_recording
 
    jsr concerto_synth::deactivate_synth
    rts

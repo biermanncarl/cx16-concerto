@@ -81,8 +81,8 @@
 .include "synth_tick.asm"
 .include "isr.asm"
 .include "scale5.asm"
-.ifdef concerto_enable_zsound_recorder
-   .include "zsound_recorder.asm"
+.ifdef concerto_enable_zsound_recording
+   .include "zsm_recording.asm"
 .endif
 ; This just provides some macros which can be used by the host app. Doesn't do anything on its own:
 .include "presets.asm"
