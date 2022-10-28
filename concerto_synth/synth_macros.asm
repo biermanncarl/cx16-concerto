@@ -156,6 +156,21 @@ SYNTH_MACROS_INC = 1
    txa
    asl
    asl
+.ifdef concerto_enable_zsound_recording
+   pha
+   phx
+   phy
+
+   inc
+   inc
+   tax
+   lda #0
+   jsr zsm_recording::write_psg_data
+
+   ply
+   plx
+   pla
+.endif
    clc
    adc #$C2
 	sta VERA_addr_low
@@ -173,6 +188,21 @@ SYNTH_MACROS_INC = 1
    pla
    asl
    asl
+.ifdef concerto_enable_zsound_recording
+   pha
+   phx
+   phy
+
+   inc
+   inc
+   tax
+   lda #0
+   jsr zsm_recording::write_psg_data
+
+   ply
+   plx
+   pla
+.endif
    clc
    adc #$C2
    sta VERA_addr_low
