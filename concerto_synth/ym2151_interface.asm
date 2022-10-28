@@ -45,7 +45,11 @@ write_ym2151:
    nop
    nop
    nop
+   nop
    sty YM_data
+.ifdef concerto_enable_zsound_recording
+   jsr zsm_recording::write_ym2151_data
+.endif
    rts
 
 
@@ -91,6 +95,7 @@ load_fm_timbre:
    ; to an absolute address like YM_RL_FL_CON again and again,
    ; we simply add the differences between addresses.
    ; The running address is usually kept at the stack for easy access.
+   clc
    adc #(YM_DT1_MUL-YM_RL_FL_CON)
    pha ; push running address
    lda #4

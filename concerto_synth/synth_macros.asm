@@ -116,6 +116,22 @@ SYNTH_MACROS_INC = 1
    pla
    asl
    asl
+.ifdef concerto_enable_zsound_recording
+   pha
+   tax
+   lda frequency
+   jsr zsm_recording::write_psg_data
+   inx
+   lda frequency+1
+   jsr zsm_recording::write_psg_data
+   inx
+   lda volume
+   jsr zsm_recording::write_psg_data
+   inx
+   lda waveform
+   jsr zsm_recording::write_psg_data
+   pla
+.endif
    clc
    adc #$C0
    sta VERA_addr_low

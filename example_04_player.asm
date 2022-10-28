@@ -10,6 +10,7 @@
 
 ; When including concerto_player, we do not need to include concerto_synth separately,
 ; since concerto_player includes it for us.
+concerto_enable_zsound_recording = 1
 .include "concerto_player/concerto_player.asm"
 
 
@@ -17,6 +18,8 @@
 start:
    ; initialize concerto
    jsr concerto_synth::initialize
+
+   jsr concerto_synth::zsm_recording::start_recording
 
    ; play song
    lda #1
@@ -31,6 +34,8 @@ start:
 mainloop:
    jsr $FFE4 ; GETIN
    beq mainloop
+
+   jsr concerto_synth::zsm_recording::stop_recording
 
    jsr concerto_synth::deactivate_synth
 

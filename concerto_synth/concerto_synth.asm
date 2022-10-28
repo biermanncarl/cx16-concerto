@@ -76,14 +76,14 @@
 .include "pitch_data.asm"
 .include "vibrato_lut.asm"
 .include "synth_macros.asm"
+.ifdef concerto_enable_zsound_recording
+   .include "zsm_recording.asm"
+.endif
 .include "timbres.asm"
 .include "voices.asm"
 .include "synth_tick.asm"
 .include "isr.asm"
 .include "scale5.asm"
-.ifdef concerto_enable_zsound_recording
-   .include "zsm_recording.asm"
-.endif
 ; This just provides some macros which can be used by the host app. Doesn't do anything on its own:
 .include "presets.asm"
 

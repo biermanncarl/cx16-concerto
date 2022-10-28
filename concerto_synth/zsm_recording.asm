@@ -25,6 +25,7 @@
 ; * stop recording
 ;    * close file
 ;    * any further cleanup needed
+; * maybe a recording to BRAM is needed and data is written to the file in the end
 
 ; variables / buffers needed
 ; 
@@ -37,6 +38,18 @@
 
 .scope zsm_recording
 
+
+; accepts byte in .A and writes it to output
+; The macro is intended to allow for easy switching between direct file writes and writing to BRAM before writing to a file.
+.macro CONCERTO_ZSM_WRITE_BYTE
+   pha
+   phx
+   phy
+   jsr CHROUT
+   ply
+   plx
+   pla
+.endmacro
 
 
 start_recording:
@@ -63,22 +76,14 @@ start_recording:
 @header_loop:
    lda header_data,x
    phx
-   jsr CHROUT
+   CONCERTO_ZSM_WRITE_BYTE
    plx
    inx
    cpx #header_length
    bne @header_loop
 
    ; temporary: write test data
-   ldx #0
-@test_loop:
-   lda music_test_data,x
-   phx
-   jsr CHROUT
-   plx
-   inx
-   cpx #music_test_data_length
-   bne @test_loop
+   ;jsr write_test_data
 
    rts
 
@@ -87,6 +92,73 @@ stop_recording:
    lda #1
    jsr CLOSE
    jsr CLRCHN
+
+
+
+write_test_data:
+   ldx #0
+@test_loop:
+   lda music_test_data,x
+   phx
+   CONCERTO_ZSM_WRITE_BYTE
+   plx
+   inx
+   cpx #music_test_data_length
+   bne @test_loop
+   rts
+
+; record data for the PSG
+; this is not the final output but will be run through the filter stage to get rid of unnecessary writes
+; data in .A, number of PSG register in .X
+write_psg_data:
+   php
+   pha
+   phx
+   phy
+   
+   pha
+   txa
+   CONCERTO_ZSM_WRITE_BYTE
+   pla
+   CONCERTO_ZSM_WRITE_BYTE
+
+   ply
+   plx
+   pla
+   plp
+   rts
+
+; record data for the YM2151
+; this is not the final output but will be run through the filter stage to get rid of unnecessary writes
+; data in .Y, address in .A
+write_ym2151_data:
+   php
+   pha
+   phx
+   phy
+
+   tax
+   lda #$41 ; write the following (1) register-value pair to the YM2151
+   CONCERTO_ZSM_WRITE_BYTE
+   txa
+   CONCERTO_ZSM_WRITE_BYTE
+   tya
+   CONCERTO_ZSM_WRITE_BYTE
+
+   ply
+   plx
+   pla
+   plp
+   rts
+
+
+; Must be called at the end of every tick during recording.
+; Checks which registers have actually changed and therefore avoids unnecessary writes.
+; Inserts the appropriate number of ticks before writing all new commands.
+end_tick:
+   lda #$81 ; wait for one tick
+   CONCERTO_ZSM_WRITE_BYTE
+   rts
 
 
 
@@ -130,7 +202,7 @@ music_test_data:
    .byte $01 ; write following byte into PSG register 1
    .byte $20 ; hi frequency
    .byte $FF ; delay 127 ticks
-   .byte $80 ; end of stream
+   ;.byte $80 ; end of stream
 
 @music_test_data_end:
 music_test_data_length = @music_test_data_end - music_test_data

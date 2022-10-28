@@ -13,7 +13,6 @@ concerto_enable_zsound_recording = 1
 
 start:
    jsr concerto_synth::initialize
-   jsr concerto_synth::activate_synth
 
    jsr concerto_synth::zsm_recording::start_recording
 
@@ -27,6 +26,7 @@ start:
    lda #63 ; note volume
    jsr concerto_synth::play_note
 
+   jsr concerto_synth::activate_synth
    ; and wait until key is pressed
 mainloop:
    jsr $FFE4 ; GETIN

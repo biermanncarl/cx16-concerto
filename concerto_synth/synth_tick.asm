@@ -1104,7 +1104,10 @@ next_osc:
    jmp next_voice
 
 end_synth_tick:
+.ifdef concerto_enable_zsound_recording
+   jsr zsm_recording::end_tick
+.endif
 
-rts
+   rts
 
 .endscope
