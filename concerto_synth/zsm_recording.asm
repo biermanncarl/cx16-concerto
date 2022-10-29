@@ -53,6 +53,18 @@
 
 
 start_recording:
+   ; initialize mirrors
+   ; YM2151
+   ldx #<ym2151_mirror_size ; its 256, so it will actually be zero
+:  dex
+   stz ym2151_mirror,x
+   bne :-
+   ; PSG
+   ldx #psg_mirror_size
+:  dex
+   stz psg_mirror,x
+   bne :-
+
    ; OPEN THE OUTPUT FILE
    lda #command_string_length
    ldx #<command_string
@@ -115,13 +127,21 @@ write_psg_data:
    pha
    phx
    phy
-   
+
+   ; check if a write operation is necessary
+   cmp psg_mirror, x
+   beq @end ; no operation necessary if the value in mirror is already the same
+
+   ; store new value in mirror
+   sta psg_mirror, x
+   ; write data to output
    pha
    txa
    CONCERTO_ZSM_WRITE_BYTE
    pla
    CONCERTO_ZSM_WRITE_BYTE
 
+@end:
    ply
    plx
    pla
@@ -156,13 +176,24 @@ write_ym2151_data:
 ; Checks which registers have actually changed and therefore avoids unnecessary writes.
 ; Inserts the appropriate number of ticks before writing all new commands.
 end_tick:
-   lda #$81 ; wait for one tick
+   ; wait for one tick
+   lda #$81
    CONCERTO_ZSM_WRITE_BYTE
    rts
 
 
 
 ; *** DATA ***
+
+; mirrors mirror the data stored on the respective chips as reference for comparison
+psg_mirror_size = 64
+psg_mirror:
+   .res psg_mirror_size
+
+ym2151_mirror_size = 256
+ym2151_mirror:
+   .res ym2151_mirror_size
+
 
 command_string:
 ; @ symbol (Petscii 64): save and replace existing file
