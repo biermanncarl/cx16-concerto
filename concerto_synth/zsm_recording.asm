@@ -52,6 +52,8 @@
 .endmacro
 
 
+
+
 start_recording:
    ; initialize mirrors
    ; YM2151
@@ -100,10 +102,13 @@ start_recording:
    rts
 
 
+
+
 stop_recording:
    lda #1
    jsr CLOSE
    jsr CLRCHN
+
 
 
 
@@ -118,6 +123,8 @@ write_test_data:
    cpx #music_test_data_length
    bne @test_loop
    rts
+
+
 
 ; record data for the PSG
 ; this is not the final output but will be run through the filter stage to get rid of unnecessary writes
@@ -148,6 +155,8 @@ write_psg_data:
    plp
    rts
 
+
+
 ; record data for the YM2151
 ; this is not the final output but will be run through the filter stage to get rid of unnecessary writes
 ; data in .Y, address in .A
@@ -157,28 +166,87 @@ write_ym2151_data:
    phx
    phy
 
-   tax
-   lda #$41 ; write the following (1) register-value pair to the YM2151
-   CONCERTO_ZSM_WRITE_BYTE
-   txa
-   CONCERTO_ZSM_WRITE_BYTE
-   tya
-   CONCERTO_ZSM_WRITE_BYTE
+   ;tax
+   ;lda #$41 ; write the following (1) register-value pair to the YM2151
+   ;CONCERTO_ZSM_WRITE_BYTE
+   ;txa
+   ;CONCERTO_ZSM_WRITE_BYTE
+   ;tya
+   ;CONCERTO_ZSM_WRITE_BYTE
 
+   ; first, find out whether the write operation is a key-on or key-off operation because those will be treated differently.
+   cmp #$08 ; this is the key-on operation
+   beq @register_instruction
+   ; it wasn't a key-on or key-off instruction. check whether the data write is redundant
+   tax
+   tya
+   cmp ym2151_mirror,x
+   bne @pre_register_instruction
+@end:
    ply
    plx
    pla
    plp
    rts
 
+@pre_register_instruction:
+   sta ym2151_mirror,x ; store in mirror
+   tay
+   txa
+@register_instruction:
+   ldx ym2151_num_writes
+   sta ym2151_address_buffer, x
+   tya
+   sta ym2151_data_buffer, x
+   inc ym2151_num_writes
+   bra @end
+
 
 ; Must be called at the end of every tick during recording.
 ; Checks which registers have actually changed and therefore avoids unnecessary writes.
 ; Inserts the appropriate number of ticks before writing all new commands.
 end_tick:
+   ; do YM2151 writes
+   ldx #0 ; data index
+   ldy #0 ; how many register values can be written before the next "FM write" ZSM command.
+@ym2151_loop_start:
+   ; all writes done?
+   cpx ym2151_num_writes
+   beq @ym2151_loop_end
+
+   ; do we need a new "FM write" command?
+   cpy #0
+   bne @skip_write_command
+   ; When execution continues here, we do need it. how many register-value pairs? Depends on how many are left to do and the maximum of 63.
+   txa ; current index
+   eor #$FF ; negate (invert bits, add one)
+   inc
+   clc
+   adc ym2151_num_writes ; add total number of writes. the result is the remaining number of writes.
+   cmp #63 ; smaller than maximum allowed?
+   bcc @use_number_directly
+   lda #63 ; use maximum allowed
+@use_number_directly:
+   tay ; we can do so many writes now
+   ora #%01000000 ; this will result in a ZSM "FM write" command
+   CONCERTO_ZSM_WRITE_BYTE
+@skip_write_command:
+   ; now do a register write
+   lda ym2151_address_buffer,x
+   CONCERTO_ZSM_WRITE_BYTE
+   lda ym2151_data_buffer,x
+   CONCERTO_ZSM_WRITE_BYTE
+   inx
+   dey
+   bra @ym2151_loop_start
+@ym2151_loop_end:
+
+   stz ym2151_num_writes
+
    ; wait for one tick
    lda #$81
    CONCERTO_ZSM_WRITE_BYTE
+
    rts
 
 
@@ -194,6 +262,15 @@ ym2151_mirror_size = 256
 ym2151_mirror:
    .res ym2151_mirror_size
 
+; number of instructions that are being sent to the ym2151
+ym2151_num_writes:
+   .byte 0
+; actual instructions
+ym2151_maximum_buffer_length = 250 ; definitely doesn't need to be 256 or higher
+ym2151_address_buffer:
+   .res ym2151_maximum_buffer_length
+ym2151_data_buffer:
+   .res ym2151_maximum_buffer_length
 
 command_string:
 ; @ symbol (Petscii 64): save and replace existing file
