@@ -67,6 +67,8 @@ start_recording:
    stz psg_mirror,x
    bne :-
 
+   stz wait_pending_ticks
+
    ; OPEN THE OUTPUT FILE
    lda #command_string_length
    ldx #<command_string
@@ -139,6 +141,10 @@ write_psg_data:
    cmp psg_mirror, x
    beq @end ; no operation necessary if the value in mirror is already the same
 
+   pha
+   jsr write_waiting_ticks ; write out any pending waiting ticks before writing PSG data
+   pla
+
    ; store new value in mirror
    sta psg_mirror, x
    ; write data to output
@@ -165,14 +171,6 @@ write_ym2151_data:
    pha
    phx
    phy
-
-   ;tax
-   ;lda #$41 ; write the following (1) register-value pair to the YM2151
-   ;CONCERTO_ZSM_WRITE_BYTE
-   ;txa
-   ;CONCERTO_ZSM_WRITE_BYTE
-   ;tya
-   ;CONCERTO_ZSM_WRITE_BYTE
 
    ; first, find out whether the write operation is a key-on or key-off operation because those will be treated differently.
    cmp #$08 ; this is the key-on operation
@@ -203,8 +201,6 @@ write_ym2151_data:
 
 
 ; Must be called at the end of every tick during recording.
-; Checks which registers have actually changed and therefore avoids unnecessary writes.
-; Inserts the appropriate number of ticks before writing all new commands.
 end_tick:
    ; do YM2151 writes
    ldx #0 ; data index
@@ -213,6 +209,8 @@ end_tick:
    ; all writes done?
    cpx ym2151_num_writes
    beq @ym2151_loop_end
+
+   ;jsr write_waiting_ticks ; write out any pending waiting ticks before writing YM2151 data
 
    ; do we need a new "FM write" command?
    cpy #0
@@ -240,18 +238,39 @@ end_tick:
    dey
    bra @ym2151_loop_start
 @ym2151_loop_end:
-
    stz ym2151_num_writes
 
    ; wait for one tick
-   lda #$81
-   CONCERTO_ZSM_WRITE_BYTE
+   inc wait_pending_ticks
+   bpl :+
+   ; we have 128 ticks. write 127, keep 1
+   dec wait_pending_ticks
+   jsr write_waiting_ticks
+   inc wait_pending_ticks
+:  rts
 
+
+
+
+; checks how many ticks we have been waiting since the last ZSM command and outputs them
+; We can guarantee that this function is never called with 128 or more ticks, so we don't need any logic to check for that.
+write_waiting_ticks:
+   lda wait_pending_ticks
+   beq @end ; none are needed?
+   ora #%10000000
+   CONCERTO_ZSM_WRITE_BYTE
+   stz wait_pending_ticks
+@end:
    rts
 
 
 
+
+
 ; *** DATA ***
+
+wait_pending_ticks:
+   .byte 0
 
 ; mirrors mirror the data stored on the respective chips as reference for comparison
 psg_mirror_size = 64
