@@ -210,7 +210,7 @@ end_tick:
    cpx ym2151_num_writes
    beq @ym2151_loop_end
 
-   ;jsr write_waiting_ticks ; write out any pending waiting ticks before writing YM2151 data
+   jsr write_waiting_ticks ; write out any pending waiting ticks before writing YM2151 data
 
    ; do we need a new "FM write" command?
    cpy #0

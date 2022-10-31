@@ -131,7 +131,10 @@ the_isr:
    bra @end_tick
 
 @do_tick:
+   lda #1
+   sta dont_tick_flag ; prevent NMI from interrupting itself
    jsr do_tick
+   stz dont_tick_flag
 
 
 @end_tick:
