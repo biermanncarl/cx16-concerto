@@ -6,6 +6,9 @@ launch_isr:
    rts ; engine is already active
 :  inc engine_active
 
+   lda ROM_BANK
+   sta default_rom_page
+
    ; prepare FIFO (PCM) playback
    lda #$8F       ; reset PCM buffer, 8 bit mono, 0 volume
    sta VERA_audio_ctrl
@@ -82,6 +85,9 @@ shutdown_isr:
    lda default_irq_isr+1
    sta IRQVec+1
    cli            ; allow interrupts
+
+   lda default_rom_page
+   sta ROM_BANK
 
    rts
 

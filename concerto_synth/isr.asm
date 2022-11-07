@@ -22,6 +22,8 @@ engine_active:
    .byte 0
 default_irq_isr:
    .word $0000
+default_rom_page:
+   .byte 0
 
 ; AFLOW routines
 ; ==============
