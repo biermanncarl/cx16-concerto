@@ -170,9 +170,8 @@ SYNTH_MACROS_INC = 1
 
    inc
    inc
-   tax
-   lda #0
-   ;jsr zsm_recording::write_psg_data
+   ldx #0
+   jsr zsm_recording::psg_write
 
    ply
    plx
@@ -202,9 +201,8 @@ SYNTH_MACROS_INC = 1
 
    inc
    inc
-   tax
-   lda #0
-   ;jsr zsm_recording::write_psg_data
+   ldx #0
+   jsr zsm_recording::psg_write
 
    ply
    plx

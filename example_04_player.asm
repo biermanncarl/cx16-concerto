@@ -39,10 +39,11 @@ mainloop:
    jsr $FFE4 ; GETIN
    beq mainloop
 
+   jsr concerto_synth::deactivate_synth
+
    ;jsr concerto_synth::zsm_recording::stop_recording
    jsr concerto_synth::zsm_recording::end
 
-   jsr concerto_synth::deactivate_synth
 
    rts
 

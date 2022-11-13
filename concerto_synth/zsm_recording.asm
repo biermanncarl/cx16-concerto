@@ -65,8 +65,8 @@ zp_pointer: ; this can be pointed to any location in the zeropage, where a 16 bi
    ; sweep over "reset area"
    ldx #(reset_area_end-reset_area_begin)
 @reset_loop:
-   stz reset_area_begin, x
    dex
+   stz reset_area_begin, x
    bne @reset_loop
 
    ; fill in some members of the ZSM header
@@ -95,11 +95,14 @@ zp_pointer: ; this can be pointed to any location in the zeropage, where a 16 bi
    sta RAM_WIN+12
    lda tick_rate+1
    sta RAM_WIN+13
+   ; reserved bytes: set to zero
+   stz RAM_WIN+14
+   stz RAM_WIN+15
    pla
    sta RAM_BANK
 
    ; start recording
-   lda #1
+   lda #$01
    sta recorder_active
 
    rts
@@ -220,45 +223,88 @@ zp_pointer: ; this can be pointed to any location in the zeropage, where a 16 bi
    sta current_low_address
    lda zp_pointer+1
    sta current_low_address+1
+   lda RAM_BANK
+   sta current_bank
    ; restore RAM bank
    pla
    sta RAM_BANK
    rts
 
-   ; Writes one byte into the output buffer
-   ; assumes data in .A, and advances zp_pointer and RAM bank
+   ; Assumes value in .A
    .proc write_byte
       sta (zp_pointer)
-      inc zp_pointer
-      beq @page_cross
-      rts
-   @page_cross:
-      lda zp_pointer+1
-      inc
-      cmp #>ROM_WIN
-      bcs @bank_cross
-      sta zp_pointer+1
-      rts
-   @bank_cross:
-      .byte $db
-      lda #>RAM_WIN
-      sta zp_pointer+1
-      lda current_bank
-      inc
-      sta RAM_BANK
-      sta current_bank
+      jsr advance_buffer_address
       rts
    .endproc
 .endproc
 
 
 .proc end
-   ; ToDo
-   ; flush everything (?)
-   ; write $80 to buffer
-   ; write fm mask and psg mask into header
-   ; write buffer into file
+   lda RAM_BANK
+   pha
+
+   ; finish up emitting bytes
+   jsr tick
    stz recorder_active
+
+   ; write channel masks into buffer
+   lda start_bank
+   sta RAM_BANK
+   lda fm_channel_mask
+   sta RAM_WIN+9
+   lda psg_channel_mask
+   sta RAM_WIN+10
+   lda psg_channel_mask+1
+   sta RAM_WIN+11
+
+   ; write buffer to a file
+   ; =====================
+   ; OPEN THE OUTPUT FILE
+   lda #command_string_length
+   ldx #<command_string
+   ldy #>command_string
+   jsr SETNAM ; set file name
+   ; setlfs - set logical file number
+   lda #1 ; logical file number
+   ldx #8 ; device number. 8 is disk drive
+   ldy #1 ; secondary command address, I really don't understand this.
+   jsr SETLFS
+   ; open - open the logical file
+   jsr OPEN
+   ; chkout - open a logical file for output
+   ldx #1 ; logical file to be used
+   jsr CHKOUT
+
+   ; emit data into file
+   stz zp_pointer
+   lda #>RAM_WIN
+   sta zp_pointer+1
+@loop:
+   lda (zp_pointer)
+   jsr CHROUT
+   jsr advance_buffer_address
+   ; check if end of data is reached
+   lda current_bank
+   cmp RAM_BANK
+   bne @loop
+   lda zp_pointer+1
+   cmp current_low_address+1
+   bne @loop
+   lda zp_pointer
+   cmp current_low_address
+   bne @loop
+
+   ; emit EOF signal
+   lda #$80
+   jsr CHROUT
+
+   ; close the file
+   lda #1
+   jsr CLOSE
+   jsr CLRCHN
+
+   pla
+   sta RAM_BANK
    rts
 .endproc
 
@@ -584,6 +630,27 @@ write_waiting_ticks:
    txa ; recall the bit mask
    ora (zp_pointer), y ; set bit
    sta (zp_pointer), y ; write back
+   rts
+.endproc
+
+
+; and advances zp_pointer and RAM bank
+.proc advance_buffer_address
+   sta (zp_pointer)
+   inc zp_pointer
+   beq @page_cross
+   rts
+@page_cross:
+   lda zp_pointer+1
+   inc
+   cmp #>ROM_WIN
+   bcs @bank_cross
+   sta zp_pointer+1
+   rts
+@bank_cross:
+   lda #>RAM_WIN
+   sta zp_pointer+1
+   inc RAM_BANK
    rts
 .endproc
 
