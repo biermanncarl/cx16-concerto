@@ -117,20 +117,27 @@ SYNTH_MACROS_INC = 1
    asl
    asl
 .ifdef concerto_enable_zsound_recording
+   phy
    pha
-   tax
-   lda frequency
-   jsr zsm_recording::write_psg_data
-   inx
-   lda frequency+1
-   jsr zsm_recording::write_psg_data
-   inx
-   lda volume
-   jsr zsm_recording::write_psg_data
-   inx
-   lda waveform
-   jsr zsm_recording::write_psg_data
+   ldx frequency
+   pha
+   jsr zsm_recording::psg_write
    pla
+   inc
+   ldx frequency+1
+   pha
+   jsr zsm_recording::psg_write
+   pla
+   inc
+   ldx volume
+   pha
+   jsr zsm_recording::psg_write
+   pla
+   inc
+   ldx waveform
+   jsr zsm_recording::psg_write
+   pla
+   ply
 .endif
    clc
    adc #$C0
@@ -165,7 +172,7 @@ SYNTH_MACROS_INC = 1
    inc
    tax
    lda #0
-   jsr zsm_recording::write_psg_data
+   ;jsr zsm_recording::write_psg_data
 
    ply
    plx
@@ -197,7 +204,7 @@ SYNTH_MACROS_INC = 1
    inc
    tax
    lda #0
-   jsr zsm_recording::write_psg_data
+   ;jsr zsm_recording::write_psg_data
 
    ply
    plx

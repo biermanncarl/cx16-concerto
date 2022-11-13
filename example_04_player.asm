@@ -19,7 +19,11 @@ start:
    ; initialize concerto
    jsr concerto_synth::initialize
 
-   jsr concerto_synth::zsm_recording::start_recording
+   ;jsr concerto_synth::zsm_recording::start_recording
+   lda #127
+   ldx #0
+   ldy #1
+   jsr concerto_synth::zsm_recording::init
 
    ; play song
    lda #1
@@ -35,7 +39,8 @@ mainloop:
    jsr $FFE4 ; GETIN
    beq mainloop
 
-   jsr concerto_synth::zsm_recording::stop_recording
+   ;jsr concerto_synth::zsm_recording::stop_recording
+   jsr concerto_synth::zsm_recording::end
 
    jsr concerto_synth::deactivate_synth
 

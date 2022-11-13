@@ -2,7 +2,7 @@ cl65 -t cx16 -o CONCERTO.PRG -C cx16-asm.cfg -u __EXEHDR__ -Ln CONCERTO.sym "exa
 cl65 -t cx16 -o EXAMPLE01.PRG -C cx16-asm.cfg -u __EXEHDR__ "example_01_hello_world_concerto.asm"
 cl65 -t cx16 -o EXAMPLE02.PRG -C cx16-asm.cfg -u __EXEHDR__ "example_02_playback.asm"
 cl65 -t cx16 -o EXAMPLE03.PRG -C cx16-asm.cfg -u __EXEHDR__ "example_03_pitchbend.asm"
-cl65 -t cx16 -o EXAMPLE04.PRG -C cx16-asm.cfg -u __EXEHDR__ "example_04_player.asm"
+cl65 -t cx16 -o EXAMPLE04.PRG -C cx16-asm.cfg -u __EXEHDR__ -Ln EXAMPLE04.sym "example_04_player.asm"
 cl65 -t cx16 -o EXAMPLE05.PRG -C cx16-asm.cfg -u __EXEHDR__ "example_05_modulation.asm"
 cl65 -t cx16 -o EXAMPLE06.PRG -C cx16-asm.cfg -u __EXEHDR__ "example_06_callback.asm"
 cl65 -t cx16 -o EXAMPLE07.PRG -C cx16-asm.cfg -u __EXEHDR__ "example_07_include_timbres.asm"

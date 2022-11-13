@@ -1105,7 +1105,7 @@ next_osc:
 
 end_synth_tick:
 .ifdef concerto_enable_zsound_recording
-   jsr zsm_recording::end_tick
+   jsr zsm_recording::tick
 .endif
 
    rts
