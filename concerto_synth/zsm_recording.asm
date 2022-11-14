@@ -112,7 +112,7 @@ zp_pointer: ; this can be pointed to any location in the zeropage, where a 16 bi
 ; Issue a command to a PSG register
 ; .A register number
 ; .X value
-; scraps .A, .X, .Y
+; discards .A, .X, .Y
 .proc psg_write
    ldy recorder_active
    bne :+

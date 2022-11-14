@@ -85,13 +85,18 @@ shutdown_isr:
 
    ; select operation mode of T1
    lda VIA_ACR
-   ; mode 00 - continuous operation, but no operation of PB7 pinout of the VIA.
+   ; mode 00 - timed interrupt (one-shot), and no operation of PB7 pinout of the VIA.
    and #%00111111 ; deactivate bits 7 and 6
    sta VIA_ACR
 
-   ; We don't uninstall the NMI vector yet, as the timer is still running and will issue one last NMI.
-   ; If we were to allow an NMI to occur with the original NMI vector, we would be facing a BRK.
-   ; Hence, we keep it for the last iteration and allow it to uninstall itself.
+   ; load time interval into timer latches ($0000 to stop the timer NOW and inhibit any further NMIs down the line, which make our life miserable)
+   stz VIA_T1C_L
+   stz VIA_T1C_H ; this causes the latched values to be loaded into the counter and thus stops the timer
+   ; an NMI will occur pretty much right away, as we set the counter to 0
+   ; We don't uninstall the NMI here, but let the NMI uninstall itself. This is safer.
+   ; If we were to allow an NMI to occur with the original NMI vector, we would be facing a BRK,
+   ; or worse, an emulator crash (when the wrong ROM page is selected).
+   ; Hence, we keep ours for the last iteration and allow it to uninstall itself.
 
    ; restore IRQ interrupt handler
    sei            ; block interrupts

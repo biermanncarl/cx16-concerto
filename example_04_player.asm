@@ -41,7 +41,6 @@ mainloop:
 
    jsr concerto_synth::deactivate_synth
 
-   ;jsr concerto_synth::zsm_recording::stop_recording
    jsr concerto_synth::zsm_recording::end
 
 
