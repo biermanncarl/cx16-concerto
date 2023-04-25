@@ -65,6 +65,18 @@
 ;    .include "concerto_synth.asm"
 ;
 
+; Selecting the timing source
+; ===========================
+; Either the AFLOW interrupt or the VIA1 can be used as timing source.
+; Using AFLOW blocks the usage of PCM audio, while the VIA1 timer uses non-maskable interrupts (NMI).
+; Before including this file, set concerto_clock_select either to 1 for AFLOW or to 2 for the VIA1 option,
+; for example:
+;
+;    concerto_clock_select = 1
+;    .include "concerto_synth.asm"
+;
+; By default, the VIA1 option is used. (If in doubt, check isr.asm)
+
 .pushseg
 .code
 

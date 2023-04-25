@@ -1,5 +1,7 @@
 ; Copyright 2021-2022 Carl Georg Biermann
 
+; This file contains the VIA1 timer using an NMI (non-maskable interrupt) variant of the ISR.
+
 ; flag which signals that a tick should be executed
 do_tick_flag:
    .byte 0
@@ -164,9 +166,18 @@ the_isr:
 
 
    ; auxiliary ISR for normal IRQs.
-   ; This is incase we did interrupt PS/2 communication.
-   ; By intercepting the normal IRQ, we can give ourselves a "hook" at the end of the Kernal's ISR,
-   ; check there if the do_tick_flag has been set, and then do the tick after the normal ISR has finished.
+   ; This custom IRQ handler acts as a protection of the KERNAL's default IRQ handler from the NMI
+   ; handler above.
+   ; It calls the KERNAL's default IRQ handler to allow it to execute its code, but it sets 
+   ; the dont_tick_flag before calling it and unsets it when the KERNAL's IRQ is done.
+   ; The NMI handler won't run the bulk of its code when that flag is set.
+   ; This is to make sure that the NMI handler doesn't interrupt the KERNAL's IRQ handler too much,
+   ; as the IRQ handler does time-critical PS/2 code. When that is interrupted for too long, the PS/2
+   ; communication can get corrupted.
+   ;
+   ; By intercepting the normal IRQ, we can also give ourselves a "hook" at the end of the Kernal's ISR,
+   ; check there if the do_tick_flag has been set (which indicates that the NMI has attempted to do a tick
+   ; but it didn't because the IRQ was running), and then do the tick after the normal ISR has finished.
 aux_isr:
    ; Situation: an IRQ has occurred.
    ; The Kernal Code has called us and has pushed A, X and Y before this piece of code is reached.
@@ -183,7 +194,8 @@ aux_isr:
    lda $0101,x
    pha
 
-   ; sneak our return address (and processor status for RTI) into the stack
+   ; sneak our return address (and processor status for RTI) into the stack,
+   ; so that the default IRQ handler returns to aux_isr_hook (after popping A, X and Y from the stack)
    lda #>aux_isr_hook
    sta $0103,x
    lda #<aux_isr_hook
@@ -191,6 +203,12 @@ aux_isr:
    php
    pla
    sta $0101,x
+   ; sneak our return address (and processor status for RTI) into the stack
+   ;lda #>aux_isr_hook
+   ;pha
+   ;lda #<aux_isr_hook
+   ;pha
+   ;php
 
    ; set flag that Kernal's ISR is running and hence no ticks are allowed
    lda #1
@@ -201,6 +219,8 @@ aux_isr:
 
    ; when the Kernal's IRQ is done, it will return here.
 aux_isr_hook:
+   ; the Kernal's IRQ popped these registers, which contains the status of the interrupted (main) code.
+   ; To be able to return to the main program properly, we will have to push them again so that we can restore them later.
    php
    pha
    phx

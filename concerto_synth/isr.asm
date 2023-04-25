@@ -2,11 +2,6 @@
 
 
 ; This file contains the custom ISR which calls the synth engine.
-; The AFLOW interrupt is hijacked, which is generated at
-; regular intervals if the FIFO buffer is fed with equally sized chunks of data.
-; PCM playback is fed with a few zeros, and played back at the lowest
-; possible sample rate. Therefore, not much time has to be spent feeding the
-; FIFO buffer.
 
 .scope isr
 

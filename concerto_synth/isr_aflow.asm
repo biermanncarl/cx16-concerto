@@ -1,5 +1,13 @@
 ; Copyright 2021-2022 Carl Georg Biermann
 
+; This file contains the AFLOW variant of the ISR.
+
+; The AFLOW interrupt is hijacked, which is generated at
+; regular intervals if the FIFO buffer is fed with equally sized chunks of data.
+; PCM playback is fed with a few zeros, and played back at the lowest
+; possible sample rate. Therefore, not much time has to be spent feeding the
+; FIFO buffer.
+
 launch_isr:
    lda engine_active
    beq :+
