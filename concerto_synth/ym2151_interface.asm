@@ -47,7 +47,7 @@ write_ym2151:
    nop
    nop
    sty YM_data
-.ifdef concerto_enable_zsound_recording
+.ifdef ::concerto_enable_zsound_recording
    ;jsr zsm_recording::write_fm_data
 .endif
    rts

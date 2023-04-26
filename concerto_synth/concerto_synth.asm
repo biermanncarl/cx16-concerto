@@ -88,7 +88,7 @@
 .include "pitch_data.asm"
 .include "vibrato_lut.asm"
 .include "synth_macros.asm"
-.ifdef concerto_enable_zsound_recording
+.ifdef ::concerto_enable_zsound_recording
    .include "zsm_recording.asm"
 .endif
 .include "timbres.asm"

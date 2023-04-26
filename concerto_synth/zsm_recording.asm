@@ -735,7 +735,7 @@ command_string:
 ; ,s,w : open sequential file for writing operation
 ;.byte 64,"0:test.zsm,s,w"
 ;.byte "../test.zsm,s,w"
-.byte "test.zsm,s,w"
+.byte 64,"0:test.zsm,s,w"
 @end_command_string:
 command_string_length = @end_command_string - command_string
 

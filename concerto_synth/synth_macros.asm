@@ -116,7 +116,7 @@ SYNTH_MACROS_INC = 1
    pla
    asl
    asl
-.ifdef concerto_enable_zsound_recording
+.ifdef ::concerto_enable_zsound_recording
    phy
    pha
    ldx frequency
@@ -163,7 +163,7 @@ SYNTH_MACROS_INC = 1
    txa
    asl
    asl
-.ifdef concerto_enable_zsound_recording
+.ifdef ::concerto_enable_zsound_recording
    pha
    phx
    phy
@@ -194,7 +194,7 @@ SYNTH_MACROS_INC = 1
    pla
    asl
    asl
-.ifdef concerto_enable_zsound_recording
+.ifdef ::concerto_enable_zsound_recording
    pha
    phx
    phy
