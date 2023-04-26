@@ -68,7 +68,7 @@
 ; Selecting the timing source
 ; ===========================
 ; Either the AFLOW interrupt or the VIA1 can be used as timing source.
-; Using AFLOW blocks the usage of PCM audio, while the VIA1 timer uses non-maskable interrupts (NMI).
+; Using AFLOW blocks the usage of PCM audio, while the VIA1 option uses a timer of the VIA1 chip.
 ; Before including this file, set concerto_clock_select either to 1 for AFLOW or to 2 for the VIA1 option,
 ; for example:
 ;

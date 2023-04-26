@@ -3,6 +3,9 @@
 
 ; This file contains the custom ISR which calls the synth engine.
 
+; Side note: in previous versions of the emulator, an NMI was triggered by VIA1, but now it's a regular IRQ.
+; The last commit with the working implementation for NMI is in this commit: eceada786839b36405aa23cdbcc21ee79b79fa05
+
 .scope isr
 
 ; define default timing source selector, if no other source has been selected yet

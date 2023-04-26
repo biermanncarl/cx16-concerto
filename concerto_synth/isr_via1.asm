@@ -1,17 +1,10 @@
 ; Copyright 2021-2022 Carl Georg Biermann
 
-; This file contains the VIA1 timer using an NMI (non-maskable interrupt) variant of the ISR.
-
-; flag which signals that a tick should be executed
-do_tick_flag:
-   .byte 0
+; This file contains the VIA1 timer option.
 
 ; flag which signals that a tick currently cannot be executed by the NMI
 dont_tick_flag:
    .byte 0
-
-default_nmi_isr:
-   .word 0
 
 ; subroutine for launching the ISR
 launch_isr:
@@ -36,29 +29,19 @@ launch_isr:
    ;sbc #0
    sta default_irq_isr+1
    ; overwrite vector with new address
-   lda #<aux_isr
-   ldx #>aux_isr
+   lda #<the_isr
+   ldx #>the_isr
    sei            ; block interrupts
    sta IRQVec
    stx IRQVec+1
    cli            ; allow interrupts
-
-   ; backup original NMI routine
-   lda NMIVec
-   sta default_nmi_isr
-   lda NMIVec+1
-   sta default_nmi_isr+1
-   ; overwrite NMI vector with our own routine
-   lda #<the_isr
-   ldy #>the_isr
-   sta NMIVec  ; let's just hope that no NMI occurs between those two instructions  ...
-   sty NMIVec+1
 
    ; initialize VIA Timer 1
    ; enable timer interrupts
    lda VIA_IER
    ora #%01000000 ; set bit 6 to enable T1 to issue NMIs
    sta VIA_IER
+
    ;load time interval into latches ($F5BE should generate a 127.17 Hz timer with an 8 MHz clock)
    lda #$BE
    sta VIA_T1C_L
@@ -72,6 +55,7 @@ launch_isr:
    sta VIA_ACR
 
    rts
+
 
 ; subroutine for stopping the ISR
 shutdown_isr:
@@ -118,128 +102,25 @@ shutdown_isr:
 
 ; The ISR doing the realtime synth stuff
 the_isr:
-   pha
-   phx
-   phy
-   ; check if the sound engine is supposed to be running. If not, uninstall custom NMI.
-   ; This must be done as after engine shutdown, one NMI is still firing after stopping the VIA timer.
-   lda engine_active
-   bne :+
-   lda default_nmi_isr
-   ldx default_nmi_isr+1
-   sta NMIVec
-   stx NMIVec+1
-   bra @end_tick
+   php
 
    ; check if the timer is the culprit and clear interrupt flag
-:  lda VIA_IFR
+   lda VIA_IFR
    and #%01000000 ; when bit 6 is set, the timer was the culprit
    beq @end_tick
    ; timer was the culprit. reset timer interrupt flag
    lda VIA_T1C_L
-   ; Now, check if the NMI interrupted another ISR (or code that should not be interrupted by an ISR)
-   lda dont_tick_flag
-   beq @do_tick
-
-   ; otherwise, we'll have to wait for the ISR to finish.
-@set_signal:
-   lda #1
-   sta do_tick_flag
-   bra @end_tick
 
 @do_tick:
    lda #1
-   sta dont_tick_flag ; prevent NMI from interrupting itself
+   sta dont_tick_flag ; prevent ISR from interrupting itself
    jsr do_tick
    stz dont_tick_flag
 
 
 @end_tick:
-   ply
-   plx
-   pla
-   rti ; in this case, the original NMI routine doesn't have to be called. It seems to just be a placeholder that can be overwritten.
-
-
-
-
-
-
-   ; auxiliary ISR for normal IRQs.
-   ; This custom IRQ handler acts as a protection of the KERNAL's default IRQ handler from the NMI
-   ; handler above.
-   ; It calls the KERNAL's default IRQ handler to allow it to execute its code, but it sets 
-   ; the dont_tick_flag before calling it and unsets it when the KERNAL's IRQ is done.
-   ; The NMI handler won't run the bulk of its code when that flag is set.
-   ; This is to make sure that the NMI handler doesn't interrupt the KERNAL's IRQ handler too much,
-   ; as the IRQ handler does time-critical PS/2 code. When that is interrupted for too long, the PS/2
-   ; communication can get corrupted.
-   ;
-   ; By intercepting the normal IRQ, we can also give ourselves a "hook" at the end of the Kernal's ISR,
-   ; check there if the do_tick_flag has been set (which indicates that the NMI has attempted to do a tick
-   ; but it didn't because the IRQ was running), and then do the tick after the normal ISR has finished.
-aux_isr:
-   ; Situation: an IRQ has occurred.
-   ; The Kernal Code has called us and has pushed A, X and Y before this piece of code is reached.
-   ; We now simulate an IRQ to the Kernel that gives us the hook at the end.
-   ; To achieve this, we need to insert three bytes into the stack. (This *should* be safe).
-
-   ; push A, X and Y to the top of the stack
-   ;.byte $db
-   tsx
-   lda $0103,x
-   pha
-   lda $0102,x
-   pha
-   lda $0101,x
-   pha
-
-   ; sneak our return address (and processor status for RTI) into the stack,
-   ; so that the default IRQ handler returns to aux_isr_hook (after popping A, X and Y from the stack)
-   lda #>aux_isr_hook
-   sta $0103,x
-   lda #<aux_isr_hook
-   sta $0102,x
-   php
-   pla
-   sta $0101,x
-   ; sneak our return address (and processor status for RTI) into the stack
-   ;lda #>aux_isr_hook
-   ;pha
-   ;lda #<aux_isr_hook
-   ;pha
-   ;php
-
-   ; set flag that Kernal's ISR is running and hence no ticks are allowed
-   lda #1
-   sta dont_tick_flag
-
-   jmp (default_irq_isr)
-
-
-   ; when the Kernal's IRQ is done, it will return here.
-aux_isr_hook:
-   ; the Kernal's IRQ popped these registers, which contains the status of the interrupted (main) code.
-   ; To be able to return to the main program properly, we will have to push them again so that we can restore them later.
-   php
-   pha
-   phx
-   phy
-
-   ; check if NMI attempted to do a tick
-   lda do_tick_flag
-   beq @end_aux
-   jsr do_tick
-   stz do_tick_flag
-
-@end_aux:
-   ; ticks are now allowed for the NMI again
-   stz dont_tick_flag
-   ply
-   plx
-   pla
    plp
-   rti
+   jmp (default_irq_isr)
 
 
 
@@ -301,12 +182,3 @@ do_tick:
    ; This is the longest duration we can time with the VIA, if I understand correctly!
    ; Needed for Concerto: 7.863696 ms. Good!
    ; Need counter of 62909.568 ~= 62910 = $F5BE
-
-   
-   ; Problem with NMIs: they are non-maskable.
-   ; They can therefore interrupt other interrupt service routines.
-   ; For example, when reading out keyboard or mouse data is done in a normal IRQ, it can be interrupted
-   ; by a NMI, and if the NMI takes too long, the keyboard or mouse data gets lost while the NMI is still executing.
-   ; This has been observed when using the NMI as timing source.
-   ; Despite using the NMI as timing source, the actual execution of the sound engine
-   ; should therefore be prioritized lower than the normal IRQ routine.
