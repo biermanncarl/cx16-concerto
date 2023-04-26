@@ -2,10 +2,6 @@
 
 ; This file contains the VIA1 timer option.
 
-; flag which signals that a tick currently cannot be executed by the NMI
-dont_tick_flag:
-   .byte 0
-
 ; subroutine for launching the ISR
 launch_isr:
    ; set ROM page to zero
@@ -111,56 +107,17 @@ the_isr:
    ; timer was the culprit. reset timer interrupt flag
    lda VIA_T1C_L
 
-@do_tick:
+   lda tick_is_running
+   bne @end_tick ; skip running the tick 
    lda #1
-   sta dont_tick_flag ; prevent ISR from interrupting itself
+   sta tick_is_running ; prevent ISR from interrupting itself
    jsr do_tick
-   stz dont_tick_flag
-
+   stz tick_is_running
 
 @end_tick:
    plp
    jmp (default_irq_isr)
 
-
-
-do_tick:
-   ; backup shared variables (shared means: both main program and ISR can use them)
-   lda mzpba
-   pha
-   lda mzpbe
-   pha
-   lda mzpbf
-   pha
-   lda mzpbg
-   pha
-   lda VERA_addr_low
-   pha
-   lda VERA_addr_mid
-   pha
-   lda VERA_addr_high
-   pha
-   ; call playback routine
-   jsr concerto_playback_routine
-   ; do synth tick updates
-   jsr synth_engine::synth_tick
-   ; restore shared variables
-   pla
-   sta VERA_addr_high
-   pla
-   sta VERA_addr_mid
-   pla
-   sta VERA_addr_low
-   pla
-   sta mzpbg
-   pla
-   sta mzpbf
-   pla
-   sta mzpbe
-   pla
-   sta mzpba
-
-   rts
 
    ; VIA notes
    ; VIA #1's IRQ line is connected to the CPU's NMI line

@@ -120,41 +120,12 @@ the_isr:
    sta VERA_audio_data
    sta VERA_audio_data
 
-@do_tick:
-   ; backup shared variables (shared means: both main program and ISR can use them)
-   lda mzpba
-   pha
-   lda mzpbe
-   pha
-   lda mzpbf
-   pha
-   lda mzpbg
-   pha
-   lda VERA_addr_low
-   pha
-   lda VERA_addr_mid
-   pha
-   lda VERA_addr_high
-   pha
-   ; call playback routine
-   jsr concerto_playback_routine
-   ; do synth tick updates
-   jsr synth_engine::synth_tick
-   ; restore shared variables
-   pla
-   sta VERA_addr_high
-   pla
-   sta VERA_addr_mid
-   pla
-   sta VERA_addr_low
-   pla
-   sta mzpbg
-   pla
-   sta mzpbf
-   pla
-   sta mzpbe
-   pla
-   sta mzpba
+   lda tick_is_running
+   bne @end_tick ; skip running the tick 
+   lda #1
+   sta tick_is_running ; prevent ISR from interrupting itself
+   jsr do_tick
+   stz tick_is_running
 
 @end_tick:
    plp

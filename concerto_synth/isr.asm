@@ -22,6 +22,51 @@ default_irq_isr:
    .word $0000
 default_rom_page:
    .byte 0
+; flag which signals that a tick is currently already running
+tick_is_running:
+   .byte 0
+
+
+; this is the common part between the AFLOW and VIA1 solutions
+do_tick:
+   ; backup shared variables (shared means: both main program and ISR can use them)
+   lda mzpba
+   pha
+   lda mzpbe
+   pha
+   lda mzpbf
+   pha
+   lda mzpbg
+   pha
+   lda VERA_addr_low
+   pha
+   lda VERA_addr_mid
+   pha
+   lda VERA_addr_high
+   pha
+   ; call playback routine
+   jsr concerto_playback_routine
+   ; do synth tick updates
+   jsr synth_engine::synth_tick
+   ; restore shared variables
+   pla
+   sta VERA_addr_high
+   pla
+   sta VERA_addr_mid
+   pla
+   sta VERA_addr_low
+   pla
+   sta mzpbg
+   pla
+   sta mzpbf
+   pla
+   sta mzpbe
+   pla
+   sta mzpba
+
+   rts
+
+
 
 ; AFLOW routines
 ; ==============
