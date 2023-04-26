@@ -9,9 +9,9 @@
 .scope isr
 
 ; define default timing source selector, if no other source has been selected yet
-.ifndef concerto_clock_select
-   ;concerto_clock_select = CONCERTO_CLOCK_AFLOW
-   concerto_clock_select = CONCERTO_CLOCK_VIA1_T1
+.ifndef ::concerto_clock_select
+   ;::concerto_clock_select = CONCERTO_CLOCK_AFLOW
+   ::concerto_clock_select = CONCERTO_CLOCK_VIA1_T1
 .endif
 
 ; this variable says whether or not the Concerto synth engine has been activated or not.
@@ -70,7 +70,7 @@ do_tick:
 
 ; AFLOW routines
 ; ==============
-.if concerto_clock_select = CONCERTO_CLOCK_AFLOW
+.if ::concerto_clock_select = CONCERTO_CLOCK_AFLOW
 
 .include "isr_aflow.asm"
 
@@ -80,7 +80,7 @@ do_tick:
 
 ; VIA1_T1 routines
 ; ================
-.if concerto_clock_select = CONCERTO_CLOCK_VIA1_T1
+.if ::concerto_clock_select = CONCERTO_CLOCK_VIA1_T1
 
 .include "isr_via1.asm"
 
