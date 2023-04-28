@@ -228,23 +228,15 @@ zp_pointer: ; this can be pointed to any location in the zeropage, where a 16 bi
 ; ============
 ; Flushes all commands of the current tick to the
 ; output buffer and inserts waiting commands if needed
+; discards .A, .X, .Y
 .proc tick
-   ; ToDo
-   ; waiting logic
-      ; increase pending_ticks
-      ; check if 255
-      ; check if psg commands exist
-      ; check if fm commands exist
-      ; then write a wait command
-   ; flush fm buffer
-   ; flush psg buffer
    lda recorder_active
    bne :+
    rts
 :
    ; prepare buffer write operations
    lda RAM_BANK
-   pha
+   pha ; save current RAM bank
    lda current_bank
    sta RAM_BANK
    lda current_low_address
@@ -252,9 +244,24 @@ zp_pointer: ; this can be pointed to any location in the zeropage, where a 16 bi
    lda current_low_address+1
    sta zp_pointer+1
 
-   ; write one waiting tick (TODO: accumulate ticks when possible)
-   lda #$81
+
+   ; tick logic
+   ; ==========
+   lda pending_ticks
+   beq @end_ticks ; (pending_ticks being zero will only happen directly after initialization)
+   cmp #127 ; check if we have reached the maximum possible number of ticks for a single wait command
+   beq @emit_ticks
+   ; we're not at maximum wait length yet.
+   ; check if there's any commands being issued
+   lda fm_num_pairs
+   ora psg_num_pairs
+   beq @end_ticks
+@emit_ticks:
+   lda pending_ticks
+   ora #%10000000
    jsr write_byte
+   stz pending_ticks
+@end_ticks:
 
 
    ; flush FM buffer
@@ -327,6 +334,8 @@ zp_pointer: ; this can be pointed to any location in the zeropage, where a 16 bi
    ; restore RAM bank
    pla
    sta RAM_BANK
+   ; advance clock
+   inc pending_ticks
    rts
 
    ; Assumes value in .A
