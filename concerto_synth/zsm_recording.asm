@@ -27,6 +27,11 @@
 ;    * any further cleanup needed
 ; * maybe a recording to BRAM is needed and data is written to the file in the end
 
+; Known limitations of recording routines:
+; * FM channel bit mask only considers key-on and key-off events
+; * supports only up to 70 PSG operations and 250 FM operations per tick
+; * filters out only direct duplicates (e.g. A-B-A within the same tick is not filtered out, even though it's equivalent to just A)
+
 ; variables / buffers needed
 ; 
 ; * command buffer for PSG
@@ -122,7 +127,6 @@ zp_pointer: ; this can be pointed to any location in the zeropage, where a 16 bi
    ; check if register hasn't been initialized yet
    ldx #<psg_init_markers
    ldy #>psg_init_markers
-   ;.byte $db
    jsr test_and_set_bit
    beq @prep_write
    ; it has been initialized already. 
@@ -161,17 +165,55 @@ zp_pointer: ; this can be pointed to any location in the zeropage, where a 16 bi
 ; discards .A and .Y
 ; preserves .X
 .proc fm_write
+   ldy recorder_active
+   bne :+
+   rts
+:
    ; ToDo
-   ; check if it's a write to $08
-      ; mark FM channel as used
    ; check if it's a write to $19
       ; mapping $19->$1A
-   ; check if value hasn't been init'ed yet
-   ; check if mirror says something else
-   ; then put msg into buffer
+   pha
+   phx
+   cmp #$08 ; is it a key-on or key-off event?
+   bne :+
 
-   ; but before we have a full-blown implementation, here's some mockup code
-   ; simply echo everything
+   ; it's a key-on or key-off event
+   ; -> determine channel number (lower three bits of .X) to set channel bit mask
+   txa
+   and #%00000111
+   ldx #<fm_channel_mask
+   ldy #>fm_channel_mask
+   jsr set_bit
+   plx
+   pla
+   bra @write_to_buffer ; we don't filter key-on or key-off events
+
+:  ; not a key-on or key-off event
+   ; TODO: handle $19 (LFO modulation depth)
+   ; check if register hasn't been initialized yet
+   ldx #<fm_init_markers
+   ldy #>fm_init_markers
+   jsr test_and_set_bit ; has the register already been written to?
+   beq @prep_write_to_buffer ; if not, we want to output the byte
+
+   ; check mirror
+   pla ; pull in "wrong order" to facilitate lookup in the fm_mirror
+   ply
+   ;.byte $db
+   cmp fm_mirror, y
+   bne :+ ; if they're equal, we can skip this operation
+   rts
+:  sta fm_mirror, y
+   ; swap registers back
+   tax
+   tya
+   bra @write_to_buffer
+
+@prep_write_to_buffer:
+   plx
+   pla
+
+@write_to_buffer:
    ldy fm_num_pairs
    sta fm_address_buffer, y
    txa
