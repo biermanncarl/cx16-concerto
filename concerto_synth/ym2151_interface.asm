@@ -48,7 +48,13 @@ write_ym2151:
    nop
    sty YM_data
 .ifdef ::concerto_enable_zsound_recording
-   ;jsr zsm_recording::write_fm_data
+   pha
+   phy
+   phy ; essentially copy .Y to .X via the stack
+   plx
+   jsr zsm_recording::fm_write
+   ply
+   pla
 .endif
    rts
 

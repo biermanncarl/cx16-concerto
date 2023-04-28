@@ -140,11 +140,11 @@ zp_pointer: ; this can be pointed to any location in the zeropage, where a 16 bi
    ; write value into mirror
    sta psg_mirror, x
    ; put command into buffer
-   ldy psg_num_writes
+   ldy psg_num_pairs
    sta psg_data_buffer, y
    txa
    sta psg_address_buffer, y
-   inc psg_num_writes
+   inc psg_num_pairs
    ; mark channel as used
    lsr
    lsr
@@ -155,21 +155,35 @@ zp_pointer: ; this can be pointed to any location in the zeropage, where a 16 bi
 .endproc
 
 
-; Issue a command to a PSG register
+; Issue a command to a register in the YM2151
 ; .A register number
 ; .X value
+; discards .A and .Y
+; preserves .X
 .proc fm_write
    ; ToDo
    ; check if it's a write to $08
-      ; mark channel as used
+      ; mark FM channel as used
    ; check if it's a write to $19
       ; mapping $19->$1A
    ; check if value hasn't been init'ed yet
    ; check if mirror says something else
    ; then put msg into buffer
+
+   ; but before we have a full-blown implementation, here's some mockup code
+   ; simply echo everything
+   ldy fm_num_pairs
+   sta fm_address_buffer, y
+   txa
+   sta fm_data_buffer, y
+   inc fm_num_pairs
+
    rts
 .endproc
 
+
+; Tick routine
+; ============
 ; Flushes all commands of the current tick to the
 ; output buffer and inserts waiting commands if needed
 .proc tick
@@ -196,17 +210,60 @@ zp_pointer: ; this can be pointed to any location in the zeropage, where a 16 bi
    lda current_low_address+1
    sta zp_pointer+1
 
-   ; write one waiting tick
+   ; write one waiting tick (TODO: accumulate ticks when possible)
    lda #$81
    jsr write_byte
 
-   ; clear FM buffer
-   stz fm_num_writes
+
+   ; flush FM buffer
+   ; ===============
+   ; The ZSOUND signal byte that tells how many FM reg/val pairs will come next allows up to 63 pairs being written at once.
+   lda fm_num_pairs ; keeps track of how many pairs are remaining
+   ldx #0 ; In this section, .X is used as the contiguous "pair index".
+@fm_flush_outer_loop: ; the outer loop is necessary to split the stream of data into segments of at most 63 reg/val pairs
+   ; expecting current "pair index" in .X, and fm_num_pairs in .A
+   cmp #64 ; see if we have more pairs than we can flush in one go
+   bcc :+ ; branch if we have 63 or less pairs left
+
+   ; here we have 64 or more pairs left - do 63 of them
+   sbc #63 ; carry for subtraction is already set as per branching condition
+   sta fm_num_pairs
+   lda #$7f
+   jsr write_byte ; emit ZSOUND fm signal byte to write 63 FM pairs
+   ldy #63 ; set loop counter
+   bra @fm_flush_inner_loop
+
+:  ; here we have 63 or less pairs left, which means we'll finish after the next inner loop
+   cmp #0
+   beq @fm_flush_outer_end
+   tay ; set loop counter
+   ora #%01000000 ; set bit 6 to indicate that we are writing FM data.
+   jsr write_byte ; emit ZSOUND fm signal byte
+   stz fm_num_pairs ; we will write all remaining pairs in this iteration
+
+@fm_flush_inner_loop:
+   ; in the inner loop, .Y is the loop counter, which is guaranteed to be at least 1 during the first iteration
+   lda fm_address_buffer, x
+   jsr write_byte
+   lda fm_data_buffer, x
+   jsr write_byte
+   inx
+   dey
+   bne @fm_flush_inner_loop
+
+@fm_flush_inner_end:
+   ; are we done yet with fm data?
+   lda fm_num_pairs
+   bne @fm_flush_outer_loop
+
+@fm_flush_outer_end:
+
 
    ; flush PSG buffer
+   ; ================
    ldx #0
 @psg_flush_loop:
-   cpx psg_num_writes
+   cpx psg_num_pairs
    beq @psg_flush_end
    lda psg_address_buffer, x
    jsr write_byte
@@ -215,7 +272,7 @@ zp_pointer: ; this can be pointed to any location in the zeropage, where a 16 bi
    inx
    bra @psg_flush_loop
 @psg_flush_end:
-   stz psg_num_writes
+   stz psg_num_pairs
 
 
    ; save the tip of the output
@@ -231,6 +288,8 @@ zp_pointer: ; this can be pointed to any location in the zeropage, where a 16 bi
    rts
 
    ; Assumes value in .A
+   ; discards .A
+   ; preserves .X and .Y
    .proc write_byte
       sta (zp_pointer)
       jsr advance_buffer_address
@@ -467,11 +526,11 @@ write_fm_data:
    tay
    txa
 @register_instruction:
-   ldx fm_num_writes
+   ldx fm_num_pairs
    sta fm_address_buffer, x
    tya
    sta fm_data_buffer, x
-   inc fm_num_writes
+   inc fm_num_pairs
    bra @end
 
 
@@ -482,7 +541,7 @@ end_tick:
    ldy #0 ; how many register values can be written before the next "FM write" ZSM command.
 @fm_loop_start:
    ; all writes done?
-   cpx fm_num_writes
+   cpx fm_num_pairs
    beq @fm_loop_end
 
    jsr write_waiting_ticks ; write out any pending waiting ticks before writing YM2151 data
@@ -495,7 +554,7 @@ end_tick:
    eor #$FF ; negate (invert bits, add one)
    inc
    clc
-   adc fm_num_writes ; add total number of writes. the result is the remaining number of writes.
+   adc fm_num_pairs ; add total number of writes. the result is the remaining number of writes.
    cmp #63 ; smaller than maximum allowed?
    bcc @use_number_directly
    lda #63 ; use maximum allowed
@@ -513,7 +572,7 @@ end_tick:
    dey
    bra @fm_loop_start
 @fm_loop_end:
-   stz fm_num_writes
+   stz fm_num_pairs
 
    ; wait for one tick
    inc pending_ticks
@@ -711,9 +770,9 @@ fm_channel_mask:
    .byte 0
 
 ; number of instructions that have been sent
-psg_num_writes:
+psg_num_pairs:
    .byte 0
-fm_num_writes:
+fm_num_pairs:
    .byte 0
 
 ; init markers: save whether a byte has been written to already or not
