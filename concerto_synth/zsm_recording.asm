@@ -194,25 +194,22 @@ zp_pointer: ; this can be pointed to any location in the zeropage, where a 16 bi
    ; check if register hasn't been initialized yet
    ldx #<fm_init_markers
    ldy #>fm_init_markers
-   jsr test_and_set_bit ; has the register already been written to?
-   beq @prep_write_to_buffer ; if not, we want to output the byte
-
-   ; check mirror
-   pla ; pull in "wrong order" to facilitate lookup in the fm_mirror
+   jsr test_and_set_bit ; has the register already been written to? (zero flag is 0 if yes)
+   clc
+   beq :+ ; convert zero flag to carry flag, which survives the following stack operations
+   sec
+:  pla ; pull in "wrong order" to facilitate lookup in the fm_mirror
    ply
-   ;.byte $db
-   cmp fm_mirror, y
-   bne :+ ; if they're equal, we can skip this operation
+   bcc @end_mirror_check ; skip mirror check if we never wrote to that register
+   cmp fm_mirror, y ; check mirror
+   bne @end_mirror_check ; if they're equal, we can end
    rts
-:  sta fm_mirror, y
+@end_mirror_check:
+   ; write current data into the mirror
+   sta fm_mirror, y
    ; swap registers back
    tax
    tya
-   bra @write_to_buffer
-
-@prep_write_to_buffer:
-   plx
-   pla
 
 @write_to_buffer:
    ldy fm_num_pairs
@@ -427,7 +424,6 @@ zp_pointer: ; this can be pointed to any location in the zeropage, where a 16 bi
 .proc shift_bit
    tax
    lda #1
-   clc
    cpx #0
 @loop:
    beq @end
@@ -469,12 +465,11 @@ zp_pointer: ; this can be pointed to any location in the zeropage, where a 16 bi
 ; .Y high address
 ; return: zero flag is reset if bit was set
 .proc test_and_set_bit
-   ;.byte $db
    stx zp_pointer ; store address in scrap register on ZP
    sty zp_pointer+1 ; for indirect bit field access
    tay ; keep copy of the index in .Y
-   and #%00000111 ; create bit mask
-   jsr shift_bit
+   and #%00000111 ; get the position of the bit inside a byte
+   jsr shift_bit ; create bit mask accordingly
    tax ; store bit mask in .X
    tya ; recall the copy of the index
    lsr ; get the byte index
