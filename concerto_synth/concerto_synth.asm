@@ -61,7 +61,7 @@
 ; As this comes with a runtime and memory overhead, it must be enabled via a compiler variable.
 ; Before including this file, set the variable, for example as follows:
 ;
-;    concerto_enable_zsound_recorder = 1
+;    concerto_enable_zsound_recording = 1
 ;    .include "concerto_synth.asm"
 ;
 
@@ -123,6 +123,9 @@ free_fm_voices = voices::FMmap::nfv
 initialize:
 .ifndef concerto_use_timbres_from_file
    jsr timbres::init_timbres
+.endif
+.ifdef concerto_enable_zsound_recording
+   stz zsm_recording::recorder_active
 .endif
    jsr voices::init_voices
    rts

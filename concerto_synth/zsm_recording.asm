@@ -1,4 +1,4 @@
-; Copyright 2022 Carl Georg Biermann
+; Copyright 2022-2023 Carl Georg Biermann
 
 ; This file provides routines and memory needed for recording Zsound data.
 
@@ -172,6 +172,7 @@ zp_pointer: ; this can be pointed to any location in the zeropage, where a 16 bi
    ; ToDo
    ; check if it's a write to $19
       ; mapping $19->$1A
+   ; scrub the IRQ_ENA bits if writing to $14
    pha
    phx
    cmp #$08 ; is it a key-on or key-off event?
@@ -189,7 +190,7 @@ zp_pointer: ; this can be pointed to any location in the zeropage, where a 16 bi
    bra @write_to_buffer ; we don't filter key-on or key-off events
 
 :  ; not a key-on or key-off event
-   ; TODO: handle $19 (LFO modulation depth)
+   ; TODO: handle $19 (LFO modulation depth) and $14
    ; check if register hasn't been initialized yet
    ldx #<fm_init_markers
    ldy #>fm_init_markers

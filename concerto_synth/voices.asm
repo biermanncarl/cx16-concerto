@@ -557,10 +557,13 @@ stop_note:
    adc #YM_TL
    ldy #%01111111
    jsr write_ym2151
+   clc
    adc #8
    jsr write_ym2151
+   clc
    adc #8
    jsr write_ym2151
+   clc
    adc #8
    jsr write_ym2151
 

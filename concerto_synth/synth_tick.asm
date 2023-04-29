@@ -873,6 +873,7 @@ end_env: ; jump here when done with all envelopes
    ; this is trivial
    ldy osc_fine
    lda #YM_KF
+   clc
    adc voices::Voice::fm_voice_map, x
    jsr voices::write_ym2151
 
