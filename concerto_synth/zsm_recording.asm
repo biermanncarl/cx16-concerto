@@ -341,10 +341,13 @@ zp_pointer: ; this can be pointed to any location in the zeropage, where a 16 bi
 
 
 ; Ends the recording and writes the recorded commands into a file.
-; Currently, the file is always called TEST.ZSM (ToDo: implement file name as zero-terminated string argument)
+; Takes the file name as a zero-terminated string. Must not be empty!
+; .A low byte of starting address of the string
+; .X high byte of starting address of the string
+; discards .A, .X, .Y
 .proc finish
-   lda RAM_BANK
-   pha
+   pha ; save the pointer to the stack
+   phx
 
    ; finish up emitting bytes
    jsr tick
@@ -360,12 +363,43 @@ zp_pointer: ; this can be pointed to any location in the zeropage, where a 16 bi
    lda psg_channel_mask+1
    sta RAM_WIN+11
 
+
+   ; generate the file command string
+   ; copy file name
+   plx ; recall pointer to file name
+   pla
+   sta zp_pointer
+   stx zp_pointer+1
+   ldy #$FF ; setting to 255 instead of 0 allows incrementing at the beginning of the loop
+@filename_copy_loop:
+   iny
+   lda (zp_pointer),y
+   sta file_name,y
+   bne @filename_copy_loop
+   ; add ",s,w" to the command
+   lda #','
+   sta file_name,y
+   iny
+   lda #'s'
+   sta file_name,y
+   iny
+   lda #','
+   sta file_name,y
+   iny
+   lda #'w'
+   sta file_name,y
+   ; calculate command length
+   tya
+   clc
+   adc #4 ; account for characters in the prefix, too
+
+
    ; write buffer to a file
    ; =====================
    ; OPEN THE OUTPUT FILE
-   lda #command_string_length
-   ldx #<command_string
-   ldy #>command_string
+   ; expecting command length in .A
+   ldx #<file_command
+   ldy #>file_command
    jsr SETNAM ; set file name
    ; setlfs - set logical file number
    lda #1 ; logical file number
@@ -379,6 +413,8 @@ zp_pointer: ; this can be pointed to any location in the zeropage, where a 16 bi
    jsr CHKOUT
 
    ; emit data into file
+   lda RAM_BANK
+   pha ; save RAM bank
    stz zp_pointer
    lda #>RAM_WIN
    sta zp_pointer+1
@@ -543,6 +579,30 @@ fm_data_buffer:
    .res fm_maximum_buffer_length
 
 
+file_name_max_length = 20
+file_command:
+file_command_prefix:
+; @ symbol (Petscii 64): save and replace existing file
+; 0: use drive mechanism zero attached to that drive controller ...
+   .byte 64,"0:"
+file_name:
+   .res file_name_max_length + 4 ; reserve 4 bytes for ",s,w" appendix
+
+
+; the header is initialized by the init routine, as well
+header_data:
+   .byte $7A, $6D ; magic sequence "zm"
+   .byte 1 ; ZSM version number
+   .byte 0, 0, 0 ; loop point, zero is no loop
+   .byte 0, 0, 0 ; PCM offset, zero is no PCM
+   .byte 0 ; FM channel bit mask
+   .byte 0, 0 ; PSG channel bit mask
+   .byte 127, 0 ; Tick rate, Concerto uses 127.17 Hz, 127 is close enough
+   .byte 0, 0 ; Reserved for future use. Set to zero.
+@header_data_end:
+header_length = @header_data_end - header_data
+
+
 
 ; >>>>>>> RESET AREA BEGIN
 ; These are variables which have to be initialized with zero when the recording is started
@@ -571,30 +631,5 @@ fm_init_markers:
 
 ; <<<<<<< RESET AREA END
 reset_area_end:
-
-
-
-
-command_string:
-; @ symbol (Petscii 64): save and replace existing file
-; 0: use drive mechanism zero attached to that drive controller ...
-; filename
-; ,s,w : open sequential file for writing operation
-.byte 64,"0:test.zsm,s,w"
-@end_command_string:
-command_string_length = @end_command_string - command_string
-
-
-header_data:
-   .byte $7A, $6D ; magic sequence "zm"
-   .byte 1 ; ZSM version number
-   .byte 0, 0, 0 ; loop point, zero is no loop
-   .byte 0, 0, 0 ; PCM offset, zero is no PCM
-   .byte 0 ; FM channel bit mask
-   .byte 0, 0 ; PSG channel bit mask
-   .byte 127, 0 ; Tick rate, Concerto uses 127.17 Hz, 127 is close enough
-   .byte 0, 0 ; Reserved for future use. Set to zero.
-@header_data_end:
-header_length = @header_data_end - header_data
 
 .endscope ; zsm_recording

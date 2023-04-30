@@ -41,6 +41,8 @@ mainloop:
 
    jsr concerto_synth::deactivate_synth
 
+   lda #<filename
+   ldx #>filename
    jsr concerto_synth::zsm_recording::finish
 
 
@@ -49,6 +51,8 @@ mainloop:
 
 
 ; DATA
+filename:
+   .byte "recording.zsm",0
 
 BASENOTE = 53
 TIME = 22
