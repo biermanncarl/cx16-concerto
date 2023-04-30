@@ -41,7 +41,7 @@ mainloop:
 
    jsr concerto_synth::deactivate_synth
 
-   jsr concerto_synth::zsm_recording::end
+   jsr concerto_synth::zsm_recording::finish
 
 
    rts

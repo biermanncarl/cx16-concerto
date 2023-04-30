@@ -1,53 +1,40 @@
 ; Copyright 2022-2023 Carl Georg Biermann
 
-; This file provides routines and memory needed for recording Zsound data.
 
-; ToDo
-; * start recording
-;    * initializes memory & variables
-;    * opens a file where the data can be written to
-;    * writes header data into file
-;    * assume all zeros for "current" buffer (? what forces first writes into any location ?)
-; * write PSG
-;    * accepts address/value pair for PSG
-;    * stores it into a temporary buffer
-;    * forwards the data to the VERA
-; * write YM2151
-;    * accepts address/value pair for YM2151
-;    * writes it into temporary buffer
-;    * forwards data to YM2151
-; * flush tick
-;    * compares currently set values with previously set values
-;    * filters out redundant writes
-;    * handles exceptions to this, such as KON register of the YM2151
-;    * flush command values to "back buffers"
-;    * write
-; * stop recording
-;    * close file
-;    * any further cleanup needed
-; * maybe a recording to BRAM is needed and data is written to the file in the end
+; This file provides routines and memory needed for recording Zsound data.
+;
+; The basic idea is that every time you would write a command to the programmable sound generators (PSGs)
+; in the VERA, or the YM2151 chip, you can instead, or additionally, call a function from this library,
+; which stores the command into a buffer in banked RAM and at the end can export them into a valid ZSM file.
+;
+; Follow these steps to record a ZSM file:
+;
+;   1. Call "init" to initialize variables and buffers needed for the recording.
+;   2. Record data. Repeat:
+;     2.1 Call "psg_write" as often as needed, to record commands the the PSGs.
+;     2.2 Call "fm_write" as often as needed, to record commands to the YM2151. (fm_write and psg_write may be called in arbitrary succession)
+;     2.3 Call "tick" to advance music time by one tick and flush all commands into banked RAM
+;   3. Call "finish" to export as a ZSM file.
+;
+; The recorder applies a simple filtering mechanism to reduce duplicate writing operations to the same register.
+; The recording routines can be made to act passive by controlling the "recorder_active" switch.
+
+
+
 
 ; Known limitations of recording routines:
 ; * FM channel bit mask only considers key-on and key-off events
 ; * supports only up to 70 PSG operations and 250 FM operations per tick
 ; * filters out only direct duplicates (e.g. A-B-A within the same tick is not filtered out, even though it's equivalent to just A)
-
-; variables / buffers needed
-; 
-; * command buffer for PSG
-; * command buffer for YM2151
-; * back buffer for YM2151
-; * back buffer for VERA
-; * file stuff
-; * 
+; * Output file is always overwritten (safety measures to prevent unwanted data loss is offloaded to the user)
 
 .scope zsm_recording
 
-zsm_version = 1 ; Do not change! This file only implements version 1.
+zsm_version = 1 ; Do not change! This file only implements ZSM version 1.
 
 .pushseg
 .zeropage
-zp_pointer: ; this can be pointed to any location in the zeropage, where a 16 bit variable can be safely used by the recorder
+zp_pointer: ; this can be pointed to any location in the zeropage, where a 16 bit variable can be safely used by the recorder (only temporary storage is needed)
    .res 2
 .popseg
 
@@ -56,13 +43,15 @@ zp_pointer: ; this can be pointed to any location in the zeropage, where a 16 bi
 ; .A tick rate low
 ; .X tick rate high
 ; .Y ram bank (where recording data should be stored)
+; preserves .Y
+; discards .A and .X
 .proc init
    ; initialize variables
    sta tick_rate
    stx tick_rate+1
    sty start_bank
    sty current_bank
-   lda #$10
+   lda #$10 ; start saving commands after the header
    sta current_low_address
    lda #>RAM_WIN
    sta current_low_address+1
@@ -115,6 +104,8 @@ zp_pointer: ; this can be pointed to any location in the zeropage, where a 16 bi
 
 
 ; Issue a command to a PSG register
+; This routine only serves the recording purpose, no sound output.
+; psg_maximum_buffer_length gives the maximum allowed number of PSG writing operations per tick.
 ; .A register number
 ; .X value
 ; discards .A, .X, .Y
@@ -160,10 +151,11 @@ zp_pointer: ; this can be pointed to any location in the zeropage, where a 16 bi
 
 
 ; Issue a command to a register in the YM2151
+; This routine only serves the recording purpose, no sound output.
+; fm_maximum_buffer_length gives the maximum allowed number of FM writing operations per tick.
 ; .A register number
 ; .X value
-; discards .A and .Y
-; preserves .X
+; discards .A, .X, .Y
 .proc fm_write
    ldy recorder_active
    bne :+
@@ -225,7 +217,8 @@ zp_pointer: ; this can be pointed to any location in the zeropage, where a 16 bi
 ; Tick routine
 ; ============
 ; Flushes all commands of the current tick to the
-; output buffer and inserts waiting commands if needed
+; output buffer and inserts waiting commands if needed.
+; No parameters.
 ; discards .A, .X, .Y
 .proc tick
    lda recorder_active
@@ -243,8 +236,8 @@ zp_pointer: ; this can be pointed to any location in the zeropage, where a 16 bi
    sta zp_pointer+1
 
 
-   ; tick logic
-   ; ==========
+   ; waiting tick logic
+   ; ==================
    lda pending_ticks
    beq @end_ticks ; (pending_ticks being zero will only happen directly after initialization)
    cmp #127 ; check if we have reached the maximum possible number of ticks for a single wait command
@@ -347,7 +340,9 @@ zp_pointer: ; this can be pointed to any location in the zeropage, where a 16 bi
 .endproc
 
 
-.proc end
+; Ends the recording and writes the recorded commands into a file.
+; Currently, the file is always called TEST.ZSM (ToDo: implement file name as zero-terminated string argument)
+.proc finish
    lda RAM_BANK
    pha
 
@@ -431,30 +426,6 @@ zp_pointer: ; this can be pointed to any location in the zeropage, where a 16 bi
    dex
    bra @loop
 @end:
-   rts
-.endproc
-
-
-; REMOVE? REMOVE? REMOVE?
-; tests if a certain bit is set in a packed bit field
-; .A index
-; .X low address
-; .Y high address
-; return: zero flag is reset if bit was set
-.proc test_bit
-   stx zp_pointer ; store address in scrap register on ZP
-   sty zp_pointer+1 ; for indirect bit field access
-   tax ; keep copy of the index in .X
-   lsr ; extract the byte index
-   lsr
-   lsr
-   tay
-   lda (zp_pointer), y ; read byte from bit field
-   sta zp_pointer ; and save it in scrap register
-   txa ; recall the copy of the index
-   and #%00000111 ; generate bit mask
-   jsr shift_bit
-   and zp_pointer ; compare bit mask with bit field
    rts
 .endproc
 
@@ -548,7 +519,7 @@ tick_rate:
    .word 0
 
 
-; mirrors mirror the data stored on the respective chips as reference for comparison
+; mirrors mirror the data stored on the respective chips as reference for deduplication
 psg_mirror_size = 64
 psg_mirror:
    .res psg_mirror_size
@@ -574,8 +545,8 @@ fm_data_buffer:
 
 
 ; >>>>>>> RESET AREA BEGIN
-; These are variables which have to be initialized with zero
-; Clumping them together in memory allows for eays initialization.
+; These are variables which have to be initialized with zero when the recording is started
+; Clumping them together in memory allows for easy initialization.
 reset_area_begin:
 
 pending_ticks:
@@ -609,8 +580,6 @@ command_string:
 ; 0: use drive mechanism zero attached to that drive controller ...
 ; filename
 ; ,s,w : open sequential file for writing operation
-;.byte 64,"0:test.zsm,s,w"
-;.byte "../test.zsm,s,w"
 .byte 64,"0:test.zsm,s,w"
 @end_command_string:
 command_string_length = @end_command_string - command_string
@@ -621,30 +590,11 @@ header_data:
    .byte 1 ; ZSM version number
    .byte 0, 0, 0 ; loop point, zero is no loop
    .byte 0, 0, 0 ; PCM offset, zero is no PCM
-   .byte $FF ; FM channel bit mask, use all channels
-   .byte $FF, $FF ; PSG channel bit mask, use all channels
+   .byte 0 ; FM channel bit mask
+   .byte 0, 0 ; PSG channel bit mask
    .byte 127, 0 ; Tick rate, Concerto uses 127.17 Hz, 127 is close enough
    .byte 0, 0 ; Reserved for future use. Set to zero.
 @header_data_end:
 header_length = @header_data_end - header_data
-
-
-music_test_data:
-   .byte $00 ; write following byte into PSG register 0
-   .byte $00 ; lo frequency
-   .byte $01 ; write following byte into PSG register 1
-   .byte $10 ; hi frequency
-   .byte $02 ; write following byte into PSG register 2
-   .byte $FF ; L/R enabled, max volume
-   .byte $03 ; write following byte into PSG register 3
-   .byte 64 ; sawtooth
-   .byte $FF ; delay 127 ticks
-   .byte $01 ; write following byte into PSG register 1
-   .byte $20 ; hi frequency
-   .byte $FF ; delay 127 ticks
-   ;.byte $80 ; end of stream
-
-@music_test_data_end:
-music_test_data_length = @music_test_data_end - music_test_data
 
 .endscope ; zsm_recording
