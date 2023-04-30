@@ -225,21 +225,13 @@ zp_pointer: ; this can be pointed to any location in the zeropage, where a 16 bi
    bne :+
    rts
 :
-   ; prepare buffer write operations
-   lda RAM_BANK
-   pha ; save current RAM bank
-   lda current_bank
-   sta RAM_BANK
-   lda current_low_address
-   sta zp_pointer
-   lda current_low_address+1
-   sta zp_pointer+1
 
+   jsr prepare_writing_to_bram
 
    ; waiting tick logic
    ; ==================
    lda pending_ticks
-   beq @end_ticks ; (pending_ticks being zero will only happen directly after initialization)
+   beq @end_ticks ; (pending_ticks being zero will only happen directly after initialization or after set_loop)
    cmp #127 ; check if we have reached the maximum possible number of ticks for a single wait command
    beq @emit_ticks
    ; we're not at maximum wait length yet.
@@ -250,7 +242,7 @@ zp_pointer: ; this can be pointed to any location in the zeropage, where a 16 bi
 @emit_ticks:
    lda pending_ticks
    ora #%10000000
-   jsr write_byte
+   jsr push_byte_to_bram
    stz pending_ticks
 @end_ticks:
 
@@ -269,7 +261,7 @@ zp_pointer: ; this can be pointed to any location in the zeropage, where a 16 bi
    sbc #63 ; carry for subtraction is already set as per branching condition
    sta fm_num_pairs
    lda #$7f
-   jsr write_byte ; emit ZSOUND fm signal byte to write 63 FM pairs
+   jsr push_byte_to_bram ; emit ZSOUND fm signal byte to write 63 FM pairs
    ldy #63 ; set loop counter
    bra @fm_flush_inner_loop
 
@@ -278,15 +270,15 @@ zp_pointer: ; this can be pointed to any location in the zeropage, where a 16 bi
    beq @fm_flush_outer_end
    tay ; set loop counter
    ora #%01000000 ; set bit 6 to indicate that we are writing FM data.
-   jsr write_byte ; emit ZSOUND fm signal byte
+   jsr push_byte_to_bram ; emit ZSOUND fm signal byte
    stz fm_num_pairs ; we will write all remaining pairs in this iteration
 
 @fm_flush_inner_loop:
    ; in the inner loop, .Y is the loop counter, which is guaranteed to be at least 1 during the first iteration
    lda fm_address_buffer, x
-   jsr write_byte
+   jsr push_byte_to_bram
    lda fm_data_buffer, x
-   jsr write_byte
+   jsr push_byte_to_bram
    inx
    dey
    bne @fm_flush_inner_loop
@@ -306,37 +298,20 @@ zp_pointer: ; this can be pointed to any location in the zeropage, where a 16 bi
    cpx psg_num_pairs
    beq @psg_flush_end
    lda psg_address_buffer, x
-   jsr write_byte
+   jsr push_byte_to_bram
    lda psg_data_buffer, x
-   jsr write_byte
+   jsr push_byte_to_bram
    inx
    bra @psg_flush_loop
 @psg_flush_end:
    stz psg_num_pairs
 
 
-   ; save the tip of the output
-   lda zp_pointer
-   sta current_low_address
-   lda zp_pointer+1
-   sta current_low_address+1
-   lda RAM_BANK
-   sta current_bank
-   ; restore RAM bank
-   pla
-   sta RAM_BANK
+   jsr end_writing_to_bram
+
    ; advance clock
    inc pending_ticks
    rts
-
-   ; Assumes value in .A
-   ; discards .A
-   ; preserves .X and .Y
-   .proc write_byte
-      sta (zp_pointer)
-      jsr advance_buffer_address
-      rts
-   .endproc
 .endproc
 
 
@@ -448,6 +423,103 @@ zp_pointer: ; this can be pointed to any location in the zeropage, where a 16 bi
 .endproc
 
 
+
+; (UNTESTED!)
+; sets the loop starting point to the current recording time
+; The next tick being flushed after calling set_loop will be the first tick contained in the loop.
+; no arguments
+.proc set_loop
+   lda recorder_active
+   bne :+
+   rts
+
+   jsr prepare_writing_to_bram
+:
+   ; first we need to save any pending ticks so we can guarantee to have a byte to jump to. (otherwise it could happen that the looping point is in the middle of a wait command)
+   lda pending_ticks
+   beq :+
+   lda pending_ticks
+   ora #%10000000
+   jsr push_byte_to_bram
+   stz pending_ticks
+:
+   ; then calculate offset and save it in the header
+   lda start_bank ; select RAM bank where the ZSM header is located
+   sta RAM_BANK
+   ; low address is unaffected by RAM bank
+   lda current_low_address
+   sta RAM_WIN+3
+   ; RAM bank is 8k in size, so does affect middle byte
+   ; One 8k RAM bank is 32 pages in size (one page is 256 bytes), so we have to multiply RAM bank with 32 to get its contribution to the page number.
+   lda current_bank
+   asl
+   asl
+   asl
+   asl
+   asl
+   clc
+   adc current_low_address+1 ; add page number
+   sec
+   sbc #>RAM_WIN ; subtract the page number of the start of BRAM window (as current_low_address is absolute)
+   sta RAM_WIN+4
+   ; We don't need to worry about carry into RAM_WIN+5, as the RAM bank index and the position inside of the ram bank affect different binary digits.
+   ; As a RAM bank has 32 pages, the page number only affects the lower 5 bits. Meanwhile the bank number affects the upper 3 bits, as well as 
+   ; the high byte, which we will deal with next:
+   lda current_bank
+   lsr
+   lsr
+   lsr
+   sta RAM_WIN+5
+
+   jsr end_writing_to_bram
+.endproc
+
+
+; Sets up the RAM bank and the zeropage pointer for output into the BRAM buffer.
+; Use in conjunction with push_byte_to_bram and end_writing_to_bram
+; It's a separate function to avoid code duplication.
+.proc prepare_writing_to_bram
+   ; prepare buffer write operations
+   lda RAM_BANK
+   sta ram_bank_memory
+   lda current_bank
+   sta RAM_BANK
+   lda current_low_address
+   sta zp_pointer
+   lda current_low_address+1
+   sta zp_pointer+1
+   rts
+.endproc
+
+; Writes one byte to the BRAM buffer.
+; Use in conjunction with prepare_writing_to_bram and end_writing_to_bram
+; Assumes value in .A
+; discards .A
+; preserves .X and .Y
+.proc push_byte_to_bram
+   sta (zp_pointer)
+   jsr advance_buffer_address
+   rts
+.endproc
+
+; Release the zeropage pointer for other uses.
+; Use in conjunction with prepare_writing_to_bram and push_byte_to_bram
+; It's a separate function to avoid code duplication.
+.proc end_writing_to_bram
+   ; save the tip of the output
+   lda zp_pointer
+   sta current_low_address
+   lda zp_pointer+1
+   sta current_low_address+1
+   lda RAM_BANK
+   sta current_bank
+   ; restore RAM bank
+   lda ram_bank_memory
+   sta RAM_BANK
+   rts
+.endproc
+
+
 ; returns a bit shifted left by the given number of times
 ; .A input number
 ; .A return value
@@ -554,6 +626,8 @@ current_bank:
 tick_rate:
    .word 0
 
+ram_bank_memory:
+   .byte 0 ; used to store which RAM bank was active before the recorder started writing stuff to banked RAM
 
 ; mirrors mirror the data stored on the respective chips as reference for deduplication
 psg_mirror_size = 64
