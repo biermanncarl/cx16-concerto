@@ -169,8 +169,7 @@ zp_pointer: ; this can be pointed to any location in the zeropage, where a 16 bi
    phx
    cmp #$08 ; is it a key-on or key-off event?
    bne :+
-
-   ; it's a key-on or key-off event
+   ; it is.
    ; -> determine channel number (lower three bits of .X) to set channel bit mask
    txa
    and #%00000111
@@ -182,7 +181,28 @@ zp_pointer: ; this can be pointed to any location in the zeropage, where a 16 bi
    bra @write_to_buffer ; we don't filter key-on or key-off events
 
 :  ; not a key-on or key-off event
-   ; TODO: handle $19 (LFO modulation depth) and $14
+   cmp #$14 ; is it a timer configuration command? (THIS SECTION IS UNTESTED !!!)
+   bne :+
+   ; it is.
+   pha
+   tax
+   and #%11110011 ; scrub IRQ_EN bits
+   txa
+   pla
+   bra @check_mirror
+
+:  ; not key-on or key-off, nor $14 (timer configuration)
+   cmp #$19 ; is it an LFO modulation depth command? (THIS SECTION IS UNTESTED !!!)
+   bne @check_mirror
+   ; it is.
+   ; Now it is either amplitude modulation depth (bit 7 of .X is 0) or pitch modulation depth (bit 7 of .X is 1)
+   cpx #$80
+   bcc @check_mirror ; if it's AMD, we don't need to do anything
+   ; it's PMD. We use register $1a as the mirror for that (which isn't used on the real chip).
+   ; We keep bit 7 of .X because it doesn't hurt and removing it would just cost us extra steps.
+   ina ; go up from $19 to $1a
+
+@check_mirror:
    ; check if register hasn't been initialized yet
    ldx #<fm_init_markers
    ldy #>fm_init_markers
@@ -202,6 +222,9 @@ zp_pointer: ; this can be pointed to any location in the zeropage, where a 16 bi
    ; swap registers back
    tax
    tya
+   cmp #$1a ; undo the duplexing of AMD/PMD
+   bne @write_to_buffer
+   dea ; go down from $1a to $19
 
 @write_to_buffer:
    ldy fm_num_pairs
