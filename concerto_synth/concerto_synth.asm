@@ -82,8 +82,8 @@
 
 .scope concerto_synth
 
-.include "x16.asm"
-.include "ym2151.asm"
+.include "../common/x16.asm"
+.include "../common/ym2151.asm"
 .include "synth_zeropage.asm"
 .include "pitch_data.asm"
 .include "vibrato_lut.asm"

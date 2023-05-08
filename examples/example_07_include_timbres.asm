@@ -14,7 +14,7 @@ concerto_use_timbres_from_file = 1
 
 ; When including concerto_player, we do not need to include concerto_synth separately,
 ; since concerto_player includes it for us.
-.include "concerto_player/concerto_player.asm"
+.include "../concerto_player/concerto_player.asm"
 
 
 

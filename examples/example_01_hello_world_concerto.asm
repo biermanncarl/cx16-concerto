@@ -9,7 +9,7 @@
    jmp start
 
 ;concerto_enable_zsound_recording = 1
-.include "concerto_synth/concerto_synth.asm"
+.include "../concerto_synth/concerto_synth.asm"
 
 start:
    jsr concerto_synth::initialize

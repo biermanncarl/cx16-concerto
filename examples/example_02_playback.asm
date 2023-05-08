@@ -11,10 +11,10 @@
 
 
 
-; define a macro with the player address BEFORE including "concerto_synth/concerto_synth.asm"
+; define a macro with the player address BEFORE including "../concerto_synth/concerto_synth.asm"
 concerto_playback_routine = my_custom_playback_routine
 
-.include "concerto_synth/concerto_synth.asm"
+.include "../concerto_synth/concerto_synth.asm"
 
 ; You can do anything you want in this routine.
 ; Here we have set up an example that plays a chromatic scale

@@ -13,7 +13,7 @@
 play_volume:
    .byte 63
 
-.include "../concerto_synth/x16.asm"
+.include "../common/x16.asm"
 .include "gui_zeropage.asm"
 .include "gui_macros.asm"
 .include "gui_variables.asm"

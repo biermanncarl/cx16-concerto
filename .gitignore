@@ -7,3 +7,4 @@ DEFAULT.SK
 *.SYM
 *.bin
 *.COP
+build/*

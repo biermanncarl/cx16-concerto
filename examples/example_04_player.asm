@@ -11,7 +11,7 @@
 ; When including concerto_player, we do not need to include concerto_synth separately,
 ; since concerto_player includes it for us.
 concerto_enable_zsound_recording = 1
-.include "concerto_player/concerto_player.asm"
+.include "../concerto_player/concerto_player.asm"
 
 
 
