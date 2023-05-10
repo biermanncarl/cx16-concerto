@@ -49,29 +49,32 @@ do
     echo "Running $test_file ..."
     x16emu -prg TEST.PRG -run -dump R > /dev/null 2>&1 & # hide error messages by routing them into /dev/null
     xdotool search --sync --name "Commander X16" key "ctrl+s"
-    sleep 0.1
+    sleep 0.2
     xdotool search --sync --name "Commander X16" windowclose
     sleep 0.1
-    test_results=$(hexdump -v -s 123 -n 5 -e '/1 "%d "' dump.bin) # read test results from binary dump
+    test_results=$(hexdump -v -s 120 -n 8 -e '/1 "%u "' dump.bin) # read test results from binary dump
     result_array=($test_results)
-    if [ ! ${result_array[4]} -eq 0 ]
+    if [ ! ${result_array[7]} -eq 0 ]
     then
         echo -e "${bred}Error: Test was not exited properly!${color_off}"
     fi
-    if [ ! ${result_array[3]} -eq 66 ]
+    if [ ! ${result_array[6]} -eq 66 ]
     then
         echo -e "${bred}Error: Test was not initialized properly!${color_off}"
     fi
-    echo "${result_array[2]} tests were executed."
-    if [ ${result_array[1]} = "0" ]
+    num_of_checks=$((${result_array[4]}+256*${result_array[5]}))
+    num_of_fails=$((${result_array[2]}+256*${result_array[3]}))
+    echo "${num_of_checks} checks were executed."
+    if [ ${num_of_fails} = "0" ]
     then
-        echo -e "${bgreen}${result_array[1]} tests failed.${color_off}"
+        echo -e "${bgreen}${num_of_fails} checks failed.${color_off}"
     else
-        echo -e "${bred}${result_array[1]} tests failed.${color_off}"
+        echo -e "${bred}${num_of_fails} checks failed.${color_off}"
     fi
-    if [ ${result_array[1]} -gt 0 ]
+    if [ ${num_of_fails} -gt 0 ]
     then
-        echo -e "${bred}The first test that failed: ${result_array[0]}${color_off}"
+        first_fail=$((${result_array[0]}+256*${result_array[1]}))
+        echo -e "${bred}The first check that failed: ${first_fail}${color_off}"
     fi
     echo
     rm -f "dump.bin"

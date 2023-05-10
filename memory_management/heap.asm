@@ -17,11 +17,11 @@
 
 
 ; min and max ram page can be configured externally
-.ifndef min_ram_bank
-   min_ram_bank = 1 ; 0 is reserved for the KENRAL, so let's make 1 the default
+.ifndef ::heap_min_ram_bank
+   ::heap_min_ram_bank = 1 ; 0 is reserved for the KENRAL, so let's make 1 the default
 .endif
-.ifndef max_ram_bank
-   max_ram_bank = 63 ; 512k configuration
+.ifndef ::heap_max_ram_bank
+   ::heap_max_ram_bank = 63 ; 512k configuration
 .endif
 
 ; need a ZP pointer which can be used as temporary variable by the functions in this scope
@@ -36,7 +36,7 @@ zp_pointer:
    .error "zp_pointer must be on the zero page!"
 .endif
 
-num_chunks = 32 * (max_ram_bank - min_ram_bank + 1) ; one RAM bank has 32 chunks of 256 bytes (8k of memory)
+num_chunks = 32 * (::heap_max_ram_bank - ::heap_min_ram_bank + 1) ; one RAM bank has 32 chunks of 256 bytes (8k of memory)
 
 ; bit field indicating which chunks are used and which ones aren't. In the 512k configuration, this would be 252 bytes
 reservations:
@@ -76,7 +76,7 @@ first_unused_chunk:
    lda local_byte
    rol
    clc
-   adc #min_ram_bank
+   adc #heap_min_ram_bank
    pha ; second part of the pointer is done.
 
    ; Now we have to reserve the current chunk
@@ -110,20 +110,20 @@ first_unused_chunk:
 @skip_byte_advance:
    sta local_byte ; save bit mask
    inc first_unused_chunk
-   bne @skip_overflow
    lda first_unused_chunk+1
    adc #0
+   sta first_unused_chunk+1
    ; now we need to check for memory full...
    cmp #(num_chunks / 256)
-   beq @skip_overflow ; this could be optimized, as the branch condition is assumed to be rare
+   bne @check_if_free ; this could be optimized, as the branch condition is assumed to be rare
    lda first_unused_chunk
    cmp #(num_chunks .mod 256)
-   bne @skip_overflow
+   bne @check_if_free
    ; memory is full now (but we still allocated the last chunk, so can return successfully now)
    lda #$ff
    sta first_unused_chunk+1
    bra @finish
-@skip_overflow:
+@check_if_free:
    ; check if new position is free
    lda local_byte ; recall bit mask
    and reservations, y

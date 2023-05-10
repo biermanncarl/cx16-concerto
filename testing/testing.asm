@@ -8,15 +8,17 @@
 ; These will be read from the memory dump
 exit_code = $7f ; exit code 0 means successfully arrived at the end of test execution (NOT that all tests were successful)
 init_complete = $7e ; must be set to magic number $42 to ensure that initialization has been run
-tests_run = $7d ; total number of tests that have been run
-tests_unsuccessful = $7c ; number of unsuccessful tests
-first_unsuccessful_test = $7b ; first test to fail
+tests_run = $7c ; total number of tests that have been run
+tests_unsuccessful = $7a ; number of unsuccessful tests
+first_unsuccessful_test = $78 ; first test to fail
 
 .macro START_TEST
    lda #1
    sta testing::exit_code
    stz testing::tests_run
+   stz testing::tests_run+1
    stz testing::tests_unsuccessful
+   stz testing::tests_unsuccessful+1
 
    lda #$42
    sta testing::init_complete
@@ -31,19 +33,32 @@ first_unsuccessful_test = $7b ; first test to fail
    ; first test to fail?
    lda tests_unsuccessful
    bne :+
-   ; yes - remember which one it was
+   lda tests_unsuccessful+1
+   bne :+
+   ; yes - remember which one it was (add 1 for human readability)
    lda tests_run
-   inc
+   clc
+   adc #1
    sta first_unsuccessful_test
-:  inc tests_unsuccessful
-   inc tests_run
-   pla
+   lda tests_run+1
+   adc #0
+   sta first_unsuccessful_test+1
+:  ; count unsuccessful and total number of checks
+   inc tests_unsuccessful
+   bne :+
+   inc tests_unsuccessful+1
+:  inc tests_run
+   bne :+
+   inc tests_run+1
+:  pla
    rts
 .endproc
 
 .proc succeed
    inc tests_run
-   rts
+   bne :+
+   inc tests_run+1
+:  rts
 .endproc
 
 ; expect .A to be greater than value
@@ -76,6 +91,16 @@ first_unsuccessful_test = $7b ; first test to fail
 :
 .endmacro
 
+; expect .A to be unequal to value
+.macro EXPECT_NE value
+   cmp #value
+   bne :+
+   jsr testing::fail
+   bra :++
+:  jsr testing::succeed
+:
+.endmacro
+
 ; expect .A to be lower than value
 .macro EXPECT_LT value
    cmp #value
@@ -90,6 +115,42 @@ first_unsuccessful_test = $7b ; first test to fail
 .macro EXPECT_LE value
    cmp #(value+1)
    bcc :+
+   jsr testing::fail
+   bra :++
+:  jsr testing::succeed
+:
+.endmacro
+
+; expect carry flag to be set
+.macro EXPECT_CFS
+   bcs :+
+   jsr testing::fail
+   bra :++
+:  jsr testing::succeed
+:
+.endmacro
+
+; expect carry flag to be clear
+.macro EXPECT_CFC
+   bcc :+
+   jsr testing::fail
+   bra :++
+:  jsr testing::succeed
+:
+.endmacro
+
+; expect zero flag to be set
+.macro EXPECT_ZFS
+   beq :+
+   jsr testing::fail
+   bra :++
+:  jsr testing::succeed
+:
+.endmacro
+
+; expect zero flag to be clear
+.macro EXPECT_ZFC
+   bne :+
    jsr testing::fail
    bra :++
 :  jsr testing::succeed
