@@ -3,16 +3,22 @@
 original_directory=$(pwd)
 cd "$(dirname "$0")" # move into directory of the script
 
+color_off='\033[0m' # color off
+red='\033[0;31m' # red
+bred='\033[1;31m' # bold red
+bwhite='\033[1;37m' # bold white
+bgreen='\033[1;32m' # bold green
+
 if [ -e "dump.bin" ]
 then
-    echo "Warning: existing dump.bin was found. Renaming it to dump.old.bin"
+    echo -e "${bwhite}Warning: existing dump.bin was found. Renaming it to dump.old.bin${color_off}"
     mv -i dump.bin dump.old.bin
 fi
 rm -f "dump.bin"
 
 if [ -e "TEST.PRG" ]
 then
-    echo "Warning: existing TEST.PRG was found. Renaming it to TEST.OLD.PRG"
+    echo -e "${bwhite}Warning: existing TEST.PRG was found. Renaming it to TEST.OLD.PRG${color_off}"
     mv -i TEST.PRG TEST.OLD.PRG
 fi
 rm -f "TEST.PRG"
@@ -36,7 +42,7 @@ do
     cl65 -t cx16 -o TEST.PRG -C cx16-asm.cfg -u __EXEHDR__ "$test_file"
     if [ ! $? -eq 0 ]
     then
-        echo "Error: Compilation failed!"
+        echo -e "${bred}Error: Test compilation failed!${color_off}"
         echo
         continue
     fi
@@ -50,17 +56,22 @@ do
     result_array=($test_results)
     if [ ! ${result_array[4]} -eq 0 ]
     then
-        echo "Error: Test was not exited properly!"
+        echo -e "${bred}Error: Test was not exited properly!${color_off}"
     fi
     if [ ! ${result_array[3]} -eq 66 ]
     then
-        echo "Error: Test was not initialized properly!"
+        echo -e "${bred}Error: Test was not initialized properly!${color_off}"
     fi
     echo "${result_array[2]} tests were executed."
-    echo "${result_array[1]} failed."
+    if [ ${result_array[1]} = "0" ]
+    then
+        echo -e "${bgreen}${result_array[1]} tests failed.${color_off}"
+    else
+        echo -e "${bred}${result_array[1]} tests failed.${color_off}"
+    fi
     if [ ${result_array[1]} -gt 0 ]
     then
-        echo "The first test that failed: ${result_array[0]}"
+        echo -e "${bred}The first test that failed: ${result_array[0]}${color_off}"
     fi
     echo
     rm -f "dump.bin"
