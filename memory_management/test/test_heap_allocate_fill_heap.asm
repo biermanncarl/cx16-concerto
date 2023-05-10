@@ -34,11 +34,11 @@ start:
    ; compare pointer to previous one (should be different)
    lda pointers_high, y
    cpy #0
-   beq :+ ; skip for first pointer
+   beq @skip_pointer ; skip for first pointer
    dey
    cmp pointers_high, y
    EXPECT_ZERO_CLEAR
-:
+@skip_pointer:
 
    inc loop_variable
    lda loop_variable
