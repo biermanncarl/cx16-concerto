@@ -1,6 +1,7 @@
 ; Copyright 2023 Carl Georg Biermann
 
 ; Assembly testing utilities
+; All EXPECT_... macros preserve .A, .X and .Y, but not the processor status.
 
 .scope testing
 
@@ -122,7 +123,7 @@ first_unsuccessful_test = $78 ; first test to fail
 .endmacro
 
 ; expect carry flag to be set
-.macro EXPECT_CFS
+.macro EXPECT_CARRY_SET
    bcs :+
    jsr testing::fail
    bra :++
@@ -131,7 +132,7 @@ first_unsuccessful_test = $78 ; first test to fail
 .endmacro
 
 ; expect carry flag to be clear
-.macro EXPECT_CFC
+.macro EXPECT_CARRY_CLEAR
    bcc :+
    jsr testing::fail
    bra :++
@@ -140,7 +141,7 @@ first_unsuccessful_test = $78 ; first test to fail
 .endmacro
 
 ; expect zero flag to be set
-.macro EXPECT_ZFS
+.macro EXPECT_ZERO_SET
    beq :+
    jsr testing::fail
    bra :++
@@ -149,7 +150,7 @@ first_unsuccessful_test = $78 ; first test to fail
 .endmacro
 
 ; expect zero flag to be clear
-.macro EXPECT_ZFC
+.macro EXPECT_ZERO_CLEAR
    bne :+
    jsr testing::fail
    bra :++

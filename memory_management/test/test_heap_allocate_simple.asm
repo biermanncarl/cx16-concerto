@@ -12,7 +12,7 @@ start:
    START_TEST
 
    jsr heap::allocate_chunk
-   EXPECT_CFC
+   EXPECT_CARRY_CLEAR
    EXPECT_GE heap_min_ram_bank
    EXPECT_LE 63
    txa

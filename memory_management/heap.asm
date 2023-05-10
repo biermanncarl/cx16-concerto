@@ -143,9 +143,64 @@ first_unused_chunk:
 ; Doesn't check if the chunk was actually being used previously,
 ; but in any case, the chunk will be available for allocation after this function call.
 .proc release_chunk
-   ; TODO
-   ; unset the reservation
-   ; if necessary, move first_unused_chunk backwards
+   local_byte = zp_pointer
+   local_byte_2 = zp_pointer+1
+   ; calculate chunk index from pointer
+   clc
+   sbc heap_min_ram_bank
+   sta local_byte_2 ; store RAM bank
+   txa
+   sec
+   sbc #>RAM_WIN ; now should be a number from 0 to 31 (5 bits)
+   and #%00011111 ; for testing
+   tax ; store away lower 5 bits
+   lda #0
+   lsr local_byte_2
+   ror
+   lsr local_byte_2
+   ror
+   lsr local_byte_2
+   ror
+   sta local_byte
+   txa ; add in lower 5 bits
+   and local_byte
+   sta local_byte
+
+   ; check if index is lower than first_unused_chunk
+   lda local_byte_2
+   cmp first_unused_chunk+1
+   bcc @update_first_unused_chunk ; high byte is smaller -> total number is smaller for sure
+   bne @endof_first_unused_chunk_update ; if they weren't equal and incoming byte isn't smaller, it must be higher -> certainly no candidate
+   ; check low byte, as high bytes are equal
+   lda local_byte
+   cmp first_unused_chunk
+   bcs @endof_first_unused_chunk_update
+@update_first_unused_chunk:
+   lda local_byte
+   sta first_unused_chunk
+   lda local_byte_2
+   sta first_unused_chunk+1
+@endof_first_unused_chunk_update:
+
+   ; now unset the reservation bit
+   ; calculate the bit mask
+   lda local_byte
+   and #%00000111
+   jsr shift_bit
+   tax ; store bit mask
+   lda local_byte
+   lsr local_byte_2
+   ror
+   lsr local_byte_2
+   ror
+   lsr local_byte_2
+   ror
+   tay
+   txa ; recall bit mask
+   eor #$FF ; invert bit mask
+   and reservations, y
+   sta reservations, y
+
    rts
 .endproc
 

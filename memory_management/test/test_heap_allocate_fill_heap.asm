@@ -21,7 +21,7 @@ start:
 
 @allocation_loop:
    jsr heap::allocate_chunk
-   EXPECT_CFC
+   EXPECT_CARRY_CLEAR
    ldy loop_variable
    sta pointers_bank, y
    EXPECT_GE 1
@@ -37,7 +37,7 @@ start:
    beq :+ ; skip for first pointer
    dey
    cmp pointers_high, y
-   EXPECT_ZFC
+   EXPECT_ZERO_CLEAR
 :
 
    inc loop_variable
@@ -47,7 +47,7 @@ start:
 
    ; now we should have filled up the heap.
    jsr heap::allocate_chunk
-   EXPECT_CFS ; carry should be set to indicate that memory is full
+   EXPECT_CARRY_SET ; carry should be set to indicate that memory is full
 
    FINISH_TEST
    rts

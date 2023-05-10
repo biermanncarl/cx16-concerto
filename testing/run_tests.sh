@@ -48,10 +48,10 @@ do
     fi
     echo "Running $test_file ..."
     x16emu -prg TEST.PRG -run -dump R > /dev/null 2>&1 & # hide error messages by routing them into /dev/null
+    sleep 0.2
     xdotool search --sync --name "Commander X16" key "ctrl+s"
     sleep 0.2
     xdotool search --sync --name "Commander X16" windowclose
-    sleep 0.1
     test_results=$(hexdump -v -s 120 -n 8 -e '/1 "%u "' dump.bin) # read test results from binary dump
     result_array=($test_results)
     if [ ! ${result_array[7]} -eq 0 ]
