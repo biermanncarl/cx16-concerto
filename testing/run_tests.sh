@@ -9,20 +9,6 @@ bred='\033[1;31m' # bold red
 bwhite='\033[1;37m' # bold white
 bgreen='\033[1;32m' # bold green
 
-if [ -e "dump.bin" ]
-then
-    echo -e "${bwhite}Warning: existing dump.bin was found. Renaming it to dump.old.bin${color_off}"
-    mv -i dump.bin dump.old.bin
-fi
-rm -f "dump.bin"
-
-if [ -e "TEST.PRG" ]
-then
-    echo -e "${bwhite}Warning: existing TEST.PRG was found. Renaming it to TEST.OLD.PRG${color_off}"
-    mv -i TEST.PRG TEST.OLD.PRG
-fi
-rm -f "TEST.PRG"
-
 if [ $# -eq 0 ]
 then
     test_files=$(find .. -name "test_*.asm")
@@ -47,7 +33,7 @@ do
         continue
     fi
     echo "Running $test_file ..."
-    x16emu -prg TEST.PRG -run -dump R > /dev/null 2>&1 & # hide error messages by routing them into /dev/null
+    x16emu -prg TEST.PRG -run -dump R -debug > /dev/null 2>&1 & # hide error messages by routing them into /dev/null
     sleep 0.2
     xdotool search --sync --name "Commander X16" key "ctrl+s"
     sleep 0.2

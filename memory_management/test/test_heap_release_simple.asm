@@ -48,13 +48,13 @@ start:
    jsr allocate_all
 
    ; first, release two chunks
-   ;.byte $db
    ldy #0
    lda pointers_high, y
    tax
    lda pointers_bank, y
    jsr heap::release_chunk
 
+   ;.byte $db
    ldy #1
    lda pointers_high, y
    tax

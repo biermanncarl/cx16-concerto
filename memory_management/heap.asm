@@ -146,13 +146,12 @@ first_unused_chunk:
    local_byte = zp_pointer
    local_byte_2 = zp_pointer+1
    ; calculate chunk index from pointer
-   clc
-   sbc heap_min_ram_bank
+   sec
+   sbc #heap_min_ram_bank
    sta local_byte_2 ; store RAM bank
    txa
    sec
    sbc #>RAM_WIN ; now should be a number from 0 to 31 (5 bits)
-   and #%00011111 ; for testing
    tax ; store away lower 5 bits
    lda #0
    lsr local_byte_2
@@ -163,7 +162,7 @@ first_unused_chunk:
    ror
    sta local_byte
    txa ; add in lower 5 bits
-   and local_byte
+   ora local_byte
    sta local_byte
 
    ; check if index is lower than first_unused_chunk

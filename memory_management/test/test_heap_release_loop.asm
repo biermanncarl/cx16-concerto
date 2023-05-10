@@ -55,7 +55,7 @@ start:
    jsr heap::release_chunk
 
    ; now keep releasing and freeing memory
-   lda #1 ; number of loop iterations
+   lda #70 ; number of loop iterations
    sta loop_variable
    lda #13
    sta chunk_index
