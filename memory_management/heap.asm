@@ -75,6 +75,8 @@ first_unused_chunk:
    asl
    lda local_byte
    rol
+   clc
+   adc #min_ram_bank
    pha ; second part of the pointer is done.
 
    ; Now we have to reserve the current chunk
@@ -128,7 +130,7 @@ first_unused_chunk:
    bne @shift_bit_loop
    ; if we hit a zero, we can stop and have found the next free chunk
 
-@finish
+@finish:
    ; pop pointer to newly allocated chunk from the stack
    pla
    plx
