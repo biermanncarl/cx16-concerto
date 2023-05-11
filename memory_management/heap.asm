@@ -8,6 +8,8 @@
 ; .X contains the high byte of the 16-bit address in the 64k address space.
 ; The low byte of the address is implicitly zero (chunks are always aligned to the 256-bytes grid).
 
+; Note that this implementation CANNOT deal with 2 MB of high RAM. Only up to 504k is possible (63 RAM banks).
+
 .scope heap
 
 .include "../common/x16.asm"
@@ -26,15 +28,38 @@
 
 ; need a ZP pointer which can be used as temporary variable by the functions in this scope
 ; TODO: check if we actually need this!
-.ifndef zp_pointer
+.ifndef ::zp_pointer
    .pushseg
    .zeropage
 zp_pointer:
    .res 2
    .popseg
-.elseif zp_pointer >= 256
+.elseif ::zp_pointer >= 256
    .error "zp_pointer must be on the zero page!"
+.else
+   zp_pointer = ::zp_pointer
 .endif
+
+
+.scope detail
+
+; returns a bit shifted left by the given number of times
+; .A input number
+; .A return value
+; uses .A and .X
+.proc shift_bit
+   tax
+   lda #1
+   cpx #0
+@loop:
+   beq @end
+   asl
+   dex
+   bra @loop
+@end:
+   rts
+.endproc
+
 
 num_chunks = 32 * (::heap_max_ram_bank - ::heap_min_ram_bank + 1) ; one RAM bank has 32 chunks of 256 bytes (8k of memory)
 
@@ -45,6 +70,7 @@ reservations:
 first_unused_chunk:
    .word 0
 
+.endscope ; scope detail
 
 ; Allocates a chunk and returns the pointer to it in .A/.X (RAM page, high address)
 ; If successful, carry will be clear.
@@ -52,22 +78,22 @@ first_unused_chunk:
 .proc allocate_chunk
    local_byte = zp_pointer
    ; check if memory is full
-   lda first_unused_chunk+1
+   lda detail::first_unused_chunk+1
    bpl :+
    sec ; signal memory full
    rts
 
 :  ; first, determine high address and bank number from first_unused_chunk
-   lda first_unused_chunk
+   lda detail::first_unused_chunk
    ; lower five bits are relevant for the high address
    and #%00011111
    clc
    adc #>RAM_WIN
    pha ; first part of the pointer is result is done
    ; next, shift bits into the ram bank index
-   lda first_unused_chunk+1
+   lda detail::first_unused_chunk+1
    sta local_byte
-   lda first_unused_chunk
+   lda detail::first_unused_chunk
    asl
    rol local_byte
    asl
@@ -81,9 +107,9 @@ first_unused_chunk:
 
    ; Now we have to reserve the current chunk
    ; determine index of the byte we need to look at
-   lda first_unused_chunk+1
+   lda detail::first_unused_chunk+1
    sta local_byte
-   lda first_unused_chunk
+   lda detail::first_unused_chunk
    lsr local_byte
    ror
    lsr local_byte
@@ -92,13 +118,13 @@ first_unused_chunk:
    ror
    tay
    ; now create bit mask for the specific bit
-   lda first_unused_chunk
+   lda detail::first_unused_chunk
    and #%00000111
-   jsr shift_bit
+   jsr detail::shift_bit
    sta local_byte
    ; and set the bit
-   ora reservations, y
-   sta reservations, y
+   ora detail::reservations, y
+   sta detail::reservations, y
 
    ; Look for the next free chunk and advance first_unused_chunk. Literally doing linear search here... Nice and simple.
 @shift_bit_loop: ; expecting the bit mask in local byte and the byte index in .Y
@@ -109,24 +135,24 @@ first_unused_chunk:
    rol ; push bit back in
 @skip_byte_advance:
    sta local_byte ; save bit mask
-   inc first_unused_chunk
-   lda first_unused_chunk+1
+   inc detail::first_unused_chunk
+   lda detail::first_unused_chunk+1
    adc #0
-   sta first_unused_chunk+1
+   sta detail::first_unused_chunk+1
    ; now we need to check for memory full...
-   cmp #(num_chunks / 256)
+   cmp #(detail::num_chunks / 256)
    bne @check_if_free ; this could be optimized, as the branch condition is assumed to be rare
-   lda first_unused_chunk
-   cmp #(num_chunks .mod 256)
+   lda detail::first_unused_chunk
+   cmp #(detail::num_chunks .mod 256)
    bne @check_if_free
    ; memory is full now (but we still allocated the last chunk, so can return successfully now)
    lda #$ff
-   sta first_unused_chunk+1
+   sta detail::first_unused_chunk+1
    bra @finish
 @check_if_free:
    ; check if new position is free
    lda local_byte ; recall bit mask
-   and reservations, y
+   and detail::reservations, y
    bne @shift_bit_loop
    ; if we hit a zero, we can stop and have found the next free chunk
 
@@ -167,25 +193,25 @@ first_unused_chunk:
 
    ; check if index is lower than first_unused_chunk
    lda local_byte_2
-   cmp first_unused_chunk+1
+   cmp detail::first_unused_chunk+1
    bcc @update_first_unused_chunk ; high byte is smaller -> total number is smaller for sure
    bne @endof_first_unused_chunk_update ; if they weren't equal and incoming byte isn't smaller, it must be higher -> certainly no candidate
    ; check low byte, as high bytes are equal
    lda local_byte
-   cmp first_unused_chunk
+   cmp detail::first_unused_chunk
    bcs @endof_first_unused_chunk_update
 @update_first_unused_chunk:
    lda local_byte
-   sta first_unused_chunk
+   sta detail::first_unused_chunk
    lda local_byte_2
-   sta first_unused_chunk+1
+   sta detail::first_unused_chunk+1
 @endof_first_unused_chunk_update:
 
    ; now unset the reservation bit
    ; calculate the bit mask
    lda local_byte
    and #%00000111
-   jsr shift_bit
+   jsr detail::shift_bit
    tax ; store bit mask
    lda local_byte
    lsr local_byte_2
@@ -197,87 +223,13 @@ first_unused_chunk:
    tay
    txa ; recall bit mask
    eor #$FF ; invert bit mask
-   and reservations, y
-   sta reservations, y
+   and detail::reservations, y
+   sta detail::reservations, y
 
    rts
 .endproc
 
 
-
-
-
-; ============================
-; COPY-PASTE FROM ZSM RECORDER
-; ============================
-
-; returns a bit shifted left by the given number of times
-; .A input number
-; .A return value
-; uses .A and .X
-.proc shift_bit
-   tax
-   lda #1
-   cpx #0
-@loop:
-   beq @end
-   asl
-   dex
-   bra @loop
-@end:
-   rts
-.endproc
-
-
-; tests and sets a certain bit in a packed bit field
-; .A index
-; .X low address
-; .Y high address
-; return: zero flag is reset if bit was set
-.proc test_and_set_bit
-   stx zp_pointer ; store address in scrap register on ZP
-   sty zp_pointer+1 ; for indirect bit field access
-   tay ; keep copy of the index in .Y
-   and #%00000111 ; get the position of the bit inside a byte
-   jsr shift_bit ; create bit mask accordingly
-   tax ; store bit mask in .X
-   tya ; recall the copy of the index
-   lsr ; get the byte index
-   lsr
-   lsr
-   tay
-   txa ; recall the bit mask
-   and (zp_pointer), y ; test bit
-   php
-   txa ; recall the bit mask again
-   ora (zp_pointer), y ; set bit
-   sta (zp_pointer), y ; write back
-   plp
-   rts
-.endproc
-
-
-; sets a certain bit in a packed bit field
-; .A index
-; .X low address
-; .Y high address
-.proc set_bit
-   stx zp_pointer ; store address in scrap register on ZP
-   sty zp_pointer+1 ; for indirect bit field access
-   tay ; keep copy of the index in .Y
-   and #%00000111 ; create bit mask
-   jsr shift_bit
-   tax ; store bit mask in .X
-   tya ; recall the copy of the index
-   lsr ; get the byte index
-   lsr
-   lsr
-   tay
-   txa ; recall the bit mask
-   ora (zp_pointer), y ; set bit
-   sta (zp_pointer), y ; write back
-   rts
-.endproc
 
 
 .popseg
