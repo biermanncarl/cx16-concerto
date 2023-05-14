@@ -4,8 +4,9 @@
 ; If bigger chunks are needed, they can be daisy-chained using linked lists.
 ; The heap resides in banked RAM and has configurable min and max RAM bank.
 ; "Pointers" to chunks are communicated in the following way:
-; .A contains the RAM bank number.
-; .X contains the high byte of the 16-bit address in the 64k address space.
+; Two values are needed, called B and H.
+; .A contains the RAM bank number B.
+; .X contains the high byte of the 16-bit address in the 64k address space, called H.
 ; The low byte of the address is implicitly zero (chunks are always aligned to the 256-bytes grid).
 
 ; Note that this implementation CANNOT deal with 2 MB of high RAM. Only up to 504k is possible (63 RAM banks).

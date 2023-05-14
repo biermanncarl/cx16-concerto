@@ -122,6 +122,24 @@ first_unsuccessful_test = $78 ; first test to fail
 :
 .endmacro
 
+.macro EXPECT_EQ_MEM address
+   cmp address
+   beq :+
+   jsr testing::fail
+   bra :++
+:  jsr testing::succeed
+:
+.endmacro
+
+.macro EXPECT_NE_MEM address
+   cmp address
+   bne :+
+   jsr testing::fail
+   bra :++
+:  jsr testing::succeed
+:
+.endmacro
+
 ; expect carry flag to be set
 .macro EXPECT_CARRY_SET
    bcs :+
