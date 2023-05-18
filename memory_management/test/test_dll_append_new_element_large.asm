@@ -5,6 +5,8 @@
 
 .include "../../testing/testing.asm"
 .include "../../common/x16.asm"
+heap_min_ram_bank = 16
+heap_max_ram_bank = 18
 .include "../doubly_linked_list.asm"
 
 list_a:
@@ -17,6 +19,7 @@ loop_variable:
    .byte 0
 
 num_elements = 67
+max_elements = 32 * (heap_max_ram_bank - heap_min_ram_bank + 1)
 
 start:
    START_TEST
@@ -25,7 +28,17 @@ start:
    ; Large Scale Testing
    ; ===================
 
+   ; Agenda
+   ; 1. create list that fills several banks of banked RAM
+   ; 2. iterate over that list forwards and backwards
+   ; 3. clear the list
+   ; 4. fill the list up until the expected maximum capacity of the heap
+   ; 5. check if the limit of the heap is indeed reached
+   ; 6. clear the list
+   ; 7. check if there's space again
+
    jsr dll::create_list
+   EXPECT_CARRY_CLEAR
    sta list_a
    stx list_a+1
 
@@ -36,6 +49,7 @@ start:
    lda list_a
    ldx list_a+1
    jsr dll::append_new_element
+   EXPECT_CARRY_CLEAR
    dec loop_variable
    bne @append_loop
 
@@ -99,6 +113,41 @@ start:
    EXPECT_EQ_MEM list_a
    txa
    EXPECT_EQ_MEM list_a+1
+
+   ; clear the list
+   lda list_a
+   ldx list_a+1
+   jsr dll::destroy_list
+   stz list_a
+   stz list_a+1
+
+   ; create new list and fill it until no more space
+   lda #(max_elements - 1) ; leave out first element in the loop
+   sta loop_variable
+   jsr dll::create_list
+   EXPECT_CARRY_CLEAR
+   sta list_a
+   stx list_a+1
+@death_loop:
+   lda list_a
+   ldx list_a+1
+   jsr dll::append_new_element
+   EXPECT_CARRY_CLEAR
+   dec loop_variable
+   bne @death_loop
+   ; now try to add one more element -- should fail due to full heap
+   lda list_a
+   ldx list_a+1
+   jsr dll::append_new_element
+   EXPECT_CARRY_SET
+
+   ; now clear complete list again ... there should be space again to allocate new elements
+   lda list_a
+   ldx list_a+1
+   jsr dll::destroy_list
+   jsr dll::create_list
+   EXPECT_CARRY_CLEAR
+
 
    FINISH_TEST
    rts

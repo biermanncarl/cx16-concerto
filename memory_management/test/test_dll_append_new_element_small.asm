@@ -34,9 +34,11 @@ start:
    lda list
    ldx list+1
    jsr dll::append_new_element
+   EXPECT_CARRY_CLEAR
    lda list
    ldx list+1
    jsr dll::append_new_element
+   EXPECT_CARRY_CLEAR
 
    ; check that first/last elements are correctly identified
    lda list
