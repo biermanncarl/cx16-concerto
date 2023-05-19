@@ -294,7 +294,7 @@ temp_variable_a:
 .endproc
 
 
-; Deletes any element from a list. (Untested -- and likely possible to be optimized!)
+; Deletes any element from a list. (Untested!)
 ; Expects pointer to an element in .A/.X
 ; Returns pointer to the succeeding element of the deleted one (possibly NULL)
 .proc delete_element
@@ -359,7 +359,7 @@ temp_variable_a:
 @end_w:
 
    ; point U to W
-   ldx ; store W.B during bank switch
+   ldx RAM_BANK ; store W.B during bank switch
    phx ; save W.B
    lda detail::temp_variable_a
    beq @end_u ; skip if U is NULL
@@ -382,6 +382,99 @@ temp_variable_a:
 .endproc
 
 
+
+.if 0
+; Deletes any element from a list. *Slightly* optimized but much less readable version.
+; Expects pointer to an element in .A/.X
+; Returns pointer to the succeeding element of the deleted one (possibly NULL)
+.proc delete_element_optimized
+   ;
+   ; We have a list as follows:                               .A/.X
+   ;                                                            |
+   ;                                                            V
+   ;            +---------+               +---------+      +=========+      +---------+
+   ; Anchor --> |Element A| <--> ... <--> |Element U| <--> |ELEMENT V| <--> |Element W| <--> ...
+   ;            +---------+               +---------+      +=========+      +---------+
+   ;
+   ; And we want to delete Element V and link U and W:
+   ;
+   ;            +---------+               +---------+      +---------+
+   ; Anchor --> |Element A| <--> ... <--> |Element U| <--> |Element W| <--> ...
+   ;            +---------+               +---------+      +---------+
+   ;
+   ; Note that both Element U and Element W could be NULL.
+
+   ; Agenda
+   ; - set up reading from V
+   ; - if W was not NULL: store U in W's predecessor
+   ; - if U was not NULL: store W in U's successor ; this time, no need to read from V, as we already have U and W
+   ; - release V
+   ; - load W in .A/.X for output
+
+   ; set up reading from V
+   pha ; store pointer to V for later
+   phx
+   sta RAM_BANK
+   stx zp_pointer+1
+   stz zp_pointer
+
+   ; get pointers to W and U from V
+   lda (zp_pointer) ; read W.B
+   tax ; store W.B away
+   ldy #1
+   lda (zp_pointer),y ; read W.H
+   sta zp_pointer_2+1
+   stz zp_pointer_2
+   iny
+   lda (zp_pointer),y ; read U.B and push to stack
+   pha
+   iny
+   lda (zp_pointer),y ; read U.H -- now we don't need the zp_pointer to V anymore
+   sta zp_pointer+1
+   stx RAM_BANK ; setup access to W
+   pla ; recall U.B - make stack independent of branching ahead
+
+   ; link W to U
+   ; .A contains U.B and .X contains W.B
+   cpx #0 ; is W NULL?
+   beq @end_link_w
+   dey ; set .Y to 2
+   pha ; remember U.B
+   sta (zp_pointer_2),y ; write U.B
+   iny
+   lda zp_pointer+1 ; load U.H
+   sta (zp_pointer_2),y ; write U.H
+   pla ; recall U.B
+@end_link_w:
+
+   ; link U to W
+   ; .A contains U.B and .X contains W.B
+   cmp #0
+   beq @end_link_u
+   sta RAM_BANK ; set up access to U
+   txa ; recall W.B
+   sta (zp_pointer) ; store W.B in U
+   ldy #1
+   lda zp_pointer_2+1 ; load W.H
+   sta (zp_pointer),y ; store W.H in U
+@end_link_u:
+
+   ; now we have W.B in .X and W.H in zp_pointer_2+1
+   ; store W.B in zp_pointer_2
+   stx zp_pointer_2
+
+   ; release V
+   plx
+   pla
+   jsr heap::release_chunk
+
+   ; load pointer to W into .A/.X
+   lda zp_pointer_2
+   ldx zp_pointer_2+1
+
+   rts
+.endproc
+.endif
 
 .popseg
 .endscope
