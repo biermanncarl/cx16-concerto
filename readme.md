@@ -7,6 +7,13 @@ editing sounds.
 In this document, you will find a quick start guide, and a brief explanation of
 the structure of the source code.
 
+## Under construction
+
+The description in this readme is still correct, and the described functionality works.
+However, I am progressively adding functionality needed for a complete music making software,
+hence you may find more stuff in this repo than is needed for the synth engine itself.
+
+
 ## How to run CONCERTO in the emulator
 
 The recommended way of starting the emulator for using CONCERTO is:
