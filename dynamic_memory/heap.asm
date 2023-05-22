@@ -11,7 +11,24 @@
 
 ; Note that this implementation CANNOT deal with 2 MB of high RAM. Only up to 504k is possible (63 RAM banks).
 
+
+; need a ZP pointer which can be used as temporary variable by the functions in this scope
+.ifndef ::heap_zp_pointer
+   .pushseg
+   .zeropage
+heap_zp_pointer:
+   .res 2
+   .popseg
+.endif
+
 .scope heap
+
+heap_zp_pointer = ::heap_zp_pointer
+
+.feature addrsize
+.if (.addrsize(heap_zp_pointer) = 2) .or (.addrsize(heap_zp_pointer) = 0)
+   .error "heap_zp_pointer isn't a zeropage variable!"
+.endif
 
 .include "../common/x16.asm"
 
@@ -27,19 +44,7 @@
    ::heap_max_ram_bank = 63 ; 512k configuration
 .endif
 
-; need a ZP pointer which can be used as temporary variable by the functions in this scope
-; TODO: check if we actually need this!
-.ifndef ::zp_pointer
-   .pushseg
-   .zeropage
-zp_pointer:
-   .res 2
-   .popseg
-.elseif ::zp_pointer >= 256
-   .error "zp_pointer must be on the zero page!"
-.else
-   zp_pointer = ::zp_pointer
-.endif
+
 
 
 .scope detail
@@ -77,7 +82,7 @@ first_unused_chunk:
 ; If successful, carry will be clear.
 ; If unsuccessful (no more chunks available), carry will be set.
 .proc allocate_chunk
-   local_byte = zp_pointer
+   local_byte = heap_zp_pointer
    ; check if memory is full
    lda detail::first_unused_chunk+1
    bpl :+
@@ -170,8 +175,8 @@ first_unused_chunk:
 ; Doesn't check if the chunk was actually being used previously,
 ; but in any case, the chunk will be available for allocation after this function call.
 .proc release_chunk
-   local_byte = zp_pointer
-   local_byte_2 = zp_pointer+1
+   local_byte = heap_zp_pointer
+   local_byte_2 = heap_zp_pointer+1
    ; calculate chunk index from pointer
    sec
    sbc #heap_min_ram_bank

@@ -19,21 +19,44 @@
 ; (Note that a B/H pair can be considered NULL even if H is non-zero.)
 
 
+; need a ZP pointer which can be used as temporary variable by the functions in this file
+.ifndef ::dll_zp_pointer
+   .pushseg
+   .zeropage
+dll_zp_pointer:
+   .res 2
+   .popseg
+.endif
+
+.ifndef ::dll_zp_pointer_2
+   .pushseg
+   .zeropage
+dll_zp_pointer_2:
+   .res 2
+   .popseg
+.endif
+
+; share first zp pointer with heap.asm
+; heap routines use zp_pointer, so we have to code in such a way that we don't rely on zp_pointer during heap calls
+::heap_zp_pointer = ::dll_zp_pointer
+.include "heap.asm"
+
+
 .scope dll
 
 .pushseg
-.zeropage
-zp_pointer:
-   .res 2
-zp_pointer_2:
-   .res 2
-.popseg
-; zp_pointer is shared with heap.asm.
-; heap routines use zp_pointer, so we have to code in such a way that we don't rely on zp_pointer during heap calls
-.include "heap.asm"
-
-.pushseg
 .code
+
+zp_pointer = ::dll_zp_pointer
+zp_pointer_2 = ::dll_zp_pointer_2
+.feature addrsize
+.if (.addrsize(zp_pointer) = 2) .or (.addrsize(zp_pointer) = 0)
+   .error "dll_zp_pointer isn't a zeropage variable!"
+.endif
+.if (.addrsize(zp_pointer_2) = 2) .or (.addrsize(zp_pointer_2) = 0)
+   .error "dll_zp_pointer_2 isn't a zeropage variable!"
+.endif
+
 
 .scope detail
 temp_variable_a:
