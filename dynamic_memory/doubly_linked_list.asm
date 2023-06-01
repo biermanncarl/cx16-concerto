@@ -70,9 +70,8 @@ temp_variable_a:
 .proc create_list
    ; basically allocate a new chunk and set predecessor and successor to NULL
    jsr heap::allocate_chunk
-   bcc :+ ; check if allocation was successful
-   rts
-:  pha
+   bcs @end ; check if allocation was successful
+   pha
    sta RAM_BANK
    stx zp_pointer+1
    stz zp_pointer
@@ -86,8 +85,10 @@ temp_variable_a:
    sta (zp_pointer), y
    pla
    ; clc not necessary. allocate_chunk has reset carry, and none of the other instructions affects carry!
+@end:
    rts
 .endproc
+
 
 ; Destroys a list.
 ; Expects pointer (B/H) to an element in .A/.X
@@ -140,6 +141,19 @@ temp_variable_a:
    tax
    dey
    lda (zp_pointer), y
+   rts
+.endproc
+
+
+; Expects (non-NULL) pointer (B/H) to an element in .A/.X
+; Returns pointer to the last element .A/.X (never NULL)
+.proc get_last_element
+@loop:
+   jsr is_last_element
+   bcs @end_loop
+   jsr get_next_element
+   bra @loop
+@end_loop:
    rts
 .endproc
 
@@ -270,13 +284,7 @@ temp_variable_a:
 ; Expects pointer (B/H) to an element in .A/.X
 ; When it fails due to full heap, exits with carry set. Otherwise carry will be clear upon exit.
 .proc append_new_element
-   ; first: find the last element of the list
-@find_end_loop:
-   jsr is_last_element
-   bcs @find_end_loop_done
-   jsr get_next_element
-   bra @find_end_loop
-@find_end_loop_done:
+   jsr get_last_element
 
    sta RAM_BANK ; set up for writing to the (currently) last element
    stx zp_pointer_2+1
