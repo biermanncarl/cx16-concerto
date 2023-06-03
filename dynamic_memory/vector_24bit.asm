@@ -170,10 +170,11 @@ destroy = dll::destroy_list
    ; sta (zp_pointer), y ; not needed as we will write the new increased value to that location anyway
 @append_element:
    ; expecting zp_pointer and RAM_BANK set up for access of target chunk, and .Y set up for access of the entry count
-   ; expecting .A to contain current count of 
+   ; expecting .A to contain current count of elements in the chunk
    inc
    sta (zp_pointer), y ; store new element count
    ; calculate offset
+   dec
    sta zp_pointer_2
    asl
    adc zp_pointer_2
@@ -246,10 +247,12 @@ destroy = dll::destroy_list
 
 
 ; Checks whether a vector is empty.
-; Expects the vector's address in .A/.X
+; Expects the vector's address (B/H) in .A/.X
 ; If vector is empty, carry is set. Otherwise it's clear.
+; Preserves .A/.X
 .proc is_empty
    ; as empty chunks are not allowed unless the vector is empty, we just need to look at the element count in the first chunk to know whether it's empty or not
+   pha ; save B
    sta RAM_BANK
    stx zp_pointer+1
    lda #4
@@ -258,7 +261,8 @@ destroy = dll::destroy_list
    clc
    bne :+
    sec
-:  rts
+:  pla ; recall B
+   rts
 .endproc
 
 
@@ -309,17 +313,18 @@ destroy = dll::destroy_list
 ; If it's the last element, carry is set. Otherwise clear.
 ; Preserves .A/.X/.Y
 .proc is_first_entry
-   clc
    cmp #0
-   bne @end ; if entry index isn't zero, it can't be the first entry
+   bne @not_first ; if entry index isn't zero, it can't be the first entry
    pha
    phy
    tya
    jsr dll::is_first_element
    ply
    pla
+   rts
    ; carry is set by is_first_element if it's the first element in the DLL. As the index is zero, it must be the first entry.
-@end:
+@not_first:
+   clc
    rts
 .endproc
 
