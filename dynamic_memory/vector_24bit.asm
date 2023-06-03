@@ -76,8 +76,8 @@ v24b_zp_pointer_2:
 .endif
 
 ; share our zp pointers with dll
-dll_zp_pointer = v24b_zp_pointer
-dll_zp_pointer_2 = v24b_zp_pointer_2
+::dll_zp_pointer = ::v24b_zp_pointer
+::dll_zp_pointer_2 = ::v24b_zp_pointer_2
 .include "doubly_linked_list.asm"
 
 .scope v24b

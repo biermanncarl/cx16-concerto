@@ -283,6 +283,7 @@ temp_variable_a:
 ; The given element can be any element of a list.
 ; Expects pointer (B/H) to an element in .A/.X
 ; When it fails due to full heap, exits with carry set. Otherwise carry will be clear upon exit.
+; Does not preserve the input pointer! (Should it?)
 .proc append_new_element
    jsr get_last_element
 
@@ -354,31 +355,31 @@ temp_variable_a:
    ; - load W in .A/.X for output
 
    ; set up reading from V
-   sta RAM_BANK
-   stx zp_pointer+1
+   sta RAM_BANK ; store V.B
+   stx zp_pointer+1 ; store V.H
    stz zp_pointer
 
    ; collect pointers
    lda (zp_pointer)
-   sta detail::temp_variable_a ; store U.B
+   sta zp_pointer_2 ; store W.B
    ldy #1
    lda (zp_pointer),y
-   sta detail::temp_variable_a+1 ; store U.H
-   iny
-   lda (zp_pointer),y
-   sta zp_pointer_2 ; store W.B
-   iny
-   lda (zp_pointer),y
    sta zp_pointer_2+1 ; store W.H
+   iny
+   lda (zp_pointer),y
+   sta detail::temp_variable_a ; store U.B
+   iny
+   lda (zp_pointer),y
+   sta detail::temp_variable_a+1 ; store U.H
 
    ; release V
-   lda RAM_BANK
-   ldx zp_pointer+1
+   lda RAM_BANK ; recall V.B
+   ldx zp_pointer+1 ; recall V.H
    jsr heap::release_chunk
 
    ; point W to U
-   lda zp_pointer_2
-   sta RAM_BANK
+   lda zp_pointer_2 ; recall W.B
+   sta RAM_BANK ; store W.B
    beq @end_w ; skip if W is NULL
    stz zp_pointer_2
    ldy #2
@@ -390,8 +391,8 @@ temp_variable_a:
 @end_w:
 
    ; point U to W
-   ldx RAM_BANK ; store W.B during bank switch
-   phx ; save W.B
+   ldx RAM_BANK ; recall W.B
+   phx ; save W.B during bank switch
    lda detail::temp_variable_a
    beq @end_u ; skip if U is NULL
    sta RAM_BANK
