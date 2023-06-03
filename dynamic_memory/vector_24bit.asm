@@ -35,6 +35,7 @@
 ; * delete entry
 ; * push_back
 ; * defragment vector (fill every chunk to the maximum size, release unnecessary chunks)
+; * move entries from one vector to another (?)
 ; * ???
 ;
 ; Other files might extend this application-specifically.
@@ -137,6 +138,111 @@ temp_variable_c:
 ; expects pointer to vector in .A/.X
 ; The pointer is invalid after this operation.
 destroy = dll::destroy_list
+
+
+; Writes values in a vector at given location
+; Expects the pointer to a vector (B/H) in .A/.X
+; Expects the L/M/H values in value_l / value_m / value_h
+; If successful, carry is clear upon return.
+; Carry will be set if the operation failed due to full heap.
+.proc append_new_entry
+   ; set up access to last element
+   jsr dll::get_last_element
+   sta RAM_BANK
+   stx zp_pointer+1
+   stz zp_pointer
+   ; check if there's any space left
+   ldy #4
+   lda (zp_pointer), y
+   cmp #83
+   bne @append_element
+   ; need new chunk
+   lda RAM_BANK
+   jsr dll::append_new_element
+   bcc :+ ; check if the element was successfully allocated
+   rts
+:  ; set up new chunk
+   sta RAM_BANK
+   stx zp_pointer+1
+   stz zp_pointer
+   ldy #4
+   lda #0
+   ; sta (zp_pointer), y ; not needed as we will write the new increased value to that location anyway
+@append_element:
+   ; expecting zp_pointer and RAM_BANK set up for access of target chunk, and .Y set up for access of the entry count
+   ; expecting .A to contain current count of 
+   inc
+   sta (zp_pointer), y ; store new element count
+   ; calculate offset
+   sta zp_pointer_2
+   asl
+   adc zp_pointer_2
+   adc #6
+   tay
+   ; store values
+   lda value_l
+   sta (zp_pointer), y
+   iny
+   lda value_m
+   sta (zp_pointer), y
+   iny
+   lda value_h
+   sta (zp_pointer), y
+   clc
+   rts
+.endproc
+
+
+; Returns the value in a vector at given location (convenience function, mostly for testing?)
+; Expects the pointer to a valid entry in .A/.X/.Y
+; Returns the L/M/H values in value_l / value_m / value_h
+.proc read_entry
+   ; calculate offset from index
+   sta zp_pointer
+   asl
+   adc zp_pointer
+   adc #6
+   ; set up access
+   sty RAM_BANK
+   stx zp_pointer+1
+   stz zp_pointer
+   tay
+   lda (zp_pointer), y
+   sta value_l
+   iny
+   lda (zp_pointer), y
+   sta value_m
+   iny
+   lda (zp_pointer), y
+   sta value_h
+   rts
+.endproc
+
+
+; Writes values in a vector at given location (convenience function, mostly for testing?)
+; Expects the pointer to a valid entry in .A/.X/.Y
+; Expects the L/M/H values in value_l / value_m / value_h
+.proc write_entry
+   ; calculate offset from index
+   sta zp_pointer
+   asl
+   adc zp_pointer
+   adc #6
+   ; set up access
+   sty RAM_BANK
+   stx zp_pointer+1
+   stz zp_pointer
+   tay
+   lda value_l
+   sta (zp_pointer), y
+   iny
+   lda value_m
+   sta (zp_pointer), y
+   iny
+   lda value_h
+   sta (zp_pointer), y
+   rts
+.endproc
 
 
 ; Checks whether a vector is empty.
