@@ -35,8 +35,11 @@ start:
    ldx list+1
    jsr dll::append_new_element
    EXPECT_CARRY_CLEAR
-   lda list
-   ldx list+1
+   ; should have returned pointer to new element
+   jsr dll::is_first_element
+   EXPECT_CARRY_CLEAR
+   jsr dll::is_last_element
+   EXPECT_CARRY_SET
    jsr dll::append_new_element
    EXPECT_CARRY_CLEAR
 

@@ -41,10 +41,7 @@ start:
    sta list_a
    stx list_a+1
    jsr dll::append_new_element
-   ; get pointer of second element
-   lda list_a
-   ldx list_a+1
-   jsr dll::get_next_element
+   ; save pointer of second element
    sta list_b
    stx list_b+1
    ; delete first element
@@ -74,10 +71,7 @@ start:
    sta list_a
    stx list_a+1
    jsr dll::append_new_element
-   ; get pointer of second element
-   lda list_a
-   ldx list_a+1
-   jsr dll::get_next_element
+   ; store pointer of second element
    sta list_b
    stx list_b+1
    ; delete second element
@@ -101,14 +95,8 @@ start:
    sta list_a
    stx list_a+1
    jsr dll::append_new_element
-   lda list_a
-   ldx list_a+1
    jsr dll::append_new_element
-   ; get third element
-   lda list_a
-   ldx list_a+1
-   jsr dll::get_next_element
-   jsr dll::get_next_element
+   ; save third element
    sta list_b
    stx list_b+1
    ; delete second element

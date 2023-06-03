@@ -45,10 +45,15 @@ start:
    ; add several pages worth of list elements
    lda #(num_elements - 1) ; subtract initial element
    sta loop_variable
-@append_loop:
    lda list_a
    ldx list_a+1
+@append_loop:
+   ; depend on append_new_element to always return the new element
    jsr dll::append_new_element
+   EXPECT_CARRY_CLEAR
+   jsr dll::is_last_element
+   EXPECT_CARRY_SET
+   jsr dll::is_first_element
    EXPECT_CARRY_CLEAR
    dec loop_variable
    bne @append_loop

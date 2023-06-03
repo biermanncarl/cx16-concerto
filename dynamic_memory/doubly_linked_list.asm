@@ -283,7 +283,7 @@ temp_variable_a:
 ; The given element can be any element of a list.
 ; Expects pointer (B/H) to an element in .A/.X
 ; When it fails due to full heap, exits with carry set. Otherwise carry will be clear upon exit.
-; Does not preserve the input pointer! (Should it?)
+; If successful, returns the pointer to the new element.
 .proc append_new_element
    jsr get_last_element
 
@@ -291,24 +291,23 @@ temp_variable_a:
    stx zp_pointer_2+1
    stz zp_pointer_2
 
-   jsr heap::allocate_chunk ; allocate new last element
+   jsr heap::allocate_chunk ; allocate new last element, zp_pointer_2 is preserved
    bcc :+ ; check if the chunk was successfully allocated
    rts
-:  stx zp_pointer+1 ; store H of old chunk
+:  stx zp_pointer+1 ; store H of new chunk
    stz zp_pointer
-   ;tax ; store B of old chunk away in .X
 
    ; write new pointer to previously-last element
    sta (zp_pointer_2) ; write B of new last element
-   pha
+   pha ; remember new B
    txa
    ldy #1
    sta (zp_pointer_2), y ; write H of new last element
-   pla
+   pla ; recall new B
 
    ; write pointer to new last element
    ldx RAM_BANK ; load B of old element
-   sta RAM_BANK
+   sta RAM_BANK ; swap in the new B
    iny
    txa
    sta (zp_pointer), y ; store B of old last element
@@ -321,6 +320,9 @@ temp_variable_a:
    ldy #1
    sta (zp_pointer),y
 
+   ; load pointer to new element
+   lda RAM_BANK
+   ldx zp_pointer+1
    ; clc ; to signal success is not necessary, as allocate_chunk reset carry and none of the operations in between affect it.
    rts
 .endproc
