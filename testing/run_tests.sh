@@ -34,7 +34,7 @@ do
     fi
     echo "Running $test_file ..."
     x16emu -prg TEST.PRG -run -dump R -debug > /dev/null 2>&1 & # hide error messages by routing them into /dev/null
-    sleep 0.9
+    sleep 1.5
     xdotool search --sync --name "Commander X16" key "ctrl+s"
     sleep 0.2
     xdotool search --sync --name "Commander X16" windowclose
@@ -64,5 +64,5 @@ do
     fi
     echo
     rm -f "dump.bin"
-    rm -f "TEST.PRG"
+    # rm -f "TEST.PRG"
 done

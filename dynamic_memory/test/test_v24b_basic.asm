@@ -5,12 +5,12 @@
 
 .include "../../testing/testing.asm"
 .include "../../common/x16.asm"
-;heap_max_ram_bank = 2 ; limit to two pages of memory -> maximum 64 chunks
 .include "../vector_24bit.asm"
 
 vec_a:
    .res 2
 entry_a:
+   .res 3
 
 start:
    START_TEST

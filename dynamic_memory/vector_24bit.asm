@@ -488,42 +488,62 @@ destroy = dll::destroy_list
 @element_goes_into_old_chunk:
    ; RAM_BANK and zp_pointer is already set to the old chunk from above's code
 @can_fit_another_element:
-   ; expecting zp_pointer and RAM bank to be set up for access to the chunk where the new element goes (and we expect in that chunk to be enough space for a new element)
-   ; furthermore, expecting the index where the new element will be inserted in temp_variable_a
+   ; expecting zp_pointer and RAM bank to be set up for access to the chunk where the new element goes
+   ; and we expect in that chunk to be enough space for a new element
 
    ; Increase the chunk's element count
    lda (zp_pointer), y ; .Y is still 4, from both branches above (with and without chunk split)
-   tax ; remember how many elements are currently in the chunk
    inc
-   sta (zp_pointer), y
+   sta (zp_pointer), y ; store new chunk size
 
    ; Make room for the new element by moving all existing elements over by one space.
-   ; compute byte offset of highest data byte needing to be moved: multiply by 3 and add offset of first payload byte
-   stx zp_pointer_2
-   txa
+   ; compute byte offset of the highest entry that needs to be moved: multiply by 3 and add offset of first payload byte
+   dec ; The chunk size before insertion is the index of the last element after insertion ...
+   dec ; ... but we want the index of the last chunk before insertion.
+   sta zp_pointer_2
    asl ; as the index cannot be higher than 82, carry will be clear in the next operations
    adc zp_pointer_2
    adc #6
-   tay ; this will be the first byte we need to move
-   ; compute byte offset of lowest data byte needing to be moved (same recipe)
+   tay ; this will be the offset of the first byte we need to move
+   ; Compute byte offset of lowest entry needing to be moved (same recipe)
    lda detail::temp_variable_a
-   tax ; remember the original index
    ; multiply by 3
    asl ; as the maximum number expected in .A is 82 (decimal), carry will be clear
    adc detail::temp_variable_a
-   adc #6 ; offset of first payload byte
-   sta zp_pointer_2 ; store byte offset of lowest data byte to be moved
+   adc #(6-3) ; offset of first payload byte, minus 3 because this is where .Y will end up when all intended copy operations are done
+   sta zp_pointer_2 ; store end location of copy operations
 
 @move_loop:
-   cpy zp_pointer_2
-   beq @end_move_loop
-   dey
+   ; Possible optimization (smaller code size, slower execution): do this byte by byte instead of 3 bytes at a time
+   ; remember three bytes (in three different manners, lol)
    lda (zp_pointer), y
+   tax
    iny
+   lda (zp_pointer), y
+   sta zp_pointer_2+1
+   iny
+   lda (zp_pointer), y
+   pha
+   iny
+   ; store three bytes
+   txa
    sta (zp_pointer), y
-   dey
-   bra @move_loop
+   iny
+   lda zp_pointer_2+1
+   sta (zp_pointer), y
+   iny
+   pla
+   sta (zp_pointer), y
+   tya
+   sec
+   sbc #8 ; move on to the next entry
+   tay
+   cpy zp_pointer_2
+   bne @move_loop
 @end_move_loop:
+   iny
+   iny
+   iny
    ; .Y is now set up to write to the new element's position
    lda value_l
    sta (zp_pointer), y
