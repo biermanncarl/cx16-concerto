@@ -93,6 +93,10 @@ value_l = r6L
 value_m = r6H
 value_h = r7L
 
+payload_offset = 6
+entry_size = 3
+max_entries_per_chunk = 83
+
 .feature addrsize
 
 zp_pointer = ::v24b_zp_pointer
@@ -154,7 +158,7 @@ destroy = dll::destroy_list
    ; check if there's any space left
    ldy #4
    lda (zp_pointer), y
-   cmp #83
+   cmp #max_entries_per_chunk
    bne @append_element
    ; need new chunk
    lda RAM_BANK
@@ -178,7 +182,7 @@ destroy = dll::destroy_list
    sta zp_pointer_2
    asl
    adc zp_pointer_2
-   adc #6
+   adc #payload_offset
    tay
    ; store values
    lda value_l
@@ -202,7 +206,7 @@ destroy = dll::destroy_list
    sta zp_pointer
    asl
    adc zp_pointer
-   adc #6
+   adc #payload_offset
    ; set up access
    sty RAM_BANK
    stx zp_pointer+1
@@ -228,7 +232,7 @@ destroy = dll::destroy_list
    sta zp_pointer
    asl
    adc zp_pointer
-   adc #6
+   adc #payload_offset
    ; set up access
    sty RAM_BANK
    stx zp_pointer+1
@@ -416,7 +420,7 @@ destroy = dll::destroy_list
    sta detail::temp_variable_a ; store index of the entry
    ldy #4
    lda (zp_pointer), y ; read chunk length
-   cmp #83 ; is it full?
+   cmp #max_entries_per_chunk ; is it full?
    bne @can_fit_another_element
 
    ; chunk is full --> split it.
@@ -446,7 +450,7 @@ destroy = dll::destroy_list
    stx zp_pointer_2+1
    stz zp_pointer_2
    tax ; store B of target chunk in .X
-   ldy #(6+42*3) ; index of first payload byte to be moved
+   ldy #(payload_offset+42*entry_size) ; index of first payload byte to be moved
    clc
    ; The loop below could handle groups of 3 bytes at once in each iteration (--> partially unrolled). But as this loop is expected to be executed rarely, we optimize for code size.
 @split_loop:
@@ -455,13 +459,13 @@ destroy = dll::destroy_list
    lda (zp_pointer), y  ;  ??? Don't we need to set up zp_pointer again (it was used by dll:: functions) ???
    pha ; store the value
    tya
-   sbc #(42*3-1) ; move offset left to write into the target chunk. Minus one as carry is clear.
+   sbc #(42*entry_size-1) ; move offset left to write into the target chunk. Minus one as carry is clear.
    tay
    stx RAM_BANK ; target chunk's B
    pla ; recall the value
    sta (zp_pointer_2), y
    tya
-   adc #(42*3-1+1) ; move offset right to read from the source chunk. Minus one as carry is set. Plus one as we want to move on to the next byte of data.
+   adc #(42*entry_size-1+1) ; move offset right to read from the source chunk. Minus one as carry is set. Plus one as we want to move on to the next byte of data.
    tay
    ; At the end of the data copy operation, the above ADC instruction will overflow (i.e. set carry)
    bcc @split_loop
@@ -503,14 +507,14 @@ destroy = dll::destroy_list
    sta zp_pointer_2
    asl ; as the index cannot be higher than 82, carry will be clear in the next operations
    adc zp_pointer_2
-   adc #6
+   adc #payload_offset
    tay ; this will be the offset of the first byte we need to move
    ; Compute byte offset of lowest entry needing to be moved (same recipe)
    lda detail::temp_variable_a
    ; multiply by 3
    asl ; as the maximum number expected in .A is 82 (decimal), carry will be clear
    adc detail::temp_variable_a
-   adc #(6-3) ; offset of first payload byte, minus 3 because this is where .Y will end up when all intended copy operations are done
+   adc #(payload_offset-entry_size) ; offset of first payload byte, minus 3 because this is where .Y will end up when all intended copy operations are done
    sta zp_pointer_2 ; store end location of copy operations
 
 @move_loop:
@@ -536,7 +540,7 @@ destroy = dll::destroy_list
    sta (zp_pointer), y
    tya
    sec
-   sbc #8 ; move on to the next entry
+   sbc #(3*entry_size-1) ; move on to the next entry
    tay
    cpy zp_pointer_2
    bne @move_loop
@@ -579,7 +583,7 @@ destroy = dll::destroy_list
    lda zp_pointer_2
    asl
    adc zp_pointer_2
-   adc #(6+3+2) ; we start reading data one entry to the right (+3), and at the top of that entry first (+2)
+   adc #(payload_offset+2*entry_size-1) ; we start reading data one entry to the right (+3), and at the top of that entry first (+2)
    pha ; index of the first byte we need to move
 
    ; compute end of copy operation
@@ -587,7 +591,7 @@ destroy = dll::destroy_list
    sta zp_pointer_2
    asl
    adc zp_pointer_2
-   adc #(6+3+2) ; we end when we would read from this position if we continued. Addition might overflow (not an issue though)
+   adc #(payload_offset+2*entry_size-1) ; we end when we would read from this position if we continued. Addition might overflow (not an issue though)
    sta zp_pointer_2
 
    ply
@@ -616,7 +620,7 @@ destroy = dll::destroy_list
    ; move index up to the top of the next entry to be moved
    tya
    clc
-   adc #8
+   adc #(3*entry_size-1)
    tay
    bra @copy_loop
 
