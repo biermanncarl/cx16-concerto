@@ -419,6 +419,7 @@ destroy = dll::destroy_list
    lda (zp_pointer), y ; read chunk length
    cmp #83 ; is it full?
    bne @can_fit_another_element
+
    ; chunk is full --> split it.
    lda RAM_BANK
    jsr dll::is_last_element
@@ -455,13 +456,13 @@ destroy = dll::destroy_list
    lda (zp_pointer), y  ;  ??? Don't we need to set up zp_pointer again (it was used by dll:: functions) ???
    pha ; store the value
    tya
-   sbc #(41*3-1) ; move offset left to write into the target chunk. Minus one as carry is clear.
+   sbc #(42*3-1) ; move offset left to write into the target chunk. Minus one as carry is clear.
    tay
    stx RAM_BANK ; target chunk's B
    pla ; recall the value
    sta (zp_pointer_2), y
    tya
-   adc #(41*3-1+1) ; move offset right to read from the source chunk. Minus one as carry is set. Plus one as we want to move on to the next byte of data.
+   adc #(42*3-1+1) ; move offset right to read from the source chunk. Minus one as carry is set. Plus one as we want to move on to the next byte of data.
    tay
    ; At the end of the data copy operation, the above ADC instruction will overflow (i.e. set carry)
    bcc @split_loop

@@ -5,13 +5,10 @@
 
 .include "../../testing/testing.asm"
 .include "../../common/x16.asm"
-heap_max_ram_bank = 2 ; limit to two pages of memory -> maximum 64 chunks
 .include "../vector_24bit.asm"
 
 vec_a:
    .res 2
-entry_a:
-   .res 3
 
 .macro EXPECT_ENTRY_EQUAL_TO l, m, h
    pha
@@ -118,7 +115,6 @@ start:
    EXPECT_CARRY_CLEAR
    jsr v24b::is_last_entry
    EXPECT_CARRY_SET
-   ;.byte $db
    EXPECT_ENTRY_EQUAL_TO $42, $45, $49
 
    FINISH_TEST
