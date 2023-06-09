@@ -635,5 +635,19 @@ destroy = dll::destroy_list
 
 
 
+; Defragments a vector, i.e. moves data inside a vector such that no chunk except the last one has empty space in it.
+; Excess chunks are released.
+; Expects the pointer to the vector in .A/.X (B/H).
+.proc defragment
+   ; TODO
+   ; strategy: have two running pointers, one for reading (will move "faster") and one for writing (will fill every chunk).
+   ; the reading pointer will be incremented according to "normal" rules,
+   ; the writing pointer will be incremented until chunk is full.
+   ; in the end, each chunk length is increased to 83 except the last one, and all unneeded chunks are released.
+   rts
+.endproc
+
+
+
 .popseg
 .endscope
