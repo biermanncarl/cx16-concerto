@@ -404,7 +404,6 @@ destroy = dll::destroy_list
 ; Expects the pointer to a valid entry in .A/.X/.Y
 ; Expects the L/M/H values in value_l / value_m / value_h
 ; When it fails due to full heap, exits with carry set. Otherwise carry will be clear upon exit.
-; Does not change the vector before the target position.
 .proc insert_entry
    ; First, we try to insert an element at the back of the current chunk.
    ; If that's not possible, we split the current chunk in two by moving half of the entries to a new chunk.
@@ -555,6 +554,81 @@ destroy = dll::destroy_list
    lda value_h
    sta (zp_pointer), y
 
+   clc
+   rts
+.endproc
+
+
+; Deletes a value from a vector at given location (i.e. in front of the given entry)
+; Expects the pointer to a valid entry in .A/.X/.Y
+; Does not change the vector before the target position, but the current entry might not be a valid one after deletion.
+; If the vector is empty (after deletion), carry will be set. Clear otherwise.
+.proc delete_entry
+   sty RAM_BANK
+   stx zp_pointer+1
+   stz zp_pointer
+   ldy #4
+   sta zp_pointer_2 ; remember the index of the entry to be deleted
+   lda (zp_pointer),y
+   dec
+   sta (zp_pointer),y
+   beq @chunk_is_empty
+
+   ; Move data inside the chunk
+   ; compute start of copy operation
+   lda zp_pointer_2
+   asl
+   adc zp_pointer_2
+   adc #(6+3+2) ; we start reading data one entry to the right (+3), and at the top of that entry first (+2)
+   pha ; index of the first byte we need to move
+
+   ; compute end of copy operation
+   lda (zp_pointer),y ; this was decreased previously, but that gives us the index of the last element (before deletion) anyway (number of elements - 1 is index of last element)
+   sta zp_pointer_2
+   asl
+   adc zp_pointer_2
+   adc #(6+3+2) ; we end when we would read from this position if we continued. Addition might overflow (not an issue though)
+   sta zp_pointer_2
+
+   ply
+@copy_loop:
+   cpy zp_pointer_2
+   beq @end
+   ; read an entry
+   lda (zp_pointer),y
+   tax
+   dey
+   lda (zp_pointer),y
+   pha
+   dey
+   lda (zp_pointer),y
+   sta zp_pointer_2+1
+   dey
+   ; write the entry
+   txa
+   sta (zp_pointer),y
+   dey
+   pla
+   sta (zp_pointer),y
+   dey
+   lda zp_pointer_2+1
+   sta (zp_pointer),y
+   ; move index up to the top of the next entry to be moved
+   tya
+   clc
+   adc #8
+   tay
+   bra @copy_loop
+
+@chunk_is_empty:
+   ; check if the vector is empty --> in that case we don't delete the chunk
+   lda RAM_BANK
+   jsr is_empty
+   bcc :+
+   rts
+:  ; delete the current element of the list
+   jsr dll::delete_element
+@end:
    clc
    rts
 .endproc
