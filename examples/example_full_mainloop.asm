@@ -8,9 +8,9 @@ mainloop:
    jsr concerto_gui::gui_tick
 
    ; print out help messages
-   DISPLAY_LABEL lb_play_notes,     29, 54
-   DISPLAY_LABEL lb_toggle_octaves, 29, 56
-   DISPLAY_LABEL lb_release_note,   29, 58
+   ;DISPLAY_LABEL lb_play_notes,     29, 54
+   ;DISPLAY_LABEL lb_toggle_octaves, 29, 56
+   ;DISPLAY_LABEL lb_release_note,   29, 58
 
    ; keyboard polling
 

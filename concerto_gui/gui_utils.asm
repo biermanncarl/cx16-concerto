@@ -815,8 +815,8 @@ clear_lb_popup:
 ; Alg number in draw_data1
 ; Position fixed by macros @alg_x, @alg_y
 draw_fm_alg:
-   @alg_x = 70
-   @alg_y = 14
+   @alg_x = 36
+   @alg_y = 45
    ; clear drawing area
    lda #@alg_x
    sta draw_x

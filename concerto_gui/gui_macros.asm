@@ -26,7 +26,7 @@
 .define CCOLOR_ALG_OP_NUMBERS 16*0+13
 .define CCOLOR_ALG_CONNECTION 16*COLOR_BACKGROUND+COLOR_ALG_CONNECTION
 ; others
-.define N_PANELS 9   ; number of panels
+.define N_PANELS 10   ; number of panels
 
 
 ; compile time macro: converts an ascii string to a zero-terminated string that can be displayed directly on the VERA

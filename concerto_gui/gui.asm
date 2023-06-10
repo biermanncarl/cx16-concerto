@@ -1,4 +1,4 @@
-; Copyright 2021 Carl Georg Biermann
+; Copyright 2021, 2023 Carl Georg Biermann
 
 
 ; This file contains most of the GUI relevant code at the moment.
@@ -19,7 +19,7 @@
 
 ; ***************************************
 ; Panel legend:
-; 0: global settings
+; 0: global synth settings
 ; 1: oscillator settings
 ; 2: envelope settings
 ; 3: synth navigation bar (snav)
@@ -28,6 +28,7 @@
 ; 6: help/info panel
 ; 7: FM general setup
 ; 8: FM operator setup
+; 9: Global navigation bar
 ; ***************************************
 
 ; Each panel has multiple byte strings hard coded. Those byte strings define elements shown on the GUI.
@@ -103,10 +104,10 @@ dummy_data_size = 1
    ; panel data that will be accessed via pointers
    ; and additional data specific to the needs of each panel.
 
-   ; global settings panel
-   .scope global
-      px = 2
-      py = 10
+   ; global synth settings panel
+   .scope synth_global
+      px = 15
+      py = 8
       wd = 12
       hg = 24
       ; GUI component string of global settings panel
@@ -146,10 +147,10 @@ dummy_data_size = 1
    .endscope
    ; oscillator settings panel
    .scope osc
-      px = global::px+global::wd
-      py = global::py
+      px = synth_global::px+synth_global::wd
+      py = synth_global::py
       wd = 34
-      hg = global::hg
+      hg = synth_global::hg
       ; other labels
       modsecx = px + 4
       modsecy = py + 16
@@ -228,40 +229,40 @@ dummy_data_size = 1
    .endscope
    ; envelope settings panel
    .scope env
-      px = global::px
+      px = synth_global::px
       py = osc::py+osc::hg
       wd = 24
       hg = 8
       ; GUI component string of envelope panel
       comps:
          .byte 2, px, py, 3, 0 ; tab selector
-         .byte 4, px+4 , py+3, %00000001, 0, 127, 0, 0 ; drag edit - attack
-         .byte 4, px+9 , py+3, %00000001, 0, 127, 0, 0 ; drag edit - decay
-         .byte 4, px+14, py+3, %00000000, 0, ENV_PEAK, 0, 0 ; drag edit - sustain
-         .byte 4, px+18, py+3, %00000001, 0, 127, 0, 0 ; drag edit - release
+         .byte 4, px+4 , py+4, %00000001, 0, 127, 0, 0 ; drag edit - attack
+         .byte 4, px+9 , py+4, %00000001, 0, 127, 0, 0 ; drag edit - decay
+         .byte 4, px+14, py+4, %00000000, 0, ENV_PEAK, 0, 0 ; drag edit - sustain
+         .byte 4, px+18, py+4, %00000001, 0, 127, 0, 0 ; drag edit - release
          .byte 0
       ; caption list of envelope panel
       capts:
          .byte CCOLOR_CAPTION, px+4, py
          .word cp
-         .byte CCOLOR_CAPTION, px+4, py+2
+         .byte CCOLOR_CAPTION, px+4, py+3
          .word lb_attack
-         .byte CCOLOR_CAPTION, px+9, py+2
+         .byte CCOLOR_CAPTION, px+9, py+3
          .word lb_decay
-         .byte CCOLOR_CAPTION, px+14, py+2
+         .byte CCOLOR_CAPTION, px+14, py+3
          .word lb_sustain
-         .byte CCOLOR_CAPTION, px+18, py+2
+         .byte CCOLOR_CAPTION, px+18, py+3
          .word lb_release
          .byte 0
       ; data specific to the envelope panel
       active_tab: .byte 0
       cp: STR_FORMAT "envelopes" ; caption of panel
    .endscope
-   ; synth navigation/tool panel ... it sits in the background.
+   ; synth navigation/tool panel ... it sits in the background of the synth.
    .scope snav
-      px = 0
+      px = 10
       py = 0
-      wd = 80
+      wd = 70
       hg = 60
       ; text input position
       ti_x = 66
@@ -275,19 +276,19 @@ dummy_data_size = 1
          .byte 1, 34, 2, 6, (<copy_preset_lb), (>copy_preset_lb) ; copy preset button
          .byte 1, 41, 2, 7, (<paste_preset_lb), (>paste_preset_lb) ; paste preset button
          .byte 1, 52, 4, 13, (<file_lb), (>file_lb) ; set file name button
-         .byte 4, 38, 52, %00000000, 0, 63, 63, 0 ; note volume
+         .byte 4, 43, 5, %00000000, 0, 63, 63, 0 ; note volume
          .byte 1, 66, 2, 13, (<load_bank_lb), (>load_bank_lb) ; load bank button
          .byte 1, 52, 2, 13, (<save_bank_lb), (>save_bank_lb) ; save bank button
          .byte 0
       ; caption list of the panel
       capts:
-         .byte (16*COLOR_BACKGROUND+15), 1, 1
+         .byte (16*COLOR_BACKGROUND+15), 16, 3
          .word logo_lb
          .byte CCOLOR_CAPTION, 34, 1
          .word timbre_lb
          .byte CCOLOR_CAPTION, ti_x, ti_y
          .word concerto_synth::timbres::file_name
-         .byte CCOLOR_CAPTION, 29, 52
+         .byte CCOLOR_CAPTION, 34, 5
          .word velocity_lb
          .byte 0
       ; data specific to the synth-navigation panel
@@ -299,7 +300,7 @@ dummy_data_size = 1
       copy_preset_lb: STR_FORMAT " copy"
       paste_preset_lb: STR_FORMAT " paste"
       file_lb: STR_FORMAT "  file name"
-      logo_lb: STR_FORMAT "=== concerto v0.5.0-alpha ==="
+      logo_lb: STR_FORMAT "synthesizer"
       velocity_lb: STR_FORMAT "velocity"
    .endscope
    ; listbox popup. shows up when a listbox was clicked.
@@ -332,7 +333,7 @@ dummy_data_size = 1
    .scope lfo
       px = env::px+env::wd
       py = osc::py+osc::hg
-      wd = (global::wd+osc::wd-env::wd)
+      wd = (synth_global::wd+osc::wd-env::wd)
       hg = env::hg
       ; GUI component string of the panel
       comps:
@@ -365,10 +366,10 @@ dummy_data_size = 1
    .endscope
    ; help/info panel
    .scope info
-      px = global::px
-      py = env::py+env::hg
-      wd = (global::wd+osc::wd)
-      hg = 9
+      px = osc::px+osc::wd
+      py = synth_global::py
+      wd = 17
+      hg = osc::hg+env::hg
       ; GUI component string of the panel
       comps:
          .byte 0 ; empty
@@ -380,20 +381,26 @@ dummy_data_size = 1
          .word help_1_lb
          .byte CCOLOR_CAPTION, px+2, py+4
          .word help_2_lb
-         .byte CCOLOR_CAPTION, px+2, py+6
+         .byte CCOLOR_CAPTION, px+3, py+5
          .word help_3_lb
+         .byte CCOLOR_CAPTION, px+2, py+7
+         .word help_4_lb
+         .byte CCOLOR_CAPTION, px+3, py+8
+         .word help_5_lb
          .byte 0
       ; data specific to the synth-navigation panel
       cp: STR_FORMAT "help"
       help_1_lb: STR_FORMAT "controls:"
-      help_2_lb: STR_FORMAT "left drag    coarse edit"
-      help_3_lb: STR_FORMAT "right drag   fine edit"
+      help_2_lb: STR_FORMAT "left drag:"
+      help_3_lb: STR_FORMAT "coarse edit"
+      help_4_lb: STR_FORMAT "right drag:"
+      help_5_lb: STR_FORMAT "fine edit"
    .endscope
 
    ; FM general setup (everything that isn't operators)
    .scope fm_gen
-      px = osc::px+osc::wd+1
-      py = osc::py
+      px = synth_global::px
+      py = env::py+env::hg+1
       wd = 29
       hg = 17
       comps:
@@ -437,7 +444,7 @@ dummy_data_size = 1
          .word semi_lb
          .byte CCOLOR_CAPTION, px+2, py+14
          .word fine_lb
-         .byte 0 ; empty
+         .byte 0 ; end
       cp: STR_FORMAT "fm general"
       con_select_lb: STR_FORMAT "connection"
       lb_feedback: STR_FORMAT "feedback"
@@ -450,8 +457,8 @@ dummy_data_size = 1
 
    ; FM operators setup
    .scope fm_op
-      px = fm_gen::px
-      py = fm_gen::py+fm_gen::hg
+      px = fm_gen::px+fm_gen::wd
+      py = fm_gen::py
       wd = fm_gen::wd
       hg = 17
       comps:
@@ -509,6 +516,22 @@ dummy_data_size = 1
       lb_vol_sens: STR_FORMAT "vol sens"
    .endscope
 
+   ; global navigation panel, sits in the background
+   .scope globalnav
+      px = 0
+      py = 0
+      wd = 80
+      hg = 60
+      ; GUI component string of the panel
+      comps:
+         .byte 0 ; empty
+      ; caption list of the panel
+      capts:
+         .byte 0 ; empty
+      ; data specific to the synth-navigation panel
+      ; none yet
+   .endscope
+
    ; Recurring Labels
    vol_lb: STR_FORMAT "vol"
    pitch_lb: STR_FORMAT "pitch"
@@ -543,17 +566,17 @@ dummy_data_size = 1
    ; Each label marks a list of values, one for each panel.
    ; These lists must have length N_PANELS.
    ; X positions
-   px: .byte global::px, osc::px, env::px, snav::px, listbox_popup::px, lfo::px, info::px, fm_gen::px, fm_op::px
+   px: .byte synth_global::px, osc::px, env::px, snav::px, listbox_popup::px, lfo::px, info::px, fm_gen::px, fm_op::px, globalnav::px
    ; Y positions
-   py: .byte global::py, osc::py, env::py, snav::py, listbox_popup::py, lfo::py, info::py, fm_gen::py, fm_op::py
+   py: .byte synth_global::py, osc::py, env::py, snav::py, listbox_popup::py, lfo::py, info::py, fm_gen::py, fm_op::py, globalnav::py
    ; widths
-   wd: .byte global::wd, osc::wd, env::wd, snav::wd, listbox_popup::wd, lfo::wd, info::wd, fm_gen::wd, fm_op::wd
+   wd: .byte synth_global::wd, osc::wd, env::wd, snav::wd, listbox_popup::wd, lfo::wd, info::wd, fm_gen::wd, fm_op::wd, globalnav::wd
    ; heights
-   hg: .byte global::hg, osc::hg, env::hg, snav::hg, listbox_popup::hg, lfo::hg, info::hg, fm_gen::hg, fm_op::hg
+   hg: .byte synth_global::hg, osc::hg, env::hg, snav::hg, listbox_popup::hg, lfo::hg, info::hg, fm_gen::hg, fm_op::hg, globalnav::hg
    ; GUI component strings
-   comps: .word global::comps, osc::comps, env::comps, snav::comps, listbox_popup::comps, lfo::comps, info::comps, fm_gen::comps, fm_op::comps
+   comps: .word synth_global::comps, osc::comps, env::comps, snav::comps, listbox_popup::comps, lfo::comps, info::comps, fm_gen::comps, fm_op::comps, globalnav::comps
    ; GUI captions
-   capts: .word global::capts, osc::capts, env::capts, snav::capts, listbox_popup::capts, lfo::capts, info::capts, fm_gen::capts, fm_op::capts
+   capts: .word synth_global::capts, osc::capts, env::capts, snav::capts, listbox_popup::capts, lfo::capts, info::capts, fm_gen::capts, fm_op::capts, globalnav::capts
 
 
 ; The Panel Stack
@@ -573,24 +596,26 @@ dummy_sr:
 ; puts all synth related panels into the GUI stack
 load_synth_gui:
    jsr guiutils::cls
-   lda #8 ; GUI stack size (how many panels are visible)
+   lda #9 ; GUI stack size (how many panels are visible)
    sta stack::sp
+   lda #9 ; global navigation bar
+   sta stack::stack+0
    lda #3 ; synth navigation bar
-   sta stack::stack
-   lda #6 ; help/info panel
    sta stack::stack+1
-   lda #7 ; FM general settings panel
+   lda #6 ; help/info panel
    sta stack::stack+2
-   lda #8 ; FM operator settings panel
+   lda #7 ; FM general settings panel
    sta stack::stack+3
-   lda #0 ; global settings panel
+   lda #8 ; FM operator settings panel
    sta stack::stack+4
-   lda #1 ; oscillator panel
+   lda #0 ; global synth settings panel
    sta stack::stack+5
-   lda #2 ; envelope panel
+   lda #1 ; oscillator panel
    sta stack::stack+6
-   lda #5 ; LFO panel
+   lda #2 ; envelope panel
    sta stack::stack+7
+   lda #5 ; LFO panel
+   sta stack::stack+8
    jsr draw_gui
    jsr refresh_gui
    rts
@@ -611,7 +636,7 @@ draw_gui:
    tax
    INDEXED_JSR @jmp_tbl, @ret_addr
 @jmp_tbl:
-   .word draw_global
+   .word draw_synth_global
    .word draw_osc
    .word draw_env
    .word draw_snav
@@ -620,6 +645,7 @@ draw_gui:
    .word draw_info
    .word draw_fm_gen
    .word draw_fm_op
+   .word draw_globalnav
 @ret_addr:
    ; draw GUI components
    ldy dg_counter
@@ -708,7 +734,6 @@ draw_components:
 ; and are expected to advance register Y to the start (i.e. the identifier) of the next component
 
 draw_button:
-   ;.byte $db
    lda (dc_pointer), y
    sta guiutils::draw_x
    iny
@@ -1288,7 +1313,7 @@ refresh_gui:
    tax
    INDEXED_JSR @jmp_tbl, @ret_addr
 @jmp_tbl:
-   .word refresh_global
+   .word refresh_synth_global
    .word refresh_osc
    .word refresh_env
    .word refresh_snav
@@ -1297,6 +1322,7 @@ refresh_gui:
    .word dummy_sr   ; info box - no refresh necessary yet
    .word refresh_fm_gen
    .word refresh_fm_op
+   .word dummy_sr  ; globalnav - no refresh necessary
 @ret_addr:
    ; advance in loop
    lda rfg_counter
@@ -1791,15 +1817,15 @@ check_dummy:
 ; by the component and label lists.
 ; They don't depend on anything other than the individual panel variables.
 
-draw_global:
+draw_synth_global:
    ; draw panel
-   lda #global::px
+   lda #synth_global::px
    sta guiutils::draw_x
-   lda #global::py
+   lda #synth_global::py
    sta guiutils::draw_y
-   lda #global::wd
+   lda #synth_global::wd
    sta guiutils::draw_width
-   lda #global::hg
+   lda #synth_global::hg
    sta guiutils::draw_height
    lda #0
    sta guiutils::draw_data1
@@ -1928,6 +1954,11 @@ draw_fm_op:
    jsr guiutils::draw_frame
    rts
 
+draw_globalnav:
+   ; TODO
+   rts
+
+
 
 
 ; utility subroutines
@@ -1980,7 +2011,7 @@ map_signed_7bit_to_twos_complement:
 
 ; jump table
 panel_write_subroutines:
-   .word write_global
+   .word write_synth_global
    .word write_osc
    .word write_env
    .word write_snav
@@ -1989,14 +2020,15 @@ panel_write_subroutines:
    .word dummy_sr ; info box - nothing to edit here
    .word write_fm_gen
    .word write_fm_op
+   .word dummy_sr ; globalnav
 
 dummy_plx:
    plx
    rts
 
 
-; subroutine of the global settings panel
-write_global:
+; subroutine of the global synth settings panel
+write_synth_global:
    ldx Timbre ; may be replaced later
    lda ms_curr_component_ofs
    clc
@@ -2022,42 +2054,42 @@ write_global:
    ply
    plx
    iny
-   lda global::comps, y
+   lda synth_global::comps, y
    sta concerto_synth::timbres::Timbre::n_oscs, x
    rts
 @n_envs:
    plx
    iny
-   lda global::comps, y
+   lda synth_global::comps, y
    sta concerto_synth::timbres::Timbre::n_envs, x
    rts
 @n_lfos:
    plx
-   lda global::comps, y
+   lda synth_global::comps, y
    sta concerto_synth::timbres::Timbre::n_lfos, x
    rts
 @retr_activate:
    plx
-   lda global::comps, y
+   lda synth_global::comps, y
    sta concerto_synth::timbres::Timbre::retrig, x
    rts
 @porta_activate:
    plx
-   lda global::comps, y
+   lda synth_global::comps, y
    sta concerto_synth::timbres::Timbre::porta, x
    rts
 @porta_rate:
    plx
    iny
    iny
-   lda global::comps, y
+   lda synth_global::comps, y
    sta concerto_synth::timbres::Timbre::porta_r, x
    rts
 @vibrato_amount:
    plx
    iny
    iny
-   lda global::comps, y ; if this value is 0, that means vibrato off, which is represented as a negative value internally
+   lda synth_global::comps, y ; if this value is 0, that means vibrato off, which is represented as a negative value internally
    beq :+
    jsr concerto_synth::map_twos_complement_to_scale5
    sta concerto_synth::timbres::Timbre::vibrato, x
@@ -2826,32 +2858,32 @@ write_fm_op:
 ; as they are, e.g. tab-selectors are not affected (in fact, they affect the other components)
 
 
-refresh_global:
+refresh_synth_global:
    ldx Timbre ; may be replaced later
    ; number of oscillators
    lda concerto_synth::timbres::Timbre::n_oscs, x
    ldy #(0*checkbox_data_size+0*drag_edit_data_size+1*arrowed_edit_data_size-1)
-   sta global::comps, y
+   sta synth_global::comps, y
    ; number of envelopes
    lda concerto_synth::timbres::Timbre::n_envs, x
    ldy #(0*checkbox_data_size+0*drag_edit_data_size+2*arrowed_edit_data_size-1)
-   sta global::comps, y
+   sta synth_global::comps, y
    ; LFO activate checkbox
    lda concerto_synth::timbres::Timbre::n_lfos, x
    ldy #(1*checkbox_data_size+0*drag_edit_data_size+2*arrowed_edit_data_size-1)
-   sta global::comps, y
+   sta synth_global::comps, y
    ; retrigger checkbox
    lda concerto_synth::timbres::Timbre::retrig, x
    ldy #(2*checkbox_data_size+0*drag_edit_data_size+2*arrowed_edit_data_size-1)
-   sta global::comps, y
+   sta synth_global::comps, y
    ; porta activate checkbox
    lda concerto_synth::timbres::Timbre::porta, x
    ldy #(3*checkbox_data_size+0*drag_edit_data_size+2*arrowed_edit_data_size-1)
-   sta global::comps, y
+   sta synth_global::comps, y
    ; porta rate edit
    lda concerto_synth::timbres::Timbre::porta_r, x
    ldy #(3*checkbox_data_size+1*drag_edit_data_size+2*arrowed_edit_data_size-2)
-   sta global::comps, y
+   sta synth_global::comps, y
    ; vibrato amount edit
    lda concerto_synth::timbres::Timbre::vibrato, x
    bmi :+
@@ -2859,7 +2891,7 @@ refresh_global:
    bra :++
 :  lda #0
 :  ldy #(3*checkbox_data_size+2*drag_edit_data_size+2*arrowed_edit_data_size-2)
-   sta global::comps, y
+   sta synth_global::comps, y
    ; redraw components
    lda #0
    jsr draw_components
