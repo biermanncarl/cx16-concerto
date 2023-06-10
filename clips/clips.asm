@@ -78,7 +78,7 @@
 ; * Starting pitch
 ; * Zoom state (only in time direction)
 ; We'll do a very crude approach to drawing: simply start looking at events from the start of the clip.
-; Have a permanently updated buffer of active notes.
+; Have a permanently updated buffer of active notes (for collision detection when click/drag events occur).
 ; As soon as parsing the clip data hits starting time, we begin drawing events (effects and active notes).
 ;
 ; How to "bin" events into grid positions?
@@ -226,5 +226,22 @@
 ;   * defrag function
 ;
 
+
+
+
+; Clips data concept
+; ==================
+; * 24 bits per event
+; * first byte: event type, second and third byte: data
+; * we should leave room for possible new event types implemented in the future (especially effects)
+; * proposal:
+;   * Wait event: 0 (length 16 bits)
+;   * Hard note-off (affects all channels): 2 (no data)
+;   * Soft note-off: 3 (pitch 8 bits)
+;   * Note-on: 4 (pitch 8 bits, velocity 6 bits)
+;   * Effects: 16 upwards
+;     * Set pitchbend-pos: 16
+;     * Set pitchbend-rate: 17
+;     * etc...
 
 
