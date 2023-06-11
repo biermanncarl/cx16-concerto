@@ -815,7 +815,7 @@ clear_lb_popup:
 ; Alg number in draw_data1
 ; Position fixed by macros @alg_x, @alg_y
 draw_fm_alg:
-   @alg_x = 36
+   @alg_x = 32
    @alg_y = 45
    ; clear drawing area
    lda #@alg_x
@@ -1093,6 +1093,112 @@ alternative_gotoxy:
    rts
 
 
+; expects selected tab in draw_data1
+; clobbers some of the other API variables
+draw_globalnav:
+   @tab_height = 16
+   @tab_start = 12 ; y coordinate
+   @num_tabs = 3
+   ; abuse API variables for temporary storage
+   @character_top = draw_x
+   @character_bottom = draw_y
+   @character_border = draw_width
+   @caption_index = draw_data2
+   ; TODO: draw lowest character first (which might get overwritten by selected tab)
+   stz @caption_index
+   stz cur_x
+   lda #@tab_start
+   sta cur_y
+   jsr set_cursor
+   ldy #0
+@tab_loop:
+   ; selects tab index in .Y
+   phy
+   cpy draw_data1
+   beq @selected_tab
+@unselected_tab:
+   ldx #(16*COLOR_BACKGROUND + COLOR_TABS)
+   ldy #77 ; line top left to bottom right
+   sty @character_top
+   ldy #78 ; line top right to bottom left
+   sty @character_bottom
+   ldy #106
+   sty @character_border
+   bra @draw_tab
+@selected_tab:
+   ldx #(16*COLOR_TABS + COLOR_BACKGROUND)
+   ldy #95
+   sty @character_top
+   ldy #233
+   sty @character_bottom
+   ldy #32
+   sty @character_border
+@draw_tab:
+   ldy @character_top
+   sty VERA_data0
+   stx VERA_data0
+   jsr move_cursor_down
+   ldy #32
+   sty VERA_data0
+   stx VERA_data0
+   ldy @character_top
+   sty VERA_data0
+   stx VERA_data0
+   jsr move_cursor_down
+   ldy #32
+   sty VERA_data0
+   stx VERA_data0
+   sty VERA_data0
+   stx VERA_data0
+   ldy @character_top
+   sty VERA_data0
+   stx VERA_data0
+   ldy #0
+@fill_loop_unselected:
+   jsr move_cursor_down
+   lda #32
+   sta VERA_data0
+   stx VERA_data0
+   phy
+   ldy @caption_index
+   lda @captions,y
+   iny
+   sty @caption_index
+   ply
+   sta VERA_data0
+   stx VERA_data0
+   lda @character_border
+   sta VERA_data0
+   stx VERA_data0
+   iny
+   cpy #@tab_height-5
+   bne @fill_loop_unselected ; end of fill_loop
+   jsr move_cursor_down
+   ldy #32
+   sty VERA_data0
+   stx VERA_data0
+   sty VERA_data0
+   stx VERA_data0
+   ldy @character_bottom
+   sty VERA_data0
+   stx VERA_data0
+   jsr move_cursor_down
+   ldy #32
+   sty VERA_data0
+   stx VERA_data0
+   ldy @character_bottom
+   sty VERA_data0
+   stx VERA_data0
+   jsr move_cursor_down
+   ; finish the tab loop
+   ply
+   iny
+   cpy #@num_tabs
+   beq :+
+   jmp @tab_loop
+:  rts
+@captions:
+   STR_FORMAT "arrangement  c l i p   s y n t h "
 
 
 

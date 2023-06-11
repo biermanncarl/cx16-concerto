@@ -106,7 +106,7 @@ dummy_data_size = 1
 
    ; global synth settings panel
    .scope synth_global
-      px = 15
+      px = 11
       py = 8
       wd = 12
       hg = 24
@@ -215,7 +215,7 @@ dummy_data_size = 1
          .byte 0
       ; data specific to the oscillator panel
       active_tab: .byte 0
-      cp: STR_FORMAT "oscillators" ; caption of panel
+      cp: STR_FORMAT "psg oscillators" ; caption of panel
       amp_lb: STR_FORMAT "amp env"
       pulsewidth_lb: STR_FORMAT "pulse width"
       pw_lb: STR_FORMAT "pw"
@@ -282,8 +282,6 @@ dummy_data_size = 1
          .byte 0
       ; caption list of the panel
       capts:
-         .byte (16*COLOR_BACKGROUND+15), 16, 3
-         .word logo_lb
          .byte CCOLOR_CAPTION, 34, 1
          .word timbre_lb
          .byte CCOLOR_CAPTION, ti_x, ti_y
@@ -300,7 +298,6 @@ dummy_data_size = 1
       copy_preset_lb: STR_FORMAT " copy"
       paste_preset_lb: STR_FORMAT " paste"
       file_lb: STR_FORMAT "  file name"
-      logo_lb: STR_FORMAT "synthesizer"
       velocity_lb: STR_FORMAT "velocity"
    .endscope
    ; listbox popup. shows up when a listbox was clicked.
@@ -344,7 +341,7 @@ dummy_data_size = 1
          .byte 0
       ; caption list of the panel
       capts:
-         .byte CCOLOR_CAPTION, px+2, py
+         .byte CCOLOR_CAPTION, px+4, py
          .word lfo_lb
          .byte CCOLOR_CAPTION, px+2, py+2
          .word waveform_lb
@@ -366,16 +363,16 @@ dummy_data_size = 1
    .endscope
    ; help/info panel
    .scope info
-      px = osc::px+osc::wd
+      px = osc::px+osc::wd+1
       py = synth_global::py
-      wd = 17
+      wd = 16
       hg = osc::hg+env::hg
       ; GUI component string of the panel
       comps:
          .byte 0 ; empty
       ; caption list of the panel
       capts:
-         .byte CCOLOR_CAPTION, px+4, py
+         .byte CCOLOR_CAPTION, px+6, py
          .word cp
          .byte CCOLOR_CAPTION, px+2, py+2
          .word help_1_lb
@@ -516,20 +513,21 @@ dummy_data_size = 1
       lb_vol_sens: STR_FORMAT "vol sens"
    .endscope
 
-   ; global navigation panel, sits in the background
+   ; global navigation panel
    .scope globalnav
       px = 0
-      py = 0
-      wd = 80
-      hg = 60
+      py = 12
+      wd = 3
+      hg = 60-py
       ; GUI component string of the panel
       comps:
-         .byte 0 ; empty
+         .byte 7 ; dummy component, to catch click events (without it, the panel wouldn't receive any click events!)
+         .byte 0
       ; caption list of the panel
       capts:
          .byte 0 ; empty
       ; data specific to the synth-navigation panel
-      ; none yet
+      active_tab: .byte 2
    .endscope
 
    ; Recurring Labels
@@ -1955,7 +1953,9 @@ draw_fm_op:
    rts
 
 draw_globalnav:
-   ; TODO
+   lda globalnav::active_tab
+   sta guiutils::draw_data1
+   jsr guiutils::draw_globalnav
    rts
 
 
@@ -2020,7 +2020,7 @@ panel_write_subroutines:
    .word dummy_sr ; info box - nothing to edit here
    .word write_fm_gen
    .word write_fm_op
-   .word dummy_sr ; globalnav
+   .word write_globalnav
 
 dummy_plx:
    plx
@@ -2461,7 +2461,7 @@ write_snav:
    rts
 
 ; since there is only the dummy component on the popup,
-; this subroutine is only called upon a click on the 
+; this subroutine doesn't have to deal with components, but it interprets the click event itself
 write_lb_popup:
    clbp_pointer = mzpwa ; mzpwa is already used in the click_event routine, but once we get to this point, it should have served its purpose, so we can reuse it here.
    ; TODO: determine selection (or skip if none was selected)
@@ -2846,6 +2846,21 @@ write_fm_op:
    lda fm_op::comps, y
    sta concerto_synth::timbres::Timbre::operators::vol_sens, x
    rts
+
+write_globalnav:
+   lda ms_curr_data2 ; y position in multiples of 8 pixels
+   ; tabs start at row 12 and are 16 high each
+   sec
+   sbc #12
+   lsr
+   lsr
+   lsr
+   lsr
+   sta globalnav::active_tab
+   ; TODO: update GUI stack
+   jsr draw_gui
+   rts
+
 
 
 
