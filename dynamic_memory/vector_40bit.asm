@@ -1,6 +1,6 @@
 ; Copyright 2023 Carl Georg Biermann
 
-; This file implements a dynamic vector containing 24-bit values based on doubly linked lists.
+; This file implements a dynamic vector containing 40-bit values (5 bytes) based on doubly linked lists.
 ; These vectors are mainly intended to contain musical event data, but might serve other purposes,
 ; as well.
 ;
@@ -8,7 +8,7 @@
 ; The first four bytes of each chunk are dedicated to forward and backward pointers.
 ; The fifth byte contains the number of elements contained in the chunk.
 ; The sixth byte is reserved / left empty.
-; All remaining 249 bytes contain up to 83 values à 24 bits / three bytes each.
+; All remaining 250 bytes contain up to 50 values à 40 bits / five bytes each.
 ;
 ; Empty chunks within the vector are not allowed, unless the vector is empty.
 ; In that case, the vector consists of a single empty chunk.
@@ -60,28 +60,28 @@
 ; * Not clear yet whether "get_next_entry" is really called more often than "get_previous_entry".
 
 
-.ifndef ::v24b_zp_pointer
+.ifndef ::v40b_zp_pointer
    .pushseg
    .zeropage
-v24b_zp_pointer:
+v40b_zp_pointer:
    .res 2
    .popseg
 .endif
 
-.ifndef ::v24b_zp_pointer_2
+.ifndef ::v40b_zp_pointer_2
    .pushseg
    .zeropage
-v24b_zp_pointer_2:
+v40b_zp_pointer_2:
    .res 2
    .popseg
 .endif
 
 ; share our zp pointers with dll
-::dll_zp_pointer = ::v24b_zp_pointer
-::dll_zp_pointer_2 = ::v24b_zp_pointer_2
+::dll_zp_pointer = ::v40b_zp_pointer
+::dll_zp_pointer_2 = ::v40b_zp_pointer_2
 .include "doubly_linked_list.asm"
 
-.scope v24b
+.scope v40b
 
 .pushseg
 .code
@@ -89,24 +89,26 @@ v24b_zp_pointer_2:
 .include "../common/x16.asm"
 
 ; using the "saved" KERNAL registers for communication
-value_l = r6L
-value_m = r6H
-value_h = r7L
+value_0 = r6L
+value_1 = r6H
+value_2 = r7L
+value_3 = r7H
+value_4 = r8L
 
 payload_offset = 6
-entry_size = 3
-max_entries_per_chunk = 83
+entry_size = 5
+max_entries_per_chunk = 50
 
 .feature addrsize
 
-zp_pointer = ::v24b_zp_pointer
+zp_pointer = ::v40b_zp_pointer
 .if (.addrsize(zp_pointer) = 2) .or (.addrsize(zp_pointer) = 0)
-   .error "v24b_zp_pointer isn't a zeropage variable!"
+   .error "v40b_zp_pointer isn't a zeropage variable!"
 .endif
 
-zp_pointer_2 = ::v24b_zp_pointer_2
+zp_pointer_2 = ::v40b_zp_pointer_2
 .if (.addrsize(zp_pointer_2) = 2) .or (.addrsize(zp_pointer_2) = 0)
-   .error "v24b_zp_pointer_2 isn't a zeropage variable!"
+   .error "v40b_zp_pointer_2 isn't a zeropage variable!"
 .endif
 
 .scope detail
@@ -146,7 +148,7 @@ destroy = dll::destroy_list
 
 ; Writes values in a vector at given location
 ; Expects the pointer to a vector (B/H) in .A/.X
-; Expects the L/M/H values in value_l / value_m / value_h
+; Expects the values in value_0 through value_4
 ; If successful, carry is clear upon return.
 ; Carry will be set if the operation failed due to full heap.
 .proc append_new_entry
@@ -181,17 +183,24 @@ destroy = dll::destroy_list
    dec
    sta zp_pointer_2
    asl
+   asl
    adc zp_pointer_2
    adc #payload_offset
    tay
    ; store values
-   lda value_l
+   lda value_0
    sta (zp_pointer), y
    iny
-   lda value_m
+   lda value_1
    sta (zp_pointer), y
    iny
-   lda value_h
+   lda value_2
+   sta (zp_pointer), y
+   iny
+   lda value_3
+   sta (zp_pointer), y
+   iny
+   lda value_4
    sta (zp_pointer), y
    clc
    rts
@@ -200,10 +209,11 @@ destroy = dll::destroy_list
 
 ; Returns the value in a vector at given location (convenience function, mostly for testing?)
 ; Expects the pointer to a valid entry in .A/.X/.Y
-; Returns the L/M/H values in value_l / value_m / value_h
+; Returns the values in value_0 through value_4
 .proc read_entry
    ; calculate offset from index
    sta zp_pointer
+   asl
    asl
    adc zp_pointer
    adc #payload_offset
@@ -213,23 +223,30 @@ destroy = dll::destroy_list
    stz zp_pointer
    tay
    lda (zp_pointer), y
-   sta value_l
+   sta value_0
    iny
    lda (zp_pointer), y
-   sta value_m
+   sta value_1
    iny
    lda (zp_pointer), y
-   sta value_h
+   sta value_2
+   iny
+   lda (zp_pointer), y
+   sta value_3
+   iny
+   lda (zp_pointer), y
+   sta value_4
    rts
 .endproc
 
 
 ; Writes values in a vector at given location (convenience function, mostly for testing?)
 ; Expects the pointer to a valid entry in .A/.X/.Y
-; Expects the L/M/H values in value_l / value_m / value_h
+; Expects the values in value_0 through value_4
 .proc write_entry
    ; calculate offset from index
    sta zp_pointer
+   asl
    asl
    adc zp_pointer
    adc #payload_offset
@@ -238,13 +255,19 @@ destroy = dll::destroy_list
    stx zp_pointer+1
    stz zp_pointer
    tay
-   lda value_l
+   lda value_0
    sta (zp_pointer), y
    iny
-   lda value_m
+   lda value_1
    sta (zp_pointer), y
    iny
-   lda value_h
+   lda value_2
+   sta (zp_pointer), y
+   iny
+   lda value_3
+   sta (zp_pointer), y
+   iny
+   lda value_4
    sta (zp_pointer), y
    rts
 .endproc
@@ -406,7 +429,7 @@ destroy = dll::destroy_list
 
 ; Inserts a value in a vector at given location (i.e. in front of the given entry)
 ; Expects the pointer to a valid entry in .A/.X/.Y
-; Expects the L/M/H values in value_l / value_m / value_h
+; Expects the values in value_0 through value_h
 ; When it fails due to full heap, exits with carry set. Otherwise carry will be clear upon exit.
 .proc insert_entry
    ; First, we try to insert an element at the back of the current chunk.
@@ -442,7 +465,9 @@ destroy = dll::destroy_list
    bcc :+
    rts ; return early because of full heap (both append_new_element and insert_element_before set carry if the heap is full)
 :  ; Now set up the new chunk.
-   ; The current chunk contains 83 elements --> keep 42 entries in the first chunk and move 41 entries into the second chunk.
+   ; The current chunk contains 50 elements --> keep 25 entries in the first chunk and move 25 entries into the second chunk.
+   new_chunk_entry_count = max_entries_per_chunk / 2
+   old_chunk_entry_count = max_entries_per_chunk - new_chunk_entry_count
    sta detail::temp_variable_b ; store B of source chunk
    stx zp_pointer+1
    stz zp_pointer
@@ -450,41 +475,41 @@ destroy = dll::destroy_list
    stx zp_pointer_2+1
    stz zp_pointer_2
    tax ; store B of target chunk in .X
-   ldy #(payload_offset+42*entry_size) ; index of first payload byte to be moved
+   ldy #(payload_offset+old_chunk_entry_count*entry_size) ; index of first payload byte to be moved
    clc
-   ; The loop below could handle groups of 3 bytes at once in each iteration (--> partially unrolled). But as this loop is expected to be executed rarely, we optimize for code size.
+
 @split_loop:
    lda detail::temp_variable_b
    sta RAM_BANK
    lda (zp_pointer), y  ;  ??? Don't we need to set up zp_pointer again (it was used by dll:: functions) ???
    pha ; store the value
    tya
-   sbc #(42*entry_size-1) ; move offset left to write into the target chunk. Minus one as carry is clear.
+   sbc #(old_chunk_entry_count*entry_size-1) ; move offset left to write into the target chunk. Minus one as carry is clear.
    tay
    stx RAM_BANK ; target chunk's B
    pla ; recall the value
    sta (zp_pointer_2), y
    tya
-   adc #(42*entry_size-1+1) ; move offset right to read from the source chunk. Minus one as carry is set. Plus one as we want to move on to the next byte of data.
+   adc #(old_chunk_entry_count*entry_size-1+1) ; move offset right to read from the source chunk. Minus one as carry is set. Plus one as we want to move on to the next byte of data.
    tay
    ; At the end of the data copy operation, the above ADC instruction will overflow (i.e. set carry)
    bcc @split_loop
 
    ldy #4
-   lda #41
+   lda #new_chunk_entry_count
    sta (zp_pointer_2),y ; store chunk size in target chunk
    lda detail::temp_variable_b
    sta RAM_BANK
-   lda #42
+   lda #old_chunk_entry_count
    sta (zp_pointer), y ; store chunk size in source chunk
 
    ; find out in which chunk the new element goes (old one or newly allocated one) and set up the pointer accordingly
    lda detail::temp_variable_a
-   cmp #43 ; 43 is the lowest index that was moved into the new chunk
+   cmp #old_chunk_entry_count ; compare .A with the lowest index that was moved into the new chunk
    bcc @element_goes_into_old_chunk
 @element_goes_into_new_chunk:
    ; carry is set as per branch condition
-   sbc #42 ; calculate the index in the new chunk
+   sbc #old_chunk_entry_count ; calculate the index in the new chunk
    sta detail::temp_variable_a
    lda zp_pointer_2+1 ; read new chunk's H
    sta zp_pointer+1 ; set up zp_pointer to read from new chunk
@@ -501,66 +526,60 @@ destroy = dll::destroy_list
    sta (zp_pointer), y ; store new chunk size
 
    ; Make room for the new element by moving all existing elements over by one space.
-   ; compute byte offset of the highest entry that needs to be moved: multiply by 3 and add offset of first payload byte
+   ; compute byte offset of the highest byte that needs to be moved: multiply by 5 and add offset of first payload byte
    dec ; The chunk size before insertion is the index of the last element after insertion ...
-   dec ; ... but we want the index of the last chunk before insertion.
+   dec ; ... but we want the index of the last chunk before insertion. (both can be optimized away with below ADC instruction)
    sta zp_pointer_2
-   asl ; as the index cannot be higher than 82, carry will be clear in the next operations
+   asl ; as the index cannot be higher than 49, carry will be clear in the next operations
+   asl
    adc zp_pointer_2
-   adc #payload_offset
+   adc #(payload_offset+entry_size-1) ; we want the top byte of the last entry
    tay ; this will be the offset of the first byte we need to move
    ; Compute byte offset of lowest entry needing to be moved (same recipe)
    lda detail::temp_variable_a
-   ; multiply by 3
-   asl ; as the maximum number expected in .A is 82 (decimal), carry will be clear
+   ; multiply by 5
+   asl ; as the maximum number expected in .A is 49 (decimal), carry will be clear
+   asl
    adc detail::temp_variable_a
-   adc #(payload_offset-entry_size) ; offset of first payload byte, minus 3 because this is where .Y will end up when all intended copy operations are done
+   adc #(payload_offset-1) ; offset of the first payload byte that we don't want to copy anymore
    sta zp_pointer_2 ; store end location of copy operations
 
+   sec
 @move_loop:
-   ; Possible optimization (smaller code size, slower execution): do this byte by byte instead of 3 bytes at a time
-   ; remember three bytes (in three different manners, lol)
    lda (zp_pointer), y
-   tax
-   iny
-   lda (zp_pointer), y
-   sta zp_pointer_2+1
-   iny
-   lda (zp_pointer), y
-   pha
-   iny
-   ; store three bytes
-   txa
-   sta (zp_pointer), y
-   iny
-   lda zp_pointer_2+1
-   sta (zp_pointer), y
-   iny
-   pla
+   tax ; store data byte in .X
+   tya
+   adc #(entry_size-1) ; minus one because carry is set
+   tay
+   txa ; recall data byte from .X
    sta (zp_pointer), y
    tya
-   sec
-   sbc #(3*entry_size-1) ; move on to the next entry
+   sbc #(entry_size+1) ; move on to the next byte, depending on carry being already set
    tay
-   cpy zp_pointer_2
+   cpy zp_pointer_2 ; carry will be set throughout the execution (.Y is always >= zp_pointer_2)
    bne @move_loop
 @end_move_loop:
    iny
-   iny
-   iny
    ; .Y is now set up to write to the new element's position
-   lda value_l
+   lda value_0
    sta (zp_pointer), y
    iny
-   lda value_m
+   lda value_1
    sta (zp_pointer), y
    iny
-   lda value_h
+   lda value_2
+   sta (zp_pointer), y
+   iny
+   lda value_3
+   sta (zp_pointer), y
+   iny
+   lda value_4
    sta (zp_pointer), y
 
    clc
    rts
 .endproc
+
 
 
 ; Deletes a value from a vector at given location (i.e. in front of the given entry)
@@ -582,45 +601,39 @@ destroy = dll::destroy_list
    ; compute start of copy operation
    lda zp_pointer_2
    asl
+   asl
    adc zp_pointer_2
-   adc #(payload_offset+2*entry_size-1) ; we start reading data one entry to the right (+3), and at the top of that entry first (+2)
+   adc #(payload_offset+entry_size) ; we start reading data one entry to the right
    pha ; index of the first byte we need to move
 
    ; compute end of copy operation
    lda (zp_pointer),y ; this was decreased previously, but that gives us the index of the last element (before deletion) anyway (number of elements - 1 is index of last element)
    sta zp_pointer_2
    asl
+   asl
    adc zp_pointer_2
-   adc #(payload_offset+2*entry_size-1) ; we end when we would read from this position if we continued. Addition might overflow (not an issue though)
+   adc #(payload_offset+entry_size) ; this is the first byte we do not want to copy anymore
    sta zp_pointer_2
 
    ply
 @copy_loop:
    cpy zp_pointer_2
    beq @end
-   ; read an entry
+   ; read
    lda (zp_pointer),y
    tax
-   dey
-   lda (zp_pointer),y
-   pha
-   dey
-   lda (zp_pointer),y
-   sta zp_pointer_2+1
-   dey
-   ; write the entry
+   ; move to previous entry
+   tya
+   sec ; could be optimized away
+   sbc #entry_size
+   tay
+   ; write
    txa
    sta (zp_pointer),y
-   dey
-   pla
-   sta (zp_pointer),y
-   dey
-   lda zp_pointer_2+1
-   sta (zp_pointer),y
-   ; move index up to the top of the next entry to be moved
+   ; move index up to the next byte to be moved
    tya
-   clc
-   adc #(3*entry_size-1)
+   clc ; could be optimized away
+   adc #(entry_size+1)
    tay
    bra @copy_loop
 
