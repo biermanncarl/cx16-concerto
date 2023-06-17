@@ -466,8 +466,8 @@ destroy = dll::destroy_list
    rts ; return early because of full heap (both append_new_element and insert_element_before set carry if the heap is full)
 :  ; Now set up the new chunk.
    ; The current chunk contains 50 elements --> keep 25 entries in the first chunk and move 25 entries into the second chunk.
-   new_chunk_entry_count = max_entries_per_chunk / 2
-   old_chunk_entry_count = max_entries_per_chunk - new_chunk_entry_count
+   @new_chunk_entry_count = max_entries_per_chunk / 2
+   @old_chunk_entry_count = max_entries_per_chunk - @new_chunk_entry_count
    sta detail::temp_variable_b ; store B of source chunk
    stx zp_pointer+1
    stz zp_pointer
@@ -475,7 +475,7 @@ destroy = dll::destroy_list
    stx zp_pointer_2+1
    stz zp_pointer_2
    tax ; store B of target chunk in .X
-   ldy #(payload_offset+old_chunk_entry_count*entry_size) ; index of first payload byte to be moved
+   ldy #(payload_offset+@old_chunk_entry_count*entry_size) ; index of first payload byte to be moved
    clc
 
 @split_loop:
@@ -484,32 +484,32 @@ destroy = dll::destroy_list
    lda (zp_pointer), y  ;  ??? Don't we need to set up zp_pointer again (it was used by dll:: functions) ???
    pha ; store the value
    tya
-   sbc #(old_chunk_entry_count*entry_size-1) ; move offset left to write into the target chunk. Minus one as carry is clear.
+   sbc #(@old_chunk_entry_count*entry_size-1) ; move offset left to write into the target chunk. Minus one as carry is clear.
    tay
    stx RAM_BANK ; target chunk's B
    pla ; recall the value
    sta (zp_pointer_2), y
    tya
-   adc #(old_chunk_entry_count*entry_size-1+1) ; move offset right to read from the source chunk. Minus one as carry is set. Plus one as we want to move on to the next byte of data.
+   adc #(@old_chunk_entry_count*entry_size-1+1) ; move offset right to read from the source chunk. Minus one as carry is set. Plus one as we want to move on to the next byte of data.
    tay
    ; At the end of the data copy operation, the above ADC instruction will overflow (i.e. set carry)
    bcc @split_loop
 
    ldy #4
-   lda #new_chunk_entry_count
+   lda #@new_chunk_entry_count
    sta (zp_pointer_2),y ; store chunk size in target chunk
    lda detail::temp_variable_b
    sta RAM_BANK
-   lda #old_chunk_entry_count
+   lda #@old_chunk_entry_count
    sta (zp_pointer), y ; store chunk size in source chunk
 
    ; find out in which chunk the new element goes (old one or newly allocated one) and set up the pointer accordingly
    lda detail::temp_variable_a
-   cmp #old_chunk_entry_count ; compare .A with the lowest index that was moved into the new chunk
+   cmp #@old_chunk_entry_count ; compare .A with the lowest index that was moved into the new chunk
    bcc @element_goes_into_old_chunk
 @element_goes_into_new_chunk:
    ; carry is set as per branch condition
-   sbc #old_chunk_entry_count ; calculate the index in the new chunk
+   sbc #@old_chunk_entry_count ; calculate the index in the new chunk
    sta detail::temp_variable_a
    lda zp_pointer_2+1 ; read new chunk's H
    sta zp_pointer+1 ; set up zp_pointer to read from new chunk
@@ -549,14 +549,14 @@ destroy = dll::destroy_list
    lda (zp_pointer), y
    tax ; store data byte in .X
    tya
-   adc #(entry_size-1) ; minus one because carry is set
+   adc #(entry_size-1) ; minus one because carry is set, carry will be reset after this
    tay
    txa ; recall data byte from .X
    sta (zp_pointer), y
    tya
-   sbc #(entry_size+1) ; move on to the next byte, depending on carry being already set
+   sbc #(entry_size+1-1) ; move on to the next byte, depending on carry being already set, minus one because carry is reset
    tay
-   cpy zp_pointer_2 ; carry will be set throughout the execution (.Y is always >= zp_pointer_2)
+   cpy zp_pointer_2 ; carry will be set after this command, throughout the execution (.Y is always >= zp_pointer_2)
    bne @move_loop
 @end_move_loop:
    iny
