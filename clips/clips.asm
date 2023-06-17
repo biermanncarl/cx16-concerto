@@ -16,7 +16,7 @@
 ; * Loop length (0 for off)
 ; * (Color for visualization)
 ; * last visualization position (incl. zoom)
-; * hard or soft end (let note releases bleed across end of the clip?)
+; * open or closed end (let note releases bleed across end of the clip?)
 ; approx. 16 bytes
 
 ; Furthermore, a clip contains a variable amount of music events data.

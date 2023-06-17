@@ -18,27 +18,6 @@
 ; * 2-byte B/H pointer to first chunk and 2-byte global index in the entire vector
 ; Those two modes could be converted into each other.
 ; Possibly, one part of the address will be implicitly given during some operations (e.g. by previous operations)
-;
-;
-; Basic operations are:
-; * create new vector
-; * destroy vector
-; * is empty
-; * get first entry
-; * is last entry
-; * is first entry
-; * get next entry
-; * get previous entry (on average cheaper than get_next_entry because most of the time, no actual lookup is required!)
-; * read entry (?)
-; * write entry (?)
-; * insert entry
-; * delete entry
-; * push_back
-; * defragment vector (fill every chunk to the maximum size, release unnecessary chunks)
-; * move entries from one vector to another (?)
-; * ???
-;
-; Other files might extend this application-specifically.
 
 
 ; POTENTIAL OPTIMIZATIONS:
@@ -144,6 +123,31 @@ temp_variable_c:
 ; expects pointer to vector in .A/.X
 ; The pointer is invalid after this operation.
 destroy = dll::destroy_list
+
+
+; Clears all entries from a vector. (Untested!)
+; expects pointer to vector in .A/.X
+.proc clear
+   ; get rid of excess chunks
+   pha
+   phx
+   jsr dll::get_next_element
+   jsr dll::destroy_list ; !! we depend on destroy_list only deleting list elements to the right and the one passed in, not any ones to the right
+   plx
+   pla
+   ; set pointer to next list element to 0
+   sta RAM_BANK
+   stx zp_pointer+1
+   stz zp_pointer
+   lda #0
+   sta (zp_pointer)
+   ldy #1
+   sta (zp_pointer),y
+   ; set count of elements to zero
+   ldy #4
+   sta (zp_pointer),y
+   rts
+.endproc
 
 
 ; Writes values in a vector at given location
