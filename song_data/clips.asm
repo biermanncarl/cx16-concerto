@@ -240,7 +240,7 @@
 ;   * Soft note-off: 0 (pitch 8 bits)
 ;   * Hard note-off (affects all channels): 2 (no data)
 ;   * Note-on: 4 (pitch 8 bits, velocity 6 bits)
-;   * Effects: 16 upwards
+;   * Effects: 8 upwards
 ;     * Set pitchbend-pos: 16
 ;     * Set pitchbend-rate: 17
 ;     * etc...
