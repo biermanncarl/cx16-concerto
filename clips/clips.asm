@@ -22,15 +22,15 @@
 ; Furthermore, a clip contains a variable amount of music events data.
 ; These events are stored in a simple linear fashion comprised of
 ; * note-on
-; * note-off (or should we store note length in note-on?)
-; * pauses
+; * note-off
 ; * effects
 
 ; As the voices are dynamically allocated, events don't target any channel.
 ; Note-on and note-off events target a certain pitch as in MIDI, and all other
 ; events are global to the clip.
 
-; We will go 3 bytes per command, evenly spaced to facilitate backwards search.
+; We will go 5 bytes per event, evenly spaced to facilitate backwards search.
+; Each event holds the time stamp (16 bits), an event type (8 bits) and additional data (16 bits).
 
 ; Times are stored in 16-bit manner. 65535 ticks at 127 Hz is more than eight minutes,
 ; which is plenty to work with and a reasonable limitation for chiptune.
@@ -219,7 +219,7 @@
 ; Key technologies
 ; ================
 ; * dynamically positionable spin/drag edits
-; * 24-bit vector
+; * 40-bit vector
 ;   * insert & delete
 ;   * efficient search
 ;   * zero-terminated (high byte zero suffices)
@@ -231,13 +231,14 @@
 
 ; Clips data concept
 ; ==================
-; * 24 bits per event
-; * first byte: event type, second and third byte: data
+; * 40 bits per event
+; * 16 bits time stamp
+; * 8 bits event type
+; * 16 bits data
 ; * we should leave room for possible new event types implemented in the future (especially effects)
 ; * proposal:
-;   * Wait event: 0 (length 16 bits)
+;   * Soft note-off: 0 (pitch 8 bits)
 ;   * Hard note-off (affects all channels): 2 (no data)
-;   * Soft note-off: 3 (pitch 8 bits)
 ;   * Note-on: 4 (pitch 8 bits, velocity 6 bits)
 ;   * Effects: 16 upwards
 ;     * Set pitchbend-pos: 16
