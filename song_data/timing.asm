@@ -112,6 +112,15 @@ stack_address = $0100
 
 
 ; TODO functions to move time stamps by certain time values
+; When sub-thirtysecondth values are moved, they may need to be scaled up or down, depending
+; on whether they end up in a bigger or smaller thirtysecondth note.
+; Ideally, one would have a separate number telling the relative position inside a thirtysecondth note.
+; However, we do everything in absolute ticks.
+; There are different ways to do this scaling:
+; * When moving to a smaller interval, crop any excess ticks so the note still ends up in the same thirtysecondth note. On upscaling, do nothing.
+; * Move the "crop zone" to the middle of the note, so that offsets by one or two ticks from a full thirtysecondth note can be preserved.
+; * Preserve left and right side of a thirtysecondth note, but also have a dedicated spot for the middle of the note, which can also be preserved.
+; * Do full-on linear rescaling (very expensive)
 
 
 .endscope
