@@ -620,6 +620,22 @@ load_synth_gui:
    rts
 
 
+load_clip_gui:
+   jsr guiutils::cls
+   lda #1 ; GUI stack size (how many panels are visible)
+   sta stack::sp
+   lda #9 ; global navigation bar
+   sta stack::stack+0
+   rts
+
+
+load_arrangement_gui:
+   jsr guiutils::cls
+   lda #1 ; GUI stack size (how many panels are visible)
+   sta stack::sp
+   lda #9 ; global navigation bar
+   sta stack::stack+0
+   rts
 
 
 ; reads through the stack and draws everything
@@ -2858,7 +2874,18 @@ write_globalnav:
    lsr
    lsr
    sta globalnav::active_tab
-   ; TODO: update GUI stack
+   cmp #0
+   beq @load_arrangement_view
+   cmp #1
+   beq @load_clip_view
+   jsr load_synth_gui
+   bra @end
+@load_arrangement_view:
+   jsr load_arrangement_gui
+   bra @end
+@load_clip_view:
+   jsr load_clip_gui
+@end:
    jsr draw_gui
    rts
 
