@@ -38,11 +38,13 @@
 ; * It's more complicated and less obvious, possibly less maintainable?
 ; * Not clear yet whether "get_next_entry" is really called more often than "get_previous_entry".
 
+.ifndef ::vector_40bit_asm
+::vector_40bit_asm = 1
 
 .ifndef ::v40b_zp_pointer
    .pushseg
    .zeropage
-v40b_zp_pointer:
+::v40b_zp_pointer:
    .res 2
    .popseg
 .endif
@@ -50,7 +52,7 @@ v40b_zp_pointer:
 .ifndef ::v40b_zp_pointer_2
    .pushseg
    .zeropage
-v40b_zp_pointer_2:
+::v40b_zp_pointer_2:
    .res 2
    .popseg
 .endif
@@ -672,3 +674,5 @@ destroy = dll::destroy_list
 
 .popseg
 .endscope
+
+.endif ; .ifndef ::vector_40bit_asm

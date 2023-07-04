@@ -11,12 +11,15 @@
 
 ; Note that this implementation CANNOT deal with 2 MB of high RAM. Only up to 504k is possible (63 RAM banks).
 
+.ifndef ::heap_asm
+::heap_asm = 1
+
 
 ; need a ZP pointer which can be used as temporary variable by the functions in this scope
 .ifndef ::heap_zp_pointer
    .pushseg
    .zeropage
-heap_zp_pointer:
+::heap_zp_pointer:
    .res 2
    .popseg
 .endif
@@ -240,3 +243,5 @@ first_unused_chunk:
 
 .popseg
 .endscope
+
+.endif ; .ifndef ::heap_asm

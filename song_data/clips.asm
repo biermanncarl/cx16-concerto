@@ -82,7 +82,7 @@
 ; As soon as parsing the clip data hits starting time, we begin drawing events (effects and active notes).
 ;
 ; How to "bin" events into grid positions?
-; * Nearest neighbor (?) (add half of grid size, discard lest significant part)
+; * Nearest neighbor (?) (add half of grid size, discard least significant part)
 ; * Draw left to right (time axis), column by column
 ; * Drawing one column:
 ;   * buffer for each row in current column (basically one byte per row), which determines what to draw there:
