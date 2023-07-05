@@ -30,6 +30,7 @@
 ; 7: FM general setup
 ; 8: FM operator setup
 ; 9: Global navigation bar
+; 10: Clip edit
 ; ***************************************
 
 ; Each panel has multiple byte strings hard coded. Those byte strings define elements shown on the GUI.
@@ -531,6 +532,22 @@ dummy_data_size = 1
       active_tab: .byte 2
    .endscope
 
+   ; global navigation panel
+   .scope clip_edit
+      px = notes::detail::event_edit_pos_x
+      py = notes::detail::event_edit_pos_y
+      wd = notes::detail::event_edit_width
+      hg = notes::detail::event_edit_height
+      ; GUI component string of the panel
+      comps:
+         .byte 7 ; dummy component, to catch click events (without it, the panel wouldn't receive any click events!)
+         .byte 0
+      ; caption list of the panel
+      capts:
+         .byte 0 ; empty
+      ; data specific to the synth-navigation panel
+   .endscope
+
    ; Recurring Labels
    vol_lb: STR_FORMAT "vol"
    pitch_lb: STR_FORMAT "pitch"
@@ -565,17 +582,17 @@ dummy_data_size = 1
    ; Each label marks a list of values, one for each panel.
    ; These lists must have length N_PANELS.
    ; X positions
-   px: .byte synth_global::px, osc::px, env::px, snav::px, listbox_popup::px, lfo::px, info::px, fm_gen::px, fm_op::px, globalnav::px
+   px: .byte synth_global::px, osc::px, env::px, snav::px, listbox_popup::px, lfo::px, info::px, fm_gen::px, fm_op::px, globalnav::px, clip_edit::px
    ; Y positions
-   py: .byte synth_global::py, osc::py, env::py, snav::py, listbox_popup::py, lfo::py, info::py, fm_gen::py, fm_op::py, globalnav::py
+   py: .byte synth_global::py, osc::py, env::py, snav::py, listbox_popup::py, lfo::py, info::py, fm_gen::py, fm_op::py, globalnav::py, clip_edit::py
    ; widths
-   wd: .byte synth_global::wd, osc::wd, env::wd, snav::wd, listbox_popup::wd, lfo::wd, info::wd, fm_gen::wd, fm_op::wd, globalnav::wd
+   wd: .byte synth_global::wd, osc::wd, env::wd, snav::wd, listbox_popup::wd, lfo::wd, info::wd, fm_gen::wd, fm_op::wd, globalnav::wd, clip_edit::wd
    ; heights
-   hg: .byte synth_global::hg, osc::hg, env::hg, snav::hg, listbox_popup::hg, lfo::hg, info::hg, fm_gen::hg, fm_op::hg, globalnav::hg
+   hg: .byte synth_global::hg, osc::hg, env::hg, snav::hg, listbox_popup::hg, lfo::hg, info::hg, fm_gen::hg, fm_op::hg, globalnav::hg, clip_edit::hg
    ; GUI component strings
-   comps: .word synth_global::comps, osc::comps, env::comps, snav::comps, listbox_popup::comps, lfo::comps, info::comps, fm_gen::comps, fm_op::comps, globalnav::comps
+   comps: .word synth_global::comps, osc::comps, env::comps, snav::comps, listbox_popup::comps, lfo::comps, info::comps, fm_gen::comps, fm_op::comps, globalnav::comps, clip_edit::comps
    ; GUI captions
-   capts: .word synth_global::capts, osc::capts, env::capts, snav::capts, listbox_popup::capts, lfo::capts, info::capts, fm_gen::capts, fm_op::capts, globalnav::capts
+   capts: .word synth_global::capts, osc::capts, env::capts, snav::capts, listbox_popup::capts, lfo::capts, info::capts, fm_gen::capts, fm_op::capts, globalnav::capts, clip_edit::capts
 
 
 ; The Panel Stack
@@ -622,10 +639,12 @@ load_synth_gui:
 
 load_clip_gui:
    jsr guiutils::cls
-   lda #1 ; GUI stack size (how many panels are visible)
+   lda #2 ; GUI stack size (how many panels are visible)
    sta stack::sp
    lda #9 ; global navigation bar
    sta stack::stack+0
+   lda #10 ; clip editing area
+   sta stack::stack+1
    rts
 
 
@@ -661,6 +680,7 @@ draw_gui:
    .word draw_fm_gen
    .word draw_fm_op
    .word draw_globalnav
+   .word draw_clip_edit
 @ret_addr:
    ; draw GUI components
    ldy dg_counter
@@ -1975,6 +1995,18 @@ draw_globalnav:
    jsr guiutils::draw_globalnav
    rts
 
+draw_clip_edit:
+   ; load dummy arguments for now
+   lda #0
+   sta notes::argument_x
+   sta notes::argument_x+1
+   lda #48
+   sta notes::argument_y
+   lda #2 ; 16th notes zoom
+   sta notes::argument_z
+   ; event vectors are set by setup_test_clip (and we never touch them elsewhere)
+   jsr notes::draw_events
+   rts
 
 
 
@@ -2038,6 +2070,7 @@ panel_write_subroutines:
    .word write_fm_gen
    .word write_fm_op
    .word write_globalnav
+   .word dummy_sr ; clip_edit ... not sure how to do this yet
 
 dummy_plx:
    plx

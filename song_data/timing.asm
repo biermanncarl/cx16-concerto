@@ -77,8 +77,8 @@ temp_variable_c:
 .endproc
 
 
-; Given a number of ticks in .A, which is the duration to the previous grid-aligned beat,
-; figure out what the sub-values are.
+; Given a number of ticks in .A, which ,must be the temporal distance to the previous grid-aligned beat (quarter note),
+; this routine figures out what the sub-values are.
 ; Returns the number of thirtysecondth notes according to the current timing grid in .X
 ; Returns the number of ticks since the last full thirtysecondth note in .A
 ; Preserves .Y
@@ -88,7 +88,7 @@ temp_variable_c:
    sec
    sbc detail::thirdysecondth_ticks, x
    beq @exact_match
-   bcs @overshoot
+   bcc @overshoot
    inx
    cpx #8
    bne @loop
@@ -167,7 +167,7 @@ temp_variable_c:
    rol quarter_counter+1
    sta quarter_counter
 
-   pla
+   pla ; recall remaining number of ticks
    jsr ticks_to_sub_quarters
    tay
    txa

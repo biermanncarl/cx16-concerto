@@ -34,6 +34,9 @@ start:
 
    jsr concerto_synth::activate_synth
 
+   ; just for testing
+   jsr concerto_gui::notes::setup_test_clip
+
 .include "example_full_mainloop.asm"
 
    jsr concerto_synth::deactivate_synth

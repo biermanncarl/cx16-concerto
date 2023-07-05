@@ -99,9 +99,9 @@ event_edit_pos_y = 5
 event_edit_width = 50
 event_edit_height = 45
 event_edit_background_color = 15
-event_edit_note_color = 1
+event_edit_note_color = 2
 event_edit_note_border_unselected_color = 0
-event_edit_note_border_selected_color = 8
+event_edit_note_border_selected_color = 10
 
 
 
@@ -116,16 +116,16 @@ column_buffer:
 ; Sets carry when inside the bounds, clears it otherwise.
 ; Returns the row index in .X.
 .proc calculateRowAndCheckBounds
-   lda #(event_edit_pos_y+event_edit_height)
+   lda #event_edit_height-1
    clc
    adc argument_y ; This exact addition is done every time, could be optimized.
    sec
    sbc note_pitch
    tax
    ; check if note is on-screen
-   cmp #event_edit_pos_y
+   cmp #0
    bcc @exit_no_other_action
-   cmp #(event_edit_pos_y+event_edit_height+1)
+   cmp #(event_edit_height+1)
    bcs @exit_clear_carry
    sec
    rts
@@ -146,16 +146,60 @@ change_song_tempo = timing::recalculate_rhythm_values ; TODO: actually recalcula
 ; Sets up a clip with some notes for testing.
 ; Returns a pointer to the clip in event_vector_a
 .proc setup_test_clip
-   ;; make sure all the ticks are properly populated
-   ;lda #32
-   ;sta first_eighth_ticks
-   ;sta second_eighth_ticks
-   ;jsr timing::recalculate_rhythm_values
-   ;; 
-   ;jsr v40b::new
-   ;sta event_vector_a
-   ;stx event_vector_a+1
+   test_first_eighth_ticks = 32
+   test_second_eighth_ticks = 32
+   test_quarter_ticks = test_first_eighth_ticks + test_second_eighth_ticks
+   ; make sure all the ticks are properly populated
+   lda #test_first_eighth_ticks
+   sta timing::first_eighth_ticks
+   lda #test_second_eighth_ticks
+   sta timing::second_eighth_ticks
+   jsr timing::recalculate_rhythm_values
+   
+   ; create unselected vector
+   jsr v40b::new
+   sta event_vector_a
+   stx event_vector_a+1
+   ; note-on
+   lda #(1*test_quarter_ticks)
+   sta event_time_stamp_l
+   stz event_time_stamp_h
+   lda #event_type_note_on
+   sta event_type
+   lda #50
+   sta note_pitch
+   stz event_data_2
+   lda event_vector_a
+   ldx event_vector_a+1
+   jsr v40b::append_new_entry
+   ; note-off
+   lda #(1*test_quarter_ticks+1)
+   sta event_time_stamp_l
+   lda #event_type_note_off
+   sta event_type
+   lda #50
+   sta note_pitch
+   stz event_data_2
+   lda event_vector_a
+   ldx event_vector_a+1
+   jsr v40b::append_new_entry
+   ; note-on
+   lda #(1*test_quarter_ticks+2)
+   sta event_time_stamp_l
+   stz event_time_stamp_h
+   lda #event_type_note_on
+   sta event_type
+   lda #50
+   sta note_pitch
+   stz event_data_2
+   lda event_vector_a
+   ldx event_vector_a+1
+   jsr v40b::append_new_entry
 
+   ; create selected vector
+   jsr v40b::new
+   sta event_vector_b
+   stx event_vector_b+1
    ; TODO
    rts
 .endproc
@@ -235,7 +279,10 @@ change_song_tempo = timing::recalculate_rhythm_values ; TODO: actually recalcula
 
 
    ; PARSING EVENTS BEFORE THE DISPLAYED TIME WINDOW
-   ; ===============================================
+   ; This serves two purposes:
+   ; 1. finding the first events in the unselected and selected event vector, respectively, that are relevant for the current view
+   ; 2. register any notes which begin off-screen but continue into the view
+   ; =============================================================================================================================
 @pre_parsing_loop:
    lda argument_x+1
    cmp event_time_stamp_h
@@ -291,8 +338,8 @@ change_song_tempo = timing::recalculate_rhythm_values ; TODO: actually recalcula
    ; 2. loop over events relevant for the current column, update the column buffer (skip if end of data), meanwhile update hitboxes
    ; 3. draw column
 
-   ; Calculate relevant time stamp for current column
-   ; ================================================
+   ; Calculate relevant end time stamp for current column (up to which point do we need to register events for the current column)
+   ; ====================================================
    ; get the length of the next column in ticks
    ; add it to the running time stamp (TODO: keep copy of it, but use a time stamp that was only advanced by half the column duration to achieve "nearest neighbor rounding")
 
@@ -313,21 +360,15 @@ change_song_tempo = timing::recalculate_rhythm_values ; TODO: actually recalcula
    ; LOOP OVER EVENTS
    ; ================
    lda end_of_data
-   bne @end_parse_events
+   beq :+
+   jmp @end_parse_events
+:
 @main_parse_events_loop:
-   ; get next event
-   stz event_source
+   ; get next event (TODO: "next" event is already in current_event_l etc. --> do this check at the end of the parsing loop)
+
    lda current_event_l
    ldx current_event_m
    ldy current_event_h
-   jsr v40b::get_next_entry
-   bcc :+ ; new data available?
-   inc end_of_data
-   bra @end_parse_events
-:  ; new data available.
-   sta current_event_l
-   stx current_event_m
-   sty current_event_h
    jsr v40b::read_entry
    ; check if time stamp is within current column
    lda event_time_stamp_h
@@ -336,7 +377,7 @@ change_song_tempo = timing::recalculate_rhythm_values ; TODO: actually recalcula
    bne @end_parse_events ; if the time stamps aren't equal (and also event time stamp is not lower), the event time stamp is higher --> quit event parsing
    lda event_time_stamp_l ; high time stamps are equal, need to check low time stamp
    cmp running_time_stamp_l
-   bcs @end_parse_events
+   bcs @end_parse_events ; if carry is clear this means event time stamp is lower than column's border
 @time_stamp_within_column:
    ; interpret event type
    lda event_type
@@ -346,7 +387,7 @@ change_song_tempo = timing::recalculate_rhythm_values ; TODO: actually recalcula
 
 @handle_note_on:
    jsr detail::calculateRowAndCheckBounds
-   bcc @main_parse_events_loop ; if outside our view (vertically), skip the event
+   bcc @parse_next_event ; if outside our view (vertically), skip the event
    lda detail::column_buffer, x ; check what's inside the current row
    ; since it's a note-on, we don't check if what's in there is selected. We get that info from the event source (event_source)
    asl ; get rid of upper bit
@@ -374,7 +415,7 @@ change_song_tempo = timing::recalculate_rhythm_values ; TODO: actually recalcula
    ; add selection bit back
    ; write to column buffer
    jsr detail::calculateRowAndCheckBounds
-   bcc @main_parse_events_loop ; if outside our view (vertically), skip the event
+   bcc @parse_next_event ; if outside our view (vertically), skip the event
    lda detail::column_buffer, x ; check what's inside the current row
    asl ; get rid of the upper bit
    cmp #(2*column_buffer_multiple_last_on)
@@ -400,7 +441,22 @@ change_song_tempo = timing::recalculate_rhythm_values ; TODO: actually recalcula
    ; TODO: hitbox generation!
 @write_to_column_buffer:
    sta detail::column_buffer, x
-   bra @main_parse_events_loop
+   bra @parse_next_event
+
+@parse_next_event:
+   lda current_event_l
+   ldx current_event_m
+   ldy current_event_h
+   jsr v40b::get_next_entry
+   bcc :+ ; new data available?
+   inc end_of_data
+   bra @end_parse_events
+:  ; new data available.
+   sta current_event_l
+   stx current_event_m
+   sty current_event_h
+   stz event_source
+   jmp @main_parse_events_loop
 
 @end_parse_events:
 
@@ -453,7 +509,7 @@ change_song_tempo = timing::recalculate_rhythm_values ; TODO: actually recalcula
    sta detail::column_buffer, x
    bra @draw_multiple
 @update_multiple_last_on:
-   lda #1 ; running note in next column
+   lda #2 ; running note in next column
    sta detail::column_buffer, x
    bra @draw_multiple
 @draw_space:
@@ -468,11 +524,11 @@ change_song_tempo = timing::recalculate_rhythm_values ; TODO: actually recalcula
    sta VERA_data0
    lda detail::column_buffer, x
    bpl :+
-   lda #(16*detail::event_edit_note_border_selected_color)
+   lda #(detail::event_edit_note_border_selected_color)
    bra :++
-:  lda #(16*detail::event_edit_note_border_unselected_color)
+:  lda #(detail::event_edit_note_border_unselected_color)
 :  clc
-   adc #detail::event_edit_note_color
+   adc #(16*detail::event_edit_note_color)
    sta VERA_data0
    bra @advance_row
 @draw_multiple:
