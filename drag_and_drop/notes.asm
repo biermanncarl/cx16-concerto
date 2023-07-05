@@ -125,7 +125,7 @@ column_buffer:
    ; check if note is on-screen
    cmp #0
    bcc @exit_no_other_action
-   cmp #(event_edit_height+1)
+   cmp #event_edit_height
    bcs @exit_clear_carry
    sec
    rts
@@ -173,7 +173,7 @@ change_song_tempo = timing::recalculate_rhythm_values ; TODO: actually recalcula
    ldx event_vector_a+1
    jsr v40b::append_new_entry
    ; note-off
-   lda #(1*test_quarter_ticks+1)
+   lda #(1*test_quarter_ticks+5)
    sta event_time_stamp_l
    lda #event_type_note_off
    sta event_type
@@ -184,7 +184,7 @@ change_song_tempo = timing::recalculate_rhythm_values ; TODO: actually recalcula
    ldx event_vector_a+1
    jsr v40b::append_new_entry
    ; note-on
-   lda #(1*test_quarter_ticks+2)
+   lda #(1*test_quarter_ticks+10)
    sta event_time_stamp_l
    stz event_time_stamp_h
    lda #event_type_note_on

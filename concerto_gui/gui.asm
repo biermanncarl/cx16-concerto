@@ -535,17 +535,35 @@ dummy_data_size = 1
    ; global navigation panel
    .scope clip_edit
       px = notes::detail::event_edit_pos_x
-      py = notes::detail::event_edit_pos_y
+      py = notes::detail::event_edit_pos_y-3 ; for navigation buttons at the top (temporary solution, until we implement a more convenient navigation solution)
       wd = notes::detail::event_edit_width
-      hg = notes::detail::event_edit_height
+      hg = notes::detail::event_edit_height+3
       ; GUI component string of the panel
       comps:
+         .byte 3, px+5, py+1, 1, 5, 3 ; arrowed edit (zoom level)
+         .byte 1, px+14, py+0, 5, (<lb_left), (>lb_left) ; button go left
+         .byte 1, px+20, py+0, 5, (<lb_up), (>lb_up) ; button go up
+         .byte 1, px+26, py+0, 5, (<lb_down), (>lb_down) ; button go down
+         .byte 1, px+32, py+0, 5, (<lb_right), (>lb_right) ; button go right
          .byte 7 ; dummy component, to catch click events (without it, the panel wouldn't receive any click events!)
          .byte 0
       ; caption list of the panel
       capts:
+         .byte CCOLOR_CAPTION, px+0, py+1
+         .word lb_zoom
          .byte 0 ; empty
       ; data specific to the synth-navigation panel
+      zoom_level:
+         .byte 4
+      time_stamp: ; lowest time stamp in view
+         .word 0
+      low_note: ; lowest note in view
+         .byte 48
+      lb_zoom: STR_FORMAT "zoom"
+      lb_left: STR_FORMAT "left"
+      lb_right: STR_FORMAT "right"
+      lb_up: STR_FORMAT " up"
+      lb_down: STR_FORMAT "down"
    .endscope
 
    ; Recurring Labels
@@ -1358,6 +1376,7 @@ refresh_gui:
    .word refresh_fm_gen
    .word refresh_fm_op
    .word dummy_sr  ; globalnav - no refresh necessary
+   .word refresh_clip_edit
 @ret_addr:
    ; advance in loop
    lda rfg_counter
@@ -1997,12 +2016,13 @@ draw_globalnav:
 
 draw_clip_edit:
    ; load dummy arguments for now
-   lda #0
+   lda clip_edit::time_stamp
    sta notes::argument_x
+   lda clip_edit::time_stamp+1
    sta notes::argument_x+1
-   lda #48
+   lda clip_edit::low_note
    sta notes::argument_y
-   lda #2 ; 16th notes zoom
+   lda clip_edit::zoom_level
    sta notes::argument_z
    ; event vectors are set by setup_test_clip (and we never touch them elsewhere)
    jsr notes::draw_events
@@ -2070,7 +2090,7 @@ panel_write_subroutines:
    .word write_fm_gen
    .word write_fm_op
    .word write_globalnav
-   .word dummy_sr ; clip_edit ... not sure how to do this yet
+   .word write_clip_edit
 
 dummy_plx:
    plx
@@ -2922,6 +2942,72 @@ write_globalnav:
    jsr draw_gui
    rts
 
+write_clip_edit:
+   ; prepare component string offset
+   lda ms_curr_component_ofs
+   clc
+   adc #5 ; we're reading only arrowed edits
+   tay
+   ; prepare jump
+   lda ms_curr_component_id
+   asl
+   tax
+   jmp (@jmp_tbl, x)
+@jmp_tbl:
+   .word @zoom_level
+   .word @go_left
+   .word @go_up
+   .word @go_down
+   .word @go_right
+   .word @edit_notes
+@zoom_level:
+   ; read data from component string and write it to the zoom setting
+   lda clip_edit::comps, y
+   dec
+   sta clip_edit::zoom_level
+   ; make sure the time stamp is aligned with the current grid ... very crude method. TODO: "round to nearest"
+   stz clip_edit::time_stamp
+   stz clip_edit::time_stamp+1
+   jsr refresh_gui
+   rts
+@go_left:
+   ; TODO: provide different strides at different zoom levels
+   lda clip_edit::time_stamp
+   sec
+   sbc timing::detail::quarter_ticks
+   sta clip_edit::time_stamp
+   lda clip_edit::time_stamp+1
+   sbc #0
+   sta clip_edit::time_stamp+1
+   jsr refresh_gui
+   rts
+@go_up:
+   lda clip_edit::low_note
+   clc
+   adc #6
+   sta clip_edit::low_note
+   jsr refresh_gui
+   rts
+@go_down:
+   lda clip_edit::low_note
+   sec
+   sbc #6
+   sta clip_edit::low_note
+   jsr refresh_gui
+   rts
+@go_right:
+   ; TODO: provide different strides at different zoom levels
+   lda clip_edit::time_stamp
+   clc
+   adc timing::detail::quarter_ticks
+   sta clip_edit::time_stamp
+   lda clip_edit::time_stamp+1
+   adc #0
+   sta clip_edit::time_stamp+1
+   jsr refresh_gui
+   rts
+@edit_notes:
+   rts
 
 
 
@@ -3322,5 +3408,10 @@ refresh_fm_op:
    lda #8
    jsr draw_components
    rts
+
+refresh_clip_edit:
+   jsr draw_clip_edit
+   rts
+
 
 .endscope
