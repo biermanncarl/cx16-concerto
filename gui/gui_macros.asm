@@ -1,5 +1,8 @@
-; Copyright 2021 Carl Georg Biermann
+; Copyright 2021, 2023 Carl Georg Biermann
 
+.ifndef GUI_GUI_MACROS_ASM
+
+GUI_GUI_MACROS_ASM = 1
 
 ; GUI definitions
 ; colors
@@ -61,3 +64,5 @@
       .byte 0
    .endrep
 .endmacro
+
+.endif ; .ifndef GUI_GUI_MACROS_ASM
