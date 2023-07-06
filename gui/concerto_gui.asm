@@ -16,7 +16,7 @@ play_volume:
 .include "../common/x16.asm"
 .include "gui_zeropage.asm"
 .include "gui_macros.asm"
-.include "gui_variables.asm"
+.include "mouse_state.asm"
 .include "gui_utils.asm"
 .include "gui.asm"
 .include "mouse.asm"

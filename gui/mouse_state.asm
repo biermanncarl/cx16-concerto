@@ -1,11 +1,10 @@
-; Copyright 2021 Carl Georg Biermann
-
+; Copyright 2021, 2023 Carl Georg Biermann
 
 ; mouse variables
-; they need to be visible to all GUI code,
-; so I cannot simply put them into the mouse scope
+; These variables need to be visible to all GUI code (partly for reading, and upon request for writing).
+; They cannot live alongside the actual mouse code, as the mouse code depends on the GUI code.
+; Including these variables in the mouse code would introduce circular dependencies.
 
-ms_status: .byte 0
 ; reference values
 ms_ref_x: .word 0
 ms_ref_y: .word 0

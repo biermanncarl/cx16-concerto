@@ -23,6 +23,8 @@ ms_idle = 0
 ms_hold_L = 1
 ms_hold_R = 2
 
+; "private" mouse variables
+ms_status: .byte 0
 
 ; get mouse running
 mouse_init:
