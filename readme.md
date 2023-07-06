@@ -103,16 +103,16 @@ Currently, only projects written with CC65 assembler can use Concerto.
 The easiest way to get started with Concerto is to look at the example files
 provided along with the source code. Here is a quick summary what needs to be
 done. More information on the usage of those routines can be found in the
-source files ```concerto_synth/concerto_synth.asm``` and
-```concerto_gui/gui_zeropage.asm```, respectively.
+source files ```synth_engine/concerto_synth.asm``` and
+```gui/gui_zeropage.asm```, respectively.
 
 Synth engine:
 * Copy the folder ```concerto_synth``` into the folder of your project
 * Anywhere in your code that is not directly in the path of execution, do
-  ```.INCLUDE "concerto_synth/concerto_synth.asm"```
+  ```.INCLUDE "synth_engine/concerto_synth.asm"```
 * Do ```JSR concerto_synth::initialize``` to initialize the synth engine
 * Do ```JSR concerto_synth::activate_synth``` to start the synth engine
-* Call functions from ```concerto_synth/concerto_synth.asm``` to play notes
+* Call functions from ```synth_engine/concerto_synth.asm``` to play notes
   etc.
 * Do ```JSR concerto_synth::deactivate_synth``` to stop the synth engine
 * You can define a subroutine with the name ```concerto_playback_routine```
@@ -122,7 +122,7 @@ Synth engine:
 Graphical user interface:
 * Copy the folder ```concerto_gui``` into the folder of your project
 * Anywhere in your code that is not directly in the path of execution, do
-  ```.INCLUDE "concerto_gui/concerto_gui.asm"```, additionally to the
+  ```.INCLUDE "gui/concerto_gui.asm"```, additionally to the
   inclusion of the synth engine.
 * Do ```JSR concerto_gui::initialize``` to initialize and draw the UI
 * Do ```JSR concerto_gui::gui_tick``` *regularly* to let the user interact
@@ -136,7 +136,7 @@ Player module:
 * Copy both folders ```concerto_synth``` and ```concerto_player``` into the
   folder of your project
 * Anywhere in your code that is not directly in the path of execution, do
-  ```.INCLUDE "concerto_player/concerto_player.asm"```. Separate inclusion of
+  ```.INCLUDE "simple_player/concerto_player.asm"```. Separate inclusion of
   the synth engine is not necessary in this case, since the player module
   already includes it.
 * Do ```JSR concerto_synth::initialize``` to initialize the synth engine.

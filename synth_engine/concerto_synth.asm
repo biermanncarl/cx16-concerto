@@ -34,7 +34,7 @@
 ; Example:
 ;
 ;    concerto_playback_routine = my_playback_routine
-;    .include "concerto_synth/concerto_synth.asm"
+;    .include "synth_engine/concerto_synth.asm"
 ;
 ;    my_playback_routine:
 ;       ...

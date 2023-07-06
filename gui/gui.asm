@@ -1,6 +1,6 @@
 ; Copyright 2021, 2023 Carl Georg Biermann
 
-.include "../drag_and_drop/notes.asm"
+.include "drag_and_drop/notes.asm"
 
 ; This file contains most of the GUI relevant code at the moment.
 ; It is called mainly by the mouse.asm driver, and sends commands to the guiutils.asm

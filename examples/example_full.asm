@@ -12,10 +12,10 @@ concerto_use_timbres_from_file = 1
 .define CONCERTO_TIMBRES_PATH "FACTORY.COB"
 
 ; include the synth engine
-.include "../concerto_synth/concerto_synth.asm"
+.include "../synth_engine/concerto_synth.asm"
 
 ; include the synth gui
-.include "../concerto_gui/concerto_gui.asm"
+.include "../gui/concerto_gui.asm"
 
 ; include the X16 header
 .include "../common/x16.asm"

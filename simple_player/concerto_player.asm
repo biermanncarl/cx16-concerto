@@ -8,7 +8,7 @@
 ; If you include this file, you do NOT need to include "concerto_synth.asm" separately.
 
 concerto_playback_routine = concerto_player_temp
-.include "../concerto_synth/concerto_synth.asm"
+.include "../synth_engine/concerto_synth.asm"
 
 .pushseg
 .code

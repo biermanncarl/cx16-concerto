@@ -11,10 +11,10 @@
 
 
 
-; define a macro with the player address BEFORE including "concerto_synth/concerto_synth.asm"
+; define a macro with the player address BEFORE including "synth_engine/concerto_synth.asm"
 concerto_playback_routine = my_custom_playback_routine
 
-.include "../concerto_synth/concerto_synth.asm"
+.include "../synth_engine/concerto_synth.asm"
 
 playback_ticks:
    .byte 0

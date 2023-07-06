@@ -10,7 +10,7 @@
 
 ; When including concerto_player, we do not need to include concerto_synth separately,
 ; since concerto_player includes it for us.
-.include "../concerto_player/concerto_player.asm"
+.include "../simple_player/concerto_player.asm"
 
 CURSOR_LEFT = $9D
 CLEAR = $93
