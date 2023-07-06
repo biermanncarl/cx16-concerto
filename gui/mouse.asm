@@ -16,6 +16,8 @@
 ; "hold_L" or "hold_R", respectively.
 ; In these states, the mouse will wait for all mouse buttons to be released.
 
+.include "mouse_state.asm"
+
 .scope mouse
 
 ; status definitions
@@ -50,27 +52,27 @@ mouse_tick:
    ; move previous position to ref (only if status is not 0)
    lda ms_status
    beq :+
-   lda ms_curr_x
-   sta ms_ref_x
-   lda ms_curr_x+1
-   lda ms_ref_x+1
-   lda ms_curr_y
-   sta ms_ref_y
-   lda ms_curr_y+1
-   lda ms_ref_y+1
+   lda mouse_state::curr_x
+   sta mouse_state::prev_x
+   lda mouse_state::curr_x+1
+   lda mouse_state::prev_x+1
+   lda mouse_state::curr_y
+   sta mouse_state::prev_y
+   lda mouse_state::curr_y+1
+   lda mouse_state::prev_y+1
 :  ; get mouse data
    mouse_data = mzpwa
    ldx #mouse_data
    jsr MOUSE_GET
-   sta ms_curr_buttons
+   sta mouse_state::curr_buttons
    lda mouse_data
-   sta ms_curr_x
+   sta mouse_state::curr_x
    lda mouse_data+1
-   sta ms_curr_x+1
+   sta mouse_state::curr_x+1
    lda mouse_data+2
-   sta ms_curr_y
+   sta mouse_state::curr_y
    lda mouse_data+3
-   sta ms_curr_y+1
+   sta mouse_state::curr_y+1
    ; call status subroutine
    ; the mouse handles incoming data differently, depending upon which status it is currently in
    lda ms_status
@@ -88,7 +90,7 @@ end_mouse_tick:
 do_idle:
    ; check button presses
    ; check left
-   lda ms_curr_buttons
+   lda mouse_state::curr_buttons
    and #1
    beq :+
    ; left button held down
@@ -96,7 +98,7 @@ do_idle:
    sta ms_status
    jmp @mouse_down_checks
 :  ; check right
-   lda ms_curr_buttons
+   lda mouse_state::curr_buttons
    and #2
    beq :+
    ; right button held down
@@ -106,25 +108,25 @@ do_idle:
 :  jmp end_mouse_tick
 @mouse_down_checks:
    jsr gui::mouse_get_panel
-   lda ms_curr_panel
+   lda mouse_state::curr_panel
    bmi :+
    jsr gui::mouse_get_component
-   lda ms_curr_component_id
-   sta ms_ref_component_id
-   lda ms_curr_component_ofs
-   sta ms_ref_component_ofs
-   lda ms_curr_panel
-   sta ms_ref_panel ; now move it into "ref" to compare it when mouse button is released (to see if still the same component is being clicked)
+   lda mouse_state::curr_component_id
+   sta mouse_state::prev_component_id
+   lda mouse_state::curr_component_ofs
+   sta mouse_state::prev_component_ofs
+   lda mouse_state::curr_panel
+   sta mouse_state::prev_panel ; now move it into "ref" to compare it when mouse button is released (to see if still the same component is being clicked)
                     ; and for dragging stuff
    jmp end_mouse_tick
 :  lda #255
-   sta ms_ref_panel
+   sta mouse_state::prev_panel
    jmp end_mouse_tick
 
 ; left button is held down. (and no other button has been pressed)
 do_hold_L:
    ; check for any buttons pressed
-   lda ms_curr_buttons
+   lda mouse_state::curr_buttons
    bne @button_pressed
    ; no buttons pressed anymore --> left click
    ; reset mouse status
@@ -133,22 +135,22 @@ do_hold_L:
    ; and do click operation:
    ; check if previous panel & component are the same. If yes, issue a click event.
    jsr gui::mouse_get_panel
-   lda ms_curr_panel
+   lda mouse_state::curr_panel
    bpl :+
    jmp end_mouse_tick ; no panel clicked.
 :  ; a panel has been clicked.
    ; still the same as on mouse-down?
-   cmp ms_ref_panel
+   cmp mouse_state::prev_panel
    beq :+
    jmp end_mouse_tick ; not the same, but a different one
 :  ; yes, the same. check if also the same component
    jsr gui::mouse_get_component
-   lda ms_curr_component_id
+   lda mouse_state::curr_component_id
    bpl :+
    jmp end_mouse_tick ; no component being clicked
 :  ; yes, a component being clicked.
    ; still the same as on mouse-down?
-   cmp ms_ref_component_id
+   cmp mouse_state::prev_component_id
    beq :+
    jmp end_mouse_tick ; not the same, but a different one
 :  ; yes, the same component as when the mouse button was pressed down.
@@ -156,44 +158,44 @@ do_hold_L:
    jsr gui::click_event
    jmp end_mouse_tick
 @button_pressed:  ; a button is pressed.  do dragging
-   ; left mouse button dragging = 0 in ms_curr_data
+   ; left mouse button dragging = 0 in mouse_state::curr_data_1
    lda #0
-   sta ms_curr_data
+   sta mouse_state::curr_data_1
    jmp do_dragging
    jmp end_mouse_tick
 
 ; right button is held down. (and no other button has been pressed)
 do_hold_R:
    ; check for any buttons pressed
-   lda ms_curr_buttons
+   lda mouse_state::curr_buttons
    bne :+
    ; no buttons pressed anymore --> right click (unused)
    lda #ms_idle
    sta ms_status
    jmp end_mouse_tick
 :  ; a button is still being pressed. do fine dragging
-   ; right mouse button dragging = 1 in ms_curr_data
+   ; right mouse button dragging = 1 in mouse_state::curr_data_1
    lda #1
-   sta ms_curr_data
+   sta mouse_state::curr_data_1
    jmp do_dragging
    jmp end_mouse_tick
 
 do_dragging:
    ; check if there is actually a component being dragged
-   lda ms_ref_panel
+   lda mouse_state::prev_panel
    bmi :+
-   sta ms_curr_panel
-   lda ms_ref_component_id
+   sta mouse_state::curr_panel
+   lda mouse_state::prev_component_id
    bmi :+
-   sta ms_curr_component_id
-   lda ms_ref_component_ofs
-   sta ms_curr_component_ofs
+   sta mouse_state::curr_component_id
+   lda mouse_state::prev_component_ofs
+   sta mouse_state::curr_component_ofs
    ; get Y difference to last frame
    ; we assume it's smaller than 127, so we ignore the high byte xD
-   lda ms_ref_y
+   lda mouse_state::prev_y
    sec
-   sbc ms_curr_y
-   sta ms_curr_data2
+   sbc mouse_state::curr_y
+   sta mouse_state::curr_data_2
    jsr gui::drag_event
 :  jmp end_mouse_tick
 
