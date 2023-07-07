@@ -7,9 +7,9 @@ GUI_PANELS_PANELS_FM_GENERAL_ASM = 1
 .include "common.asm"
 
 ; FM general setup (everything that isn't operators)
-.scope fm_gen
+.scope fm_general
    px = synth_global::px
-   py = env::py+env::hg+1
+   py = envelopes::py+envelopes::hg+1
    wd = 29
    hg = 17
    comps:

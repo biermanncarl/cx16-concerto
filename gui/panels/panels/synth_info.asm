@@ -8,10 +8,10 @@ GUI_PANELS_PANELS_SYNTH_INFO_ASM = 1
 
 ; help/info panel
 .scope synth_info
-   px = osc::px+osc::wd+1
+   px = psg_oscillators::px+psg_oscillators::wd+1
    py = synth_global::py
    wd = 16
-   hg = osc::hg+env::hg
+   hg = psg_oscillators::hg+envelopes::hg
    comps:
       .byte 0
    capts:

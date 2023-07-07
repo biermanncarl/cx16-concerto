@@ -8,12 +8,12 @@ GUI_PANELS_PANELS_LFO_ASM = 1
 
 ; LFO settings panel
 .scope lfo
-   px = env::px+env::wd
-   py = osc::py+osc::hg
-   wd = (synth_global::wd+osc::wd-env::wd)
-   hg = env::hg
+   px = envelopes::px+envelopes::wd
+   py = psg_oscillators::py+psg_oscillators::hg
+   wd = (synth_global::wd+psg_oscillators::wd-envelopes::wd)
+   hg = envelopes::hg
    comps:
-      .byte 6, px+2, py+3, 8, 5, (<panel_common::lfo_waveform_lb), (>panel_common::lfo_waveform_lb), 0 ; waveform listbox
+      .byte 6, px+2, py+3, 8, 5, (<lfo_waveform_lb), (>lfo_waveform_lb), 0 ; waveform listbox
       .byte 5, px+12, py+2, 8, 0 ; LFO retrigger checkbox
       .byte 4, px+7 , py+5, %00000001, 0, 128, 10, 0 ; drag edit - LFO rate
       .byte 4, px+14 , py+5, %00000000, 0, 255, 0, 0 ; drag edit - LFO phase offset

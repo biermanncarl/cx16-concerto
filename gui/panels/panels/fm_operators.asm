@@ -8,9 +8,9 @@ GUI_PANELS_PANELS_FM_OPERATORS_ASM = 1
 
 ; FM operators setup
 .scope fm_operators
-   px = fm_gen::px+fm_gen::wd
-   py = fm_gen::py
-   wd = fm_gen::wd
+   px = fm_general::px+fm_general::wd
+   py = fm_general::py
+   wd = fm_general::wd
    hg = 17
    comps:
       .byte 2, px, py, N_OPERATORS, 0 ; tabselector

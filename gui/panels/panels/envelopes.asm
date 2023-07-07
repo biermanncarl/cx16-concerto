@@ -7,9 +7,9 @@ GUI_PANELS_PANELS_ENVELOPE_ASM = 1
 .include "common.asm"
 
 ; envelope settings panel
-.scope env
+.scope envelopes
    px = synth_global::px
-   py = osc::py+osc::hg
+   py = psg_oscillators::py+psg_oscillators::hg
    wd = 24
    hg = 8
    comps:

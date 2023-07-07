@@ -7,7 +7,7 @@ GUI_PANELS_PANELS_SYNTH_NAV_ASM = 1
 .include "common.asm"
 
 ; synth navigation/tool panel ... it sits in the background of the synth.
-.scope synth_nav
+.scope synth_navigation
    px = 10
    py = 0
    wd = 70

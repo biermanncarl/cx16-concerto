@@ -7,7 +7,7 @@ GUI_PANELS_PANELS_TEMPLATE_ASM = 1
 .include "common.asm"
 
 ; editing area for clips
-.scope clip_edit
+.scope clip_editing
    px = notes::detail::event_edit_pos_x
    py = notes::detail::event_edit_pos_y-3 ; for navigation buttons at the top (temporary solution, until we implement a more convenient navigation solution)
    wd = notes::detail::event_edit_width
