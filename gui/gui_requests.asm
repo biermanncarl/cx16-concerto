@@ -1,8 +1,8 @@
 ; Copyright 2023 Carl Georg Biermann
 
-.ifndef GUI_GUI_REQUESTS_ASM
+.ifndef ::GUI_GUI_REQUESTS_ASM
 
-GUI_GUI_REQUESTS_ASM = 1
+::GUI_GUI_REQUESTS_ASM = 1
 
 .scope gui_requests
    ; Set to nonzero value to request a complete redraw of the GUI.
@@ -24,4 +24,4 @@ GUI_GUI_REQUESTS_ASM = 1
    request_component_write: .byte 0
 .endscope
 
-.endif ; .ifndef GUI_GUI_REQUESTS_ASM
+.endif ; .ifndef ::GUI_GUI_REQUESTS_ASM

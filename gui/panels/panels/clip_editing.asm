@@ -1,8 +1,8 @@
 ; Copyright 2023 Carl Georg Biermann
 
-.ifndef GUI_PANELS_PANELS_TEMPLATE_ASM
+.ifndef ::GUI_PANELS_PANELS_TEMPLATE_ASM
 
-GUI_PANELS_PANELS_TEMPLATE_ASM = 1
+::GUI_PANELS_PANELS_TEMPLATE_ASM = 1
 
 .include "common.asm"
 
@@ -38,4 +38,4 @@ GUI_PANELS_PANELS_TEMPLATE_ASM = 1
    lb_down: STR_FORMAT "down"
 .endscope
 
-.endif ; .ifndef GUI_PANELS_PANELS_TEMPLATE_ASM
+.endif ; .ifndef ::GUI_PANELS_PANELS_TEMPLATE_ASM

@@ -18,8 +18,8 @@
 ;
 ; (Note that a B/H pair can be considered NULL even if H is non-zero.)
 
-.ifndef ::doubly_linked_list_asm
-::doubly_linked_list_asm = 1
+.ifndef ::DYNAMIC_MEMORY_DOUBLY_LINKED_LIST_ASM
+::DYNAMIC_MEMORY_DOUBLY_LINKED_LIST_ASM = 1
 
 ; need a ZP pointer which can be used as temporary variable by the functions in this file
 .ifndef ::dll_zp_pointer
@@ -515,4 +515,4 @@ temp_variable_a:
 .popseg
 .endscope
 
-.endif ; .ifndef ::doubly_linked_list_asm
+.endif ; .ifndef ::DYNAMIC_MEMORY_DOUBLY_LINKED_LIST_ASM

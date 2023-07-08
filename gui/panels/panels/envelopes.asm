@@ -1,8 +1,8 @@
 ; Copyright 2021, 2023 Carl Georg Biermann
 
-.ifndef GUI_PANELS_PANELS_ENVELOPE_ASM
+.ifndef ::GUI_PANELS_PANELS_ENVELOPE_ASM
 
-GUI_PANELS_PANELS_ENVELOPE_ASM = 1
+::GUI_PANELS_PANELS_ENVELOPE_ASM = 1
 
 .include "common.asm"
 
@@ -38,4 +38,4 @@ GUI_PANELS_PANELS_ENVELOPE_ASM = 1
    lb_sustain: STR_FORMAT "sus"
 .endscope
 
-.endif ; .ifndef GUI_PANELS_PANELS_ENVELOPE_ASM
+.endif ; .ifndef ::GUI_PANELS_PANELS_ENVELOPE_ASM

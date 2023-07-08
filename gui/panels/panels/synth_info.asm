@@ -1,8 +1,8 @@
 ; Copyright 2021, 2023 Carl Georg Biermann
 
-.ifndef GUI_PANELS_PANELS_SYNTH_INFO_ASM
+.ifndef ::GUI_PANELS_PANELS_SYNTH_INFO_ASM
 
-GUI_PANELS_PANELS_SYNTH_INFO_ASM = 1
+::GUI_PANELS_PANELS_SYNTH_INFO_ASM = 1
 
 .include "common.asm"
 
@@ -37,4 +37,4 @@ GUI_PANELS_PANELS_SYNTH_INFO_ASM = 1
    help_5_lb: STR_FORMAT "fine edit"
 .endscope
 
-.endif ; .ifndef GUI_PANELS_PANELS_SYNTH_INFO_ASM
+.endif ; .ifndef ::GUI_PANELS_PANELS_SYNTH_INFO_ASM

@@ -1,7 +1,7 @@
 ; Copyright 2023 Carl Georg Biermann
 
-.ifndef ::timing_asm
-::timing_asm = 1
+.ifndef ::SONG_DATA_TIMING_ASM
+::SONG_DATA_TIMING_ASM = 1
 
 .scope timing
 
@@ -252,4 +252,4 @@ temp_variable_c:
 
 .endscope
 
-.endif ; .ifndef ::timing_asm
+.endif ; .ifndef ::SONG_DATA_TIMING_ASM

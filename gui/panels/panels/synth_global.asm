@@ -1,8 +1,8 @@
 ; Copyright 2021, 2023 Carl Georg Biermann
 
-.ifndef GUI_PANELS_PANELS_GLOBAL_ASM
+.ifndef ::GUI_PANELS_PANELS_GLOBAL_ASM
 
-GUI_PANELS_PANELS_GLOBAL_ASM = 1
+::GUI_PANELS_PANELS_GLOBAL_ASM = 1
 
 .include "common.asm"
 
@@ -46,7 +46,7 @@ GUI_PANELS_PANELS_GLOBAL_ASM = 1
    vibrato_lb: STR_FORMAT "vib."
 .endscope
 
-.endif ; .ifndef GUI_PANELS_PANELS_GLOBAL_ASM
+.endif ; .ifndef ::GUI_PANELS_PANELS_GLOBAL_ASM
 
 
 

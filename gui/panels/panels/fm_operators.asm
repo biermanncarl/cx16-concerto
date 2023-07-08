@@ -1,8 +1,8 @@
 ; Copyright 2021, 2023 Carl Georg Biermann
 
-.ifndef GUI_PANELS_PANELS_FM_OPERATORS_ASM
+.ifndef ::GUI_PANELS_PANELS_FM_OPERATORS_ASM
 
-GUI_PANELS_PANELS_FM_OPERATORS_ASM = 1
+::GUI_PANELS_PANELS_FM_OPERATORS_ASM = 1
 
 .include "common.asm"
 
@@ -67,4 +67,4 @@ GUI_PANELS_PANELS_FM_OPERATORS_ASM = 1
    lb_vol_sens: STR_FORMAT "vol sens"
 .endscope
 
-.endif ; .ifndef GUI_PANELS_PANELS_FM_OPERATORS_ASM
+.endif ; .ifndef ::GUI_PANELS_PANELS_FM_OPERATORS_ASM

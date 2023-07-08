@@ -11,8 +11,8 @@
 
 ; Note that this implementation CANNOT deal with 2 MB of high RAM. Only up to 504k is possible (63 RAM banks).
 
-.ifndef ::heap_asm
-::heap_asm = 1
+.ifndef ::DYNAMIC_MEMORY_HEAP_ASM
+::DYNAMIC_MEMORY_HEAP_ASM = 1
 
 
 ; need a ZP pointer which can be used as temporary variable by the functions in this scope
@@ -244,4 +244,4 @@ first_unused_chunk:
 .popseg
 .endscope
 
-.endif ; .ifndef ::heap_asm
+.endif ; .ifndef ::DYNAMIC_MEMORY_HEAP_ASM

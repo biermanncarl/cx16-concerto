@@ -1,8 +1,8 @@
 ; Copyright 2021, 2023 Carl Georg Biermann
 
-.ifndef GUI_PANELS_PANELS_COMMON_ASM
+.ifndef ::GUI_PANELS_PANELS_COMMON_ASM
 
-GUI_PANELS_PANELS_COMMON_ASM = 1
+::GUI_PANELS_PANELS_COMMON_ASM = 1
 
 .include "../../gui_macros.asm"
 
@@ -36,4 +36,4 @@ GUI_PANELS_PANELS_COMMON_ASM = 1
 
 .endscope
 
-.endif ; .ifndef GUI_PANELS_PANELS_COMMON_ASM
+.endif ; .ifndef ::GUI_PANELS_PANELS_COMMON_ASM

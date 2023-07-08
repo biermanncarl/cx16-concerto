@@ -31,6 +31,9 @@
 ; con 7
 ; M1 + C1 + M2 + C2 -> out
 
+.ifndef COMMON_YM2151_ASM ; We're intentionally not using the global namespace here, since this file may be included in several namespaces for convenience.
+COMMON_YM2151_ASM = 1
+
 ; one parameter in total (1 byte each)
 YM_TEST             = $01
 YM_KON              = $08 ; key on: channel number (bits 0-2) and slot enable M1 C1 M2 C2 (bits 3-6) (0 means key off, 1 means key on for each slot)
@@ -50,3 +53,4 @@ YM_AMS_EN_D1R       = $A0 ; amplitude modulation enable (bit 7) decay 1 rate (bi
 YM_DT2_D2R          = $C0 ; detune 2 (bits 6-7) and decay 2 rate (bits 0-4)
 YM_D1L_RR           = $E0 ; decay 1 level (bits 4-7) and release rate (bits 0-3)
 
+.endif ; .ifndef COMMON_YM2151_ASM

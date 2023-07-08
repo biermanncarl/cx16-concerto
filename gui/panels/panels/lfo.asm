@@ -1,8 +1,8 @@
 ; Copyright 2021, 2023 Carl Georg Biermann
 
-.ifndef GUI_PANELS_PANELS_LFO_ASM
+.ifndef ::GUI_PANELS_PANELS_LFO_ASM
 
-GUI_PANELS_PANELS_LFO_ASM = 1
+::GUI_PANELS_PANELS_LFO_ASM = 1
 
 .include "common.asm"
 
@@ -40,4 +40,4 @@ GUI_PANELS_PANELS_LFO_ASM = 1
       STR_FORMAT "s'n'h"
 .endscope
 
-.endif ; .ifndef GUI_PANELS_PANELS_LFO_ASM
+.endif ; .ifndef ::GUI_PANELS_PANELS_LFO_ASM

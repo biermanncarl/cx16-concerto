@@ -5,6 +5,8 @@
 ; Some macros do VERA stuff, some macros do various types of
 ; multiplication. Some are for memory allocation.
 
+.ifndef ::SYNTH_ENGINE_SYNTH_MACROS_ASM
+::SYNTH_ENGINE_SYNTH_MACROS_ASM = 1
 
 ; Synth engine definitions
 .define N_VOICES 16
@@ -102,9 +104,6 @@
    .endrep
 .endmacro
 
-
-.ifndef SYNTH_MACROS_INC
-SYNTH_MACROS_INC = 1
 
 ; parameters in memory, but PSG voice number A
 .macro VERA_SET_VOICE_PARAMS_MEM_A frequency, volume, waveform
@@ -1024,6 +1023,4 @@ scale5_16_internal:
    ; worst case: 103 cycles. best case: 71 cycles. Average: 87 cycles.
 .endmacro
 
-
-
-.endif
+.endif ; .ifndef ::SYNTH_ENGINE_SYNTH_MACROS_ASM

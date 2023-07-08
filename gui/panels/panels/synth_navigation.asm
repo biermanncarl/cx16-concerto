@@ -1,8 +1,8 @@
 ; Copyright 2021, 2023 Carl Georg Biermann
 
-.ifndef GUI_PANELS_PANELS_SYNTH_NAV_ASM
+.ifndef ::GUI_PANELS_PANELS_SYNTH_NAV_ASM
 
-GUI_PANELS_PANELS_SYNTH_NAV_ASM = 1
+::GUI_PANELS_PANELS_SYNTH_NAV_ASM = 1
 
 .include "common.asm"
 
@@ -47,4 +47,4 @@ GUI_PANELS_PANELS_SYNTH_NAV_ASM = 1
    velocity_lb: STR_FORMAT "velocity"
 .endscope
 
-.endif ; .ifndef GUI_PANELS_PANELS_SYNTH_NAV_ASM
+.endif ; .ifndef ::GUI_PANELS_PANELS_SYNTH_NAV_ASM

@@ -4,6 +4,9 @@
 ; This file contains various definitions of Commander X16 addresses and values.
 ; It is based on a file made by Matt Heffernan.
 
+.ifndef COMMON_X16_ASM ; We're intentionally not using the global namespace here, since this file may be included in several namespaces for convenience.
+COMMON_X16_ASM = 1
+
 SD_DEVICE   = 1
 HOST_DEVICE = 8
 DISK_DEVICE = HOST_DEVICE
@@ -228,3 +231,5 @@ VIA_PCR            := $9F0C  ; Peripheral Control Register
 VIA_IFR            := $9F0D  ; Interrupt Flag Register
 VIA_IER            := $9F0E  ; Interrupt Enable Register
 VIA_ORA_IRA        := $9F0F  ; Same as Reg 1 except no "Handshake"
+
+.endif ; .ifndef COMMON_X16_ASM

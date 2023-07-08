@@ -1,8 +1,8 @@
 ; Copyright 2023 Carl Georg Biermann
 
-.ifndef GUI_PANELS_LOOKUP_TABLES_ASM
+.ifndef ::GUI_PANELS_LOOKUP_TABLES_ASM
 
-GUI_PANELS_LOOKUP_TABLES_ASM = 1
+::GUI_PANELS_LOOKUP_TABLES_ASM = 1
 
 ; panels lookup tables
 .scope panels_luts
@@ -108,4 +108,4 @@ GUI_PANELS_LOOKUP_TABLES_ASM = 1
 
 .endscope
 
-.endif ; .ifndef GUI_PANELS_LOOKUP_TABLES_ASM
+.endif ; .ifndef ::GUI_PANELS_LOOKUP_TABLES_ASM
