@@ -5,10 +5,10 @@
 ; They cannot live alongside the actual mouse code, as the mouse code depends on the GUI code.
 ; Including these variables in the mouse code would introduce circular dependencies.
 
-.ifndef ::GUI_MOUSE_STATE_ASM
-::GUI_MOUSE_STATE_ASM = 1
+.ifndef ::GUI_MOUSE_DEFINITIONS_ASM
+::GUI_MOUSE_DEFINITIONS_ASM = 1
 
-.scope mouse_state
+.scope mouse_definitions
 
 ; reference values
 prev_x: .word 0
@@ -29,4 +29,4 @@ gui_write: .byte 0 ; used to determine whether or not an action has caused a val
 
 .endscope
 
-.endif ; .ifndef ::GUI_MOUSE_STATE_ASM
+.endif ; .ifndef ::GUI_MOUSE_DEFINITIONS_ASM

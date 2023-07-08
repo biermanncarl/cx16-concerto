@@ -426,15 +426,15 @@ click_event:
    ; of the respective panel.
    ce_pointer = mzpwa ; it is important that this is the same as dc_pointer, because this routine indirectly calls "their" subroutine, expecting this pointer at the same place
    ; put GUI component string pointer to ZP
-   stz mouse_state::gui_write
-   lda mouse_state::curr_panel
+   stz mouse_definitions::gui_write
+   lda mouse_definitions::curr_panel
    asl
    tax
    lda panels_luts::comps, x
    sta ce_pointer
    lda panels_luts::comps+1, x
    sta ce_pointer+1
-   ldy mouse_state::curr_component_ofs ; load component's offset
+   ldy mouse_definitions::curr_component_ofs ; load component's offset
    lda (ce_pointer), y ; and get its type
    asl
    tax
@@ -449,11 +449,11 @@ click_event:
    .word click_dummy
 @ret_addrA:
    ; check if component wants an update
-   lda mouse_state::gui_write
+   lda mouse_definitions::gui_write
    bne :+
    rts
 :  ; call panel's writing subroutine, which is part of the interface between GUI and internal data
-   lda mouse_state::curr_panel
+   lda mouse_definitions::curr_panel
    asl
    tax
    INDEXED_JSR panel_write_subroutines, @ret_addrB
@@ -463,29 +463,29 @@ click_event:
 ; GUI component's click subroutines
 ; ---------------------------------
 ; expect component string's pointer in ce_pointer on zero page,
-; and also the component's offset in mouse_state::curr_component_ofs
-; and relevant click data (determined by the click detection) in mouse_state::curr_data_1
+; and also the component's offset in mouse_definitions::curr_component_ofs
+; and relevant click data (determined by the click detection) in mouse_definitions::curr_data_1
 
 click_button:
    ; register the click to trigger a write_...
-   inc mouse_state::gui_write
+   inc mouse_definitions::gui_write
    ; nothing else to be done here. click events are handled inside the panels'
    ; write_... subroutines, because they can identify individual buttons and know
    ; what actions to perform.
    rts
 
 click_tab_select:
-   inc mouse_state::gui_write
+   inc mouse_definitions::gui_write
    ; put new tab into GUI component list
-   lda mouse_state::curr_data_1
-   ldy mouse_state::curr_component_ofs
+   lda mouse_definitions::curr_data_1
+   ldy mouse_definitions::curr_component_ofs
    iny
    iny
    iny
    iny
    sta (ce_pointer), y
    ; and redraw it
-   ldy mouse_state::curr_component_ofs
+   ldy mouse_definitions::curr_component_ofs
    iny
    jsr draw_tab_select
    rts
@@ -493,13 +493,13 @@ click_tab_select:
 click_arrowed_edit:
    cae_value = mzpbe
    ; check if one of the arrows has been clicked
-   lda mouse_state::curr_data_1
+   lda mouse_definitions::curr_data_1
    bne :+
    rts
 :  ; yes, one of the arrows has been clicked...
-   inc mouse_state::gui_write ; register a change on the GUI
+   inc mouse_definitions::gui_write ; register a change on the GUI
    ; now, get value from edit
-   lda mouse_state::curr_component_ofs
+   lda mouse_definitions::curr_component_ofs
    clc
    adc #5
    tay
@@ -507,7 +507,7 @@ click_arrowed_edit:
    sta cae_value
    ; now, decide whether left or right was clicked
    dey
-   lda mouse_state::curr_data_1
+   lda mouse_definitions::curr_data_1
    cmp #1
    bne @right
 @left:   ; decrement value
@@ -550,14 +550,14 @@ click_arrowed_edit:
    iny
    sta (ce_pointer), y
 @update_gui:
-   ldy mouse_state::curr_component_ofs
+   ldy mouse_definitions::curr_component_ofs
    iny
    jsr draw_arrowed_edit
    rts
 
 click_checkbox:
-   inc mouse_state::gui_write ; register a change on the GUI
-   ldy mouse_state::curr_component_ofs
+   inc mouse_definitions::gui_write ; register a change on the GUI
+   ldy mouse_definitions::curr_component_ofs
    iny
    iny
    iny
@@ -572,20 +572,20 @@ click_checkbox:
    lda #1
    sta (ce_pointer), y
 @update_gui:
-   ldy mouse_state::curr_component_ofs
+   ldy mouse_definitions::curr_component_ofs
    iny
    jsr draw_checkbox
    rts
 
 click_listbox:
-   ; we don't activate mouse_state::gui_write, because the first click on the listbox
+   ; we don't activate mouse_definitions::gui_write, because the first click on the listbox
    ; doesn't change any actual data,
    ; bring up popup panel
    ; TODO: later we would need to calculate the popup position based on the listbox position
    ; and a possibly oversized popup (so that it would range beyond the screen)
    ; We'll deal with that as soon as this becomes an issue.
    ; For now, we'll just directly place it where we want it.
-   ldy mouse_state::curr_component_ofs
+   ldy mouse_definitions::curr_component_ofs
    iny
    lda (ce_pointer), y
    sta panels_luts::listbox_popup::box_x
@@ -606,15 +606,15 @@ click_listbox:
    iny
    lda (ce_pointer), y
    sta panels_luts::listbox_popup::strlist+1
-   lda mouse_state::curr_component_ofs
+   lda mouse_definitions::curr_component_ofs
    sta panels_luts::listbox_popup::lb_ofs
    lda ce_pointer
    sta panels_luts::listbox_popup::lb_addr
    lda ce_pointer+1
    sta panels_luts::listbox_popup::lb_addr+1
-   lda mouse_state::prev_component_id
+   lda mouse_definitions::prev_component_id
    sta panels_luts::listbox_popup::lb_id
-   lda mouse_state::curr_panel
+   lda mouse_definitions::curr_panel
    sta panels_luts::listbox_popup::lb_panel
    ; now do the GUI stack stuff
    ldx stack::sp
@@ -626,27 +626,27 @@ click_listbox:
    rts
 
 click_dummy:
-   inc mouse_state::gui_write
+   inc mouse_definitions::gui_write
    rts
 
 
 ; drag event. looks in mouse variables which panel's component has been dragged and calls its routine
-; expects L/R information in mouse_state::curr_data_1 (0 for left drag, 1 for right drag)
-; and dragging distance in mouse_state::curr_data_2
+; expects L/R information in mouse_definitions::curr_data_1 (0 for left drag, 1 for right drag)
+; and dragging distance in mouse_definitions::curr_data_2
 drag_event:
    ; call GUI component's drag subroutine, to update it.
    ; For that, we need the info about the component from the GUI component string
    ; of the respective panel.
    de_pointer = mzpwa ; it is important that this is the same as dc_pointer, because this routine indirectly calls "their" subroutine, expecting this pointer at the same place
-   stz mouse_state::gui_write
-   lda mouse_state::curr_panel
+   stz mouse_definitions::gui_write
+   lda mouse_definitions::curr_panel
    asl
    tax
    lda panels_luts::comps, x
    sta de_pointer
    lda panels_luts::comps+1, x
    sta de_pointer+1   ; put GUI component string pointer to ZP
-   ldy mouse_state::curr_component_ofs ; load component's offset
+   ldy mouse_definitions::curr_component_ofs ; load component's offset
    lda (de_pointer), y ; and get its type
    asl
    tax
@@ -661,11 +661,11 @@ drag_event:
    .word dummy_sr
 @ret_addrA:
    ; check if component wants an update
-   lda mouse_state::gui_write
+   lda mouse_definitions::gui_write
    bne :+
    rts
 :  ; call panel's drag subroutine, which is part of the interface between GUI and internal data
-   lda mouse_state::curr_panel
+   lda mouse_definitions::curr_panel
    asl
    tax
    INDEXED_JSR panel_write_subroutines, @ret_addrB
@@ -675,14 +675,14 @@ drag_event:
 ; GUI component's drag subroutines
 ; ---------------------------------
 ; expect component string's pointer in de_pointer on zero page,
-; and also the component's offset in mouse_state::prev_component_ofs (not curr!)
-; and whether dragging is done with left or right mouse button in mouse_state::curr_data_1 (left=0, right=1)
-; and drag distance compared to previous frame in mouse_state::curr_data_2
+; and also the component's offset in mouse_definitions::prev_component_ofs (not curr!)
+; and whether dragging is done with left or right mouse button in mouse_definitions::curr_data_1 (left=0, right=1)
+; and drag distance compared to previous frame in mouse_definitions::curr_data_2
 
 drag_drag_edit:
-   inc mouse_state::gui_write
+   inc mouse_definitions::gui_write
    ; first check if drag edit has fine editing enabled
-   ldy mouse_state::prev_component_ofs
+   ldy mouse_definitions::prev_component_ofs
    iny
    iny
    iny
@@ -690,7 +690,7 @@ drag_drag_edit:
    and #%00000001
    beq @coarse_drag  ; if there is no fine editing enabled, we jump straight to coarse editing
    ; check mouse for fine or coarse dragging mode
-   lda mouse_state::curr_data_1
+   lda mouse_definitions::curr_data_1
    beq @coarse_drag
    jmp @fine_drag
 @coarse_drag:
@@ -703,7 +703,7 @@ drag_drag_edit:
    iny
    iny
    ; check if dragging up or down
-   lda mouse_state::curr_data_2
+   lda mouse_definitions::curr_data_2
    bmi @coarse_drag_down
 @coarse_drag_up:
    ; check if adding the increment crosses the border
@@ -712,12 +712,12 @@ drag_drag_edit:
    sec
    sbc (de_pointer), y ; now we have the distance to the upper border in the accumulator
    sec
-   sbc mouse_state::curr_data_2 ; if this overflowed, we are crossing the border
+   sbc mouse_definitions::curr_data_2 ; if this overflowed, we are crossing the border
    bcc @coarse_up_overflow
 @coarse_up_normal:
    lda (de_pointer), y
    clc
-   adc mouse_state::curr_data_2
+   adc mouse_definitions::curr_data_2
    sta (de_pointer), y
    ; check if zero forbidden
    pla
@@ -746,14 +746,14 @@ drag_drag_edit:
    sec
    sbc (de_pointer), y ; now we have the distance to the min value in the accumulator
    clc
-   adc mouse_state::curr_data_2 ; if the result is negative, we are crossing the border
+   adc mouse_definitions::curr_data_2 ; if the result is negative, we are crossing the border
    bcc @coarse_down_overflow
 @coarse_down_normal:
    iny
    iny
    lda (de_pointer), y
    clc
-   adc mouse_state::curr_data_2
+   adc mouse_definitions::curr_data_2
    sta (de_pointer), y
    ; check if zero forbidden
    pla
@@ -785,7 +785,7 @@ drag_drag_edit:
    iny
    iny
    ; check if dragging up or down
-   lda mouse_state::curr_data_2
+   lda mouse_definitions::curr_data_2
    bmi @fine_drag_down
 @fine_drag_up:
    ; check if adding the increment crosses the border
@@ -793,12 +793,12 @@ drag_drag_edit:
    sec
    sbc (de_pointer), y ; now we have the distance to the upper border in the accumulator
    sec
-   sbc mouse_state::curr_data_2 ; if this overflowed, we are crossing the border
+   sbc mouse_definitions::curr_data_2 ; if this overflowed, we are crossing the border
    bcc @fine_up_overflow
 @fine_up_normal:
    lda (de_pointer), y
    clc
-   adc mouse_state::curr_data_2
+   adc mouse_definitions::curr_data_2
    sta (de_pointer), y
    bra @update_gui
 @fine_up_overflow:
@@ -810,12 +810,12 @@ drag_drag_edit:
    ; check if adding the increment crosses the min value
    lda (de_pointer), y ; load current value
    clc
-   adc mouse_state::curr_data_2 ; if overflow occurs, we are crossing the border
+   adc mouse_definitions::curr_data_2 ; if overflow occurs, we are crossing the border
    bcc @fine_down_overflow
 @fine_down_normal:
    lda (de_pointer), y
    clc
-   adc mouse_state::curr_data_2
+   adc mouse_definitions::curr_data_2
    sta (de_pointer), y
    bra @update_gui
 @fine_down_overflow:
@@ -824,7 +824,7 @@ drag_drag_edit:
    sta (de_pointer), y
    bra @update_gui
 @update_gui:
-   ldy mouse_state::prev_component_ofs
+   ldy mouse_definitions::prev_component_ofs
    iny
    jsr draw_drag_edit
    rts
@@ -871,16 +871,16 @@ refresh_gui:
 
 
 ; returns the panel index the mouse is currently over. Bit 7 set means none
-; panel index returned in mouse_state::curr_panel
+; panel index returned in mouse_definitions::curr_panel
 mouse_get_panel:
    ; grab those zero page variables for this routine
    gp_cx = mzpwa
    gp_cy = mzpwd
    ; determine position in characters (divide by 8)
-   lda mouse_state::curr_x+1
+   lda mouse_definitions::curr_x+1
    lsr
    sta gp_cx+1
-   lda mouse_state::curr_x
+   lda mouse_definitions::curr_x
    ror
    sta gp_cx
    lda gp_cx+1
@@ -889,10 +889,10 @@ mouse_get_panel:
    lsr
    ror gp_cx
    ; (high byte is uninteresting, thus not storing it back)
-   lda mouse_state::curr_y+1
+   lda mouse_definitions::curr_y+1
    lsr
    sta gp_cy+1
-   lda mouse_state::curr_y
+   lda mouse_definitions::curr_y
    ror
    sta gp_cy
    lda gp_cy+1
@@ -931,12 +931,12 @@ mouse_get_panel:
    bcc @loop ; gp_cy is too big
    ; we're inside! return index
    tya
-   sta mouse_state::curr_panel
+   sta mouse_definitions::curr_panel
    rts
 @end_loop:
    ; found no match
    lda #255
-   sta mouse_state::curr_panel
+   sta mouse_definitions::curr_panel
    rts
 
 
@@ -944,35 +944,35 @@ mouse_get_panel:
 ; given the panel, where the mouse is currently at,
 ; this subroutine finds which GUI component is being clicked
 mouse_get_component:
-   ; panel number in mouse_state::curr_panel
-   ; mouse x and y coordinates in mouse_state::curr_x and mouse_state::curr_y
+   ; panel number in mouse_definitions::curr_panel
+   ; mouse x and y coordinates in mouse_definitions::curr_x and mouse_definitions::curr_y
    ; zero page variables:
    gc_pointer = mzpwa
    gc_cx = mzpwd     ; x and y in multiples of 4 (!) pixels to support half character grid
    gc_cy = mzpwd+1
    gc_counter = mzpbe
    ; determine mouse position in multiples of 4 pixels (divide by 4)
-   lda mouse_state::curr_x+1
+   lda mouse_definitions::curr_x+1
    lsr
    sta gc_cx+1
-   lda mouse_state::curr_x
+   lda mouse_definitions::curr_x
    ror
    sta gc_cx
    lda gc_cx+1
    lsr
    ror gc_cx
    ; (high byte is uninteresting, thus not storing it back)
-   lda mouse_state::curr_y+1
+   lda mouse_definitions::curr_y+1
    lsr
    sta gc_cy+1
-   lda mouse_state::curr_y
+   lda mouse_definitions::curr_y
    ror
    sta gc_cy
    lda gc_cy+1
    lsr
    ror gc_cy
    ; copy pointer to component string to ZP
-   lda mouse_state::curr_panel
+   lda mouse_definitions::curr_panel
    asl
    tax
    lda panels_luts::comps, x
@@ -1004,7 +1004,7 @@ check_gui_loop:
    .word check_dummy
 @end_gui:
    lda #255 ; none found
-   sta mouse_state::curr_component_id
+   sta mouse_definitions::curr_component_id
    rts
 
 ; component checks (part of mouse_get_component subroutine)
@@ -1013,14 +1013,14 @@ check_gui_loop:
 ; in case it is, even return additional information, like e.g. which tab has been clicked.
 ; These routines are not independent, but are part of the above mouse_get_component subroutine.
 ; The mouse coordinates are given in 4 pixel multiples.
-; These routines expect mouse_state::curr_panel and gc_pointer to be set, also gc_cx and gc_cy for mouse positions
+; These routines expect mouse_definitions::curr_panel and gc_pointer to be set, also gc_cx and gc_cy for mouse positions
 ; and register Y to be at the first "data" position of the component (one past the identifier byte).
 ; The return procedure is as follows:
 ; * If a click has been registered, the variables 
-;   mouse_state::curr_component_id, mouse_state::curr_component_ofs and mouse_state::curr_data_1
+;   mouse_definitions::curr_component_id, mouse_definitions::curr_component_ofs and mouse_definitions::curr_data_1
 ;   have to be set, and RTS called to exit the check.
 ; * If no click has been registered, JMP check_gui_loop is called to continue checking.
-;   mouse_state::curr_component_ofs and mouse_state::curr_data_1 are not returned if ms_curr_component's bit 7 is set
+;   mouse_definitions::curr_component_ofs and mouse_definitions::curr_data_1 are not returned if ms_curr_component's bit 7 is set
 ;   The checks are expected to advance the Y register to the start of the next component, in the case
 ;   that there was no click detected, so the checks can continue with the next component.
 
@@ -1066,16 +1066,16 @@ check_button:
    tya
    dec
    dec
-   sta mouse_state::curr_component_ofs
+   sta mouse_definitions::curr_component_ofs
    lda gc_counter
-   sta mouse_state::curr_component_id
+   sta mouse_definitions::curr_component_id
    rts
 
-; which tab clicked is returned in mouse_state::curr_data_1
+; which tab clicked is returned in mouse_definitions::curr_data_1
 check_tab_selector:
    ; check if mouse is over the tab selector area of the panel
    ; check x direction first
-   ldx mouse_state::curr_panel
+   ldx mouse_definitions::curr_panel
    lda panels_luts::px, x
    asl ; multiply by 2 to be 4 pixel multiple
    sec
@@ -1112,20 +1112,20 @@ check_tab_selector:
    cmp (gc_pointer), y
    bcs :+ ; if carry set, no tab has been clicked
    ; otherwise, tab has been selected
-   sta mouse_state::curr_data_1 ; store tab being clicked
+   sta mouse_definitions::curr_data_1 ; store tab being clicked
    tya ; determine component's offset
    sec
    sbc #3 ; correct?
-   sta mouse_state::curr_component_ofs
+   sta mouse_definitions::curr_component_ofs
    lda gc_counter
-   sta mouse_state::curr_component_id
+   sta mouse_definitions::curr_component_id
    rts
 :  iny
    iny
    jmp check_gui_loop
 
 ; check arrowed edit for mouse click
-; which arrow clicked is returned in mouse_state::curr_data_1
+; which arrow clicked is returned in mouse_definitions::curr_data_1
 ca_which_arrow: .byte 0
 check_arrowed_edit:
    stz ca_which_arrow
@@ -1167,13 +1167,13 @@ check_arrowed_edit:
    iny ; Y
    iny ; min
    lda ca_which_arrow
-   sta mouse_state::curr_data_1
+   sta mouse_definitions::curr_data_1
    tya ; determine offset in component-string
    sec
    sbc #4 ; correct?
-   sta mouse_state::curr_component_ofs
+   sta mouse_definitions::curr_component_ofs
    lda gc_counter
-   sta mouse_state::curr_component_id
+   sta mouse_definitions::curr_component_id
    rts
 
 ; check drag edit for mouse click
@@ -1227,9 +1227,9 @@ check_drag_edit:
    tya
    dec
    dec
-   sta mouse_state::curr_component_ofs
+   sta mouse_definitions::curr_component_ofs
    lda gc_counter
-   sta mouse_state::curr_component_id
+   sta mouse_definitions::curr_component_id
    rts
 
 check_checkbox:
@@ -1269,9 +1269,9 @@ check_checkbox:
    tya
    dec
    dec
-   sta mouse_state::curr_component_ofs
+   sta mouse_definitions::curr_component_ofs
    lda gc_counter
-   sta mouse_state::curr_component_id
+   sta mouse_definitions::curr_component_id
    rts
 
 ; listbox check is identical to checkbox check, apart from the number of INYs needed at the end
@@ -1317,9 +1317,9 @@ check_listbox:
    tya
    dec
    dec
-   sta mouse_state::curr_component_ofs
+   sta mouse_definitions::curr_component_ofs
    lda gc_counter
-   sta mouse_state::curr_component_id
+   sta mouse_definitions::curr_component_id
    rts
 
 ; dummy always registers a click event, regardless of where the mouse is. Useful for popups.
@@ -1327,15 +1327,15 @@ check_dummy:
    ; get mouse coordinates (in 8 pixel multiples) and put them into data
    lda gc_cx
    lsr
-   sta mouse_state::curr_data_1
+   sta mouse_definitions::curr_data_1
    lda gc_cy
    lsr
-   sta mouse_state::curr_data_2
+   sta mouse_definitions::curr_data_2
    dey
    tya
-   sta mouse_state::curr_component_ofs
+   sta mouse_definitions::curr_component_ofs
    lda gc_counter
-   sta mouse_state::curr_component_id
+   sta mouse_definitions::curr_component_id
    rts
 
 
@@ -1553,8 +1553,8 @@ map_signed_7bit_to_twos_complement:
 ; It reads the value from the component and writes it into the timbre (or later song) data.
 ; They expect wr_pointer to contain the pointer to the corresponding GUI component string
 ; and the mouse variables set according to the action, that is
-; mouse_state::prev_component_id
-; mouse_state::prev_component_ofs
+; mouse_definitions::prev_component_id
+; mouse_definitions::prev_component_ofs
 
 ; jump table
 panel_write_subroutines:
@@ -1578,13 +1578,13 @@ dummy_plx:
 ; subroutine of the global synth settings panel
 write_synth_global:
    ldx Timbre ; may be replaced later
-   lda mouse_state::curr_component_ofs
+   lda mouse_definitions::curr_component_ofs
    clc
    adc #4
    tay ; there's no component type where the data is before this index
    ; now jump to component which has been clicked/dragged
    phx
-   lda mouse_state::curr_component_id
+   lda mouse_definitions::curr_component_id
    asl
    tax
    jmp (@jmp_tbl, x)
@@ -1662,13 +1662,13 @@ write_osc:
 @end_loop:
    tax ; oscillator index is in x
    ; prepare component readout
-   lda mouse_state::curr_component_ofs
+   lda mouse_definitions::curr_component_ofs
    clc
    adc #4
    tay ; there's no component type where the data is before this index
    ; now determine which component has been changed
    phx
-   lda mouse_state::curr_component_id
+   lda mouse_definitions::curr_component_id
    asl
    tax
    jmp (@jmp_tbl, x)
@@ -1692,7 +1692,7 @@ write_osc:
    .word @vmdep ; vol mod depth
 @tab_slector:
    plx
-   lda mouse_state::curr_data_1
+   lda mouse_definitions::curr_data_1
    sta panels_luts::psg_oscillators::active_tab
    jsr refresh_osc
    rts
@@ -1865,13 +1865,13 @@ write_env:
 @end_loop:
    tax ; envelope index is in x
    ; prepare drag edit readout
-   lda mouse_state::curr_component_ofs
+   lda mouse_definitions::curr_component_ofs
    clc
    adc #6 ; 6 because most of the control elements are drag edits anyway
    tay ; drag edit's coarse value offset is in Y
    ; now determine which component has been dragged
    phx
-   lda mouse_state::curr_component_id
+   lda mouse_definitions::curr_component_id
    asl
    tax
    jmp (@jmp_tbl, x)
@@ -1883,7 +1883,7 @@ write_env:
    .word @release
 @tab_select:
    plx
-   lda mouse_state::curr_data_1
+   lda mouse_definitions::curr_data_1
    sta panels_luts::envelopes::active_tab
    jsr refresh_env
    rts
@@ -1923,12 +1923,12 @@ write_env:
 
 write_snav:
    ; prepare component string offset
-   lda mouse_state::curr_component_ofs
+   lda mouse_definitions::curr_component_ofs
    clc
    adc #5 ; currently, we're reading only arrowed edits and drag edits
    tay
    ; prepare jump
-   lda mouse_state::curr_component_id
+   lda mouse_definitions::curr_component_id
    asl
    tax
    jmp (@jmp_tbl, x)
@@ -2013,16 +2013,16 @@ write_snav:
 write_lb_popup:
    clbp_pointer = mzpwa ; mzpwa is already used in the click_event routine, but once we get to this point, it should have served its purpose, so we can reuse it here.
    ; TODO: determine selection (or skip if none was selected)
-   ; mouse coordinates are in mouse_state::curr_data_1 and mouse_state::curr_data_2 (been put there by the dummy GUI component)
+   ; mouse coordinates are in mouse_definitions::curr_data_1 and mouse_definitions::curr_data_2 (been put there by the dummy GUI component)
    ; check if we're in correct x range
-   lda mouse_state::curr_data_1
+   lda mouse_definitions::curr_data_1
    sec
    sbc panels_luts::listbox_popup::box_x
    cmp panels_luts::listbox_popup::box_width
    bcs @close_popup
    ; we're inside!
    ; check if we're in correct y range
-   lda mouse_state::curr_data_2
+   lda mouse_definitions::curr_data_2
    sec
    sbc panels_luts::listbox_popup::box_y
    cmp panels_luts::listbox_popup::box_height
@@ -2057,9 +2057,9 @@ write_lb_popup:
    jsr guiutils::clear_lb_popup
    ; call writing function of panel
    lda panels_luts::listbox_popup::lb_ofs
-   sta mouse_state::curr_component_ofs
+   sta mouse_definitions::curr_component_ofs
    lda panels_luts::listbox_popup::lb_id
-   sta mouse_state::curr_component_id
+   sta mouse_definitions::curr_component_id
    lda panels_luts::listbox_popup::lb_panel
    asl
    tax
@@ -2072,13 +2072,13 @@ write_lb_popup:
 ; LFO panel being changed
 write_lfo:
    ldx Timbre ; may be replaced later
-   lda mouse_state::curr_component_ofs
+   lda mouse_definitions::curr_component_ofs
    clc
    adc #4
    tay ; there's no component type where the data is before this index
    ; now determine which component has been dragged
    phx
-   lda mouse_state::curr_component_id
+   lda mouse_definitions::curr_component_id
    asl
    tax
    jmp (@jmp_tbl, x)
@@ -2125,13 +2125,13 @@ write_fm_gen:
    jsr concerto_synth::voices::invalidate_fm_timbres
    ; do the usual stuff
    ldx Timbre
-   lda mouse_state::curr_component_ofs
+   lda mouse_definitions::curr_component_ofs
    clc
    adc #4
    tay ; there's no component type where the data is before this index
    ; now determine which component has been dragged
    phx
-   lda mouse_state::curr_component_id
+   lda mouse_definitions::curr_component_id
    asl
    tax
    jmp (@jmp_tbl, x)
@@ -2282,12 +2282,12 @@ write_fm_op:
 @loop_done:
    tax
    ; component offset
-   lda mouse_state::curr_component_ofs
+   lda mouse_definitions::curr_component_ofs
    adc #4 ; carry should be clear from previous code
    tay ; there's no component type where the data is before this index
    ; now determine which component has been dragged
    phx
-   lda mouse_state::curr_component_id
+   lda mouse_definitions::curr_component_id
    asl
    tax
    jmp (@jmp_tbl, x)
@@ -2306,7 +2306,7 @@ write_fm_op:
    .word @vol_sens
 @tab_select:
    plx
-   lda mouse_state::curr_data_1
+   lda mouse_definitions::curr_data_1
    sta panels_luts::fm_operators::active_tab
    jsr refresh_fm_op
    rts
@@ -2396,7 +2396,7 @@ write_fm_op:
    rts
 
 write_globalnav:
-   lda mouse_state::curr_data_2 ; y position in multiples of 8 pixels
+   lda mouse_definitions::curr_data_2 ; y position in multiples of 8 pixels
    ; tabs start at row 12 and are 16 high each
    sec
    sbc #12
@@ -2421,12 +2421,12 @@ write_globalnav:
 
 write_clip_edit:
    ; prepare component string offset
-   lda mouse_state::curr_component_ofs
+   lda mouse_definitions::curr_component_ofs
    clc
    adc #5 ; we're reading only arrowed edits
    tay
    ; prepare jump
-   lda mouse_state::curr_component_id
+   lda mouse_definitions::curr_component_id
    asl
    tax
    jmp (@jmp_tbl, x)
