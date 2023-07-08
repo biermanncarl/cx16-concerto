@@ -125,7 +125,6 @@ load_synth_gui:
    sta stack::stack+7
    lda #panels_luts::ids::lfo
    sta stack::stack+8
-   jsr draw_gui
    jsr refresh_gui
    rts
 
@@ -138,6 +137,7 @@ load_clip_gui:
    sta stack::stack+0
    lda #panels_luts::ids::clip_editing
    sta stack::stack+1
+   jsr refresh_gui
    rts
 
 
@@ -147,6 +147,7 @@ load_arrangement_gui:
    sta stack::sp
    lda #panels_luts::ids::global_navigation
    sta stack::stack+0
+   jsr refresh_gui
    rts
 
 
@@ -859,6 +860,8 @@ refresh_gui:
    cmp stack::sp
    sta rfg_counter
    bne @loop
+
+   jsr draw_gui
    rts
 
 
@@ -2414,7 +2417,6 @@ write_globalnav:
 @load_clip_view:
    jsr load_clip_gui
 @end:
-   jsr draw_gui
    rts
 
 write_clip_edit:
@@ -2443,7 +2445,7 @@ write_clip_edit:
    ; make sure the time stamp is aligned with the current grid ... very crude method. TODO: "round to nearest"
    stz panels_luts::clip_editing::time_stamp
    stz panels_luts::clip_editing::time_stamp+1
-   jsr refresh_gui
+   jsr draw_clip_edit
    rts
 @go_left:
    ; TODO: provide different strides at different zoom levels
@@ -2454,21 +2456,21 @@ write_clip_edit:
    lda panels_luts::clip_editing::time_stamp+1
    sbc #0
    sta panels_luts::clip_editing::time_stamp+1
-   jsr refresh_gui
+   jsr draw_clip_edit
    rts
 @go_up:
    lda panels_luts::clip_editing::low_note
    clc
    adc #6
    sta panels_luts::clip_editing::low_note
-   jsr refresh_gui
+   jsr draw_clip_edit
    rts
 @go_down:
    lda panels_luts::clip_editing::low_note
    sec
    sbc #6
    sta panels_luts::clip_editing::low_note
-   jsr refresh_gui
+   jsr draw_clip_edit
    rts
 @go_right:
    ; TODO: provide different strides at different zoom levels
@@ -2479,7 +2481,7 @@ write_clip_edit:
    lda panels_luts::clip_editing::time_stamp+1
    adc #0
    sta panels_luts::clip_editing::time_stamp+1
-   jsr refresh_gui
+   jsr draw_clip_edit
    rts
 @edit_notes:
    rts

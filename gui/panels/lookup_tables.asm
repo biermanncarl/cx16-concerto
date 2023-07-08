@@ -65,6 +65,8 @@ GUI_PANELS_LOOKUP_TABLES_ASM = 1
 
    ; Panel property lookup tables
    ; ============================
+   ;
+   ; Here we generate data arrays with one entry (byte or word) per panel.
 
    .macro PANEL_MEMBER_BYTE_FIELD member, p1, PANEL_PARAMETER_LIST
       .ifblank p1

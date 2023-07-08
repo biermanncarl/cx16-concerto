@@ -1,5 +1,8 @@
 ; Copyright 2023 Carl Georg Biermann
 
+; THIS IS EXAMPLE/DOCUMENTATION CODE!
+; DO NOT INCLUDE IN THE ACTUAL PROJECT!
+
 .ifndef GUI_PANELS_PANELS_TEMPLATE_ASM
 
 GUI_PANELS_PANELS_TEMPLATE_ASM = 1
@@ -28,6 +31,32 @@ GUI_PANELS_PANELS_TEMPLATE_ASM = 1
 
    ; data specific to this panel
    template_label: STR_FORMAT "template"
+
+   ; This method takes care of any panel-specific drawing tasks APART FROM drawing GUI components and labels.
+   ; (Drawing GUI components and labels is taken care of by the generic GUI code.)
+   .proc draw
+      rts
+   .endproc
+
+   ; This method must put currently valid values into the GUI components, so when they are drawn they show
+   ; currently valid values. This is for cases such as a different synth timbre is selected and the new
+   ; values have to be loaded into the GUI, or a different oscillator has been selected etc.
+   ; (Data transfer direction: underlying data -> GUI components)
+   ; TODO: Which arguments can it expect?
+   ;       Which return values are expected?
+   .proc refresh
+      rts
+   .endproc
+
+   ; This method must read a value from a GUI component and store that value or otherwise process it.
+   ; This method is called when the user interacts with GUI components and changes their values.
+   ; (Data transfer direction: underlying data -> GUI components)
+   ; TODO: Which arguments can it expect?
+   ;       Which return values are expected?
+   .proc write
+      rts
+   .endproc
+
 .endscope
 
 .endif ; .ifndef GUI_PANELS_PANELS_TEMPLATE_ASM
