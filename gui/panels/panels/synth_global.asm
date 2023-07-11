@@ -66,7 +66,7 @@
       ldx gui_definitions::current_synth_timbre
       lda mouse_definitions::curr_component_ofs
       clc
-      adc #4
+      adc #5
       tay ; there's no component type where the data is before this index
       ; now jump to component which has been clicked/dragged
       phx
@@ -87,41 +87,40 @@
       jsr concerto_synth::voices::panic ; If we don't do this, a different number of oscillators might be released than initially acquired by a voice. Safety first.
       ply
       plx
-      iny
       lda panels_luts::synth_global::comps, y
       sta concerto_synth::timbres::Timbre::n_oscs, x
       rts
    @n_envs:
       plx
-      iny
       lda panels_luts::synth_global::comps, y
       sta concerto_synth::timbres::Timbre::n_envs, x
       rts
    @n_lfos:
       plx
+      dey
       lda panels_luts::synth_global::comps, y
       sta concerto_synth::timbres::Timbre::n_lfos, x
       rts
    @retr_activate:
       plx
+      dey
       lda panels_luts::synth_global::comps, y
       sta concerto_synth::timbres::Timbre::retrig, x
       rts
    @porta_activate:
       plx
+      dey
       lda panels_luts::synth_global::comps, y
       sta concerto_synth::timbres::Timbre::porta, x
       rts
    @porta_rate:
       plx
       iny
-      iny
       lda panels_luts::synth_global::comps, y
       sta concerto_synth::timbres::Timbre::porta_r, x
       rts
    @vibrato_amount:
       plx
-      iny
       iny
       lda panels_luts::synth_global::comps, y ; if this value is 0, that means vibrato off, which is represented as a negative value internally
       beq :+

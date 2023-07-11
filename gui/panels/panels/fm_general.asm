@@ -87,7 +87,7 @@
       ldx gui_definitions::current_synth_timbre
       lda mouse_definitions::curr_component_ofs
       clc
-      adc #4
+      adc #6
       tay ; there's no component type where the data is before this index
       ; now determine which component has been dragged
       phx
@@ -110,7 +110,7 @@
       .word @pitchmoddep ; pitch mod depth
    @connection:
       plx
-      iny
+      dey
       lda panels_luts::fm_general::comps, y
       sta concerto_synth::timbres::Timbre::fm_general::con, x
       ; draw FM algorithm
@@ -119,8 +119,6 @@
       rts
    @feedback:
       plx
-      iny
-      iny
       lda panels_luts::fm_general::comps, y
       sta concerto_synth::timbres::Timbre::fm_general::fl, x
       rts
@@ -143,6 +141,8 @@
    @op_active_common: ; DON'T put this label into jump table ...
       plx
       ; get checkbox value
+      dey
+      dey
       lda panels_luts::fm_general::comps, y
       ; push into carry flag
       lsr
@@ -159,8 +159,6 @@
    @lr_select:
       plx
       iny
-      iny
-      iny
       lda panels_luts::fm_general::comps, y
       clc
       ror
@@ -170,8 +168,6 @@
       rts
    @semitones:
       plx
-      iny
-      iny
       ; decide if we need to tune down to compensate for fine tuning (because fine tuning internally only goes up)
       lda concerto_synth::timbres::Timbre::fm_general::fine, x
       bmi :+
@@ -184,8 +180,6 @@
       rts
    @finetune:
       plx
-      iny
-      iny
       ; if fine tune is now negative, but was non-negative beforehand, we need to decrement semitones
       ; and the other way round: if fine tune was negative, but now is non-negative, we need to increment semitones
       lda concerto_synth::timbres::Timbre::fm_general::fine, x
@@ -204,13 +198,13 @@
       rts
    @keytrack:
       plx
+      dey
+      dey
       lda panels_luts::fm_general::comps, y
       sta concerto_synth::timbres::Timbre::fm_general::track, x
       rts
    @pmsel:
       plx
-      iny
-      iny
       iny
       lda panels_luts::fm_general::comps, y
       jsr panel_common::map_modsource_from_gui
@@ -218,8 +212,6 @@
       rts
    @pitchmoddep:
       plx
-      iny
-      iny
       lda panels_luts::fm_general::comps, y
       jsr concerto_synth::map_twos_complement_to_scale5
       sta concerto_synth::timbres::Timbre::fm_general::pitch_mod_dep, x

@@ -58,7 +58,7 @@
       ldx gui_definitions::current_synth_timbre
       lda mouse_definitions::curr_component_ofs
       clc
-      adc #4
+      adc #6
       tay ; there's no component type where the data is before this index
       ; now determine which component has been dragged
       phx
@@ -74,20 +74,18 @@
    @wave:
       plx
       iny
-      iny
-      iny
       lda panels_luts::lfo::comps, y
       sta concerto_synth::timbres::Timbre::lfo::wave, x
       rts
    @retr:
       plx
+      dey
+      dey
       lda panels_luts::lfo::comps, y
       sta concerto_synth::timbres::Timbre::lfo::retrig, x
       rts
    @rate:
       plx
-      iny
-      iny
       lda panels_luts::lfo::comps, y
       sta concerto_synth::timbres::Timbre::lfo::rateH, x
       iny
@@ -96,8 +94,6 @@
       rts
    @offs:
       plx
-      iny
-      iny
       lda panels_luts::lfo::comps, y
       sta concerto_synth::timbres::Timbre::lfo::offs, x
       rts

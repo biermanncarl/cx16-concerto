@@ -124,7 +124,7 @@
       ; prepare component readout
       lda mouse_definitions::curr_component_ofs
       clc
-      adc #4
+      adc #6
       tay ; there's no component type where the data is before this index
       ; now determine which component has been changed
       phx
@@ -159,8 +159,6 @@
    @waveform:
       plx
       iny
-      iny
-      iny
       lda panels_luts::psg_oscillators::comps, y
       clc
       ror
@@ -170,30 +168,22 @@
       rts
    @pulsewidth:
       plx
-      iny
-      iny
       lda panels_luts::psg_oscillators::comps, y
       sta concerto_synth::timbres::Timbre::osc::pulse, x
       rts
    @ampsel:
       plx
       iny
-      iny
-      iny
       lda panels_luts::psg_oscillators::comps, y
       sta concerto_synth::timbres::Timbre::osc::amp_sel, x
       rts
    @volume:
       plx
-      iny
-      iny
       lda panels_luts::psg_oscillators::comps, y
       sta concerto_synth::timbres::Timbre::osc::volume, x
       rts
    @channelsel:
       plx
-      iny
-      iny
       iny
       lda panels_luts::psg_oscillators::comps, y
       clc
@@ -204,8 +194,6 @@
       rts
    @semitones:
       plx
-      iny
-      iny
       ; decide if we need to tune down to compensate for fine tuning (because fine tuning internally only goes up)
       lda concerto_synth::timbres::Timbre::osc::fine, x
       bmi :+
@@ -218,8 +206,6 @@
       rts
    @finetune:
       plx
-      iny
-      iny
       ; if fine tune is now negative, but was non-negative beforehand, we need to decrement semitones
       ; and the other way round: if fine tune was negative, but now is non-negative, we need to increment semitones
       lda concerto_synth::timbres::Timbre::osc::fine, x
@@ -238,13 +224,13 @@
       rts
    @keytrack:
       plx
+      dey
+      dey
       lda panels_luts::psg_oscillators::comps, y
       sta concerto_synth::timbres::Timbre::osc::track, x
       rts
    @pmsel1:
       plx
-      iny
-      iny
       iny
       lda panels_luts::psg_oscillators::comps, y
       jsr panel_common::map_modsource_from_gui
@@ -253,16 +239,12 @@
    @pmsel2:
       plx
       iny
-      iny
-      iny
       lda panels_luts::psg_oscillators::comps, y
       jsr panel_common::map_modsource_from_gui
       sta concerto_synth::timbres::Timbre::osc::pitch_mod_sel2, x
       rts
    @pwmsel:
       plx
-      iny
-      iny
       iny
       lda panels_luts::psg_oscillators::comps, y
       jsr panel_common::map_modsource_from_gui
@@ -271,40 +253,30 @@
    @volmsel:
       plx
       iny
-      iny
-      iny
       lda panels_luts::psg_oscillators::comps, y
       jsr panel_common::map_modsource_from_gui
       sta concerto_synth::timbres::Timbre::osc::vol_mod_sel, x
       rts
    @pitchmoddep1:
       plx
-      iny
-      iny
       lda panels_luts::psg_oscillators::comps, y
       jsr concerto_synth::map_twos_complement_to_scale5
       sta concerto_synth::timbres::Timbre::osc::pitch_mod_dep1, x
       rts
    @pitchmoddep2:
       plx
-      iny
-      iny
       lda panels_luts::psg_oscillators::comps, y
       jsr concerto_synth::map_twos_complement_to_scale5
       sta concerto_synth::timbres::Timbre::osc::pitch_mod_dep2, x
       rts
    @pwmdep:
       plx
-      iny
-      iny
       lda panels_luts::psg_oscillators::comps, y
       jsr panel_common::map_twos_complement_to_signed_7bit
       sta concerto_synth::timbres::Timbre::osc::pwm_dep, x
       rts
    @vmdep:
       plx
-      iny
-      iny
       lda panels_luts::psg_oscillators::comps, y
       jsr panel_common::map_twos_complement_to_signed_7bit
       sta concerto_synth::timbres::Timbre::osc::vol_mod_dep, x

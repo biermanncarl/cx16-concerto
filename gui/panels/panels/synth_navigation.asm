@@ -104,7 +104,7 @@
       ; clear string
       ;ldy #MAX_FILENAME_LENGTH
       ;lda #' '
-   ;:  sta concerto_synth::timbres::file_name,y
+   ; :  sta concerto_synth::timbres::file_name,y
       ;dey
       ;bpl :-
       ; do input string

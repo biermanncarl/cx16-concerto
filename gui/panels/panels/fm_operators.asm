@@ -101,7 +101,7 @@
       tax
       ; component offset
       lda mouse_definitions::curr_component_ofs
-      adc #4 ; carry should be clear from previous code
+      adc #6 ; carry should be clear from previous code
       tay ; there's no component type where the data is before this index
       ; now determine which component has been dragged
       phx
@@ -130,22 +130,16 @@
       rts
    @attack:
       plx
-      iny
-      iny
       lda panels_luts::fm_operators::comps, y
       sta concerto_synth::timbres::Timbre::operators::ar, x
       rts
    @decay1:
       plx
-      iny
-      iny
       lda panels_luts::fm_operators::comps, y
       sta concerto_synth::timbres::Timbre::operators::d1r, x
       rts
    @decay_level:
       plx
-      iny
-      iny
       sec
       lda #15
       sbc panels_luts::fm_operators::comps, y
@@ -153,29 +147,21 @@
       rts
    @decay2:
       plx
-      iny
-      iny
       lda panels_luts::fm_operators::comps, y
       sta concerto_synth::timbres::Timbre::operators::d2r, x
       rts
    @release:
       plx
-      iny
-      iny
       lda panels_luts::fm_operators::comps, y
       sta concerto_synth::timbres::Timbre::operators::rr, x
       rts
    @mul:
       plx
-      iny
-      iny
       lda panels_luts::fm_operators::comps, y
       sta concerto_synth::timbres::Timbre::operators::mul, x
       rts
    @fine:
       plx
-      iny
-      iny
       lda panels_luts::fm_operators::comps, y
       bpl :+
       ; transform -3 ... -0 range to 5 .. 7 (4 is unused, since it does the same thing as 0)
@@ -186,15 +172,11 @@
       rts
    @coarse:
       plx
-      iny
-      iny
       lda panels_luts::fm_operators::comps, y
       sta concerto_synth::timbres::Timbre::operators::dt2, x
       rts
    @vol:
       plx
-      iny
-      iny
       lda #127
       sec
       sbc panels_luts::fm_operators::comps, y
@@ -202,13 +184,13 @@
       rts
    @key_scaling:
       plx
-      iny
-      iny
       lda panels_luts::fm_operators::comps, y
       sta concerto_synth::timbres::Timbre::operators::ks, x
       rts
    @vol_sens:
       plx
+      dey
+      dey
       lda panels_luts::fm_operators::comps, y
       sta concerto_synth::timbres::Timbre::operators::vol_sens, x
       rts
