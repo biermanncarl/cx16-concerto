@@ -35,6 +35,26 @@
    help_3_lb: STR_FORMAT "coarse edit"
    help_4_lb: STR_FORMAT "right drag:"
    help_5_lb: STR_FORMAT "fine edit"
+
+   .proc draw
+      lda #panels_luts::synth_info::px
+      sta guiutils::draw_x
+      lda #panels_luts::synth_info::py
+      sta guiutils::draw_y
+      lda #panels_luts::synth_info::wd
+      sta guiutils::draw_width
+      lda #panels_luts::synth_info::hg
+      sta guiutils::draw_height
+      lda #0
+      sta guiutils::draw_data1
+      jsr guiutils::draw_frame
+      rts
+   .endproc
+
+   write = panel_common::dummy_subroutine
+
+   refresh = panel_common::dummy_subroutine
+
 .endscope
 
 .endif ; .ifndef ::GUI_PANELS_PANELS_SYNTH_INFO_ASM

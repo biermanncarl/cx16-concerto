@@ -25,7 +25,6 @@ curr_component_id: .byte 0
 curr_component_ofs: .byte 0
 curr_data_1: .byte 0 ; used to store the current tab selected, which arrow is clicked etc.
 curr_data_2: .byte 0 ; used to store dragging distance (y direction)
-gui_write: .byte 0 ; used to determine whether or not an action has caused a value to be changed. If this is set, the respective panel's "write" subroutine will be called.
 
 .endscope
 

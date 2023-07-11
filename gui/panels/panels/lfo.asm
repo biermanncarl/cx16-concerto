@@ -38,6 +38,98 @@
       STR_FORMAT "saw up"
       STR_FORMAT "saw dn"
       STR_FORMAT "s'n'h"
+
+   .proc draw
+      lda #panels_luts::lfo::px
+      sta guiutils::draw_x
+      lda #panels_luts::lfo::py
+      sta guiutils::draw_y
+      lda #panels_luts::lfo::wd
+      sta guiutils::draw_width
+      lda #panels_luts::lfo::hg
+      sta guiutils::draw_height
+      lda #0
+      sta guiutils::draw_data1
+      jsr guiutils::draw_frame
+      rts
+   .endproc
+
+   .proc write
+      ldx gui_definitions::current_synth_timbre
+      lda mouse_definitions::curr_component_ofs
+      clc
+      adc #4
+      tay ; there's no component type where the data is before this index
+      ; now determine which component has been dragged
+      phx
+      lda mouse_definitions::curr_component_id
+      asl
+      tax
+      jmp (@jmp_tbl, x)
+   @jmp_tbl:
+      .word @wave
+      .word @retr
+      .word @rate
+      .word @offs
+   @wave:
+      plx
+      iny
+      iny
+      iny
+      lda panels_luts::lfo::comps, y
+      sta concerto_synth::timbres::Timbre::lfo::wave, x
+      rts
+   @retr:
+      plx
+      lda panels_luts::lfo::comps, y
+      sta concerto_synth::timbres::Timbre::lfo::retrig, x
+      rts
+   @rate:
+      plx
+      iny
+      iny
+      lda panels_luts::lfo::comps, y
+      sta concerto_synth::timbres::Timbre::lfo::rateH, x
+      iny
+      lda panels_luts::lfo::comps, y
+      sta concerto_synth::timbres::Timbre::lfo::rateL, x
+      rts
+   @offs:
+      plx
+      iny
+      iny
+      lda panels_luts::lfo::comps, y
+      sta concerto_synth::timbres::Timbre::lfo::offs, x
+      rts
+   .endproc
+
+
+   .proc refresh
+      ldx gui_definitions::current_synth_timbre
+      ; LFO waveform
+      lda concerto_synth::timbres::Timbre::lfo::wave, x
+      ldy #(0*checkbox_data_size+0*drag_edit_data_size+1*listbox_data_size-1)
+      sta panels_luts::lfo::comps, y
+      ; LFO retrigger
+      lda concerto_synth::timbres::Timbre::lfo::retrig, x
+      ldy #(1*checkbox_data_size+0*drag_edit_data_size+1*listbox_data_size-1)
+      sta panels_luts::lfo::comps, y
+      ; LFO rate
+      lda concerto_synth::timbres::Timbre::lfo::rateH, x
+      ldy #(1*checkbox_data_size+1*drag_edit_data_size+1*listbox_data_size-2)
+      sta panels_luts::lfo::comps, y
+      iny
+      lda concerto_synth::timbres::Timbre::lfo::rateL, x
+      sta panels_luts::lfo::comps, y
+      ; phase offset
+      lda concerto_synth::timbres::Timbre::lfo::offs, x
+      ldy #(1*checkbox_data_size+2*drag_edit_data_size+1*listbox_data_size-2)
+      sta panels_luts::lfo::comps, y
+      ; redraw components
+      lda #5
+      jsr draw_components
+      rts
+   .endproc
 .endscope
 
 .endif ; .ifndef ::GUI_PANELS_PANELS_LFO_ASM

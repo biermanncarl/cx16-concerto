@@ -29,6 +29,90 @@
    lb_addr: .word 0 ; address and offset of the listbox that was causing the popup
    lb_ofs: .byte 0
    lb_id: .byte 0
+
+   .proc draw
+      dlbp_pointer = mzpwd
+      lda panels_luts::listbox_popup::box_x
+      sta guiutils::draw_x
+      lda panels_luts::listbox_popup::box_y
+      sta guiutils::draw_y
+      lda panels_luts::listbox_popup::box_width
+      sta guiutils::draw_width
+      lda panels_luts::listbox_popup::box_height
+      sta guiutils::draw_height
+      lda panels_luts::listbox_popup::strlist
+      sta guiutils::str_pointer
+      lda panels_luts::listbox_popup::strlist+1
+      sta guiutils::str_pointer+1
+      jsr guiutils::draw_lb_popup
+      rts
+   .endproc
+
+   .proc write
+      ; since there is only the dummy component on the popup,
+      ; this subroutine doesn't have to deal with the component id, but it interprets the click event itself
+
+      clbp_pointer = mzpwa ; mzpwa is already used in the click_event routine, but once we get to this point, it should have served its purpose, so we can reuse it here.
+      ; TODO: determine selection (or skip if none was selected)
+      ; mouse coordinates are in mouse_definitions::curr_data_1 and mouse_definitions::curr_data_2 (been put there by the dummy GUI component)
+      ; check if we're in correct x range
+      lda mouse_definitions::curr_data_1
+      sec
+      sbc panels_luts::listbox_popup::box_x
+      cmp panels_luts::listbox_popup::box_width
+      bcs @close_popup
+      ; we're inside!
+      ; check if we're in correct y range
+      lda mouse_definitions::curr_data_2
+      sec
+      sbc panels_luts::listbox_popup::box_y
+      cmp panels_luts::listbox_popup::box_height
+      bcs @close_popup
+      ; we're inside!
+      ; now the accumulator holds the new selection index. Put it back into the listbox.
+      pha
+      lda panels_luts::listbox_popup::lb_addr
+      sta clbp_pointer
+      lda panels_luts::listbox_popup::lb_addr+1
+      sta clbp_pointer+1
+      lda panels_luts::listbox_popup::lb_ofs
+      clc
+      adc #7
+      tay
+      pla
+      sta (clbp_pointer), y
+   @close_popup:
+      ; one thing that always happens, is that the popup is closed upon clicking.
+      ; close popup
+      dec stack::sp
+      ; clear area where the popup has been before
+      ; jsr guiutils::cls ; would be the cheap solution
+      lda panels_luts::listbox_popup::box_x
+      sta guiutils::draw_x
+      lda panels_luts::listbox_popup::box_y
+      sta guiutils::draw_y
+      lda panels_luts::listbox_popup::box_width
+      sta guiutils::draw_width
+      lda panels_luts::listbox_popup::box_height
+      sta guiutils::draw_height
+      jsr guiutils::clear_lb_popup
+      ; call writing function of panel
+      lda panels_luts::listbox_popup::lb_ofs
+      sta mouse_definitions::curr_component_ofs
+      lda panels_luts::listbox_popup::lb_id
+      sta mouse_definitions::curr_component_id
+      lda panels_luts::listbox_popup::lb_panel
+      asl
+      tax
+      INDEXED_JSR panel_write_subroutines, @ret_addr
+   @ret_addr:
+      ; redraw gui
+      jsr draw_gui
+      rts
+   .endproc
+
+
+   refresh = panel_common::dummy_subroutine
 .endscope
 
 .endif ; .ifndef ::GUI_PANELS_PANELS_LISTBOX_POPUP_ASM

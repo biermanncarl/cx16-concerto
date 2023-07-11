@@ -65,6 +65,230 @@
    lb_dt2: STR_FORMAT "coarse"
    lb_ks: STR_FORMAT "key scaling"
    lb_vol_sens: STR_FORMAT "vol sens"
+
+   .proc draw
+      lda #panels_luts::fm_operators::px
+      sta guiutils::draw_x
+      lda #panels_luts::fm_operators::py
+      sta guiutils::draw_y
+      lda #panels_luts::fm_operators::wd
+      sta guiutils::draw_width
+      lda #panels_luts::fm_operators::hg
+      sta guiutils::draw_height
+      lda #N_OPERATORS
+      sta guiutils::draw_data1
+      lda panels_luts::fm_operators::active_tab
+      inc
+      sta guiutils::draw_data2
+      jsr guiutils::draw_frame
+      rts
+   .endproc
+
+   .proc write
+      ; invalidate all FM timbres that have been loaded onto the YM2151 (i.e. enforce reload after timbre has been changed)
+      jsr concerto_synth::voices::panic
+      jsr concerto_synth::voices::invalidate_fm_timbres
+      ; determine operator index
+      ldx panels_luts::fm_operators::active_tab
+      lda gui_definitions::current_synth_timbre
+      clc
+   @loop:
+      dex
+      bmi @loop_done
+      adc #N_TIMBRES
+      bra @loop
+   @loop_done:
+      tax
+      ; component offset
+      lda mouse_definitions::curr_component_ofs
+      adc #4 ; carry should be clear from previous code
+      tay ; there's no component type where the data is before this index
+      ; now determine which component has been dragged
+      phx
+      lda mouse_definitions::curr_component_id
+      asl
+      tax
+      jmp (@jmp_tbl, x)
+   @jmp_tbl:
+      .word @tab_select
+      .word @attack
+      .word @decay1
+      .word @decay_level
+      .word @decay2
+      .word @release
+      .word @mul
+      .word @fine
+      .word @coarse
+      .word @vol
+      .word @key_scaling
+      .word @vol_sens
+   @tab_select:
+      plx
+      lda mouse_definitions::curr_data_1
+      sta panels_luts::fm_operators::active_tab
+      jsr refresh
+      rts
+   @attack:
+      plx
+      iny
+      iny
+      lda panels_luts::fm_operators::comps, y
+      sta concerto_synth::timbres::Timbre::operators::ar, x
+      rts
+   @decay1:
+      plx
+      iny
+      iny
+      lda panels_luts::fm_operators::comps, y
+      sta concerto_synth::timbres::Timbre::operators::d1r, x
+      rts
+   @decay_level:
+      plx
+      iny
+      iny
+      sec
+      lda #15
+      sbc panels_luts::fm_operators::comps, y
+      sta concerto_synth::timbres::Timbre::operators::d1l, x
+      rts
+   @decay2:
+      plx
+      iny
+      iny
+      lda panels_luts::fm_operators::comps, y
+      sta concerto_synth::timbres::Timbre::operators::d2r, x
+      rts
+   @release:
+      plx
+      iny
+      iny
+      lda panels_luts::fm_operators::comps, y
+      sta concerto_synth::timbres::Timbre::operators::rr, x
+      rts
+   @mul:
+      plx
+      iny
+      iny
+      lda panels_luts::fm_operators::comps, y
+      sta concerto_synth::timbres::Timbre::operators::mul, x
+      rts
+   @fine:
+      plx
+      iny
+      iny
+      lda panels_luts::fm_operators::comps, y
+      bpl :+
+      ; transform -3 ... -0 range to 5 .. 7 (4 is unused, since it does the same thing as 0)
+      eor #%11111111
+      clc
+      adc #5
+   :  sta concerto_synth::timbres::Timbre::operators::dt1, x
+      rts
+   @coarse:
+      plx
+      iny
+      iny
+      lda panels_luts::fm_operators::comps, y
+      sta concerto_synth::timbres::Timbre::operators::dt2, x
+      rts
+   @vol:
+      plx
+      iny
+      iny
+      lda #127
+      sec
+      sbc panels_luts::fm_operators::comps, y
+      sta concerto_synth::timbres::Timbre::operators::level, x
+      rts
+   @key_scaling:
+      plx
+      iny
+      iny
+      lda panels_luts::fm_operators::comps, y
+      sta concerto_synth::timbres::Timbre::operators::ks, x
+      rts
+   @vol_sens:
+      plx
+      lda panels_luts::fm_operators::comps, y
+      sta concerto_synth::timbres::Timbre::operators::vol_sens, x
+      rts
+   .endproc
+
+
+   .proc refresh
+      ; determine operator index
+      ldx panels_luts::fm_operators::active_tab
+      lda gui_definitions::current_synth_timbre
+      clc
+   @loop:
+      dex
+      bmi @loop_done
+      clc
+      adc #N_TIMBRES
+      bra @loop
+   @loop_done:
+      tax
+      ; attack
+      lda concerto_synth::timbres::Timbre::operators::ar, x
+      ldy #(tab_selector_data_size + 0*checkbox_data_size+1*drag_edit_data_size+0*listbox_data_size+0*arrowed_edit_data_size-2)
+      sta panels_luts::fm_operators::comps, y
+      ; decay 1
+      lda concerto_synth::timbres::Timbre::operators::d1r, x
+      ldy #(tab_selector_data_size + 0*checkbox_data_size+2*drag_edit_data_size+0*listbox_data_size+0*arrowed_edit_data_size-2)
+      sta panels_luts::fm_operators::comps, y
+      ; decay level
+      sec
+      lda #15
+      sbc concerto_synth::timbres::Timbre::operators::d1l, x
+      ldy #(tab_selector_data_size + 0*checkbox_data_size+3*drag_edit_data_size+0*listbox_data_size+0*arrowed_edit_data_size-2)
+      sta panels_luts::fm_operators::comps, y
+      ; decay 2
+      lda concerto_synth::timbres::Timbre::operators::d2r, x
+      ldy #(tab_selector_data_size + 0*checkbox_data_size+4*drag_edit_data_size+0*listbox_data_size+0*arrowed_edit_data_size-2)
+      sta panels_luts::fm_operators::comps, y
+      ; release
+      lda concerto_synth::timbres::Timbre::operators::rr, x
+      ldy #(tab_selector_data_size + 0*checkbox_data_size+5*drag_edit_data_size+0*listbox_data_size+0*arrowed_edit_data_size-2)
+      sta panels_luts::fm_operators::comps, y
+      ; mul
+      lda concerto_synth::timbres::Timbre::operators::mul, x
+      ldy #(tab_selector_data_size + 0*checkbox_data_size+6*drag_edit_data_size+0*listbox_data_size+0*arrowed_edit_data_size-2)
+      sta panels_luts::fm_operators::comps, y
+      ; fine
+      lda concerto_synth::timbres::Timbre::operators::dt1, x
+      and #%00000100
+      beq :+
+      lda concerto_synth::timbres::Timbre::operators::dt1, x
+      eor #%11111111
+      clc
+      adc #5
+      bra :++
+   :  lda concerto_synth::timbres::Timbre::operators::dt1, x
+   :  ldy #(tab_selector_data_size + 0*checkbox_data_size+7*drag_edit_data_size+0*listbox_data_size+0*arrowed_edit_data_size-2)
+      sta panels_luts::fm_operators::comps, y
+      ; coarse
+      lda concerto_synth::timbres::Timbre::operators::dt2, x
+      ldy #(tab_selector_data_size + 0*checkbox_data_size+8*drag_edit_data_size+0*listbox_data_size+0*arrowed_edit_data_size-2)
+      sta panels_luts::fm_operators::comps, y
+      ; vol
+      sec
+      lda #127
+      sbc concerto_synth::timbres::Timbre::operators::level, x
+      ldy #(tab_selector_data_size + 0*checkbox_data_size+9*drag_edit_data_size+0*listbox_data_size+0*arrowed_edit_data_size-2)
+      sta panels_luts::fm_operators::comps, y
+      ; key scaling
+      lda concerto_synth::timbres::Timbre::operators::ks, x
+      ldy #(tab_selector_data_size + 0*checkbox_data_size+10*drag_edit_data_size+0*listbox_data_size+0*arrowed_edit_data_size-2)
+      sta panels_luts::fm_operators::comps, y
+      ; volume sensitivity
+      lda concerto_synth::timbres::Timbre::operators::vol_sens, x
+      ldy #(tab_selector_data_size + 1*checkbox_data_size+10*drag_edit_data_size+0*listbox_data_size+0*arrowed_edit_data_size-1)
+      sta panels_luts::fm_operators::comps, y
+      ; redraw components
+      lda #8
+      jsr draw_components
+      rts
+   .endproc
 .endscope
 
 .endif ; .ifndef ::GUI_PANELS_PANELS_FM_OPERATORS_ASM

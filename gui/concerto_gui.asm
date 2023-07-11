@@ -44,9 +44,6 @@ hide_mouse = mouse::mouse_hide
 ; AFFECTS: A, X, Y
 gui_tick = mouse::mouse_tick
 
-; currently active timbre (in GUI editor)
-Timbre:
-   .byte 0
 
 .endscope
 

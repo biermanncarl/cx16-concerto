@@ -86,8 +86,6 @@ dummy_data_size = 1
 
 .scope gui
 
-.include "panels/lookup_tables.asm"
-
 ; The Panel Stack
 ; defines which panels are drawn in which order, and which panels receive mouse events first.
 ; The first elements in the stack are at the bottom.
@@ -96,10 +94,13 @@ dummy_data_size = 1
    sp: .byte 0                ; stack pointer, counts how many elements are on the stack
 .endscope
 
+.include "gui_definitions.asm"
+.include "panels/lookup_tables.asm"
+
+; TODO: remove when not used in this file anymore
 ; placeholder for unimplemented/unnecessary subroutines
 dummy_sr:
    rts
-
 
 ; brings up the synth GUI
 ; puts all synth related panels into the GUI stack
@@ -164,17 +165,17 @@ draw_gui:
    tax
    INDEXED_JSR @jmp_tbl, @ret_addr
 @jmp_tbl:
-   .word draw_synth_global
-   .word draw_osc
-   .word draw_env
-   .word draw_snav
-   .word draw_lb_popup
-   .word draw_lfo
-   .word draw_info
-   .word draw_fm_gen
-   .word draw_fm_op
-   .word draw_globalnav
-   .word draw_clip_edit
+   .word panels_luts::synth_global::draw
+   .word panels_luts::psg_oscillators::draw
+   .word panels_luts::envelopes::draw
+   .word panels_luts::synth_navigation::draw
+   .word panels_luts::listbox_popup::draw
+   .word panels_luts::lfo::draw
+   .word panels_luts::synth_info::draw
+   .word panels_luts::fm_general::draw
+   .word panels_luts::fm_operators::draw
+   .word panels_luts::global_navigation::draw
+   .word panels_luts::clip_editing::draw
 @ret_addr:
    ; draw GUI components
    ldy dg_counter
@@ -426,7 +427,7 @@ click_event:
    ; of the respective panel.
    ce_pointer = mzpwa ; it is important that this is the same as dc_pointer, because this routine indirectly calls "their" subroutine, expecting this pointer at the same place
    ; put GUI component string pointer to ZP
-   stz mouse_definitions::gui_write
+   stz gui_definitions::request_component_write
    lda mouse_definitions::curr_panel
    asl
    tax
@@ -449,7 +450,7 @@ click_event:
    .word click_dummy
 @ret_addrA:
    ; check if component wants an update
-   lda mouse_definitions::gui_write
+   lda gui_definitions::request_component_write
    bne :+
    rts
 :  ; call panel's writing subroutine, which is part of the interface between GUI and internal data
@@ -468,14 +469,14 @@ click_event:
 
 click_button:
    ; register the click to trigger a write_...
-   inc mouse_definitions::gui_write
+   inc gui_definitions::request_component_write
    ; nothing else to be done here. click events are handled inside the panels'
    ; write_... subroutines, because they can identify individual buttons and know
    ; what actions to perform.
    rts
 
 click_tab_select:
-   inc mouse_definitions::gui_write
+   inc gui_definitions::request_component_write
    ; put new tab into GUI component list
    lda mouse_definitions::curr_data_1
    ldy mouse_definitions::curr_component_ofs
@@ -497,7 +498,7 @@ click_arrowed_edit:
    bne :+
    rts
 :  ; yes, one of the arrows has been clicked...
-   inc mouse_definitions::gui_write ; register a change on the GUI
+   inc gui_definitions::request_component_write ; register a change on the GUI
    ; now, get value from edit
    lda mouse_definitions::curr_component_ofs
    clc
@@ -556,7 +557,7 @@ click_arrowed_edit:
    rts
 
 click_checkbox:
-   inc mouse_definitions::gui_write ; register a change on the GUI
+   inc gui_definitions::request_component_write ; register a change on the GUI
    ldy mouse_definitions::curr_component_ofs
    iny
    iny
@@ -578,7 +579,7 @@ click_checkbox:
    rts
 
 click_listbox:
-   ; we don't activate mouse_definitions::gui_write, because the first click on the listbox
+   ; we don't activate gui_definitions::request_component_write, because the first click on the listbox
    ; doesn't change any actual data,
    ; bring up popup panel
    ; TODO: later we would need to calculate the popup position based on the listbox position
@@ -612,7 +613,7 @@ click_listbox:
    sta panels_luts::listbox_popup::lb_addr
    lda ce_pointer+1
    sta panels_luts::listbox_popup::lb_addr+1
-   lda mouse_definitions::prev_component_id
+   lda mouse_definitions::curr_component_id
    sta panels_luts::listbox_popup::lb_id
    lda mouse_definitions::curr_panel
    sta panels_luts::listbox_popup::lb_panel
@@ -622,11 +623,11 @@ click_listbox:
    sta stack::stack, x
    inc stack::sp
 @update_gui:
-   jsr draw_lb_popup
+   jsr panels_luts::listbox_popup::draw
    rts
 
 click_dummy:
-   inc mouse_definitions::gui_write
+   inc gui_definitions::request_component_write
    rts
 
 
@@ -638,7 +639,7 @@ drag_event:
    ; For that, we need the info about the component from the GUI component string
    ; of the respective panel.
    de_pointer = mzpwa ; it is important that this is the same as dc_pointer, because this routine indirectly calls "their" subroutine, expecting this pointer at the same place
-   stz mouse_definitions::gui_write
+   stz gui_definitions::request_component_write
    lda mouse_definitions::curr_panel
    asl
    tax
@@ -661,7 +662,7 @@ drag_event:
    .word dummy_sr
 @ret_addrA:
    ; check if component wants an update
-   lda mouse_definitions::gui_write
+   lda gui_definitions::request_component_write
    bne :+
    rts
 :  ; call panel's drag subroutine, which is part of the interface between GUI and internal data
@@ -680,7 +681,7 @@ drag_event:
 ; and drag distance compared to previous frame in mouse_definitions::curr_data_2
 
 drag_drag_edit:
-   inc mouse_definitions::gui_write
+   inc gui_definitions::request_component_write
    ; first check if drag edit has fine editing enabled
    ldy mouse_definitions::prev_component_ofs
    iny
@@ -842,17 +843,17 @@ refresh_gui:
    tax
    INDEXED_JSR @jmp_tbl, @ret_addr
 @jmp_tbl:
-   .word refresh_synth_global
-   .word refresh_osc
-   .word refresh_env
-   .word refresh_snav
-   .word dummy_sr   ; listbox popup ... popups don't need to be refreshed
-   .word refresh_lfo
-   .word dummy_sr   ; info box - no refresh necessary yet
-   .word refresh_fm_gen
-   .word refresh_fm_op
-   .word dummy_sr  ; globalnav - no refresh necessary
-   .word refresh_clip_edit
+   .word panels_luts::synth_global::refresh
+   .word panels_luts::psg_oscillators::refresh
+   .word panels_luts::envelopes::refresh
+   .word panels_luts::synth_navigation::refresh
+   .word panels_luts::listbox_popup::refresh
+   .word panels_luts::lfo::refresh
+   .word panels_luts::synth_info::refresh
+   .word panels_luts::fm_general::refresh
+   .word panels_luts::fm_operators::refresh
+   .word panels_luts::global_navigation::refresh
+   .word panels_luts::clip_editing::refresh
 @ret_addr:
    ; advance in loop
    lda rfg_counter
@@ -1343,1552 +1344,24 @@ check_dummy:
 ; PANEL SPECIFIC STUFF
 ; --------------------
 
-; panel drawing subroutines
-; -------------------------
-; These subroutines draw stuff that is very specific to each panel, and is not covered
-; by the component and label lists.
-; They don't depend on anything other than the individual panel variables.
-
-draw_synth_global:
-   ; draw panel
-   lda #panels_luts::synth_global::px
-   sta guiutils::draw_x
-   lda #panels_luts::synth_global::py
-   sta guiutils::draw_y
-   lda #panels_luts::synth_global::wd
-   sta guiutils::draw_width
-   lda #panels_luts::synth_global::hg
-   sta guiutils::draw_height
-   lda #0
-   sta guiutils::draw_data1
-   lda #0
-   sta guiutils::draw_data2
-   jsr guiutils::draw_frame
-   rts
-
-draw_osc:
-   ; draw panel
-   lda #panels_luts::psg_oscillators::px
-   sta guiutils::draw_x
-   lda #panels_luts::psg_oscillators::py
-   sta guiutils::draw_y
-   lda #panels_luts::psg_oscillators::wd
-   sta guiutils::draw_width
-   lda #panels_luts::psg_oscillators::hg
-   sta guiutils::draw_height
-   lda #MAX_OSCS_PER_VOICE
-   sta guiutils::draw_data1
-   lda panels_luts::psg_oscillators::active_tab
-   inc
-   sta guiutils::draw_data2
-   jsr guiutils::draw_frame
-   rts
-
-draw_env:
-   ; draw panel
-   lda #panels_luts::envelopes::px
-   sta guiutils::draw_x
-   lda #panels_luts::envelopes::py
-   sta guiutils::draw_y
-   lda #panels_luts::envelopes::wd
-   sta guiutils::draw_width
-   lda #panels_luts::envelopes::hg
-   sta guiutils::draw_height
-   lda #MAX_ENVS_PER_VOICE
-   sta guiutils::draw_data1
-   lda panels_luts::envelopes::active_tab
-   inc
-   sta guiutils::draw_data2
-   jsr guiutils::draw_frame
-   rts
-
-draw_snav:
-   ; TODO - nothing to be done yet?
-   rts
-
-draw_lb_popup:
-   dlbp_pointer = mzpwd
-   lda panels_luts::listbox_popup::box_x
-   sta guiutils::draw_x
-   lda panels_luts::listbox_popup::box_y
-   sta guiutils::draw_y
-   lda panels_luts::listbox_popup::box_width
-   sta guiutils::draw_width
-   lda panels_luts::listbox_popup::box_height
-   sta guiutils::draw_height
-   lda panels_luts::listbox_popup::strlist
-   sta guiutils::str_pointer
-   lda panels_luts::listbox_popup::strlist+1
-   sta guiutils::str_pointer+1
-   jsr guiutils::draw_lb_popup
-   rts
-
-draw_lfo:
-   ; draw panel
-   lda #panels_luts::lfo::px
-   sta guiutils::draw_x
-   lda #panels_luts::lfo::py
-   sta guiutils::draw_y
-   lda #panels_luts::lfo::wd
-   sta guiutils::draw_width
-   lda #panels_luts::lfo::hg
-   sta guiutils::draw_height
-   lda #0
-   sta guiutils::draw_data1
-   jsr guiutils::draw_frame
-   rts
-
-draw_info:
-   ; draw frame
-   lda #panels_luts::synth_info::px
-   sta guiutils::draw_x
-   lda #panels_luts::synth_info::py
-   sta guiutils::draw_y
-   lda #panels_luts::synth_info::wd
-   sta guiutils::draw_width
-   lda #panels_luts::synth_info::hg
-   sta guiutils::draw_height
-   lda #0
-   sta guiutils::draw_data1
-   jsr guiutils::draw_frame
-   rts
-
-draw_fm_gen:
-   ; draw frame
-   lda #panels_luts::fm_general::px
-   sta guiutils::draw_x
-   lda #panels_luts::fm_general::py
-   sta guiutils::draw_y
-   lda #panels_luts::fm_general::wd
-   sta guiutils::draw_width
-   lda #panels_luts::fm_general::hg
-   sta guiutils::draw_height
-   lda #0
-   sta guiutils::draw_data1
-   jsr guiutils::draw_frame
-   rts
-
-draw_fm_op:
-   ; draw frame
-   lda #panels_luts::fm_operators::px
-   sta guiutils::draw_x
-   lda #panels_luts::fm_operators::py
-   sta guiutils::draw_y
-   lda #panels_luts::fm_operators::wd
-   sta guiutils::draw_width
-   lda #panels_luts::fm_operators::hg
-   sta guiutils::draw_height
-   lda #N_OPERATORS
-   sta guiutils::draw_data1
-   lda panels_luts::fm_operators::active_tab
-   inc
-   sta guiutils::draw_data2
-   jsr guiutils::draw_frame
-   rts
-
-draw_globalnav:
-   lda panels_luts::global_navigation::active_tab
-   sta guiutils::draw_data1
-   jsr guiutils::draw_globalnav
-   rts
-
-draw_clip_edit:
-   ; load dummy arguments for now
-   lda panels_luts::clip_editing::time_stamp
-   sta notes::argument_x
-   lda panels_luts::clip_editing::time_stamp+1
-   sta notes::argument_x+1
-   lda panels_luts::clip_editing::low_note
-   sta notes::argument_y
-   lda panels_luts::clip_editing::zoom_level
-   sta notes::argument_z
-   ; event vectors are set by setup_test_clip (and we never touch them elsewhere)
-   jsr notes::draw_events
-   rts
-
-
-
-; utility subroutines
-; -------------------
-
-; on the GUI, "no modulation source" is 0, but in the synth engine, it is 128 (bit 7 set)
-; The following two routines map between those two formats.
-map_modsource_from_gui:
-   cmp #0
-   beq :+
-   dec
-   rts
-:  lda #128
-   rts
-
-map_modsource_to_gui:
-   cmp #0
-   bmi :+
-   inc
-   rts
-:  lda #0
-   rts
-
-; this is for the modulation depths
-map_twos_complement_to_signed_7bit:
-   cmp #0
-   bpl @done
-   eor #%01111111
-   inc
-@done:
-   rts
-
-map_signed_7bit_to_twos_complement:
-   cmp #0
-   bpl @done
-   dec
-   eor #%01111111
-@done:
-   rts
-
-
-; panels' write subroutines
-; -------------------------
-; These subroutines are called when a GUI component has been changed by the user.
-; It reads the value from the component and writes it into the timbre (or later song) data.
-; They expect wr_pointer to contain the pointer to the corresponding GUI component string
-; and the mouse variables set according to the action, that is
-; mouse_definitions::prev_component_id
-; mouse_definitions::prev_component_ofs
-
 ; jump table
 panel_write_subroutines:
-   .word write_synth_global
-   .word write_osc
-   .word write_env
-   .word write_snav
-   .word write_lb_popup
-   .word write_lfo
-   .word dummy_sr ; info box - nothing to edit here
-   .word write_fm_gen
-   .word write_fm_op
-   .word write_globalnav
-   .word write_clip_edit
-
-dummy_plx:
-   plx
-   rts
-
-
-; subroutine of the global synth settings panel
-write_synth_global:
-   ldx Timbre ; may be replaced later
-   lda mouse_definitions::curr_component_ofs
-   clc
-   adc #4
-   tay ; there's no component type where the data is before this index
-   ; now jump to component which has been clicked/dragged
-   phx
-   lda mouse_definitions::curr_component_id
-   asl
-   tax
-   jmp (@jmp_tbl, x)
-@jmp_tbl:
-   .word @n_oscs
-   .word @n_envs
-   .word @n_lfos
-   .word @retr_activate
-   .word @porta_activate
-   .word @porta_rate
-   .word @vibrato_amount
-@n_oscs:
-   phy
-   jsr concerto_synth::voices::panic ; If we don't do this, a different number of oscillators might be released than initially acquired by a voice. Safety first.
-   ply
-   plx
-   iny
-   lda panels_luts::synth_global::comps, y
-   sta concerto_synth::timbres::Timbre::n_oscs, x
-   rts
-@n_envs:
-   plx
-   iny
-   lda panels_luts::synth_global::comps, y
-   sta concerto_synth::timbres::Timbre::n_envs, x
-   rts
-@n_lfos:
-   plx
-   lda panels_luts::synth_global::comps, y
-   sta concerto_synth::timbres::Timbre::n_lfos, x
-   rts
-@retr_activate:
-   plx
-   lda panels_luts::synth_global::comps, y
-   sta concerto_synth::timbres::Timbre::retrig, x
-   rts
-@porta_activate:
-   plx
-   lda panels_luts::synth_global::comps, y
-   sta concerto_synth::timbres::Timbre::porta, x
-   rts
-@porta_rate:
-   plx
-   iny
-   iny
-   lda panels_luts::synth_global::comps, y
-   sta concerto_synth::timbres::Timbre::porta_r, x
-   rts
-@vibrato_amount:
-   plx
-   iny
-   iny
-   lda panels_luts::synth_global::comps, y ; if this value is 0, that means vibrato off, which is represented as a negative value internally
-   beq :+
-   jsr concerto_synth::map_twos_complement_to_scale5
-   sta concerto_synth::timbres::Timbre::vibrato, x
-   rts
-:  lda #$FF
-   sta concerto_synth::timbres::Timbre::vibrato, x
-   rts
-
-
-; oscillator panel being changed
-write_osc:
-   ; first, determine the offset of the oscillator in the Timbre data
-   lda Timbre ; may be replaced later
-   ldx panels_luts::psg_oscillators::active_tab ; envelope number
-@loop:
-   cpx #0
-   beq @end_loop
-   clc
-   adc #N_TIMBRES
-   dex
-   bra @loop
-@end_loop:
-   tax ; oscillator index is in x
-   ; prepare component readout
-   lda mouse_definitions::curr_component_ofs
-   clc
-   adc #4
-   tay ; there's no component type where the data is before this index
-   ; now determine which component has been changed
-   phx
-   lda mouse_definitions::curr_component_id
-   asl
-   tax
-   jmp (@jmp_tbl, x)
-@jmp_tbl:
-   .word @tab_slector
-   .word @waveform
-   .word @pulsewidth ; pulse width
-   .word @ampsel ; amp listbox
-   .word @volume ; oscillator volume
-   .word @channelsel ; L/R select
-   .word @semitones
-   .word @finetune
-   .word @keytrack
-   .word @pmsel1 ; pitch mod select 1
-   .word @pmsel2 ; pitch mod select 2
-   .word @pwmsel ; pw mod select
-   .word @volmsel ; vol mod select
-   .word @pitchmoddep1 ; pitch mod depth 1
-   .word @pitchmoddep2 ; pitch mod depth 2
-   .word @pwmdep ; pw mod depth
-   .word @vmdep ; vol mod depth
-@tab_slector:
-   plx
-   lda mouse_definitions::curr_data_1
-   sta panels_luts::psg_oscillators::active_tab
-   jsr refresh_osc
-   rts
-@waveform:
-   plx
-   iny
-   iny
-   iny
-   lda panels_luts::psg_oscillators::comps, y
-   clc
-   ror
-   ror
-   ror
-   sta concerto_synth::timbres::Timbre::osc::waveform, x
-   rts
-@pulsewidth:
-   plx
-   iny
-   iny
-   lda panels_luts::psg_oscillators::comps, y
-   sta concerto_synth::timbres::Timbre::osc::pulse, x
-   rts
-@ampsel:
-   plx
-   iny
-   iny
-   iny
-   lda panels_luts::psg_oscillators::comps, y
-   sta concerto_synth::timbres::Timbre::osc::amp_sel, x
-   rts
-@volume:
-   plx
-   iny
-   iny
-   lda panels_luts::psg_oscillators::comps, y
-   sta concerto_synth::timbres::Timbre::osc::volume, x
-   rts
-@channelsel:
-   plx
-   iny
-   iny
-   iny
-   lda panels_luts::psg_oscillators::comps, y
-   clc
-   ror
-   ror
-   ror
-   sta concerto_synth::timbres::Timbre::osc::lrmid, x
-   rts
-@semitones:
-   plx
-   iny
-   iny
-   ; decide if we need to tune down to compensate for fine tuning (because fine tuning internally only goes up)
-   lda concerto_synth::timbres::Timbre::osc::fine, x
-   bmi :+
-   lda panels_luts::psg_oscillators::comps, y
-   sta concerto_synth::timbres::Timbre::osc::pitch, x
-   rts
-:  lda panels_luts::psg_oscillators::comps, y
-   dec
-   sta concerto_synth::timbres::Timbre::osc::pitch, x
-   rts
-@finetune:
-   plx
-   iny
-   iny
-   ; if fine tune is now negative, but was non-negative beforehand, we need to decrement semitones
-   ; and the other way round: if fine tune was negative, but now is non-negative, we need to increment semitones
-   lda concerto_synth::timbres::Timbre::osc::fine, x
-   bmi @fine_negative
-@fine_positive:
-   lda panels_luts::psg_oscillators::comps, y
-   bpl @fine_normal
-   dec concerto_synth::timbres::Timbre::osc::pitch, x
-   bra @fine_normal
-@fine_negative:
-   lda panels_luts::psg_oscillators::comps, y
-   bmi @fine_normal
-   inc concerto_synth::timbres::Timbre::osc::pitch, x
-@fine_normal:
-   sta concerto_synth::timbres::Timbre::osc::fine, x
-   rts
-@keytrack:
-   plx
-   lda panels_luts::psg_oscillators::comps, y
-   sta concerto_synth::timbres::Timbre::osc::track, x
-   rts
-@pmsel1:
-   plx
-   iny
-   iny
-   iny
-   lda panels_luts::psg_oscillators::comps, y
-   jsr map_modsource_from_gui
-   sta concerto_synth::timbres::Timbre::osc::pitch_mod_sel1, x
-   rts
-@pmsel2:
-   plx
-   iny
-   iny
-   iny
-   lda panels_luts::psg_oscillators::comps, y
-   jsr map_modsource_from_gui
-   sta concerto_synth::timbres::Timbre::osc::pitch_mod_sel2, x
-   rts
-@pwmsel:
-   plx
-   iny
-   iny
-   iny
-   lda panels_luts::psg_oscillators::comps, y
-   jsr map_modsource_from_gui
-   sta concerto_synth::timbres::Timbre::osc::pwm_sel, x
-   rts
-@volmsel:
-   plx
-   iny
-   iny
-   iny
-   lda panels_luts::psg_oscillators::comps, y
-   jsr map_modsource_from_gui
-   sta concerto_synth::timbres::Timbre::osc::vol_mod_sel, x
-   rts
-@pitchmoddep1:
-   plx
-   iny
-   iny
-   lda panels_luts::psg_oscillators::comps, y
-   jsr concerto_synth::map_twos_complement_to_scale5
-   sta concerto_synth::timbres::Timbre::osc::pitch_mod_dep1, x
-   rts
-@pitchmoddep2:
-   plx
-   iny
-   iny
-   lda panels_luts::psg_oscillators::comps, y
-   jsr concerto_synth::map_twos_complement_to_scale5
-   sta concerto_synth::timbres::Timbre::osc::pitch_mod_dep2, x
-   rts
-@pwmdep:
-   plx
-   iny
-   iny
-   lda panels_luts::psg_oscillators::comps, y
-   jsr map_twos_complement_to_signed_7bit
-   sta concerto_synth::timbres::Timbre::osc::pwm_dep, x
-   rts
-@vmdep:
-   plx
-   iny
-   iny
-   lda panels_luts::psg_oscillators::comps, y
-   jsr map_twos_complement_to_signed_7bit
-   sta concerto_synth::timbres::Timbre::osc::vol_mod_dep, x
-   rts
-
-; something on envelope panel being changed
-write_env:
-   ; first, determine the offset of the envelope in the Timbre data
-   lda Timbre ; may be replaced later
-   ldx panels_luts::envelopes::active_tab ; envelope number
-@loop:
-   cpx #0
-   beq @end_loop
-   clc
-   adc #N_TIMBRES
-   dex
-   bra @loop
-@end_loop:
-   tax ; envelope index is in x
-   ; prepare drag edit readout
-   lda mouse_definitions::curr_component_ofs
-   clc
-   adc #6 ; 6 because most of the control elements are drag edits anyway
-   tay ; drag edit's coarse value offset is in Y
-   ; now determine which component has been dragged
-   phx
-   lda mouse_definitions::curr_component_id
-   asl
-   tax
-   jmp (@jmp_tbl, x)
-@jmp_tbl:
-   .word @tab_select
-   .word @attack
-   .word @decay
-   .word @sustain
-   .word @release
-@tab_select:
-   plx
-   lda mouse_definitions::curr_data_1
-   sta panels_luts::envelopes::active_tab
-   jsr refresh_env
-   rts
-@attack:
-   plx
-   lda panels_luts::envelopes::comps, y
-   sta concerto_synth::timbres::Timbre::env::attackH, x
-   iny
-   lda panels_luts::envelopes::comps, y
-   sta concerto_synth::timbres::Timbre::env::attackL, x
-   rts
-@decay:
-   plx
-   lda panels_luts::envelopes::comps, y
-   sta concerto_synth::timbres::Timbre::env::decayH, x
-   iny
-   lda panels_luts::envelopes::comps, y
-   sta concerto_synth::timbres::Timbre::env::decayL, x
-   rts
-@sustain:
-   plx
-   lda panels_luts::envelopes::comps, y
-   sta concerto_synth::timbres::Timbre::env::sustain, x
-   rts
-@release:
-   plx
-   lda panels_luts::envelopes::comps, y
-   sta concerto_synth::timbres::Timbre::env::releaseH, x
-   iny
-   lda panels_luts::envelopes::comps, y
-   sta concerto_synth::timbres::Timbre::env::releaseL, x
-   rts
-@skip:
-   plx
-   rts
-
-
-write_snav:
-   ; prepare component string offset
-   lda mouse_definitions::curr_component_ofs
-   clc
-   adc #5 ; currently, we're reading only arrowed edits and drag edits
-   tay
-   ; prepare jump
-   lda mouse_definitions::curr_component_id
-   asl
-   tax
-   jmp (@jmp_tbl, x)
-@jmp_tbl:
-   .word @timbre_selector
-   .word @load_preset
-   .word @save_preset
-   .word @copy_preset
-   .word @paste_preset
-   .word @change_file_name
-   .word @set_play_volume
-   .word @load_bank
-   .word @save_bank
-@timbre_selector:
-   ; read data from component string and write it to the Timbre setting
-   lda panels_luts::synth_navigation::comps, y
-   sta Timbre
-   jsr refresh_gui
-   rts
-@load_preset:
-   sei
-   jsr concerto_synth::voices::panic
-   ldx Timbre
-   jsr concerto_synth::timbres::load_timbre
-   jsr refresh_gui
-   cli
-   rts
-@save_preset:
-   ldx Timbre
-   jsr concerto_synth::timbres::save_timbre
-   rts
-@copy_preset:
-   lda Timbre
-   sta concerto_synth::timbres::copying
-   rts
-@paste_preset:
-   sei
-   jsr concerto_synth::voices::panic
-   ldx Timbre
-   jsr concerto_synth::timbres::copy_paste
-   jsr refresh_gui
-   cli
-   rts
-@change_file_name:
-   ; clear string
-   ;ldy #MAX_FILENAME_LENGTH
-   ;lda #' '
-;:  sta concerto_synth::timbres::file_name,y
-   ;dey
-   ;bpl :-
-   ; do input string
-   lda #panels_luts::synth_navigation::ti_x
-   sta r2L
-   lda #panels_luts::synth_navigation::ti_y
-   sta r2H
-   lda #<concerto_synth::timbres::file_name
-   sta r0L
-   lda #>concerto_synth::timbres::file_name
-   sta r0H
-   ldx #CCOLOR_CAPTION
-   ldy #MAX_FILENAME_LENGTH
-   jsr guiutils::vtui_input_str
-   rts
-@set_play_volume:
-   iny
-   lda panels_luts::synth_navigation::comps, y
-   sta play_volume
-   rts
-@load_bank:
-   sei
-   jsr concerto_synth::voices::panic
-   jsr concerto_synth::timbres::load_bank
-   jsr refresh_gui
-   cli
-   rts
-@save_bank:
-   jsr concerto_synth::timbres::save_bank
-   rts
-
-; since there is only the dummy component on the popup,
-; this subroutine doesn't have to deal with components, but it interprets the click event itself
-write_lb_popup:
-   clbp_pointer = mzpwa ; mzpwa is already used in the click_event routine, but once we get to this point, it should have served its purpose, so we can reuse it here.
-   ; TODO: determine selection (or skip if none was selected)
-   ; mouse coordinates are in mouse_definitions::curr_data_1 and mouse_definitions::curr_data_2 (been put there by the dummy GUI component)
-   ; check if we're in correct x range
-   lda mouse_definitions::curr_data_1
-   sec
-   sbc panels_luts::listbox_popup::box_x
-   cmp panels_luts::listbox_popup::box_width
-   bcs @close_popup
-   ; we're inside!
-   ; check if we're in correct y range
-   lda mouse_definitions::curr_data_2
-   sec
-   sbc panels_luts::listbox_popup::box_y
-   cmp panels_luts::listbox_popup::box_height
-   bcs @close_popup
-   ; we're inside!
-   ; now the accumulator holds the new selection index. Put it back into the listbox.
-   pha
-   lda panels_luts::listbox_popup::lb_addr
-   sta clbp_pointer
-   lda panels_luts::listbox_popup::lb_addr+1
-   sta clbp_pointer+1
-   lda panels_luts::listbox_popup::lb_ofs
-   clc
-   adc #7
-   tay
-   pla
-   sta (clbp_pointer), y
-@close_popup:
-   ; one thing that always happens, is that the popup is closed upon clicking.
-   ; close popup
-   dec stack::sp
-   ; clear area where the popup has been before
-   ; jsr guiutils::cls ; would be the cheap solution
-   lda panels_luts::listbox_popup::box_x
-   sta guiutils::draw_x
-   lda panels_luts::listbox_popup::box_y
-   sta guiutils::draw_y
-   lda panels_luts::listbox_popup::box_width
-   sta guiutils::draw_width
-   lda panels_luts::listbox_popup::box_height
-   sta guiutils::draw_height
-   jsr guiutils::clear_lb_popup
-   ; call writing function of panel
-   lda panels_luts::listbox_popup::lb_ofs
-   sta mouse_definitions::curr_component_ofs
-   lda panels_luts::listbox_popup::lb_id
-   sta mouse_definitions::curr_component_id
-   lda panels_luts::listbox_popup::lb_panel
-   asl
-   tax
-   INDEXED_JSR panel_write_subroutines, @ret_addr
-@ret_addr:
-   ; redraw gui
-   jsr draw_gui
-   rts
-
-; LFO panel being changed
-write_lfo:
-   ldx Timbre ; may be replaced later
-   lda mouse_definitions::curr_component_ofs
-   clc
-   adc #4
-   tay ; there's no component type where the data is before this index
-   ; now determine which component has been dragged
-   phx
-   lda mouse_definitions::curr_component_id
-   asl
-   tax
-   jmp (@jmp_tbl, x)
-@jmp_tbl:
-   .word @wave
-   .word @retr
-   .word @rate
-   .word @offs
-@wave:
-   plx
-   iny
-   iny
-   iny
-   lda panels_luts::lfo::comps, y
-   sta concerto_synth::timbres::Timbre::lfo::wave, x
-   rts
-@retr:
-   plx
-   lda panels_luts::lfo::comps, y
-   sta concerto_synth::timbres::Timbre::lfo::retrig, x
-   rts
-@rate:
-   plx
-   iny
-   iny
-   lda panels_luts::lfo::comps, y
-   sta concerto_synth::timbres::Timbre::lfo::rateH, x
-   iny
-   lda panels_luts::lfo::comps, y
-   sta concerto_synth::timbres::Timbre::lfo::rateL, x
-   rts
-@offs:
-   plx
-   iny
-   iny
-   lda panels_luts::lfo::comps, y
-   sta concerto_synth::timbres::Timbre::lfo::offs, x
-   rts
-
-write_fm_gen:
-   wfm_bits = mzpbe
-   ; invalidate all FM timbres that have been loaded onto the YM2151 (i.e. enforce reload after timbre has been changed)
-   jsr concerto_synth::voices::panic
-   jsr concerto_synth::voices::invalidate_fm_timbres
-   ; do the usual stuff
-   ldx Timbre
-   lda mouse_definitions::curr_component_ofs
-   clc
-   adc #4
-   tay ; there's no component type where the data is before this index
-   ; now determine which component has been dragged
-   phx
-   lda mouse_definitions::curr_component_id
-   asl
-   tax
-   jmp (@jmp_tbl, x)
-@jmp_tbl:
-   .word @connection
-   .word @feedback
-   .word @op1_active
-   .word @op2_active
-   .word @op3_active
-   .word @op4_active
-   .word @lr_select
-   .word @semitones
-   .word @finetune
-   .word @keytrack
-   .word @pmsel ; pitch mod select
-   .word @pitchmoddep ; pitch mod depth
-@connection:
-   plx
-   iny
-   lda panels_luts::fm_general::comps, y
-   sta concerto_synth::timbres::Timbre::fm_general::con, x
-   ; draw FM algorithm
-   sta guiutils::draw_data1
-   jsr guiutils::draw_fm_alg
-   rts
-@feedback:
-   plx
-   iny
-   iny
-   lda panels_luts::fm_general::comps, y
-   sta concerto_synth::timbres::Timbre::fm_general::fl, x
-   rts
-@op1_active:
-   lda #%00000001
-   sta wfm_bits
-   bra @op_active_common
-@op2_active:
-   lda #%00000010
-   sta wfm_bits
-   bra @op_active_common
-@op3_active:
-   lda #%00000100
-   sta wfm_bits
-   bra @op_active_common
-@op4_active:
-   lda #%00001000
-   sta wfm_bits
-   bra @op_active_common
-@op_active_common: ; DON'T put this label into jump table ...
-   plx
-   ; get checkbox value
-   lda panels_luts::fm_general::comps, y
-   ; push into carry flag
-   lsr
-   lda wfm_bits
-   bcc :+
-   ; checkbox activated
-   ora concerto_synth::timbres::Timbre::fm_general::op_en, x
-   bra :++
-:  ; checkbox deactivated
-   eor #%11111111
-   and concerto_synth::timbres::Timbre::fm_general::op_en, x
-:  sta concerto_synth::timbres::Timbre::fm_general::op_en, x
-   rts
-@lr_select:
-   plx
-   iny
-   iny
-   iny
-   lda panels_luts::fm_general::comps, y
-   clc
-   ror
-   ror
-   ror
-   sta concerto_synth::timbres::Timbre::fm_general::lr, x
-   rts
-@semitones:
-   plx
-   iny
-   iny
-   ; decide if we need to tune down to compensate for fine tuning (because fine tuning internally only goes up)
-   lda concerto_synth::timbres::Timbre::fm_general::fine, x
-   bmi :+
-   lda panels_luts::fm_general::comps, y
-   sta concerto_synth::timbres::Timbre::fm_general::pitch, x
-   rts
-:  lda panels_luts::fm_general::comps, y
-   dec
-   sta concerto_synth::timbres::Timbre::fm_general::pitch, x
-   rts
-@finetune:
-   plx
-   iny
-   iny
-   ; if fine tune is now negative, but was non-negative beforehand, we need to decrement semitones
-   ; and the other way round: if fine tune was negative, but now is non-negative, we need to increment semitones
-   lda concerto_synth::timbres::Timbre::fm_general::fine, x
-   bmi @fine_negative
-@fine_positive:
-   lda panels_luts::fm_general::comps, y
-   bpl @fine_normal
-   dec concerto_synth::timbres::Timbre::fm_general::pitch, x
-   bra @fine_normal
-@fine_negative:
-   lda panels_luts::fm_general::comps, y
-   bmi @fine_normal
-   inc concerto_synth::timbres::Timbre::fm_general::pitch, x
-@fine_normal:
-   sta concerto_synth::timbres::Timbre::fm_general::fine, x
-   rts
-@keytrack:
-   plx
-   lda panels_luts::fm_general::comps, y
-   sta concerto_synth::timbres::Timbre::fm_general::track, x
-   rts
-@pmsel:
-   plx
-   iny
-   iny
-   iny
-   lda panels_luts::fm_general::comps, y
-   jsr map_modsource_from_gui
-   sta concerto_synth::timbres::Timbre::fm_general::pitch_mod_sel, x
-   rts
-@pitchmoddep:
-   plx
-   iny
-   iny
-   lda panels_luts::fm_general::comps, y
-   jsr concerto_synth::map_twos_complement_to_scale5
-   sta concerto_synth::timbres::Timbre::fm_general::pitch_mod_dep, x
-   rts
-
-
-write_fm_op:
-   ; invalidate all FM timbres that have been loaded onto the YM2151 (i.e. enforce reload after timbre has been changed)
-   jsr concerto_synth::voices::panic
-   jsr concerto_synth::voices::invalidate_fm_timbres
-   ; determine operator index
-   ldx panels_luts::fm_operators::active_tab
-   lda Timbre
-   clc
-@loop:
-   dex
-   bmi @loop_done
-   adc #N_TIMBRES
-   bra @loop
-@loop_done:
-   tax
-   ; component offset
-   lda mouse_definitions::curr_component_ofs
-   adc #4 ; carry should be clear from previous code
-   tay ; there's no component type where the data is before this index
-   ; now determine which component has been dragged
-   phx
-   lda mouse_definitions::curr_component_id
-   asl
-   tax
-   jmp (@jmp_tbl, x)
-@jmp_tbl:
-   .word @tab_select
-   .word @attack
-   .word @decay1
-   .word @decay_level
-   .word @decay2
-   .word @release
-   .word @mul
-   .word @fine
-   .word @coarse
-   .word @vol
-   .word @key_scaling
-   .word @vol_sens
-@tab_select:
-   plx
-   lda mouse_definitions::curr_data_1
-   sta panels_luts::fm_operators::active_tab
-   jsr refresh_fm_op
-   rts
-@attack:
-   plx
-   iny
-   iny
-   lda panels_luts::fm_operators::comps, y
-   sta concerto_synth::timbres::Timbre::operators::ar, x
-   rts
-@decay1:
-   plx
-   iny
-   iny
-   lda panels_luts::fm_operators::comps, y
-   sta concerto_synth::timbres::Timbre::operators::d1r, x
-   rts
-@decay_level:
-   plx
-   iny
-   iny
-   sec
-   lda #15
-   sbc panels_luts::fm_operators::comps, y
-   sta concerto_synth::timbres::Timbre::operators::d1l, x
-   rts
-@decay2:
-   plx
-   iny
-   iny
-   lda panels_luts::fm_operators::comps, y
-   sta concerto_synth::timbres::Timbre::operators::d2r, x
-   rts
-@release:
-   plx
-   iny
-   iny
-   lda panels_luts::fm_operators::comps, y
-   sta concerto_synth::timbres::Timbre::operators::rr, x
-   rts
-@mul:
-   plx
-   iny
-   iny
-   lda panels_luts::fm_operators::comps, y
-   sta concerto_synth::timbres::Timbre::operators::mul, x
-   rts
-@fine:
-   plx
-   iny
-   iny
-   lda panels_luts::fm_operators::comps, y
-   bpl :+
-   ; transform -3 ... -0 range to 5 .. 7 (4 is unused, since it does the same thing as 0)
-   eor #%11111111
-   clc
-   adc #5
-:  sta concerto_synth::timbres::Timbre::operators::dt1, x
-   rts
-@coarse:
-   plx
-   iny
-   iny
-   lda panels_luts::fm_operators::comps, y
-   sta concerto_synth::timbres::Timbre::operators::dt2, x
-   rts
-@vol:
-   plx
-   iny
-   iny
-   lda #127
-   sec
-   sbc panels_luts::fm_operators::comps, y
-   sta concerto_synth::timbres::Timbre::operators::level, x
-   rts
-@key_scaling:
-   plx
-   iny
-   iny
-   lda panels_luts::fm_operators::comps, y
-   sta concerto_synth::timbres::Timbre::operators::ks, x
-   rts
-@vol_sens:
-   plx
-   lda panels_luts::fm_operators::comps, y
-   sta concerto_synth::timbres::Timbre::operators::vol_sens, x
-   rts
-
-write_globalnav:
-   lda mouse_definitions::curr_data_2 ; y position in multiples of 8 pixels
-   ; tabs start at row 12 and are 16 high each
-   sec
-   sbc #12
-   lsr
-   lsr
-   lsr
-   lsr
-   sta panels_luts::global_navigation::active_tab
-   cmp #0
-   beq @load_arrangement_view
-   cmp #1
-   beq @load_clip_view
-   jsr load_synth_gui
-   bra @end
-@load_arrangement_view:
-   jsr load_arrangement_gui
-   bra @end
-@load_clip_view:
-   jsr load_clip_gui
-@end:
-   rts
-
-write_clip_edit:
-   ; prepare component string offset
-   lda mouse_definitions::curr_component_ofs
-   clc
-   adc #5 ; we're reading only arrowed edits
-   tay
-   ; prepare jump
-   lda mouse_definitions::curr_component_id
-   asl
-   tax
-   jmp (@jmp_tbl, x)
-@jmp_tbl:
-   .word @zoom_level
-   .word @go_left
-   .word @go_up
-   .word @go_down
-   .word @go_right
-   .word @edit_notes
-@zoom_level:
-   ; read data from component string and write it to the zoom setting
-   lda panels_luts::clip_editing::comps, y
-   dec
-   sta panels_luts::clip_editing::zoom_level
-   ; make sure the time stamp is aligned with the current grid ... very crude method. TODO: "round to nearest"
-   stz panels_luts::clip_editing::time_stamp
-   stz panels_luts::clip_editing::time_stamp+1
-   jsr draw_clip_edit
-   rts
-@go_left:
-   ; TODO: provide different strides at different zoom levels
-   lda panels_luts::clip_editing::time_stamp
-   sec
-   sbc timing::detail::quarter_ticks
-   sta panels_luts::clip_editing::time_stamp
-   lda panels_luts::clip_editing::time_stamp+1
-   sbc #0
-   sta panels_luts::clip_editing::time_stamp+1
-   jsr draw_clip_edit
-   rts
-@go_up:
-   lda panels_luts::clip_editing::low_note
-   clc
-   adc #6
-   sta panels_luts::clip_editing::low_note
-   jsr draw_clip_edit
-   rts
-@go_down:
-   lda panels_luts::clip_editing::low_note
-   sec
-   sbc #6
-   sta panels_luts::clip_editing::low_note
-   jsr draw_clip_edit
-   rts
-@go_right:
-   ; TODO: provide different strides at different zoom levels
-   lda panels_luts::clip_editing::time_stamp
-   clc
-   adc timing::detail::quarter_ticks
-   sta panels_luts::clip_editing::time_stamp
-   lda panels_luts::clip_editing::time_stamp+1
-   adc #0
-   sta panels_luts::clip_editing::time_stamp+1
-   jsr draw_clip_edit
-   rts
-@edit_notes:
-   rts
+   .word panels_luts::synth_global::write
+   .word panels_luts::psg_oscillators::write
+   .word panels_luts::envelopes::write
+   .word panels_luts::synth_navigation::write
+   .word panels_luts::listbox_popup::write
+   .word panels_luts::lfo::write
+   .word panels_luts::synth_info::write
+   .word panels_luts::fm_general::write
+   .word panels_luts::fm_operators::write
+   .word panels_luts::global_navigation::write
+   .word panels_luts::clip_editing::write
 
 
 
-; panels' refresh subroutines
-; ---------------------------
-; These update the data that is shown in the control elements incase the underlying
-; data has changed.
-; E.g. when switching tabs, or when changing the timbre.
-; Note that these subroutines only refresh certain components, while leaving others
-; as they are, e.g. tab-selectors are not affected (in fact, they affect the other components)
 
 
-refresh_synth_global:
-   ldx Timbre ; may be replaced later
-   ; number of oscillators
-   lda concerto_synth::timbres::Timbre::n_oscs, x
-   ldy #(0*checkbox_data_size+0*drag_edit_data_size+1*arrowed_edit_data_size-1)
-   sta panels_luts::synth_global::comps, y
-   ; number of envelopes
-   lda concerto_synth::timbres::Timbre::n_envs, x
-   ldy #(0*checkbox_data_size+0*drag_edit_data_size+2*arrowed_edit_data_size-1)
-   sta panels_luts::synth_global::comps, y
-   ; LFO activate checkbox
-   lda concerto_synth::timbres::Timbre::n_lfos, x
-   ldy #(1*checkbox_data_size+0*drag_edit_data_size+2*arrowed_edit_data_size-1)
-   sta panels_luts::synth_global::comps, y
-   ; retrigger checkbox
-   lda concerto_synth::timbres::Timbre::retrig, x
-   ldy #(2*checkbox_data_size+0*drag_edit_data_size+2*arrowed_edit_data_size-1)
-   sta panels_luts::synth_global::comps, y
-   ; porta activate checkbox
-   lda concerto_synth::timbres::Timbre::porta, x
-   ldy #(3*checkbox_data_size+0*drag_edit_data_size+2*arrowed_edit_data_size-1)
-   sta panels_luts::synth_global::comps, y
-   ; porta rate edit
-   lda concerto_synth::timbres::Timbre::porta_r, x
-   ldy #(3*checkbox_data_size+1*drag_edit_data_size+2*arrowed_edit_data_size-2)
-   sta panels_luts::synth_global::comps, y
-   ; vibrato amount edit
-   lda concerto_synth::timbres::Timbre::vibrato, x
-   bmi :+
-   jsr concerto_synth::map_scale5_to_twos_complement
-   bra :++
-:  lda #0
-:  ldy #(3*checkbox_data_size+2*drag_edit_data_size+2*arrowed_edit_data_size-2)
-   sta panels_luts::synth_global::comps, y
-   ; redraw components
-   lda #0
-   jsr draw_components
-   rts
-
-refresh_osc:
-   ; first, determine the offset of the oscillator in the Timbre data
-   lda Timbre ; may be replaced later
-   ldx panels_luts::psg_oscillators::active_tab ; envelope number
-@loop:
-   cpx #0
-   beq @end_loop
-   clc
-   adc #N_TIMBRES
-   dex
-   bra @loop
-@end_loop:
-   tax ; oscillator index is in x
-   ; read Timbre data and load it into GUI components
-   ; waveform
-   lda concerto_synth::timbres::Timbre::osc::waveform, x
-   clc
-   rol
-   rol
-   rol
-   ldy #(tab_selector_data_size+listbox_data_size-1)
-   sta panels_luts::psg_oscillators::comps, y
-   ; pulse width
-   lda concerto_synth::timbres::Timbre::osc::pulse, x
-   ldy #(tab_selector_data_size+listbox_data_size+0*checkbox_data_size+drag_edit_data_size-2)
-   sta panels_luts::psg_oscillators::comps, y
-   ; amplifier select
-   lda concerto_synth::timbres::Timbre::osc::amp_sel, x
-   ldy #(tab_selector_data_size+2*listbox_data_size+0*checkbox_data_size+drag_edit_data_size-1)
-   sta panels_luts::psg_oscillators::comps, y
-   ; volume
-   lda concerto_synth::timbres::Timbre::osc::volume, x
-   ldy #(tab_selector_data_size+2*listbox_data_size+0*checkbox_data_size+2*drag_edit_data_size-2)
-   sta panels_luts::psg_oscillators::comps, y
-   ; L/R
-   lda concerto_synth::timbres::Timbre::osc::lrmid, x
-   clc
-   rol
-   rol
-   rol
-   ldy #(tab_selector_data_size+3*listbox_data_size+0*checkbox_data_size+2*drag_edit_data_size-1)
-   sta panels_luts::psg_oscillators::comps, y
-   ; semitones
-   ; we need to check fine tune to get correct semi tones.
-   ; if fine tune is negative, we need to increment one to the semitone value to be displayed on the GUI
-   lda concerto_synth::timbres::Timbre::osc::fine, x
-   bmi :+
-   lda concerto_synth::timbres::Timbre::osc::pitch, x
-   bra :++
-:  lda concerto_synth::timbres::Timbre::osc::pitch, x
-   inc
-:  ldy #(tab_selector_data_size+3*listbox_data_size+0*checkbox_data_size+3*drag_edit_data_size-2)
-   sta panels_luts::psg_oscillators::comps, y
-   ; fine tune
-   lda concerto_synth::timbres::Timbre::osc::fine, x
-   ldy #(tab_selector_data_size+3*listbox_data_size+0*checkbox_data_size+4*drag_edit_data_size-2)
-   sta panels_luts::psg_oscillators::comps, y
-   ; key track
-   lda concerto_synth::timbres::Timbre::osc::track, x
-   ldy #(tab_selector_data_size+3*listbox_data_size+1*checkbox_data_size+4*drag_edit_data_size-1)
-   sta panels_luts::psg_oscillators::comps, y
-   ; pitch mod select 1
-   lda concerto_synth::timbres::Timbre::osc::pitch_mod_sel1, x
-   jsr map_modsource_to_gui
-   ldy #(tab_selector_data_size+4*listbox_data_size+1*checkbox_data_size+4*drag_edit_data_size-1)
-   sta panels_luts::psg_oscillators::comps, y
-   ; pitch mod select 2
-   lda concerto_synth::timbres::Timbre::osc::pitch_mod_sel2, x
-   jsr map_modsource_to_gui
-   ldy #(tab_selector_data_size+5*listbox_data_size+1*checkbox_data_size+4*drag_edit_data_size-1)
-   sta panels_luts::psg_oscillators::comps, y
-   ; pwm select
-   lda concerto_synth::timbres::Timbre::osc::pwm_sel, x
-   jsr map_modsource_to_gui
-   ldy #(tab_selector_data_size+6*listbox_data_size+1*checkbox_data_size+4*drag_edit_data_size-1)
-   sta panels_luts::psg_oscillators::comps, y
-   ; vol mod select
-   lda concerto_synth::timbres::Timbre::osc::vol_mod_sel, x
-   jsr map_modsource_to_gui
-   ldy #(tab_selector_data_size+7*listbox_data_size+1*checkbox_data_size+4*drag_edit_data_size-1)
-   sta panels_luts::psg_oscillators::comps, y
-   ; pitch mod depth 1
-   lda concerto_synth::timbres::Timbre::osc::pitch_mod_dep1, x
-   jsr concerto_synth::map_scale5_to_twos_complement
-   ldy #(tab_selector_data_size+7*listbox_data_size+1*checkbox_data_size+5*drag_edit_data_size-2)
-   sta panels_luts::psg_oscillators::comps, y
-   ; pitch mod depth 2
-   lda concerto_synth::timbres::Timbre::osc::pitch_mod_dep2, x
-   jsr concerto_synth::map_scale5_to_twos_complement
-   ldy #(tab_selector_data_size+7*listbox_data_size+1*checkbox_data_size+6*drag_edit_data_size-2)
-   sta panels_luts::psg_oscillators::comps, y
-   ; pwm depth
-   lda concerto_synth::timbres::Timbre::osc::pwm_dep, x
-   jsr map_signed_7bit_to_twos_complement
-   ldy #(tab_selector_data_size+7*listbox_data_size+1*checkbox_data_size+7*drag_edit_data_size-2)
-   sta panels_luts::psg_oscillators::comps, y
-   ; volume mod depth
-   lda concerto_synth::timbres::Timbre::osc::vol_mod_dep, x
-   jsr map_signed_7bit_to_twos_complement
-   ldy #(tab_selector_data_size+7*listbox_data_size+1*checkbox_data_size+8*drag_edit_data_size-2)
-   sta panels_luts::psg_oscillators::comps, y
-   ; redraw components
-   lda #1
-   jsr draw_components
-   rts
-
-refresh_env:
-   ; first, determine the offset of the envelope in the Timbre data
-   lda Timbre ; may be replaced later
-   ldx panels_luts::envelopes::active_tab ; envelope number
-@loop:
-   cpx #0
-   beq @end_loop
-   clc
-   adc #N_TIMBRES
-   dex
-   bra @loop
-@end_loop:
-   tax ; envelope index is in x
-   ; read ADSR data from Timbre and load it into edits
-   ; attack edit
-   ldy #(tab_selector_data_size + 6)
-   lda concerto_synth::timbres::Timbre::env::attackH, x
-   sta panels_luts::envelopes::comps, y
-   iny
-   lda concerto_synth::timbres::Timbre::env::attackL, x
-   sta panels_luts::envelopes::comps, y
-   ; decay edit
-   tya
-   clc
-   adc #(drag_edit_data_size-1)
-   tay
-   lda concerto_synth::timbres::Timbre::env::decayH, x
-   sta panels_luts::envelopes::comps, y
-   iny
-   lda concerto_synth::timbres::Timbre::env::decayL, x
-   sta panels_luts::envelopes::comps, y
-   ; sustain edit
-   tya
-   clc
-   adc #(drag_edit_data_size-1)
-   tay
-   lda concerto_synth::timbres::Timbre::env::sustain, x
-   sta panels_luts::envelopes::comps, y
-   ; release edit
-   tya
-   clc
-   adc #(drag_edit_data_size)
-   tay
-   lda concerto_synth::timbres::Timbre::env::releaseH, x
-   sta panels_luts::envelopes::comps, y
-   iny
-   lda concerto_synth::timbres::Timbre::env::releaseL, x
-   sta panels_luts::envelopes::comps, y
-   ; redraw components
-   lda #2
-   jsr draw_components
-   rts
-
-refresh_snav:
-   ; nothing to be done here (yet)
-   rts
-
-
-refresh_lfo:
-   ldx Timbre ; may be replaced later
-   ; LFO waveform
-   lda concerto_synth::timbres::Timbre::lfo::wave, x
-   ldy #(0*checkbox_data_size+0*drag_edit_data_size+1*listbox_data_size-1)
-   sta panels_luts::lfo::comps, y
-   ; LFO retrigger
-   lda concerto_synth::timbres::Timbre::lfo::retrig, x
-   ldy #(1*checkbox_data_size+0*drag_edit_data_size+1*listbox_data_size-1)
-   sta panels_luts::lfo::comps, y
-   ; LFO rate
-   lda concerto_synth::timbres::Timbre::lfo::rateH, x
-   ldy #(1*checkbox_data_size+1*drag_edit_data_size+1*listbox_data_size-2)
-   sta panels_luts::lfo::comps, y
-   iny
-   lda concerto_synth::timbres::Timbre::lfo::rateL, x
-   sta panels_luts::lfo::comps, y
-   ; phase offset
-   lda concerto_synth::timbres::Timbre::lfo::offs, x
-   ldy #(1*checkbox_data_size+2*drag_edit_data_size+1*listbox_data_size-2)
-   sta panels_luts::lfo::comps, y
-   ; redraw components
-   lda #5
-   jsr draw_components
-   rts
-
-refresh_fm_gen:
-   @rfm_bits = mzpbd
-   ldx Timbre
-   ; connection scheme
-   lda concerto_synth::timbres::Timbre::fm_general::con, x
-   ldy #(0*checkbox_data_size+0*drag_edit_data_size+0*listbox_data_size+1*arrowed_edit_data_size-1)
-   sta panels_luts::fm_general::comps, y
-   ; feedback level
-   lda concerto_synth::timbres::Timbre::fm_general::fl, x
-   ldy #(0*checkbox_data_size+1*drag_edit_data_size+0*listbox_data_size+1*arrowed_edit_data_size-2)
-   sta panels_luts::fm_general::comps, y
-   ; operators enable
-   lda concerto_synth::timbres::Timbre::fm_general::op_en, x
-   sta @rfm_bits
-   ; operator 1 enable
-   lda #0
-   bbr0 @rfm_bits, :+
-   lda #1
-:  ldy #(1*checkbox_data_size+1*drag_edit_data_size+0*listbox_data_size+1*arrowed_edit_data_size-1)
-   sta panels_luts::fm_general::comps, y
-   ; operator 2 enable
-   lda #0
-   bbr1 @rfm_bits, :+
-   lda #1
-:  ldy #(2*checkbox_data_size+1*drag_edit_data_size+0*listbox_data_size+1*arrowed_edit_data_size-1)
-   sta panels_luts::fm_general::comps, y
-   ; operator 3 enable
-   lda #0
-   bbr2 @rfm_bits, :+
-   lda #1
-:  ldy #(3*checkbox_data_size+1*drag_edit_data_size+0*listbox_data_size+1*arrowed_edit_data_size-1)
-   sta panels_luts::fm_general::comps, y
-   ; operator 4 enable
-   lda #0
-   bbr3 @rfm_bits, :+
-   lda #1
-:  ldy #(4*checkbox_data_size+1*drag_edit_data_size+0*listbox_data_size+1*arrowed_edit_data_size-1)
-   sta panels_luts::fm_general::comps, y
-   ; LR channel select
-   lda concerto_synth::timbres::Timbre::fm_general::lr, x
-   clc
-   rol
-   rol
-   rol
-   ldy #(4*checkbox_data_size+1*drag_edit_data_size+1*listbox_data_size+1*arrowed_edit_data_size-1)
-   sta panels_luts::fm_general::comps, y
-   ; semitones
-   ; we need to check fine tune to get correct semi tones.
-   ; if fine tune is negative, we need to increment one to the semitone value to be displayed on the GUI
-   lda concerto_synth::timbres::Timbre::fm_general::fine, x
-   bmi :+
-   lda concerto_synth::timbres::Timbre::fm_general::pitch, x
-   bra :++
-:  lda concerto_synth::timbres::Timbre::fm_general::pitch, x
-   inc
-:  ldy #(4*checkbox_data_size+2*drag_edit_data_size+1*listbox_data_size+1*arrowed_edit_data_size-2)
-   sta panels_luts::fm_general::comps, y
-   ; fine tune
-   lda concerto_synth::timbres::Timbre::fm_general::fine, x
-   ldy #(4*checkbox_data_size+3*drag_edit_data_size+1*listbox_data_size+1*arrowed_edit_data_size-2)
-   sta panels_luts::fm_general::comps, y
-   ; key track
-   lda concerto_synth::timbres::Timbre::fm_general::track, x
-   ldy #(5*checkbox_data_size+3*drag_edit_data_size+1*listbox_data_size+1*arrowed_edit_data_size-1)
-   sta panels_luts::fm_general::comps, y
-   ; pitch mod select
-   lda concerto_synth::timbres::Timbre::fm_general::pitch_mod_sel, x
-   jsr map_modsource_to_gui
-   ldy #(5*checkbox_data_size+3*drag_edit_data_size+2*listbox_data_size+1*arrowed_edit_data_size-1)
-   sta panels_luts::fm_general::comps, y
-   ; pitch mod depth
-   lda concerto_synth::timbres::Timbre::fm_general::pitch_mod_dep, x
-   jsr concerto_synth::map_scale5_to_twos_complement
-   ldy #(5*checkbox_data_size+4*drag_edit_data_size+2*listbox_data_size+1*arrowed_edit_data_size-2)
-   sta panels_luts::fm_general::comps, y
-
-   ; redraw components
-   lda #7
-   jsr draw_components
-   ; redraw FM algorithm
-   ldx Timbre
-   lda concerto_synth::timbres::Timbre::fm_general::con, x
-   sta guiutils::draw_data1
-   jsr guiutils::draw_fm_alg
-   rts
-
-refresh_fm_op:
-   ; determine operator index
-   ldx panels_luts::fm_operators::active_tab
-   lda Timbre
-   clc
-@loop:
-   dex
-   bmi @loop_done
-   clc
-   adc #N_TIMBRES
-   bra @loop
-@loop_done:
-   tax
-   ; attack
-   lda concerto_synth::timbres::Timbre::operators::ar, x
-   ldy #(tab_selector_data_size + 0*checkbox_data_size+1*drag_edit_data_size+0*listbox_data_size+0*arrowed_edit_data_size-2)
-   sta panels_luts::fm_operators::comps, y
-   ; decay 1
-   lda concerto_synth::timbres::Timbre::operators::d1r, x
-   ldy #(tab_selector_data_size + 0*checkbox_data_size+2*drag_edit_data_size+0*listbox_data_size+0*arrowed_edit_data_size-2)
-   sta panels_luts::fm_operators::comps, y
-   ; decay level
-   sec
-   lda #15
-   sbc concerto_synth::timbres::Timbre::operators::d1l, x
-   ldy #(tab_selector_data_size + 0*checkbox_data_size+3*drag_edit_data_size+0*listbox_data_size+0*arrowed_edit_data_size-2)
-   sta panels_luts::fm_operators::comps, y
-   ; decay 2
-   lda concerto_synth::timbres::Timbre::operators::d2r, x
-   ldy #(tab_selector_data_size + 0*checkbox_data_size+4*drag_edit_data_size+0*listbox_data_size+0*arrowed_edit_data_size-2)
-   sta panels_luts::fm_operators::comps, y
-   ; release
-   lda concerto_synth::timbres::Timbre::operators::rr, x
-   ldy #(tab_selector_data_size + 0*checkbox_data_size+5*drag_edit_data_size+0*listbox_data_size+0*arrowed_edit_data_size-2)
-   sta panels_luts::fm_operators::comps, y
-   ; mul
-   lda concerto_synth::timbres::Timbre::operators::mul, x
-   ldy #(tab_selector_data_size + 0*checkbox_data_size+6*drag_edit_data_size+0*listbox_data_size+0*arrowed_edit_data_size-2)
-   sta panels_luts::fm_operators::comps, y
-   ; fine
-   lda concerto_synth::timbres::Timbre::operators::dt1, x
-   and #%00000100
-   beq :+
-   lda concerto_synth::timbres::Timbre::operators::dt1, x
-   eor #%11111111
-   clc
-   adc #5
-   bra :++
-:  lda concerto_synth::timbres::Timbre::operators::dt1, x
-:  ldy #(tab_selector_data_size + 0*checkbox_data_size+7*drag_edit_data_size+0*listbox_data_size+0*arrowed_edit_data_size-2)
-   sta panels_luts::fm_operators::comps, y
-   ; coarse
-   lda concerto_synth::timbres::Timbre::operators::dt2, x
-   ldy #(tab_selector_data_size + 0*checkbox_data_size+8*drag_edit_data_size+0*listbox_data_size+0*arrowed_edit_data_size-2)
-   sta panels_luts::fm_operators::comps, y
-   ; vol
-   sec
-   lda #127
-   sbc concerto_synth::timbres::Timbre::operators::level, x
-   ldy #(tab_selector_data_size + 0*checkbox_data_size+9*drag_edit_data_size+0*listbox_data_size+0*arrowed_edit_data_size-2)
-   sta panels_luts::fm_operators::comps, y
-   ; key scaling
-   lda concerto_synth::timbres::Timbre::operators::ks, x
-   ldy #(tab_selector_data_size + 0*checkbox_data_size+10*drag_edit_data_size+0*listbox_data_size+0*arrowed_edit_data_size-2)
-   sta panels_luts::fm_operators::comps, y
-   ; volume sensitivity
-   lda concerto_synth::timbres::Timbre::operators::vol_sens, x
-   ldy #(tab_selector_data_size + 1*checkbox_data_size+10*drag_edit_data_size+0*listbox_data_size+0*arrowed_edit_data_size-1)
-   sta panels_luts::fm_operators::comps, y
-   ; redraw components
-   lda #8
-   jsr draw_components
-   rts
-
-refresh_clip_edit:
-   jsr draw_clip_edit
-   rts
 
 
 .endscope

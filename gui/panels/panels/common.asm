@@ -8,6 +8,7 @@
 
 .scope panel_common
    ; Recurring Labels
+   ; ----------------
    vol_lb: STR_FORMAT "vol"
    pitch_lb: STR_FORMAT "pitch"
    semi_lb: STR_FORMAT "st"
@@ -34,6 +35,59 @@
       STR_FORMAT " r"
       .byte 12, 43, 18, 0
 
+
+   ; Utility Subroutines
+   ; -------------------
+
+   ; subroutine which can be referenced where no action is required but still some address needs to be given.
+   .proc dummy_subroutine
+      rts
+   .endproc
+
+   ; If a subroutine is expected to pull .X from the stack, this is the minimalist choice.
+   .proc dummy_plx
+      plx
+      rts
+   .endproc
+
+   ; on the GUI, "no modulation source" is 0, but in the synth engine, it is 128 (bit 7 set)
+   ; The following two routines map between those two formats.
+   .proc map_modsource_from_gui
+      cmp #0
+      beq :+
+      dec
+      rts
+   :  lda #128
+      rts
+   .endproc
+
+   .proc map_modsource_to_gui
+      cmp #0
+      bmi :+
+      inc
+      rts
+   :  lda #0
+      rts
+   .endproc
+
+   ; this is for the modulation depths
+   .proc map_twos_complement_to_signed_7bit
+      cmp #0
+      bpl @done
+      eor #%01111111
+      inc
+   @done:
+      rts
+   .endproc
+
+   .proc map_signed_7bit_to_twos_complement
+      cmp #0
+      bpl @done
+      dec
+      eor #%01111111
+   @done:
+      rts
+   .endproc
 .endscope
 
 .endif ; .ifndef ::GUI_PANELS_PANELS_COMMON_ASM
