@@ -101,7 +101,10 @@
    ; GUI captions
    capts: PANEL_MEMBER_WORD_FIELD capts, ALL_PANEL_SCOPES
  
-
+   ; jump tables for panel specific routines
+   jump_table_draw: PANEL_MEMBER_WORD_FIELD draw, ALL_PANEL_SCOPES
+   jump_table_write: PANEL_MEMBER_WORD_FIELD write, ALL_PANEL_SCOPES
+   jump_table_refresh: PANEL_MEMBER_WORD_FIELD refresh, ALL_PANEL_SCOPES
 
 
    ; TODO: move jump tables here

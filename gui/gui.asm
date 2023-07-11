@@ -163,19 +163,7 @@ draw_gui:
    lda stack::stack, y
    asl
    tax
-   INDEXED_JSR @jmp_tbl, @ret_addr
-@jmp_tbl:
-   .word panels_luts::synth_global::draw
-   .word panels_luts::psg_oscillators::draw
-   .word panels_luts::envelopes::draw
-   .word panels_luts::synth_navigation::draw
-   .word panels_luts::listbox_popup::draw
-   .word panels_luts::lfo::draw
-   .word panels_luts::synth_info::draw
-   .word panels_luts::fm_general::draw
-   .word panels_luts::fm_operators::draw
-   .word panels_luts::global_navigation::draw
-   .word panels_luts::clip_editing::draw
+   INDEXED_JSR panels_luts::jump_table_draw, @ret_addr
 @ret_addr:
    ; draw GUI components
    ldy dg_counter
@@ -457,7 +445,7 @@ click_event:
    lda mouse_definitions::curr_panel
    asl
    tax
-   INDEXED_JSR panel_write_subroutines, @ret_addrB
+   INDEXED_JSR panels_luts::jump_table_write, @ret_addrB
 @ret_addrB:
    rts  ; we could actually leave the jsr away and just jmp to the subroutine... but I'll leave it for now. Optimizations later...
 
@@ -669,7 +657,7 @@ drag_event:
    lda mouse_definitions::curr_panel
    asl
    tax
-   INDEXED_JSR panel_write_subroutines, @ret_addrB
+   INDEXED_JSR panels_luts::jump_table_write, @ret_addrB
 @ret_addrB:
    rts  ; we could leave that away and just jmp to the subroutines instead of jsr, but optimizations later.
 
@@ -841,19 +829,7 @@ refresh_gui:
    lda stack::stack, y
    asl
    tax
-   INDEXED_JSR @jmp_tbl, @ret_addr
-@jmp_tbl:
-   .word panels_luts::synth_global::refresh
-   .word panels_luts::psg_oscillators::refresh
-   .word panels_luts::envelopes::refresh
-   .word panels_luts::synth_navigation::refresh
-   .word panels_luts::listbox_popup::refresh
-   .word panels_luts::lfo::refresh
-   .word panels_luts::synth_info::refresh
-   .word panels_luts::fm_general::refresh
-   .word panels_luts::fm_operators::refresh
-   .word panels_luts::global_navigation::refresh
-   .word panels_luts::clip_editing::refresh
+   INDEXED_JSR panels_luts::jump_table_refresh, @ret_addr
 @ret_addr:
    ; advance in loop
    lda rfg_counter
@@ -1338,30 +1314,6 @@ check_dummy:
    lda gc_counter
    sta mouse_definitions::curr_component_id
    rts
-
-
-
-; PANEL SPECIFIC STUFF
-; --------------------
-
-; jump table
-panel_write_subroutines:
-   .word panels_luts::synth_global::write
-   .word panels_luts::psg_oscillators::write
-   .word panels_luts::envelopes::write
-   .word panels_luts::synth_navigation::write
-   .word panels_luts::listbox_popup::write
-   .word panels_luts::lfo::write
-   .word panels_luts::synth_info::write
-   .word panels_luts::fm_general::write
-   .word panels_luts::fm_operators::write
-   .word panels_luts::global_navigation::write
-   .word panels_luts::clip_editing::write
-
-
-
-
-
 
 
 .endscope
