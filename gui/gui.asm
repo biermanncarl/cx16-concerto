@@ -95,7 +95,7 @@ dummy_data_size = 1
 .endscope
 
 .include "gui_definitions.asm"
-.include "panels/lookup_tables.asm"
+.include "panels/panels.asm"
 
 ; TODO: remove when not used in this file anymore
 ; placeholder for unimplemented/unnecessary subroutines
@@ -108,23 +108,23 @@ load_synth_gui:
    jsr guiutils::cls
    lda #9 ; GUI stack size (how many panels are visible)
    sta stack::sp
-   lda #panels_luts::ids::global_navigation
+   lda #panels::ids::global_navigation
    sta stack::stack+0
-   lda #panels_luts::ids::synth_navigation
+   lda #panels::ids::synth_navigation
    sta stack::stack+1
-   lda #panels_luts::ids::synth_info
+   lda #panels::ids::synth_info
    sta stack::stack+2
-   lda #panels_luts::ids::fm_general
+   lda #panels::ids::fm_general
    sta stack::stack+3
-   lda #panels_luts::ids::fm_operators
+   lda #panels::ids::fm_operators
    sta stack::stack+4
-   lda #panels_luts::ids::synth_global
+   lda #panels::ids::synth_global
    sta stack::stack+5
-   lda #panels_luts::ids::psg_oscillators
+   lda #panels::ids::psg_oscillators
    sta stack::stack+6
-   lda #panels_luts::ids::envelopes
+   lda #panels::ids::envelopes
    sta stack::stack+7
-   lda #panels_luts::ids::lfo
+   lda #panels::ids::lfo
    sta stack::stack+8
    jsr refresh_gui
    rts
@@ -134,9 +134,9 @@ load_clip_gui:
    jsr guiutils::cls
    lda #2 ; GUI stack size (how many panels are visible)
    sta stack::sp
-   lda #panels_luts::ids::global_navigation
+   lda #panels::ids::global_navigation
    sta stack::stack+0
-   lda #panels_luts::ids::clip_editing
+   lda #panels::ids::clip_editing
    sta stack::stack+1
    jsr refresh_gui
    rts
@@ -146,10 +146,33 @@ load_arrangement_gui:
    jsr guiutils::cls
    lda #1 ; GUI stack size (how many panels are visible)
    sta stack::sp
-   lda #panels_luts::ids::global_navigation
+   lda #panels::ids::global_navigation
    sta stack::stack+0
    jsr refresh_gui
    rts
+
+
+; Goes through the various requests which can be issued during events and addresses them.
+; Expects mouse_definitions::curr_panel to be set to the relevant panel.
+.proc handle_component_requests
+   ; check if component wants an update
+   lda gui_definitions::request_component_write
+   beq @end_write_request
+   stz gui_definitions::request_component_write
+   lda mouse_definitions::curr_panel
+   asl
+   tax
+   INDEXED_JSR panels::jump_table_write, @end_write_request
+@end_write_request:
+   ; check if component wants a redraw
+   lda gui_definitions::request_components_redraw
+   beq @end_redraw_request
+   lda mouse_definitions::curr_panel
+   jsr draw_components
+   stz gui_definitions::request_components_redraw
+@end_redraw_request:
+   rts
+.endproc
 
 
 ; reads through the stack and draws everything
@@ -163,7 +186,7 @@ draw_gui:
    lda stack::stack, y
    asl
    tax
-   INDEXED_JSR panels_luts::jump_table_draw, @ret_addr
+   INDEXED_JSR panels::jump_table_draw, @ret_addr
 @ret_addr:
    ; draw GUI components
    ldy dg_counter
@@ -187,9 +210,9 @@ draw_captions:
    dcp_pointer = mzpwa
    asl
    tax
-   lda panels_luts::capts, x
+   lda panels::capts, x
    sta dcp_pointer
-   lda panels_luts::capts+1, x
+   lda panels::capts+1, x
    sta dcp_pointer+1
    ldy #0
 @loop:
@@ -222,9 +245,9 @@ draw_components:
    dc_pointer = mzpwa
    asl
    tax
-   lda panels_luts::comps, x
+   lda panels::comps, x
    sta dc_pointer
-   lda panels_luts::comps+1, x
+   lda panels::comps+1, x
    sta dc_pointer+1
    ldy #0
 @loop:
@@ -419,9 +442,9 @@ click_event:
    lda mouse_definitions::curr_panel
    asl
    tax
-   lda panels_luts::comps, x
+   lda panels::comps, x
    sta ce_pointer
-   lda panels_luts::comps+1, x
+   lda panels::comps+1, x
    sta ce_pointer+1
    ldy mouse_definitions::curr_component_ofs ; load component's offset
    lda (ce_pointer), y ; and get its type
@@ -437,16 +460,6 @@ click_event:
    .word click_listbox
    .word click_dummy
 @ret_addrA:
-   ; check if component wants an update
-   lda gui_definitions::request_component_write
-   bne :+
-   rts
-:  ; call panel's writing subroutine, which is part of the interface between GUI and internal data
-   lda mouse_definitions::curr_panel
-   asl
-   tax
-   INDEXED_JSR panels_luts::jump_table_write, @ret_addrB
-@ret_addrB:
    rts  ; we could actually leave the jsr away and just jmp to the subroutine... but I'll leave it for now. Optimizations later...
 
 ; GUI component's click subroutines
@@ -477,7 +490,7 @@ click_tab_select:
    ldy mouse_definitions::curr_component_ofs
    iny
    jsr draw_tab_select
-   jsr refresh_gui
+   ; jsr refresh_gui ; this does not work as the new tab number has not propagated into the panel's state yet, so a refresh shows the old values.
    rts
 
 click_arrowed_edit:
@@ -578,41 +591,41 @@ click_listbox:
    ldy mouse_definitions::curr_component_ofs
    iny
    lda (ce_pointer), y
-   sta panels_luts::listbox_popup::box_x
+   sta panels::listbox_popup::box_x
    iny
    lda (ce_pointer), y
    inc ; we'll see where exactly we want the popup (TODO)
-   sta panels_luts::listbox_popup::box_y
+   sta panels::listbox_popup::box_y
    ; load additional info into popup panel data
    iny 
    lda (ce_pointer), y
-   sta panels_luts::listbox_popup::box_width
+   sta panels::listbox_popup::box_width
    iny 
    lda (ce_pointer), y
-   sta panels_luts::listbox_popup::box_height
+   sta panels::listbox_popup::box_height
    iny
    lda (ce_pointer), y
-   sta panels_luts::listbox_popup::strlist
+   sta panels::listbox_popup::strlist
    iny
    lda (ce_pointer), y
-   sta panels_luts::listbox_popup::strlist+1
+   sta panels::listbox_popup::strlist+1
    lda mouse_definitions::curr_component_ofs
-   sta panels_luts::listbox_popup::lb_ofs
+   sta panels::listbox_popup::lb_ofs
    lda ce_pointer
-   sta panels_luts::listbox_popup::lb_addr
+   sta panels::listbox_popup::lb_addr
    lda ce_pointer+1
-   sta panels_luts::listbox_popup::lb_addr+1
+   sta panels::listbox_popup::lb_addr+1
    lda mouse_definitions::curr_component_id
-   sta panels_luts::listbox_popup::lb_id
+   sta panels::listbox_popup::lb_id
    lda mouse_definitions::curr_panel
-   sta panels_luts::listbox_popup::lb_panel
+   sta panels::listbox_popup::lb_panel
    ; now do the GUI stack stuff
    ldx stack::sp
-   lda #panels_luts::ids::listbox_popup
+   lda #panels::ids::listbox_popup
    sta stack::stack, x
    inc stack::sp
 @update_gui:
-   jsr panels_luts::listbox_popup::draw
+   jsr panels::listbox_popup::draw
    rts
 
 click_dummy:
@@ -632,9 +645,9 @@ drag_event:
    lda mouse_definitions::curr_panel
    asl
    tax
-   lda panels_luts::comps, x
+   lda panels::comps, x
    sta de_pointer
-   lda panels_luts::comps+1, x
+   lda panels::comps+1, x
    sta de_pointer+1   ; put GUI component string pointer to ZP
    ldy mouse_definitions::curr_component_ofs ; load component's offset
    lda (de_pointer), y ; and get its type
@@ -650,16 +663,6 @@ drag_event:
    .word dummy_sr
    .word dummy_sr
 @ret_addrA:
-   ; check if component wants an update
-   lda gui_definitions::request_component_write
-   bne :+
-   rts
-:  ; call panel's drag subroutine, which is part of the interface between GUI and internal data
-   lda mouse_definitions::curr_panel
-   asl
-   tax
-   INDEXED_JSR panels_luts::jump_table_write, @ret_addrB
-@ret_addrB:
    rts  ; we could leave that away and just jmp to the subroutines instead of jsr, but optimizations later.
 
 ; GUI component's drag subroutines
@@ -830,7 +833,7 @@ refresh_gui:
    lda stack::stack, y
    asl
    tax
-   INDEXED_JSR panels_luts::jump_table_refresh, @ret_addr
+   INDEXED_JSR panels::jump_table_refresh, @ret_addr
 @ret_addr:
    ; advance in loop
    lda rfg_counter
@@ -848,74 +851,7 @@ refresh_gui:
 
 
 
-; returns the panel index the mouse is currently over. Bit 7 set means none
-; panel index returned in mouse_definitions::curr_panel
-mouse_get_panel:
-   ; grab those zero page variables for this routine
-   gp_cx = mzpwa
-   gp_cy = mzpwd
-   ; determine position in characters (divide by 8)
-   lda mouse_definitions::curr_x+1
-   lsr
-   sta gp_cx+1
-   lda mouse_definitions::curr_x
-   ror
-   sta gp_cx
-   lda gp_cx+1
-   lsr
-   ror gp_cx
-   lsr
-   ror gp_cx
-   ; (high byte is uninteresting, thus not storing it back)
-   lda mouse_definitions::curr_y+1
-   lsr
-   sta gp_cy+1
-   lda mouse_definitions::curr_y
-   ror
-   sta gp_cy
-   lda gp_cy+1
-   lsr
-   ror gp_cy
-   lsr
-   ror gp_cy
-   ; now check panels from top to bottom
-   lda stack::sp
-   tax
-@loop:
-   dex
-   bmi @end_loop
-   ldy stack::stack, x ; y will be panel's index
-   ;lda px, y
-   ;dec
-   ;cmp gp_cx
-   ;bcs @loop ; gp_cx is smaller than panel's x
-   lda gp_cx
-   cmp panels_luts::px, y
-   bcc @loop ; gp_cx is smaller than panel's x
-   lda panels_luts::px, y
-   clc
-   adc panels_luts::wd, y
-   dec
-   cmp gp_cx
-   bcc @loop ; gp_cx is too big
-   lda gp_cy
-   cmp panels_luts::py, y
-   bcc @loop ; gp_cy is smaller than panel's y
-   lda panels_luts::py, y
-   clc
-   adc panels_luts::hg, y
-   dec
-   cmp gp_cy
-   bcc @loop ; gp_cy is too big
-   ; we're inside! return index
-   tya
-   sta mouse_definitions::curr_panel
-   rts
-@end_loop:
-   ; found no match
-   lda #255
-   sta mouse_definitions::curr_panel
-   rts
+
 
 
 
@@ -953,9 +889,9 @@ mouse_get_component:
    lda mouse_definitions::curr_panel
    asl
    tax
-   lda panels_luts::comps, x
+   lda panels::comps, x
    sta gc_pointer
-   lda panels_luts::comps+1, x
+   lda panels::comps+1, x
    sta gc_pointer+1
    ; iterate over gui elements
    ldy #0
@@ -1054,7 +990,7 @@ check_tab_selector:
    ; check if mouse is over the tab selector area of the panel
    ; check x direction first
    ldx mouse_definitions::curr_panel
-   lda panels_luts::px, x
+   lda panels::px, x
    asl ; multiply by 2 to be 4 pixel multiple
    sec
    sbc gc_cx ; now we have negative mouse offset, need to negate it
@@ -1072,7 +1008,7 @@ check_tab_selector:
    iny
    jmp check_gui_loop
 :  ; check y direction second
-   lda panels_luts::py, x
+   lda panels::py, x
    asl ; multiply by 2 to be 4 pixel multiple
    sec
    sbc gc_cy ; now we have negative mouse offset, need to negate it

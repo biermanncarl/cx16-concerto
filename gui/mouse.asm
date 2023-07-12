@@ -84,6 +84,7 @@ mouse_tick:
    .word do_hold_L
    .word do_hold_R
 end_mouse_tick:
+   jsr handle_component_requests
    rts
 
 ; no buttons are pressed. waiting for button presses.
@@ -107,7 +108,7 @@ do_idle:
    jmp @mouse_down_checks
 :  jmp end_mouse_tick
 @mouse_down_checks:
-   jsr gui::mouse_get_panel
+   jsr gui::panels::mouse_get_panel
    lda mouse_definitions::curr_panel
    bmi :+
    jsr gui::mouse_get_component
@@ -134,7 +135,7 @@ do_hold_L:
    sta ms_status
    ; and do click operation:
    ; check if previous panel & component are the same. If yes, issue a click event.
-   jsr gui::mouse_get_panel
+   jsr gui::panels::mouse_get_panel
    lda mouse_definitions::curr_panel
    bpl :+
    jmp end_mouse_tick ; no panel clicked.

@@ -20,7 +20,7 @@ prev_component_ofs: .byte 0 ; component offset (in a panel's component string)
 curr_x: .word 0
 curr_y: .word 0
 curr_buttons: .byte 0
-curr_panel: .byte 0
+curr_panel: .byte 0 ; the index of the panel the mouse is at, high bit set (128 or bigger) if no panel.
 curr_component_id: .byte 0
 curr_component_ofs: .byte 0
 curr_data_1: .byte 0 ; used to store the current tab selected, which arrow is clicked etc.

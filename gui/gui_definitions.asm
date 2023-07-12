@@ -5,10 +5,6 @@
 ::GUI_GUI_DEFINITIONS_ASM = 1
 
 .scope gui_definitions
-   ; Set to nonzero value to request a complete redraw of the GUI.
-   ; The redraw is done after event handling (mouse and keyboard) is finished within a tick.
-   ; request_gui_redraw: .byte 0
-
    ; Set to nonzero value to request an update of GUI components (data transfer: underlying data -> GUI components).
    ; This is mainly intended for situations when the underlying data on several panels has changed, or it is not
    ; possible to call a panel's refresh routine directly.
@@ -23,6 +19,9 @@
    ; This flag is checked and cleared during the GUI's event handling.
    request_component_write: .byte 0
 
+   ; Set to nonzero value to request a redraw of the components.
+   ; The redraw is done after event handling (mouse and keyboard) is finished within a tick.
+   request_components_redraw: .byte 0
 
    ; Which timbre is currently viewed in the synth page.
    current_synth_timbre: .byte 0

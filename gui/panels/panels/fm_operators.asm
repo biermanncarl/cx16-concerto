@@ -127,6 +127,7 @@
       lda mouse_definitions::curr_data_1
       sta active_tab
       jsr refresh
+      inc gui_definitions::request_components_redraw
       rts
    @attack:
       plx

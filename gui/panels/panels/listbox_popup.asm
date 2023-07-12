@@ -104,7 +104,7 @@
       lda lb_panel
       asl
       tax
-      INDEXED_JSR panels_luts::jump_table_write, @ret_addr
+      INDEXED_JSR jump_table_write, @ret_addr
    @ret_addr:
       ; redraw gui
       jsr draw_gui
