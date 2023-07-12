@@ -40,13 +40,13 @@
       STR_FORMAT "s'n'h"
 
    .proc draw
-      lda #panels_luts::lfo::px
+      lda #px
       sta guiutils::draw_x
-      lda #panels_luts::lfo::py
+      lda #py
       sta guiutils::draw_y
-      lda #panels_luts::lfo::wd
+      lda #wd
       sta guiutils::draw_width
-      lda #panels_luts::lfo::hg
+      lda #hg
       sta guiutils::draw_height
       lda #0
       sta guiutils::draw_data1
@@ -74,27 +74,27 @@
    @wave:
       plx
       iny
-      lda panels_luts::lfo::comps, y
+      lda comps, y
       sta concerto_synth::timbres::Timbre::lfo::wave, x
       rts
    @retr:
       plx
       dey
       dey
-      lda panels_luts::lfo::comps, y
+      lda comps, y
       sta concerto_synth::timbres::Timbre::lfo::retrig, x
       rts
    @rate:
       plx
-      lda panels_luts::lfo::comps, y
+      lda comps, y
       sta concerto_synth::timbres::Timbre::lfo::rateH, x
       iny
-      lda panels_luts::lfo::comps, y
+      lda comps, y
       sta concerto_synth::timbres::Timbre::lfo::rateL, x
       rts
    @offs:
       plx
-      lda panels_luts::lfo::comps, y
+      lda comps, y
       sta concerto_synth::timbres::Timbre::lfo::offs, x
       rts
    .endproc
@@ -105,25 +105,22 @@
       ; LFO waveform
       lda concerto_synth::timbres::Timbre::lfo::wave, x
       ldy #(0*checkbox_data_size+0*drag_edit_data_size+1*listbox_data_size-1)
-      sta panels_luts::lfo::comps, y
+      sta comps, y
       ; LFO retrigger
       lda concerto_synth::timbres::Timbre::lfo::retrig, x
       ldy #(1*checkbox_data_size+0*drag_edit_data_size+1*listbox_data_size-1)
-      sta panels_luts::lfo::comps, y
+      sta comps, y
       ; LFO rate
       lda concerto_synth::timbres::Timbre::lfo::rateH, x
       ldy #(1*checkbox_data_size+1*drag_edit_data_size+1*listbox_data_size-2)
-      sta panels_luts::lfo::comps, y
+      sta comps, y
       iny
       lda concerto_synth::timbres::Timbre::lfo::rateL, x
-      sta panels_luts::lfo::comps, y
+      sta comps, y
       ; phase offset
       lda concerto_synth::timbres::Timbre::lfo::offs, x
       ldy #(1*checkbox_data_size+2*drag_edit_data_size+1*listbox_data_size-2)
-      sta panels_luts::lfo::comps, y
-      ; redraw components
-      lda #5
-      jsr draw_components
+      sta comps, y
       rts
    .endproc
 .endscope

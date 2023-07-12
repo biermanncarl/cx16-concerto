@@ -32,17 +32,17 @@
 
    .proc draw
       dlbp_pointer = mzpwd
-      lda panels_luts::listbox_popup::box_x
+      lda box_x
       sta guiutils::draw_x
-      lda panels_luts::listbox_popup::box_y
+      lda box_y
       sta guiutils::draw_y
-      lda panels_luts::listbox_popup::box_width
+      lda box_width
       sta guiutils::draw_width
-      lda panels_luts::listbox_popup::box_height
+      lda box_height
       sta guiutils::draw_height
-      lda panels_luts::listbox_popup::strlist
+      lda strlist
       sta guiutils::str_pointer
-      lda panels_luts::listbox_popup::strlist+1
+      lda strlist+1
       sta guiutils::str_pointer+1
       jsr guiutils::draw_lb_popup
       rts
@@ -58,24 +58,24 @@
       ; check if we're in correct x range
       lda mouse_definitions::curr_data_1
       sec
-      sbc panels_luts::listbox_popup::box_x
-      cmp panels_luts::listbox_popup::box_width
+      sbc box_x
+      cmp box_width
       bcs @close_popup
       ; we're inside!
       ; check if we're in correct y range
       lda mouse_definitions::curr_data_2
       sec
-      sbc panels_luts::listbox_popup::box_y
-      cmp panels_luts::listbox_popup::box_height
+      sbc box_y
+      cmp box_height
       bcs @close_popup
       ; we're inside!
       ; now the accumulator holds the new selection index. Put it back into the listbox.
       pha
-      lda panels_luts::listbox_popup::lb_addr
+      lda lb_addr
       sta clbp_pointer
-      lda panels_luts::listbox_popup::lb_addr+1
+      lda lb_addr+1
       sta clbp_pointer+1
-      lda panels_luts::listbox_popup::lb_ofs
+      lda lb_ofs
       clc
       adc #7
       tay
@@ -87,21 +87,21 @@
       dec stack::sp
       ; clear area where the popup has been before
       ; jsr guiutils::cls ; would be the cheap solution
-      lda panels_luts::listbox_popup::box_x
+      lda box_x
       sta guiutils::draw_x
-      lda panels_luts::listbox_popup::box_y
+      lda box_y
       sta guiutils::draw_y
-      lda panels_luts::listbox_popup::box_width
+      lda box_width
       sta guiutils::draw_width
-      lda panels_luts::listbox_popup::box_height
+      lda box_height
       sta guiutils::draw_height
       jsr guiutils::clear_lb_popup
       ; call writing function of panel
-      lda panels_luts::listbox_popup::lb_ofs
+      lda lb_ofs
       sta mouse_definitions::curr_component_ofs
-      lda panels_luts::listbox_popup::lb_id
+      lda lb_id
       sta mouse_definitions::curr_component_id
-      lda panels_luts::listbox_popup::lb_panel
+      lda lb_panel
       asl
       tax
       INDEXED_JSR panels_luts::jump_table_write, @ret_addr

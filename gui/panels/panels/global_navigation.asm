@@ -21,7 +21,7 @@
    active_tab: .byte 2
 
    .proc draw
-      lda panels_luts::global_navigation::active_tab
+      lda active_tab
       sta guiutils::draw_data1
       jsr guiutils::draw_globalnav
       rts
@@ -36,7 +36,7 @@
       lsr
       lsr
       lsr
-      sta panels_luts::global_navigation::active_tab
+      sta active_tab
       cmp #0
       beq @load_arrangement_view
       cmp #1

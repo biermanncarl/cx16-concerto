@@ -31,8 +31,19 @@
    ; adjusted, too.
    
    .linecont + ; switch on line continuation with "\"
-   .define ALL_PANEL_SCOPES synth_global, psg_oscillators, envelopes, synth_navigation, listbox_popup, lfo, synth_info, fm_general, fm_operators, global_navigation, clip_editing
-   ; TODO: try line continuation on ALL_PANEL_SCOPES
+   .define ALL_PANEL_SCOPES \
+      clip_editing, \
+      synth_global, \
+      psg_oscillators, \
+      envelopes, \
+      synth_navigation, \
+      listbox_popup, \
+      lfo, \
+      synth_info, \
+      fm_general, \
+      fm_operators, \
+      global_navigation, \
+
    ; p1 is left away intentionally, as in some cases it is needed (where it is mentioned explicitly), in cases some not.
    .define PANEL_PARAMETER_LIST p2, p3, p4, p5, p6, p7, p8, p9, p10, p11, p12, p13, p14, p15, p16, p17, p18, p19, p20
    .linecont - ; switch off line continuation with "\" (default)

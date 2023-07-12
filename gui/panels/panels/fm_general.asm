@@ -64,17 +64,22 @@
    lb_op4: STR_FORMAT "4"
 
    .proc draw
-      lda #panels_luts::fm_general::px
+      lda #px
       sta guiutils::draw_x
-      lda #panels_luts::fm_general::py
+      lda #py
       sta guiutils::draw_y
-      lda #panels_luts::fm_general::wd
+      lda #wd
       sta guiutils::draw_width
-      lda #panels_luts::fm_general::hg
+      lda #hg
       sta guiutils::draw_height
       lda #0
       sta guiutils::draw_data1
       jsr guiutils::draw_frame
+      ; draw FM algorithm
+      ldx gui_definitions::current_synth_timbre
+      lda concerto_synth::timbres::Timbre::fm_general::con, x
+      sta guiutils::draw_data1
+      jsr guiutils::draw_fm_alg
       rts
    .endproc
 
@@ -111,15 +116,15 @@
    @connection:
       plx
       dey
-      lda panels_luts::fm_general::comps, y
+      lda comps, y
       sta concerto_synth::timbres::Timbre::fm_general::con, x
-      ; draw FM algorithm
+      ; redraw FM algorithm
       sta guiutils::draw_data1
       jsr guiutils::draw_fm_alg
       rts
    @feedback:
       plx
-      lda panels_luts::fm_general::comps, y
+      lda comps, y
       sta concerto_synth::timbres::Timbre::fm_general::fl, x
       rts
    @op1_active:
@@ -143,7 +148,7 @@
       ; get checkbox value
       dey
       dey
-      lda panels_luts::fm_general::comps, y
+      lda comps, y
       ; push into carry flag
       lsr
       lda wfm_bits
@@ -159,7 +164,7 @@
    @lr_select:
       plx
       iny
-      lda panels_luts::fm_general::comps, y
+      lda comps, y
       clc
       ror
       ror
@@ -171,10 +176,10 @@
       ; decide if we need to tune down to compensate for fine tuning (because fine tuning internally only goes up)
       lda concerto_synth::timbres::Timbre::fm_general::fine, x
       bmi :+
-      lda panels_luts::fm_general::comps, y
+      lda comps, y
       sta concerto_synth::timbres::Timbre::fm_general::pitch, x
       rts
-   :  lda panels_luts::fm_general::comps, y
+   :  lda comps, y
       dec
       sta concerto_synth::timbres::Timbre::fm_general::pitch, x
       rts
@@ -185,12 +190,12 @@
       lda concerto_synth::timbres::Timbre::fm_general::fine, x
       bmi @fine_negative
    @fine_positive:
-      lda panels_luts::fm_general::comps, y
+      lda comps, y
       bpl @fine_normal
       dec concerto_synth::timbres::Timbre::fm_general::pitch, x
       bra @fine_normal
    @fine_negative:
-      lda panels_luts::fm_general::comps, y
+      lda comps, y
       bmi @fine_normal
       inc concerto_synth::timbres::Timbre::fm_general::pitch, x
    @fine_normal:
@@ -200,19 +205,19 @@
       plx
       dey
       dey
-      lda panels_luts::fm_general::comps, y
+      lda comps, y
       sta concerto_synth::timbres::Timbre::fm_general::track, x
       rts
    @pmsel:
       plx
       iny
-      lda panels_luts::fm_general::comps, y
+      lda comps, y
       jsr panel_common::map_modsource_from_gui
       sta concerto_synth::timbres::Timbre::fm_general::pitch_mod_sel, x
       rts
    @pitchmoddep:
       plx
-      lda panels_luts::fm_general::comps, y
+      lda comps, y
       jsr concerto_synth::map_twos_complement_to_scale5
       sta concerto_synth::timbres::Timbre::fm_general::pitch_mod_dep, x
       rts
@@ -225,11 +230,11 @@
       ; connection scheme
       lda concerto_synth::timbres::Timbre::fm_general::con, x
       ldy #(0*checkbox_data_size+0*drag_edit_data_size+0*listbox_data_size+1*arrowed_edit_data_size-1)
-      sta panels_luts::fm_general::comps, y
+      sta comps, y
       ; feedback level
       lda concerto_synth::timbres::Timbre::fm_general::fl, x
       ldy #(0*checkbox_data_size+1*drag_edit_data_size+0*listbox_data_size+1*arrowed_edit_data_size-2)
-      sta panels_luts::fm_general::comps, y
+      sta comps, y
       ; operators enable
       lda concerto_synth::timbres::Timbre::fm_general::op_en, x
       sta @rfm_bits
@@ -238,25 +243,25 @@
       bbr0 @rfm_bits, :+
       lda #1
    :  ldy #(1*checkbox_data_size+1*drag_edit_data_size+0*listbox_data_size+1*arrowed_edit_data_size-1)
-      sta panels_luts::fm_general::comps, y
+      sta comps, y
       ; operator 2 enable
       lda #0
       bbr1 @rfm_bits, :+
       lda #1
    :  ldy #(2*checkbox_data_size+1*drag_edit_data_size+0*listbox_data_size+1*arrowed_edit_data_size-1)
-      sta panels_luts::fm_general::comps, y
+      sta comps, y
       ; operator 3 enable
       lda #0
       bbr2 @rfm_bits, :+
       lda #1
    :  ldy #(3*checkbox_data_size+1*drag_edit_data_size+0*listbox_data_size+1*arrowed_edit_data_size-1)
-      sta panels_luts::fm_general::comps, y
+      sta comps, y
       ; operator 4 enable
       lda #0
       bbr3 @rfm_bits, :+
       lda #1
    :  ldy #(4*checkbox_data_size+1*drag_edit_data_size+0*listbox_data_size+1*arrowed_edit_data_size-1)
-      sta panels_luts::fm_general::comps, y
+      sta comps, y
       ; LR channel select
       lda concerto_synth::timbres::Timbre::fm_general::lr, x
       clc
@@ -264,7 +269,7 @@
       rol
       rol
       ldy #(4*checkbox_data_size+1*drag_edit_data_size+1*listbox_data_size+1*arrowed_edit_data_size-1)
-      sta panels_luts::fm_general::comps, y
+      sta comps, y
       ; semitones
       ; we need to check fine tune to get correct semi tones.
       ; if fine tune is negative, we need to increment one to the semitone value to be displayed on the GUI
@@ -275,34 +280,25 @@
    :  lda concerto_synth::timbres::Timbre::fm_general::pitch, x
       inc
    :  ldy #(4*checkbox_data_size+2*drag_edit_data_size+1*listbox_data_size+1*arrowed_edit_data_size-2)
-      sta panels_luts::fm_general::comps, y
+      sta comps, y
       ; fine tune
       lda concerto_synth::timbres::Timbre::fm_general::fine, x
       ldy #(4*checkbox_data_size+3*drag_edit_data_size+1*listbox_data_size+1*arrowed_edit_data_size-2)
-      sta panels_luts::fm_general::comps, y
+      sta comps, y
       ; key track
       lda concerto_synth::timbres::Timbre::fm_general::track, x
       ldy #(5*checkbox_data_size+3*drag_edit_data_size+1*listbox_data_size+1*arrowed_edit_data_size-1)
-      sta panels_luts::fm_general::comps, y
+      sta comps, y
       ; pitch mod select
       lda concerto_synth::timbres::Timbre::fm_general::pitch_mod_sel, x
       jsr panel_common::map_modsource_to_gui
       ldy #(5*checkbox_data_size+3*drag_edit_data_size+2*listbox_data_size+1*arrowed_edit_data_size-1)
-      sta panels_luts::fm_general::comps, y
+      sta comps, y
       ; pitch mod depth
       lda concerto_synth::timbres::Timbre::fm_general::pitch_mod_dep, x
       jsr concerto_synth::map_scale5_to_twos_complement
       ldy #(5*checkbox_data_size+4*drag_edit_data_size+2*listbox_data_size+1*arrowed_edit_data_size-2)
-      sta panels_luts::fm_general::comps, y
-
-      ; redraw components
-      lda #7
-      jsr draw_components
-      ; redraw FM algorithm
-      ldx gui_definitions::current_synth_timbre
-      lda concerto_synth::timbres::Timbre::fm_general::con, x
-      sta guiutils::draw_data1
-      jsr guiutils::draw_fm_alg
+      sta comps, y
       rts
    .endproc
 .endscope

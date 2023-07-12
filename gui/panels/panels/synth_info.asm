@@ -37,13 +37,13 @@
    help_5_lb: STR_FORMAT "fine edit"
 
    .proc draw
-      lda #panels_luts::synth_info::px
+      lda #px
       sta guiutils::draw_x
-      lda #panels_luts::synth_info::py
+      lda #py
       sta guiutils::draw_y
-      lda #panels_luts::synth_info::wd
+      lda #wd
       sta guiutils::draw_width
-      lda #panels_luts::synth_info::hg
+      lda #hg
       sta guiutils::draw_height
       lda #0
       sta guiutils::draw_data1

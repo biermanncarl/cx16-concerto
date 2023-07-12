@@ -477,6 +477,7 @@ click_tab_select:
    ldy mouse_definitions::curr_component_ofs
    iny
    jsr draw_tab_select
+   jsr refresh_gui
    rts
 
 click_arrowed_edit:
@@ -607,7 +608,7 @@ click_listbox:
    sta panels_luts::listbox_popup::lb_panel
    ; now do the GUI stack stuff
    ldx stack::sp
-   lda #4
+   lda #panels_luts::ids::listbox_popup
    sta stack::stack, x
    inc stack::sp
 @update_gui:

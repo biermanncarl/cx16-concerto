@@ -46,13 +46,13 @@
    vibrato_lb: STR_FORMAT "vib."
 
    .proc draw
-      lda #panels_luts::synth_global::px
+      lda #px
       sta guiutils::draw_x
-      lda #panels_luts::synth_global::py
+      lda #py
       sta guiutils::draw_y
-      lda #panels_luts::synth_global::wd
+      lda #wd
       sta guiutils::draw_width
-      lda #panels_luts::synth_global::hg
+      lda #hg
       sta guiutils::draw_height
       lda #0
       sta guiutils::draw_data1
@@ -87,42 +87,42 @@
       jsr concerto_synth::voices::panic ; If we don't do this, a different number of oscillators might be released than initially acquired by a voice. Safety first.
       ply
       plx
-      lda panels_luts::synth_global::comps, y
+      lda comps, y
       sta concerto_synth::timbres::Timbre::n_oscs, x
       rts
    @n_envs:
       plx
-      lda panels_luts::synth_global::comps, y
+      lda comps, y
       sta concerto_synth::timbres::Timbre::n_envs, x
       rts
    @n_lfos:
       plx
       dey
-      lda panels_luts::synth_global::comps, y
+      lda comps, y
       sta concerto_synth::timbres::Timbre::n_lfos, x
       rts
    @retr_activate:
       plx
       dey
-      lda panels_luts::synth_global::comps, y
+      lda comps, y
       sta concerto_synth::timbres::Timbre::retrig, x
       rts
    @porta_activate:
       plx
       dey
-      lda panels_luts::synth_global::comps, y
+      lda comps, y
       sta concerto_synth::timbres::Timbre::porta, x
       rts
    @porta_rate:
       plx
       iny
-      lda panels_luts::synth_global::comps, y
+      lda comps, y
       sta concerto_synth::timbres::Timbre::porta_r, x
       rts
    @vibrato_amount:
       plx
       iny
-      lda panels_luts::synth_global::comps, y ; if this value is 0, that means vibrato off, which is represented as a negative value internally
+      lda comps, y ; if this value is 0, that means vibrato off, which is represented as a negative value internally
       beq :+
       jsr concerto_synth::map_twos_complement_to_scale5
       sta concerto_synth::timbres::Timbre::vibrato, x
@@ -138,27 +138,27 @@
       ; number of oscillators
       lda concerto_synth::timbres::Timbre::n_oscs, x
       ldy #(0*checkbox_data_size+0*drag_edit_data_size+1*arrowed_edit_data_size-1)
-      sta panels_luts::synth_global::comps, y
+      sta comps, y
       ; number of envelopes
       lda concerto_synth::timbres::Timbre::n_envs, x
       ldy #(0*checkbox_data_size+0*drag_edit_data_size+2*arrowed_edit_data_size-1)
-      sta panels_luts::synth_global::comps, y
+      sta comps, y
       ; LFO activate checkbox
       lda concerto_synth::timbres::Timbre::n_lfos, x
       ldy #(1*checkbox_data_size+0*drag_edit_data_size+2*arrowed_edit_data_size-1)
-      sta panels_luts::synth_global::comps, y
+      sta comps, y
       ; retrigger checkbox
       lda concerto_synth::timbres::Timbre::retrig, x
       ldy #(2*checkbox_data_size+0*drag_edit_data_size+2*arrowed_edit_data_size-1)
-      sta panels_luts::synth_global::comps, y
+      sta comps, y
       ; porta activate checkbox
       lda concerto_synth::timbres::Timbre::porta, x
       ldy #(3*checkbox_data_size+0*drag_edit_data_size+2*arrowed_edit_data_size-1)
-      sta panels_luts::synth_global::comps, y
+      sta comps, y
       ; porta rate edit
       lda concerto_synth::timbres::Timbre::porta_r, x
       ldy #(3*checkbox_data_size+1*drag_edit_data_size+2*arrowed_edit_data_size-2)
-      sta panels_luts::synth_global::comps, y
+      sta comps, y
       ; vibrato amount edit
       lda concerto_synth::timbres::Timbre::vibrato, x
       bmi :+
@@ -166,10 +166,7 @@
       bra :++
    :  lda #0
    :  ldy #(3*checkbox_data_size+2*drag_edit_data_size+2*arrowed_edit_data_size-2)
-      sta panels_luts::synth_global::comps, y
-      ; redraw components
-      lda #0
-      jsr draw_components
+      sta comps, y
       rts
    .endproc
 

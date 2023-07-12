@@ -38,17 +38,17 @@
    lb_sustain: STR_FORMAT "sus"
 
    .proc draw
-      lda #panels_luts::envelopes::px
+      lda #px
       sta guiutils::draw_x
-      lda #panels_luts::envelopes::py
+      lda #py
       sta guiutils::draw_y
-      lda #panels_luts::envelopes::wd
+      lda #wd
       sta guiutils::draw_width
-      lda #panels_luts::envelopes::hg
+      lda #hg
       sta guiutils::draw_height
       lda #MAX_ENVS_PER_VOICE
       sta guiutils::draw_data1
-      lda panels_luts::envelopes::active_tab
+      lda active_tab
       inc
       sta guiutils::draw_data2
       jsr guiutils::draw_frame
@@ -58,7 +58,7 @@
    .proc write
       ; first, determine the offset of the envelope in the Timbre data
       lda gui_definitions::current_synth_timbre
-      ldx panels_luts::envelopes::active_tab ; envelope number
+      ldx active_tab ; envelope number
    @loop:
       cpx #0
       beq @end_loop
@@ -88,36 +88,36 @@
    @tab_select:
       plx
       lda mouse_definitions::curr_data_1
-      sta panels_luts::envelopes::active_tab
+      sta active_tab
       jsr refresh
       rts
    @attack:
       plx
-      lda panels_luts::envelopes::comps, y
+      lda comps, y
       sta concerto_synth::timbres::Timbre::env::attackH, x
       iny
-      lda panels_luts::envelopes::comps, y
+      lda comps, y
       sta concerto_synth::timbres::Timbre::env::attackL, x
       rts
    @decay:
       plx
-      lda panels_luts::envelopes::comps, y
+      lda comps, y
       sta concerto_synth::timbres::Timbre::env::decayH, x
       iny
-      lda panels_luts::envelopes::comps, y
+      lda comps, y
       sta concerto_synth::timbres::Timbre::env::decayL, x
       rts
    @sustain:
       plx
-      lda panels_luts::envelopes::comps, y
+      lda comps, y
       sta concerto_synth::timbres::Timbre::env::sustain, x
       rts
    @release:
       plx
-      lda panels_luts::envelopes::comps, y
+      lda comps, y
       sta concerto_synth::timbres::Timbre::env::releaseH, x
       iny
-      lda panels_luts::envelopes::comps, y
+      lda comps, y
       sta concerto_synth::timbres::Timbre::env::releaseL, x
       rts
    @skip:
@@ -129,7 +129,7 @@
    .proc refresh
       ; first, determine the offset of the envelope in the Timbre data
       lda gui_definitions::current_synth_timbre
-      ldx panels_luts::envelopes::active_tab ; envelope number
+      ldx active_tab ; envelope number
    @loop:
       cpx #0
       beq @end_loop
@@ -143,40 +143,37 @@
       ; attack edit
       ldy #(tab_selector_data_size + 6)
       lda concerto_synth::timbres::Timbre::env::attackH, x
-      sta panels_luts::envelopes::comps, y
+      sta comps, y
       iny
       lda concerto_synth::timbres::Timbre::env::attackL, x
-      sta panels_luts::envelopes::comps, y
+      sta comps, y
       ; decay edit
       tya
       clc
       adc #(drag_edit_data_size-1)
       tay
       lda concerto_synth::timbres::Timbre::env::decayH, x
-      sta panels_luts::envelopes::comps, y
+      sta comps, y
       iny
       lda concerto_synth::timbres::Timbre::env::decayL, x
-      sta panels_luts::envelopes::comps, y
+      sta comps, y
       ; sustain edit
       tya
       clc
       adc #(drag_edit_data_size-1)
       tay
       lda concerto_synth::timbres::Timbre::env::sustain, x
-      sta panels_luts::envelopes::comps, y
+      sta comps, y
       ; release edit
       tya
       clc
       adc #(drag_edit_data_size)
       tay
       lda concerto_synth::timbres::Timbre::env::releaseH, x
-      sta panels_luts::envelopes::comps, y
+      sta comps, y
       iny
       lda concerto_synth::timbres::Timbre::env::releaseL, x
-      sta panels_luts::envelopes::comps, y
-      ; redraw components
-      lda #2
-      jsr draw_components
+      sta comps, y
       rts
    .endproc
 

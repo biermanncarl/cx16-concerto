@@ -91,17 +91,17 @@
    
 
    .proc draw
-      lda #panels_luts::psg_oscillators::px
+      lda #px
       sta guiutils::draw_x
-      lda #panels_luts::psg_oscillators::py
+      lda #py
       sta guiutils::draw_y
-      lda #panels_luts::psg_oscillators::wd
+      lda #wd
       sta guiutils::draw_width
-      lda #panels_luts::psg_oscillators::hg
+      lda #hg
       sta guiutils::draw_height
       lda #MAX_OSCS_PER_VOICE
       sta guiutils::draw_data1
-      lda panels_luts::psg_oscillators::active_tab
+      lda active_tab
       inc
       sta guiutils::draw_data2
       jsr guiutils::draw_frame
@@ -111,7 +111,7 @@
    .proc write
       ; first, determine the offset of the oscillator in the Timbre data
       lda gui_definitions::current_synth_timbre
-      ldx panels_luts::psg_oscillators::active_tab ; envelope number
+      ldx active_tab ; envelope number
    @loop:
       cpx #0
       beq @end_loop
@@ -153,13 +153,13 @@
    @tab_slector:
       plx
       lda mouse_definitions::curr_data_1
-      sta panels_luts::psg_oscillators::active_tab
+      sta active_tab
       jsr refresh
       rts
    @waveform:
       plx
       iny
-      lda panels_luts::psg_oscillators::comps, y
+      lda comps, y
       clc
       ror
       ror
@@ -168,24 +168,24 @@
       rts
    @pulsewidth:
       plx
-      lda panels_luts::psg_oscillators::comps, y
+      lda comps, y
       sta concerto_synth::timbres::Timbre::osc::pulse, x
       rts
    @ampsel:
       plx
       iny
-      lda panels_luts::psg_oscillators::comps, y
+      lda comps, y
       sta concerto_synth::timbres::Timbre::osc::amp_sel, x
       rts
    @volume:
       plx
-      lda panels_luts::psg_oscillators::comps, y
+      lda comps, y
       sta concerto_synth::timbres::Timbre::osc::volume, x
       rts
    @channelsel:
       plx
       iny
-      lda panels_luts::psg_oscillators::comps, y
+      lda comps, y
       clc
       ror
       ror
@@ -197,10 +197,10 @@
       ; decide if we need to tune down to compensate for fine tuning (because fine tuning internally only goes up)
       lda concerto_synth::timbres::Timbre::osc::fine, x
       bmi :+
-      lda panels_luts::psg_oscillators::comps, y
+      lda comps, y
       sta concerto_synth::timbres::Timbre::osc::pitch, x
       rts
-   :  lda panels_luts::psg_oscillators::comps, y
+   :  lda comps, y
       dec
       sta concerto_synth::timbres::Timbre::osc::pitch, x
       rts
@@ -211,12 +211,12 @@
       lda concerto_synth::timbres::Timbre::osc::fine, x
       bmi @fine_negative
    @fine_positive:
-      lda panels_luts::psg_oscillators::comps, y
+      lda comps, y
       bpl @fine_normal
       dec concerto_synth::timbres::Timbre::osc::pitch, x
       bra @fine_normal
    @fine_negative:
-      lda panels_luts::psg_oscillators::comps, y
+      lda comps, y
       bmi @fine_normal
       inc concerto_synth::timbres::Timbre::osc::pitch, x
    @fine_normal:
@@ -226,58 +226,58 @@
       plx
       dey
       dey
-      lda panels_luts::psg_oscillators::comps, y
+      lda comps, y
       sta concerto_synth::timbres::Timbre::osc::track, x
       rts
    @pmsel1:
       plx
       iny
-      lda panels_luts::psg_oscillators::comps, y
+      lda comps, y
       jsr panel_common::map_modsource_from_gui
       sta concerto_synth::timbres::Timbre::osc::pitch_mod_sel1, x
       rts
    @pmsel2:
       plx
       iny
-      lda panels_luts::psg_oscillators::comps, y
+      lda comps, y
       jsr panel_common::map_modsource_from_gui
       sta concerto_synth::timbres::Timbre::osc::pitch_mod_sel2, x
       rts
    @pwmsel:
       plx
       iny
-      lda panels_luts::psg_oscillators::comps, y
+      lda comps, y
       jsr panel_common::map_modsource_from_gui
       sta concerto_synth::timbres::Timbre::osc::pwm_sel, x
       rts
    @volmsel:
       plx
       iny
-      lda panels_luts::psg_oscillators::comps, y
+      lda comps, y
       jsr panel_common::map_modsource_from_gui
       sta concerto_synth::timbres::Timbre::osc::vol_mod_sel, x
       rts
    @pitchmoddep1:
       plx
-      lda panels_luts::psg_oscillators::comps, y
+      lda comps, y
       jsr concerto_synth::map_twos_complement_to_scale5
       sta concerto_synth::timbres::Timbre::osc::pitch_mod_dep1, x
       rts
    @pitchmoddep2:
       plx
-      lda panels_luts::psg_oscillators::comps, y
+      lda comps, y
       jsr concerto_synth::map_twos_complement_to_scale5
       sta concerto_synth::timbres::Timbre::osc::pitch_mod_dep2, x
       rts
    @pwmdep:
       plx
-      lda panels_luts::psg_oscillators::comps, y
+      lda comps, y
       jsr panel_common::map_twos_complement_to_signed_7bit
       sta concerto_synth::timbres::Timbre::osc::pwm_dep, x
       rts
    @vmdep:
       plx
-      lda panels_luts::psg_oscillators::comps, y
+      lda comps, y
       jsr panel_common::map_twos_complement_to_signed_7bit
       sta concerto_synth::timbres::Timbre::osc::vol_mod_dep, x
       rts
@@ -287,7 +287,7 @@
    .proc refresh
       ; first, determine the offset of the oscillator in the Timbre data
       lda gui_definitions::current_synth_timbre
-      ldx panels_luts::psg_oscillators::active_tab ; envelope number
+      ldx active_tab ; envelope number
    @loop:
       cpx #0
       beq @end_loop
@@ -305,19 +305,19 @@
       rol
       rol
       ldy #(tab_selector_data_size+listbox_data_size-1)
-      sta panels_luts::psg_oscillators::comps, y
+      sta comps, y
       ; pulse width
       lda concerto_synth::timbres::Timbre::osc::pulse, x
       ldy #(tab_selector_data_size+listbox_data_size+0*checkbox_data_size+drag_edit_data_size-2)
-      sta panels_luts::psg_oscillators::comps, y
+      sta comps, y
       ; amplifier select
       lda concerto_synth::timbres::Timbre::osc::amp_sel, x
       ldy #(tab_selector_data_size+2*listbox_data_size+0*checkbox_data_size+drag_edit_data_size-1)
-      sta panels_luts::psg_oscillators::comps, y
+      sta comps, y
       ; volume
       lda concerto_synth::timbres::Timbre::osc::volume, x
       ldy #(tab_selector_data_size+2*listbox_data_size+0*checkbox_data_size+2*drag_edit_data_size-2)
-      sta panels_luts::psg_oscillators::comps, y
+      sta comps, y
       ; L/R
       lda concerto_synth::timbres::Timbre::osc::lrmid, x
       clc
@@ -325,7 +325,7 @@
       rol
       rol
       ldy #(tab_selector_data_size+3*listbox_data_size+0*checkbox_data_size+2*drag_edit_data_size-1)
-      sta panels_luts::psg_oscillators::comps, y
+      sta comps, y
       ; semitones
       ; we need to check fine tune to get correct semi tones.
       ; if fine tune is negative, we need to increment one to the semitone value to be displayed on the GUI
@@ -336,58 +336,55 @@
    :  lda concerto_synth::timbres::Timbre::osc::pitch, x
       inc
    :  ldy #(tab_selector_data_size+3*listbox_data_size+0*checkbox_data_size+3*drag_edit_data_size-2)
-      sta panels_luts::psg_oscillators::comps, y
+      sta comps, y
       ; fine tune
       lda concerto_synth::timbres::Timbre::osc::fine, x
       ldy #(tab_selector_data_size+3*listbox_data_size+0*checkbox_data_size+4*drag_edit_data_size-2)
-      sta panels_luts::psg_oscillators::comps, y
+      sta comps, y
       ; key track
       lda concerto_synth::timbres::Timbre::osc::track, x
       ldy #(tab_selector_data_size+3*listbox_data_size+1*checkbox_data_size+4*drag_edit_data_size-1)
-      sta panels_luts::psg_oscillators::comps, y
+      sta comps, y
       ; pitch mod select 1
       lda concerto_synth::timbres::Timbre::osc::pitch_mod_sel1, x
       jsr panel_common::map_modsource_to_gui
       ldy #(tab_selector_data_size+4*listbox_data_size+1*checkbox_data_size+4*drag_edit_data_size-1)
-      sta panels_luts::psg_oscillators::comps, y
+      sta comps, y
       ; pitch mod select 2
       lda concerto_synth::timbres::Timbre::osc::pitch_mod_sel2, x
       jsr panel_common::map_modsource_to_gui
       ldy #(tab_selector_data_size+5*listbox_data_size+1*checkbox_data_size+4*drag_edit_data_size-1)
-      sta panels_luts::psg_oscillators::comps, y
+      sta comps, y
       ; pwm select
       lda concerto_synth::timbres::Timbre::osc::pwm_sel, x
       jsr panel_common::map_modsource_to_gui
       ldy #(tab_selector_data_size+6*listbox_data_size+1*checkbox_data_size+4*drag_edit_data_size-1)
-      sta panels_luts::psg_oscillators::comps, y
+      sta comps, y
       ; vol mod select
       lda concerto_synth::timbres::Timbre::osc::vol_mod_sel, x
       jsr panel_common::map_modsource_to_gui
       ldy #(tab_selector_data_size+7*listbox_data_size+1*checkbox_data_size+4*drag_edit_data_size-1)
-      sta panels_luts::psg_oscillators::comps, y
+      sta comps, y
       ; pitch mod depth 1
       lda concerto_synth::timbres::Timbre::osc::pitch_mod_dep1, x
       jsr concerto_synth::map_scale5_to_twos_complement
       ldy #(tab_selector_data_size+7*listbox_data_size+1*checkbox_data_size+5*drag_edit_data_size-2)
-      sta panels_luts::psg_oscillators::comps, y
+      sta comps, y
       ; pitch mod depth 2
       lda concerto_synth::timbres::Timbre::osc::pitch_mod_dep2, x
       jsr concerto_synth::map_scale5_to_twos_complement
       ldy #(tab_selector_data_size+7*listbox_data_size+1*checkbox_data_size+6*drag_edit_data_size-2)
-      sta panels_luts::psg_oscillators::comps, y
+      sta comps, y
       ; pwm depth
       lda concerto_synth::timbres::Timbre::osc::pwm_dep, x
       jsr panel_common::map_signed_7bit_to_twos_complement
       ldy #(tab_selector_data_size+7*listbox_data_size+1*checkbox_data_size+7*drag_edit_data_size-2)
-      sta panels_luts::psg_oscillators::comps, y
+      sta comps, y
       ; volume mod depth
       lda concerto_synth::timbres::Timbre::osc::vol_mod_dep, x
       jsr panel_common::map_signed_7bit_to_twos_complement
       ldy #(tab_selector_data_size+7*listbox_data_size+1*checkbox_data_size+8*drag_edit_data_size-2)
-      sta panels_luts::psg_oscillators::comps, y
-      ; redraw components
-      lda #1
-      jsr draw_components
+      sta comps, y
       rts
    .endproc
 

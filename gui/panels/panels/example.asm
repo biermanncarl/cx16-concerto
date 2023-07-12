@@ -57,6 +57,7 @@
    ; currently valid values. This is for cases such as a different synth timbre is selected and the new
    ; values have to be loaded into the GUI, or a different oscillator tab has been selected etc.
    ; (Data transfer direction: underlying data -> GUI components)
+   ; Note: Redrawing the panel after refresh is handled by the calling code, so refresh routines don't need to do it.
    .proc refresh
       rts
    .endproc

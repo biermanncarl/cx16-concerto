@@ -72,7 +72,7 @@
       .word @save_bank
    @timbre_selector:
       ; read data from component string and write it to the Timbre setting
-      lda panels_luts::synth_navigation::comps, y
+      lda comps, y
       sta gui_definitions::current_synth_timbre
       jsr refresh_gui
       rts
@@ -108,9 +108,9 @@
       ;dey
       ;bpl :-
       ; do input string
-      lda #panels_luts::synth_navigation::ti_x
+      lda #ti_x
       sta r2L
-      lda #panels_luts::synth_navigation::ti_y
+      lda #ti_y
       sta r2H
       lda #<concerto_synth::timbres::file_name
       sta r0L
@@ -122,7 +122,7 @@
       rts
    @set_play_volume:
       iny
-      lda panels_luts::synth_navigation::comps, y
+      lda comps, y
       sta play_volume
       rts
    @load_bank:
