@@ -29,7 +29,12 @@
 .define CCOLOR_ALG_OP_NUMBERS 16*0+13
 .define CCOLOR_ALG_CONNECTION 16*COLOR_BACKGROUND+COLOR_ALG_CONNECTION
 ; others
-.define N_PANELS 11   ; number of panels
+; number of panels
+.ifdef ::concerto_full_daw
+   .define N_PANELS 11
+.else
+   .define N_PANELS 9
+.endif
 
 
 ; compile time macro: converts an ascii string to a zero-terminated string that can be displayed directly on the VERA
@@ -57,12 +62,6 @@
    lda #(<(ej_return-1))
    pha
    jmp (ej_jmp_tbl,x)
-.endmacro
-
-.macro PANEL_BYTE_FIELD
-   .repeat N_PANELS
-      .byte 0
-   .endrep
 .endmacro
 
 .endif ; .ifndef ::GUI_GUI_MACROS_ASM

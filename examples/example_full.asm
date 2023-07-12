@@ -15,6 +15,7 @@ concerto_use_timbres_from_file = 1
 .include "../synth_engine/concerto_synth.asm"
 
 ; include the synth gui
+::concerto_full_daw = 1
 .include "../gui/concerto_gui.asm"
 
 ; include the X16 header
@@ -35,7 +36,7 @@ start:
    jsr concerto_synth::activate_synth
 
    ; just for testing
-   jsr concerto_gui::notes::setup_test_clip
+   jsr concerto_gui::gui::panels::notes::setup_test_clip
 
 .include "example_full_mainloop.asm"
 

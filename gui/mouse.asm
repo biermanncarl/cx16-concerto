@@ -84,7 +84,7 @@ mouse_tick:
    .word do_hold_L
    .word do_hold_R
 end_mouse_tick:
-   jsr handle_component_requests
+   jsr gui::handle_component_requests
    rts
 
 ; no buttons are pressed. waiting for button presses.

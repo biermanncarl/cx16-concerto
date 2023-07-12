@@ -1,7 +1,5 @@
 ; Copyright 2021, 2023 Carl Georg Biermann
 
-.include "drag_and_drop/notes.asm"
-
 ; This file contains most of the GUI relevant code at the moment.
 ; It is called mainly by the mouse.asm driver, and sends commands to the guiutils.asm
 ; to output GUI elements.
@@ -90,7 +88,7 @@ dummy_data_size = 1
 ; defines which panels are drawn in which order, and which panels receive mouse events first.
 ; The first elements in the stack are at the bottom.
 .scope stack
-   stack: PANEL_BYTE_FIELD    ; the actual stack, containing the indices of the panels
+   stack: .res N_PANELS       ; the actual stack, containing the indices of the panels
    sp: .byte 0                ; stack pointer, counts how many elements are on the stack
 .endscope
 
@@ -102,55 +100,81 @@ dummy_data_size = 1
 dummy_sr:
    rts
 
-; brings up the synth GUI
-; puts all synth related panels into the GUI stack
-load_synth_gui:
-   jsr guiutils::cls
-   lda #9 ; GUI stack size (how many panels are visible)
-   sta stack::sp
-   lda #panels::ids::global_navigation
-   sta stack::stack+0
-   lda #panels::ids::synth_navigation
-   sta stack::stack+1
-   lda #panels::ids::synth_info
-   sta stack::stack+2
-   lda #panels::ids::fm_general
-   sta stack::stack+3
-   lda #panels::ids::fm_operators
-   sta stack::stack+4
-   lda #panels::ids::synth_global
-   sta stack::stack+5
-   lda #panels::ids::psg_oscillators
-   sta stack::stack+6
-   lda #panels::ids::envelopes
-   sta stack::stack+7
-   lda #panels::ids::lfo
-   sta stack::stack+8
-   jsr refresh_gui
-   rts
 
 
-load_clip_gui:
-   jsr guiutils::cls
-   lda #2 ; GUI stack size (how many panels are visible)
-   sta stack::sp
-   lda #panels::ids::global_navigation
-   sta stack::stack+0
-   lda #panels::ids::clip_editing
-   sta stack::stack+1
-   jsr refresh_gui
-   rts
+.ifdef ::concerto_full_daw
+   ; brings up the synth GUI
+   ; puts all synth related panels into the GUI stack
+   load_synth_gui:
+      jsr guiutils::cls
+      lda #9 ; GUI stack size (how many panels are visible)
+      sta stack::sp
+      lda #panels::ids::global_navigation
+      sta stack::stack+0
+      lda #panels::ids::synth_navigation
+      sta stack::stack+1
+      lda #panels::ids::synth_info
+      sta stack::stack+2
+      lda #panels::ids::fm_general
+      sta stack::stack+3
+      lda #panels::ids::fm_operators
+      sta stack::stack+4
+      lda #panels::ids::synth_global
+      sta stack::stack+5
+      lda #panels::ids::psg_oscillators
+      sta stack::stack+6
+      lda #panels::ids::envelopes
+      sta stack::stack+7
+      lda #panels::ids::lfo
+      sta stack::stack+8
+      jsr refresh_gui
+      rts
 
+   load_clip_gui:
+      jsr guiutils::cls
+      lda #2 ; GUI stack size (how many panels are visible)
+      sta stack::sp
+      lda #panels::ids::global_navigation
+      sta stack::stack+0
+      lda #panels::ids::clip_editing
+      sta stack::stack+1
+      jsr refresh_gui
+      rts
 
-load_arrangement_gui:
-   jsr guiutils::cls
-   lda #1 ; GUI stack size (how many panels are visible)
-   sta stack::sp
-   lda #panels::ids::global_navigation
-   sta stack::stack+0
-   jsr refresh_gui
-   rts
-
+   load_arrangement_gui:
+      jsr guiutils::cls
+      lda #1 ; GUI stack size (how many panels are visible)
+      sta stack::sp
+      lda #panels::ids::global_navigation
+      sta stack::stack+0
+      jsr refresh_gui
+      rts
+.else
+   ; brings up the synth GUI
+   ; puts all synth related panels into the GUI stack
+   load_synth_gui:
+      jsr guiutils::cls
+      lda #8 ; GUI stack size (how many panels are visible)
+      sta stack::sp
+      lda #panels::ids::synth_navigation
+      sta stack::stack+0
+      lda #panels::ids::synth_info
+      sta stack::stack+1
+      lda #panels::ids::fm_general
+      sta stack::stack+2
+      lda #panels::ids::fm_operators
+      sta stack::stack+3
+      lda #panels::ids::synth_global
+      sta stack::stack+4
+      lda #panels::ids::psg_oscillators
+      sta stack::stack+5
+      lda #panels::ids::envelopes
+      sta stack::stack+6
+      lda #panels::ids::lfo
+      sta stack::stack+7
+      jsr refresh_gui
+      rts
+.endif
 
 ; Goes through the various requests which can be issued during events and addresses them.
 ; Expects mouse_definitions::curr_panel to be set to the relevant panel.

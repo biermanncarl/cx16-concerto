@@ -5,6 +5,7 @@
 ::GUI_PANELS_PANELS_TEMPLATE_ASM = 1
 
 .include "common.asm"
+.include "../../drag_and_drop/notes.asm"
 
 ; editing area for clips
 .scope clip_editing
