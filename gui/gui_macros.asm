@@ -28,13 +28,6 @@
 .define CCOLOR_BUTTON 16*1 + 0
 .define CCOLOR_ALG_OP_NUMBERS 16*0+13
 .define CCOLOR_ALG_CONNECTION 16*COLOR_BACKGROUND+COLOR_ALG_CONNECTION
-; others
-; number of panels
-.ifdef ::concerto_full_daw
-   .define N_PANELS 11
-.else
-   .define N_PANELS 9
-.endif
 
 
 ; compile time macro: converts an ascii string to a zero-terminated string that can be displayed directly on the VERA

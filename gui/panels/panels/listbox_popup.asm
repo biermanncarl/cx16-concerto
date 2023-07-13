@@ -84,7 +84,7 @@
    @close_popup:
       ; one thing that always happens, is that the popup is closed upon clicking.
       ; close popup
-      dec stack::sp
+      dec panels_stack_pointer
       ; clear area where the popup has been before
       ; jsr guiutils::cls ; would be the cheap solution
       lda box_x

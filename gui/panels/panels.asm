@@ -17,6 +17,7 @@
 
    ; Panel id definitions
    ; ====================
+   ;
    ; From ALL_PANEL_SCOPES, we automatically define a list of constants with the name of the panels inside the scope ids (e.g. ids::envelopes)
    ; and the value according to the zero-based index within ALL_PANEL_SCOPES.
    ; Most importantly, every id is unique and can be used to index into the panel property arrays and jump tables.
@@ -34,20 +35,14 @@
    ; generate id constants to be used in other code
    .scope ids
       PANEL_ID_GENERATOR 0, ALL_PANEL_SCOPES
-
-      ; Check if the N_PANELS macro (which we need for "const expression" purposes) is the same as the actual number of panels.
-      .if num_of_panels <> N_PANELS
-         .error "Please adjust N_PANELS to reflect the actual number of panels."
-      .endif
    .endscope
+
 
 
    ; Panel property lookup tables
    ; ============================
    ;
    ; Here we generate data arrays with one entry (byte or word) per panel.
-
-
 
    ; X positions
    px: SCOPE_MEMBER_BYTE_FIELD px, ALL_PANEL_SCOPES
@@ -66,6 +61,17 @@
    jump_table_draw: SCOPE_MEMBER_WORD_FIELD draw, ALL_PANEL_SCOPES
    jump_table_write: SCOPE_MEMBER_WORD_FIELD write, ALL_PANEL_SCOPES
    jump_table_refresh: SCOPE_MEMBER_WORD_FIELD refresh, ALL_PANEL_SCOPES
+
+
+
+   ; Panels Stack
+   ; ============
+   ;
+   ; This stack holds all currently active panels. Panels higher up in the stack have higher priority for receiving events (mouse or keyboard).
+
+   panels_stack: .res ids::num_of_panels ; panels stack is 
+   panels_stack_pointer: .byte 0 ; number of panels currently at the stack
+
 
 
 
@@ -100,12 +106,12 @@
       lsr
       ror gp_cy
       ; now check panels from top to bottom
-      lda stack::sp
+      lda panels_stack_pointer
       tax
    @loop:
       dex
       bmi @end_loop
-      ldy stack::stack, x ; y will be panel's index
+      ldy panels::panels_stack, x ; y will be panel's index
       ;lda px, y
       ;dec
       ;cmp gp_cx

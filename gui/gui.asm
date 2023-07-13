@@ -84,14 +84,6 @@ dummy_data_size = 1
 
 .scope gui
 
-; The Panel Stack
-; defines which panels are drawn in which order, and which panels receive mouse events first.
-; The first elements in the stack are at the bottom.
-.scope stack
-   stack: .res N_PANELS       ; the actual stack, containing the indices of the panels
-   sp: .byte 0                ; stack pointer, counts how many elements are on the stack
-.endscope
-
 .include "gui_definitions.asm"
 .include "panels/panels.asm"
 
@@ -108,45 +100,45 @@ dummy_sr:
    load_synth_gui:
       jsr guiutils::cls
       lda #9 ; GUI stack size (how many panels are visible)
-      sta stack::sp
+      sta panels::panels_stack_pointer
       lda #panels::ids::global_navigation
-      sta stack::stack+0
+      sta panels::panels_stack+0
       lda #panels::ids::synth_navigation
-      sta stack::stack+1
+      sta panels::panels_stack+1
       lda #panels::ids::synth_info
-      sta stack::stack+2
+      sta panels::panels_stack+2
       lda #panels::ids::fm_general
-      sta stack::stack+3
+      sta panels::panels_stack+3
       lda #panels::ids::fm_operators
-      sta stack::stack+4
+      sta panels::panels_stack+4
       lda #panels::ids::synth_global
-      sta stack::stack+5
+      sta panels::panels_stack+5
       lda #panels::ids::psg_oscillators
-      sta stack::stack+6
+      sta panels::panels_stack+6
       lda #panels::ids::envelopes
-      sta stack::stack+7
+      sta panels::panels_stack+7
       lda #panels::ids::lfo
-      sta stack::stack+8
+      sta panels::panels_stack+8
       jsr refresh_gui
       rts
 
    load_clip_gui:
       jsr guiutils::cls
       lda #2 ; GUI stack size (how many panels are visible)
-      sta stack::sp
+      sta panels::panels_stack_pointer
       lda #panels::ids::global_navigation
-      sta stack::stack+0
+      sta panels::panels_stack+0
       lda #panels::ids::clip_editing
-      sta stack::stack+1
+      sta panels::panels_stack+1
       jsr refresh_gui
       rts
 
    load_arrangement_gui:
       jsr guiutils::cls
       lda #1 ; GUI stack size (how many panels are visible)
-      sta stack::sp
+      sta panels::panels_stack_pointer
       lda #panels::ids::global_navigation
-      sta stack::stack+0
+      sta panels::panels_stack+0
       jsr refresh_gui
       rts
 .else
@@ -155,23 +147,23 @@ dummy_sr:
    load_synth_gui:
       jsr guiutils::cls
       lda #8 ; GUI stack size (how many panels are visible)
-      sta stack::sp
+      sta panels::panels_stack_pointer
       lda #panels::ids::synth_navigation
-      sta stack::stack+0
+      sta panels::panels_stack+0
       lda #panels::ids::synth_info
-      sta stack::stack+1
+      sta panels::panels_stack+1
       lda #panels::ids::fm_general
-      sta stack::stack+2
+      sta panels::panels_stack+2
       lda #panels::ids::fm_operators
-      sta stack::stack+3
+      sta panels::panels_stack+3
       lda #panels::ids::synth_global
-      sta stack::stack+4
+      sta panels::panels_stack+4
       lda #panels::ids::psg_oscillators
-      sta stack::stack+5
+      sta panels::panels_stack+5
       lda #panels::ids::envelopes
-      sta stack::stack+6
+      sta panels::panels_stack+6
       lda #panels::ids::lfo
-      sta stack::stack+7
+      sta panels::panels_stack+7
       jsr refresh_gui
       rts
 .endif
@@ -207,23 +199,23 @@ draw_gui:
    ; TODO: clear area on screen (but when exactly is it needed?)
    ; call panel-specific drawing subroutines
    ldy dg_counter
-   lda stack::stack, y
+   lda panels::panels_stack, y
    asl
    tax
    INDEXED_JSR panels::jump_table_draw, @ret_addr
 @ret_addr:
    ; draw GUI components
    ldy dg_counter
-   lda stack::stack, y
+   lda panels::panels_stack, y
    jsr draw_components
    ; draw captions
    ldy dg_counter
-   lda stack::stack, y
+   lda panels::panels_stack, y
    jsr draw_captions
    ; advance in loop
    lda dg_counter
    inc
-   cmp stack::sp
+   cmp panels::panels_stack_pointer
    sta dg_counter
    bne @loop
    rts
@@ -644,10 +636,10 @@ click_listbox:
    lda mouse_definitions::curr_panel
    sta panels::listbox_popup::lb_panel
    ; now do the GUI stack stuff
-   ldx stack::sp
+   ldx panels::panels_stack_pointer
    lda #panels::ids::listbox_popup
-   sta stack::stack, x
-   inc stack::sp
+   sta panels::panels_stack, x
+   inc panels::panels_stack_pointer
 @update_gui:
    jsr panels::listbox_popup::draw
    rts
@@ -854,7 +846,7 @@ refresh_gui:
 @loop:
    ; call panel-specific drawing subroutine
    ldy rfg_counter
-   lda stack::stack, y
+   lda panels::panels_stack, y
    asl
    tax
    INDEXED_JSR panels::jump_table_refresh, @ret_addr
@@ -862,7 +854,7 @@ refresh_gui:
    ; advance in loop
    lda rfg_counter
    inc
-   cmp stack::sp
+   cmp panels::panels_stack_pointer
    sta rfg_counter
    bne @loop
 
