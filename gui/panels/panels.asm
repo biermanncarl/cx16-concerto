@@ -10,7 +10,7 @@
    .include "../mouse_definitions.asm"
 
    .ifdef ::concerto_full_daw
-      .include "configs/daw_gui.asm"
+      .include "configs/full_daw_gui.asm"
    .else
       .include "configs/only_synth_gui.asm"
    .endif
