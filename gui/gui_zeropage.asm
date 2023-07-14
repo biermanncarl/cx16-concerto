@@ -4,6 +4,10 @@
 ; The abbreviations stand for "my zero page word B" or "my zero page byte D" and so on
 ; Each variable serves several purposes, depending on the context.
 
+.ifndef ::GUI_GUI_ZEROPAGE_ASM
+
+::GUI_GUI_ZEROPAGE_ASM = 1
+
 .pushseg
 .zeropage
 
@@ -19,3 +23,5 @@ mzpbe = concerto_synth::mzpbe
 mzpbf = concerto_synth::mzpbf
 
 .popseg
+
+.endif ; .ifndef ::GUI_GUI_ZEROPAGE_ASM
