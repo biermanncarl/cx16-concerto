@@ -300,7 +300,7 @@ cls:
 @loop_x:
    lda #32
    sta VERA_data0
-   lda #(11*16+1)
+   lda #CCOLOR_CAPTION
    sta VERA_data0
    inx
    cpx #80

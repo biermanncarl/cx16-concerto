@@ -6,16 +6,25 @@
 
 ; GUI definitions
 ; colors
-.define COLOR_BACKGROUND 11
-.define COLOR_FRAME 15
+.ifdef ::concerto_full_daw
+   .define COLOR_BACKGROUND 11
+   .define COLOR_FRAME 15
+   .define COLOR_ARROWED_EDIT_BG 0
+   .define COLOR_ARROWED_EDIT_FG 3
+   .define COLOR_LISTBOX_BG 0
+.else
+   .define COLOR_BACKGROUND 0
+   .define COLOR_FRAME 1
+   .define COLOR_ARROWED_EDIT_BG 6
+   .define COLOR_ARROWED_EDIT_FG 5
+   .define COLOR_LISTBOX_BG 6
+.endif
+
 .define COLOR_CAPTION 15
 .define COLOR_IMPORTANT_CAPTION 5; 13 is too bright
 .define COLOR_TABS 1
-.define COLOR_ARROWED_EDIT_BG 0
-.define COLOR_ARROWED_EDIT_FG 3
 .define COLOR_ARROWED_EDIT_ARROWS 1
 .define COLOR_CHECKBOX 1
-.define COLOR_LISTBOX_BG 0
 .define COLOR_LISTBOX_FG 15
 .define COLOR_LISTBOX_ARROW 1
 .define COLOR_LISTBOX_POPUP_BG 0
