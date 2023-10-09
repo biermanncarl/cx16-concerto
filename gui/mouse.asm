@@ -163,7 +163,7 @@ do_hold_L:
    lda #0
    sta mouse_definitions::curr_data_1
    jmp do_dragging
-   jmp end_mouse_tick
+   jmp end_mouse_tick ; unreachable code ... optimize away?
 
 ; right button is held down. (and no other button has been pressed)
 do_hold_R:

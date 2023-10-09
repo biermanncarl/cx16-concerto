@@ -13,19 +13,21 @@
    wd = fm_general::wd
    hg = 17
    comps:
-      .byte 2, px, py, N_OPERATORS, 0 ; tabselector
-      .byte 4, px+4 , py+12, %0, 0, 31, 0, 0 ; drag edit - attack
-      .byte 4, px+9, py+12, %0, 0, 31, 0, 0 ; drag edit - decay1
-      .byte 4, px+14, py+12, %0, 0, 15, 0, 0 ; drag edit - decay level
-      .byte 4, px+19, py+12, %0, 0, 31, 0, 0 ; drag edit - decay2
-      .byte 4, px+24, py+12, %0, 0, 15, 0, 0 ; drag edit - release
-      .byte 4, px+10, py+7, %0, 0, 15, 0, 0 ; drag edit - mul
-      .byte 4, px+15, py+7, %00000100, 253, 3, 0, 0 ; drag edit - fine
-      .byte 4, px+20, py+7, %0, 0, 3, 0, 0 ; drag edit - coarse
-      .byte 4, px+4, py+3, %0, 0, 127, 0, 0 ; drag edit - level (vol)
-      .byte 4, px+17, py+14, %00000000, 0, 3, 0, 0 ; drag edit - key scaling
-      .byte 5, px+10, py+3, 2, 0 ; checkbox - volume sensitivity
-      .byte 0
+   .scope comps
+      COMPONENT_DEFINITION tab_selector, tab_select, px, py, N_OPERATORS, 0
+      COMPONENT_DEFINITION drag_edit, attack, px+4 , py+12, %0, 0, 31, 0, 0
+      COMPONENT_DEFINITION drag_edit, decay_1, px+9, py+12, %0, 0, 31, 0, 0 
+      COMPONENT_DEFINITION drag_edit, decay_level, px+14, py+12, %0, 0, 15, 0, 0 
+      COMPONENT_DEFINITION drag_edit, decay_2, px+19, py+12, %0, 0, 31, 0, 0 
+      COMPONENT_DEFINITION drag_edit, release, px+24, py+12, %0, 0, 15, 0, 0 
+      COMPONENT_DEFINITION drag_edit, mul, px+10, py+7, %0, 0, 15, 0, 0 
+      COMPONENT_DEFINITION drag_edit, fine, px+15, py+7, %00000100, 253, 3, 0, 0 
+      COMPONENT_DEFINITION drag_edit, coarse, px+20, py+7, %0, 0, 3, 0, 0 
+      COMPONENT_DEFINITION drag_edit, level, px+4, py+3, %0, 0, 127, 0, 0 
+      COMPONENT_DEFINITION drag_edit, key_scaling, px+17, py+14, %00000000, 0, 3, 0, 0 
+      COMPONENT_DEFINITION checkbox, vol_sensitivity, px+10, py+3, 2, 0
+      COMPONENT_LIST_END
+   .endscope
    capts:
       .byte CCOLOR_CAPTION, px+4, py
       .word cp
@@ -101,7 +103,7 @@
       tax
       ; component offset
       lda mouse_definitions::curr_component_ofs
-      adc #6 ; carry should be clear from previous code
+      adc #5 ; carry should be clear from previous code
       tay ; there's no component type where the data is before this index
       ; now determine which component has been dragged
       phx
@@ -213,29 +215,29 @@
       tax
       ; attack
       lda concerto_synth::timbres::Timbre::operators::ar, x
-      ldy #(tab_selector_data_size + 0*checkbox_data_size+1*drag_edit_data_size+0*listbox_data_size+0*arrowed_edit_data_size-2)
+      LDY_COMPONENT_MEMBER drag_edit, attack, coarse_value
       sta comps, y
       ; decay 1
       lda concerto_synth::timbres::Timbre::operators::d1r, x
-      ldy #(tab_selector_data_size + 0*checkbox_data_size+2*drag_edit_data_size+0*listbox_data_size+0*arrowed_edit_data_size-2)
+      LDY_COMPONENT_MEMBER drag_edit, decay_1, coarse_value
       sta comps, y
       ; decay level
       sec
       lda #15
       sbc concerto_synth::timbres::Timbre::operators::d1l, x
-      ldy #(tab_selector_data_size + 0*checkbox_data_size+3*drag_edit_data_size+0*listbox_data_size+0*arrowed_edit_data_size-2)
+      LDY_COMPONENT_MEMBER drag_edit, decay_level, coarse_value
       sta comps, y
       ; decay 2
       lda concerto_synth::timbres::Timbre::operators::d2r, x
-      ldy #(tab_selector_data_size + 0*checkbox_data_size+4*drag_edit_data_size+0*listbox_data_size+0*arrowed_edit_data_size-2)
+      LDY_COMPONENT_MEMBER drag_edit, decay_2, coarse_value
       sta comps, y
       ; release
       lda concerto_synth::timbres::Timbre::operators::rr, x
-      ldy #(tab_selector_data_size + 0*checkbox_data_size+5*drag_edit_data_size+0*listbox_data_size+0*arrowed_edit_data_size-2)
+      LDY_COMPONENT_MEMBER drag_edit, release, coarse_value
       sta comps, y
       ; mul
       lda concerto_synth::timbres::Timbre::operators::mul, x
-      ldy #(tab_selector_data_size + 0*checkbox_data_size+6*drag_edit_data_size+0*listbox_data_size+0*arrowed_edit_data_size-2)
+      LDY_COMPONENT_MEMBER drag_edit, mul, coarse_value
       sta comps, y
       ; fine
       lda concerto_synth::timbres::Timbre::operators::dt1, x
@@ -247,25 +249,25 @@
       adc #5
       bra :++
    :  lda concerto_synth::timbres::Timbre::operators::dt1, x
-   :  ldy #(tab_selector_data_size + 0*checkbox_data_size+7*drag_edit_data_size+0*listbox_data_size+0*arrowed_edit_data_size-2)
+   :  LDY_COMPONENT_MEMBER drag_edit, fine, coarse_value
       sta comps, y
       ; coarse
       lda concerto_synth::timbres::Timbre::operators::dt2, x
-      ldy #(tab_selector_data_size + 0*checkbox_data_size+8*drag_edit_data_size+0*listbox_data_size+0*arrowed_edit_data_size-2)
+      LDY_COMPONENT_MEMBER drag_edit, coarse, coarse_value
       sta comps, y
       ; vol
       sec
       lda #127
       sbc concerto_synth::timbres::Timbre::operators::level, x
-      ldy #(tab_selector_data_size + 0*checkbox_data_size+9*drag_edit_data_size+0*listbox_data_size+0*arrowed_edit_data_size-2)
+      LDY_COMPONENT_MEMBER drag_edit, level, coarse_value
       sta comps, y
       ; key scaling
       lda concerto_synth::timbres::Timbre::operators::ks, x
-      ldy #(tab_selector_data_size + 0*checkbox_data_size+10*drag_edit_data_size+0*listbox_data_size+0*arrowed_edit_data_size-2)
+      LDY_COMPONENT_MEMBER drag_edit, key_scaling, coarse_value
       sta comps, y
       ; volume sensitivity
       lda concerto_synth::timbres::Timbre::operators::vol_sens, x
-      ldy #(tab_selector_data_size + 1*checkbox_data_size+10*drag_edit_data_size+0*listbox_data_size+0*arrowed_edit_data_size-1)
+      LDY_COMPONENT_MEMBER checkbox, vol_sensitivity, checked
       sta comps, y
       rts
    .endproc

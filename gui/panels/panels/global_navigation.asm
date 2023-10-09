@@ -13,8 +13,10 @@
    wd = 3
    hg = 60-py
    comps:
-      .byte 7 ; dummy component, to catch click events (without it, the panel wouldn't receive any click events!)
-      .byte 0
+   .scope comps
+      COMPONENT_DEFINITION dummy, click_catcher
+      COMPONENT_LIST_END
+   .endscope
    capts:
       .byte 0
    ; data specific to the synth-navigation panel

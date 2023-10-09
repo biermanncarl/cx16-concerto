@@ -13,14 +13,18 @@
    py = notes::detail::event_edit_pos_y-3 ; for navigation buttons at the top (temporary solution, until we implement a more convenient navigation solution)
    wd = notes::detail::event_edit_width
    hg = notes::detail::event_edit_height+3
+
    comps:
-      .byte 3, px+5, py+1, 1, 5, 3 ; arrowed edit (zoom level)
-      .byte 1, px+14, py+0, 5, (<lb_left), (>lb_left) ; button go left
-      .byte 1, px+20, py+0, 5, (<lb_up), (>lb_up) ; button go up
-      .byte 1, px+26, py+0, 5, (<lb_down), (>lb_down) ; button go down
-      .byte 1, px+32, py+0, 5, (<lb_right), (>lb_right) ; button go right
-      .byte 7 ; dummy component, to catch click events
-      .byte 0
+   .scope comps
+      COMPONENT_DEFINITION arrowed_edit, zoom_level, px+5, py+1, 1, 5, 3
+      COMPONENT_DEFINITION button, go_left, px+14, py+0, 5, A lb_left
+      COMPONENT_DEFINITION button, go_up, px+20, py+0, 5, A lb_up
+      COMPONENT_DEFINITION button, go_down, px+26, py+0, 5, A lb_down
+      COMPONENT_DEFINITION button, go_right, px+32, py+0, 5, A lb_right
+      COMPONENT_DEFINITION dummy, click_catcher
+      COMPONENT_LIST_END
+   .endscope
+
    capts:
       .byte CCOLOR_CAPTION, px+0, py+1
       .word lb_zoom
@@ -56,7 +60,7 @@
       ; prepare component string offset
       lda mouse_definitions::curr_component_ofs
       clc
-      adc #5 ; we're reading only arrowed edits
+      adc #4 ; we're reading only arrowed edits
       tay
       ; prepare jump
       lda mouse_definitions::curr_component_id

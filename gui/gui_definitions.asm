@@ -5,6 +5,7 @@
 ::GUI_GUI_DEFINITIONS_ASM = 1
 
 .scope gui_definitions
+   ; (INACTIVE)
    ; Set to nonzero value to request an update of GUI components (data transfer: underlying data -> GUI components).
    ; This is mainly intended for situations when the underlying data on several panels has changed, or it is not
    ; possible to call a panel's refresh routine directly.

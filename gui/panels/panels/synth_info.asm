@@ -13,7 +13,9 @@
    wd = 16
    hg = psg_oscillators::hg+envelopes::hg
    comps:
-      .byte 0
+   .scope comps
+      COMPONENT_LIST_END
+   .endscope
    capts:
       .byte CCOLOR_CAPTION, px+6, py
       .word cp

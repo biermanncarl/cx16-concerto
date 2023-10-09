@@ -13,19 +13,21 @@
    wd = 29
    hg = 17
    comps:
-      .byte 3, px+13, py+4, 0, 7, 0 ; connection scheme number (arrowed edit)
-      .byte 4, px+14, py+6, %0, 0, 7, 0, 0 ; feedback level (drag edit)
-      .byte 5, px+15, py+2, 2, 0 ; activate operator 1 checkbox
-      .byte 5, px+18, py+2, 2, 0 ; activate operator 2 checkbox
-      .byte 5, px+21, py+2, 2, 0 ; activate operator 3 checkbox
-      .byte 5, px+24, py+2, 2, 0 ; activate operator 4 checkbox
-      .byte 6, px+13, py+8, 5, 4, (<panel_common::channel_select_lb), (>panel_common::channel_select_lb), 0 ; L/R listbox
-      .byte 4, px+5, py+13, %00000100, 128, 127, 0, 0 ; semitone edit ... signed range
-      .byte 4, px+5, py+14, %00000100, 128, 127, 0, 0 ; fine tune edit ... signed range
-      .byte 5, px+13, py+11, 7, 0 ; pitch tracking checkbox
-      .byte 6, px+13, py+13, 8, N_TOT_MODSOURCES+1, (<panel_common::modsources_none_option_lb), (>panel_common::modsources_none_option_lb), 0 ; pitch mod select
-      .byte 4, px+21, py+13, %10000100, 256-76, 76, 0, 0 ; drag edit - pitch mod depth
-      .byte 0
+   .scope comps
+      COMPONENT_DEFINITION arrowed_edit, connection, px+13, py+4, 0, 7, 0
+      COMPONENT_DEFINITION drag_edit, feedback, px+14, py+6, %0, 0, 7, 0, 0
+      COMPONENT_DEFINITION checkbox, op1_active, px+15, py+2, 2, 0
+      COMPONENT_DEFINITION checkbox, op2_active, px+18, py+2, 2, 0
+      COMPONENT_DEFINITION checkbox, op3_active, px+21, py+2, 2, 0
+      COMPONENT_DEFINITION checkbox, op4_active, px+24, py+2, 2, 0
+      COMPONENT_DEFINITION listbox, lr_select, px+13, py+8, 5, 4, A panel_common::channel_select_lb, 0
+      COMPONENT_DEFINITION drag_edit, semitones, px+5, py+13, %00000100, 128, 127, 0, 0
+      COMPONENT_DEFINITION drag_edit, fine_tune, px+5, py+14, %00000100, 128, 127, 0, 0
+      COMPONENT_DEFINITION checkbox, key_track, px+13, py+11, 7, 0
+      COMPONENT_DEFINITION listbox, pitchmod_sel, px+13, py+13, 8, N_TOT_MODSOURCES+1, A panel_common::modsources_none_option_lb, 0
+      COMPONENT_DEFINITION drag_edit, pitchmod_dep, px+21, py+13, %10000100, 256-76, 76, 0, 0
+      COMPONENT_LIST_END
+   .endscope
    capts:
       .byte CCOLOR_CAPTION, px+4, py
       .word cp
@@ -92,7 +94,7 @@
       ldx gui_definitions::current_synth_timbre
       lda mouse_definitions::curr_component_ofs
       clc
-      adc #6
+      adc #5
       tay ; there's no component type where the data is before this index
       ; now determine which component has been dragged
       phx
@@ -229,11 +231,11 @@
       ldx gui_definitions::current_synth_timbre
       ; connection scheme
       lda concerto_synth::timbres::Timbre::fm_general::con, x
-      ldy #(0*checkbox_data_size+0*drag_edit_data_size+0*listbox_data_size+1*arrowed_edit_data_size-1)
+      LDY_COMPONENT_MEMBER arrowed_edit, connection, value
       sta comps, y
       ; feedback level
       lda concerto_synth::timbres::Timbre::fm_general::fl, x
-      ldy #(0*checkbox_data_size+1*drag_edit_data_size+0*listbox_data_size+1*arrowed_edit_data_size-2)
+      LDY_COMPONENT_MEMBER drag_edit, feedback, coarse_value
       sta comps, y
       ; operators enable
       lda concerto_synth::timbres::Timbre::fm_general::op_en, x
@@ -242,25 +244,25 @@
       lda #0
       bbr0 @rfm_bits, :+
       lda #1
-   :  ldy #(1*checkbox_data_size+1*drag_edit_data_size+0*listbox_data_size+1*arrowed_edit_data_size-1)
+   :  LDY_COMPONENT_MEMBER checkbox, op1_active, checked
       sta comps, y
       ; operator 2 enable
       lda #0
       bbr1 @rfm_bits, :+
       lda #1
-   :  ldy #(2*checkbox_data_size+1*drag_edit_data_size+0*listbox_data_size+1*arrowed_edit_data_size-1)
+   :  LDY_COMPONENT_MEMBER checkbox, op2_active, checked
       sta comps, y
       ; operator 3 enable
       lda #0
       bbr2 @rfm_bits, :+
       lda #1
-   :  ldy #(3*checkbox_data_size+1*drag_edit_data_size+0*listbox_data_size+1*arrowed_edit_data_size-1)
+   :  LDY_COMPONENT_MEMBER checkbox, op3_active, checked
       sta comps, y
       ; operator 4 enable
       lda #0
       bbr3 @rfm_bits, :+
       lda #1
-   :  ldy #(4*checkbox_data_size+1*drag_edit_data_size+0*listbox_data_size+1*arrowed_edit_data_size-1)
+   :  LDY_COMPONENT_MEMBER checkbox, op4_active, checked
       sta comps, y
       ; LR channel select
       lda concerto_synth::timbres::Timbre::fm_general::lr, x
@@ -268,7 +270,7 @@
       rol
       rol
       rol
-      ldy #(4*checkbox_data_size+1*drag_edit_data_size+1*listbox_data_size+1*arrowed_edit_data_size-1)
+      LDY_COMPONENT_MEMBER listbox, lr_select, selected_entry
       sta comps, y
       ; semitones
       ; we need to check fine tune to get correct semi tones.
@@ -279,25 +281,25 @@
       bra :++
    :  lda concerto_synth::timbres::Timbre::fm_general::pitch, x
       inc
-   :  ldy #(4*checkbox_data_size+2*drag_edit_data_size+1*listbox_data_size+1*arrowed_edit_data_size-2)
+   :  LDY_COMPONENT_MEMBER drag_edit, semitones, coarse_value
       sta comps, y
       ; fine tune
       lda concerto_synth::timbres::Timbre::fm_general::fine, x
-      ldy #(4*checkbox_data_size+3*drag_edit_data_size+1*listbox_data_size+1*arrowed_edit_data_size-2)
+      LDY_COMPONENT_MEMBER drag_edit, fine_tune, coarse_value
       sta comps, y
       ; key track
       lda concerto_synth::timbres::Timbre::fm_general::track, x
-      ldy #(5*checkbox_data_size+3*drag_edit_data_size+1*listbox_data_size+1*arrowed_edit_data_size-1)
+      LDY_COMPONENT_MEMBER checkbox, key_track, checked
       sta comps, y
       ; pitch mod select
       lda concerto_synth::timbres::Timbre::fm_general::pitch_mod_sel, x
       jsr panel_common::map_modsource_to_gui
-      ldy #(5*checkbox_data_size+3*drag_edit_data_size+2*listbox_data_size+1*arrowed_edit_data_size-1)
+      LDY_COMPONENT_MEMBER listbox, pitchmod_sel, selected_entry
       sta comps, y
       ; pitch mod depth
       lda concerto_synth::timbres::Timbre::fm_general::pitch_mod_dep, x
       jsr concerto_synth::map_scale5_to_twos_complement
-      ldy #(5*checkbox_data_size+4*drag_edit_data_size+2*listbox_data_size+1*arrowed_edit_data_size-2)
+      LDY_COMPONENT_MEMBER drag_edit, pitchmod_dep, coarse_value
       sta comps, y
       rts
    .endproc

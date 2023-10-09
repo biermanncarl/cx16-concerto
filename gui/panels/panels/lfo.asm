@@ -13,11 +13,13 @@
    wd = (synth_global::wd+psg_oscillators::wd-envelopes::wd)
    hg = envelopes::hg
    comps:
-      .byte 6, px+2, py+3, 8, 5, (<lfo_waveform_lb), (>lfo_waveform_lb), 0 ; waveform listbox
-      .byte 5, px+12, py+2, 8, 0 ; LFO retrigger checkbox
-      .byte 4, px+7 , py+5, %00000001, 0, 128, 10, 0 ; drag edit - LFO rate
-      .byte 4, px+14 , py+5, %00000000, 0, 255, 0, 0 ; drag edit - LFO phase offset
-      .byte 0
+   .scope comps
+      COMPONENT_DEFINITION listbox, waveform, px+2, py+3, 8, 5, A lfo_waveform_lb, 0
+      COMPONENT_DEFINITION checkbox, retrigger, px+12, py+2, 8, 0
+      COMPONENT_DEFINITION drag_edit, rate, px+7 , py+5, %00000001, 0, 128, 10, 0
+      COMPONENT_DEFINITION drag_edit, phase, px+14 , py+5, %00000000, 0, 255, 0, 0
+      COMPONENT_LIST_END
+   .endscope
    capts:
       .byte CCOLOR_CAPTION, px+4, py
       .word panel_common::lfo_lb
@@ -58,7 +60,7 @@
       ldx gui_definitions::current_synth_timbre
       lda mouse_definitions::curr_component_ofs
       clc
-      adc #6
+      adc #5
       tay ; there's no component type where the data is before this index
       ; now determine which component has been dragged
       phx
@@ -104,22 +106,22 @@
       ldx gui_definitions::current_synth_timbre
       ; LFO waveform
       lda concerto_synth::timbres::Timbre::lfo::wave, x
-      ldy #(0*checkbox_data_size+0*drag_edit_data_size+1*listbox_data_size-1)
+      LDY_COMPONENT_MEMBER listbox, waveform, selected_entry
       sta comps, y
       ; LFO retrigger
       lda concerto_synth::timbres::Timbre::lfo::retrig, x
-      ldy #(1*checkbox_data_size+0*drag_edit_data_size+1*listbox_data_size-1)
+      LDY_COMPONENT_MEMBER checkbox, retrigger, checked
       sta comps, y
       ; LFO rate
       lda concerto_synth::timbres::Timbre::lfo::rateH, x
-      ldy #(1*checkbox_data_size+1*drag_edit_data_size+1*listbox_data_size-2)
+      LDY_COMPONENT_MEMBER drag_edit, rate, coarse_value
       sta comps, y
       iny
       lda concerto_synth::timbres::Timbre::lfo::rateL, x
       sta comps, y
       ; phase offset
       lda concerto_synth::timbres::Timbre::lfo::offs, x
-      ldy #(1*checkbox_data_size+2*drag_edit_data_size+1*listbox_data_size-2)
+      LDY_COMPONENT_MEMBER drag_edit, phase, coarse_value
       sta comps, y
       rts
    .endproc

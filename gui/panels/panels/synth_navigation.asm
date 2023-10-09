@@ -17,16 +17,18 @@
    ti_y = 5
    ti_l = 8 ; maximum length
    comps:
-      .byte 3, 41, 1, 0, N_TIMBRES-1, 0 ; arrowed edit (timbre selection)
-      .byte 1, 66, 0, 13, (<load_preset_lb), (>load_preset_lb) ; load preset button
-      .byte 1, 52, 0, 13, (<save_preset_lb), (>save_preset_lb) ; save preset button
-      .byte 1, 34, 2, 6, (<copy_preset_lb), (>copy_preset_lb) ; copy preset button
-      .byte 1, 41, 2, 7, (<paste_preset_lb), (>paste_preset_lb) ; paste preset button
-      .byte 1, 52, 4, 13, (<file_lb), (>file_lb) ; set file name button
-      .byte 4, 43, 5, %00000000, 0, 63, 63, 0 ; note volume
-      .byte 1, 66, 2, 13, (<load_bank_lb), (>load_bank_lb) ; load bank button
-      .byte 1, 52, 2, 13, (<save_bank_lb), (>save_bank_lb) ; save bank button
-      .byte 0
+   .scope comps
+      COMPONENT_DEFINITION arrowed_edit, timbre_select, 41, 1, 0, N_TIMBRES-1, 0
+      COMPONENT_DEFINITION button, load_preset, 66, 0, 13, A load_preset_lb
+      COMPONENT_DEFINITION button, save_preset, 52, 0, 13, A save_preset_lb
+      COMPONENT_DEFINITION button, copy_preset, 34, 2, 6, A copy_preset_lb
+      COMPONENT_DEFINITION button, paste_preset, 41, 2, 7, A paste_preset_lb
+      COMPONENT_DEFINITION button, set_filename, 52, 4, 13, A file_lb
+      COMPONENT_DEFINITION drag_edit, keyboard_volume, 43, 5, %00000000, 0, 63, 63, 0
+      COMPONENT_DEFINITION button, load_bank, 66, 2, 13, A load_bank_lb
+      COMPONENT_DEFINITION button, save_bank, 52, 2, 13, A save_bank_lb
+      COMPONENT_LIST_END
+   .endscope
    capts:
       .byte CCOLOR_CAPTION, 34, 1
       .word timbre_lb
@@ -53,7 +55,7 @@
       ; prepare component string offset
       lda mouse_definitions::curr_component_ofs
       clc
-      adc #5 ; currently, we're reading only arrowed edits and drag edits
+      adc #4 ; currently, we're reading only arrowed edits and drag edits
       tay
       ; prepare jump
       lda mouse_definitions::curr_component_id

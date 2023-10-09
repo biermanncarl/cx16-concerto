@@ -13,12 +13,14 @@
    wd = 24
    hg = 8
    comps:
-      .byte 2, px, py, 3, 0 ; tab selector
-      .byte 4, px+4 , py+4, %00000001, 0, 127, 0, 0 ; drag edit - attack
-      .byte 4, px+9 , py+4, %00000001, 0, 127, 0, 0 ; drag edit - decay
-      .byte 4, px+14, py+4, %00000000, 0, ENV_PEAK, 0, 0 ; drag edit - sustain
-      .byte 4, px+18, py+4, %00000001, 0, 127, 0, 0 ; drag edit - release
-      .byte 0
+   .scope comps
+      COMPONENT_DEFINITION tab_selector, tab_select, px, py, 3, 0
+      COMPONENT_DEFINITION drag_edit, attack, px+4 , py+4, %00000001, 0, 127, 0, 0
+      COMPONENT_DEFINITION drag_edit, decay, px+9 , py+4, %00000001, 0, 127, 0, 0
+      COMPONENT_DEFINITION drag_edit, sustain, px+14, py+4, %00000000, 0, ENV_PEAK, 0, 0
+      COMPONENT_DEFINITION drag_edit, release, px+18, py+4, %00000001, 0, 127, 0, 0
+      COMPONENT_LIST_END
+   .endscope
    capts:
       .byte CCOLOR_CAPTION, px+4, py
       .word cp
@@ -71,7 +73,7 @@
       ; prepare drag edit readout
       lda mouse_definitions::curr_component_ofs
       clc
-      adc #6 ; 6 because most of the control elements are drag edits anyway
+      adc #5 ; 6 because most of the control elements are drag edits anyway
       tay ; drag edit's coarse value offset is in Y
       ; now determine which component has been dragged
       phx
@@ -142,34 +144,25 @@
       tax ; envelope index is in x
       ; read ADSR data from Timbre and load it into edits
       ; attack edit
-      ldy #(tab_selector_data_size + 6)
+      LDY_COMPONENT_MEMBER drag_edit, attack, coarse_value
       lda concerto_synth::timbres::Timbre::env::attackH, x
       sta comps, y
       iny
       lda concerto_synth::timbres::Timbre::env::attackL, x
       sta comps, y
       ; decay edit
-      tya
-      clc
-      adc #(drag_edit_data_size-1)
-      tay
+      LDY_COMPONENT_MEMBER drag_edit, decay, coarse_value
       lda concerto_synth::timbres::Timbre::env::decayH, x
       sta comps, y
       iny
       lda concerto_synth::timbres::Timbre::env::decayL, x
       sta comps, y
       ; sustain edit
-      tya
-      clc
-      adc #(drag_edit_data_size-1)
-      tay
+      LDY_COMPONENT_MEMBER drag_edit, sustain, coarse_value
       lda concerto_synth::timbres::Timbre::env::sustain, x
       sta comps, y
       ; release edit
-      tya
-      clc
-      adc #(drag_edit_data_size)
-      tay
+      LDY_COMPONENT_MEMBER drag_edit, release, coarse_value
       lda concerto_synth::timbres::Timbre::env::releaseH, x
       sta comps, y
       iny

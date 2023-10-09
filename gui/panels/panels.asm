@@ -4,9 +4,36 @@
 
 ::GUI_PANELS_PANELS_ASM = 1
 
-; panels lookup tables
+; Panels are rectangular areas on the screen that contain basic GUI elements
+; like listboxes, checkboxes etc.
+; They behave a bit like windows.
+; The look and behaviour of all panels are hard coded.
+; However, panels can be made visible/invisible individually, and also their order can be changed.
+; The order affects which panels appear on top and thus also receive mouse events first.
+; This is used to be able to dynamically swap out parts of the GUI, or do things like popup menus.
+; The tool for that is a "panel stack" that defines which panels are shown in which order.
+
+; Each panel has multiple byte strings hard coded. Those byte strings define elements shown on the GUI.
+;   * one string that defines all interactive GUI components, such as checkboxes, listboxes etc.
+;     It is often called "comps", "component string" or something similar.
+;     In many subroutines, this component string is given as a zero page pointer together with an offset.
+;     Those component strings can inherently only be 256 bytes or shorter.
+;   * one string that defines all static labels displaying text. Those are not interactive.
+;     It is often called "captions" or something similar.
+;     It too can only be 256 bytes or shorter. However, this doesn't include the captions themselves,
+;     but only pointers to them.
+; Also, some crucial data like position and size and the addresses of aforementioned data blocks are
+; stored in arrays that can be accessed via the panel's index.
+
+; The data blocks that contain the data about the GUI components are partially regarded as constant,
+; and partially as variable.
+; Technically, everything about a component could be changed at runtime. However, e.g. for drag edits,
+; only the shown value and the display state (fine or coarse) are intended to be changed at runtime.
+
+
 .scope panels
    .include "../../common/utility_macros.asm"
+   .include "utils.asm"
    .include "../mouse_definitions.asm"
 
    .ifdef ::concerto_full_daw
@@ -21,22 +48,9 @@
    ; From ALL_PANEL_SCOPES, we automatically define a list of constants with the name of the panels inside the scope ids (e.g. ids::envelopes)
    ; and the value according to the zero-based index within ALL_PANEL_SCOPES.
    ; Most importantly, every id is unique and can be used to index into the panel property arrays and jump tables.
-
-   .macro PANEL_ID_GENERATOR index, p1, SCOPE_PARAMETER_LIST
-      .ifblank p1
-         num_of_panels = index
-         ; First parameter is empty
-         .exitmacro
-      .endif
-      p1 = index ; TODO: if this does not work, use a name space instead: ids::panel_name
-      ; call this macro recursively without p1
-      PANEL_ID_GENERATOR {index+1}, SCOPE_PARAMETER_LIST
-   .endmacro
-   ; generate id constants to be used in other code
    .scope ids
-      PANEL_ID_GENERATOR 0, ALL_PANEL_SCOPES
+      ID_GENERATOR 0, ALL_PANEL_SCOPES
    .endscope
-
 
 
    ; Panel property lookup tables
@@ -68,15 +82,14 @@
    ; ============
    ;
    ; This stack holds all currently active panels. Panels higher up in the stack have higher priority for receiving events (mouse or keyboard).
-
-   panels_stack: .res ids::num_of_panels ; panels stack is 
+   panels_stack: .res ids::end_id ; panels stack is end_id elements big
    panels_stack_pointer: .byte 0 ; number of panels currently at the stack
 
 
 
 
-   ; returns the panel index the mouse is currently over. Bit 7 set means none
-   ; panel index returned in mouse_definitions::curr_panel
+   ; Returns the index of the panel the mouse is currently over in mouse_definitions::curr_panel.
+   ; Bit 7 set means the mouse isn't over any panel.
    .proc mouse_get_panel
       ; grab those zero page variables for this routine
       gp_cx = mzpwa

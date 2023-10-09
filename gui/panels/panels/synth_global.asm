@@ -13,14 +13,16 @@
    wd = 12
    hg = 24
    comps:
-      .byte 3, px+3, py+3, 0, MAX_OSCS_PER_VOICE, 1 ; number of oscillators
-      .byte 3, px+3, py+6, 1, 3, 1 ; number of envelopes
-      .byte 5, px+2, py+8, 8, 1 ; LFO activate checkbox
-      .byte 5, px+2, py+12, 8, 1 ; retrigger checkbox
-      .byte 5, px+2, py+14, 8, 0 ; porta checkbox
-      .byte 4, px+2, py+16, %00000000, 0, 255, 0, 0 ; porta rate edit
-      .byte 4, px+7, py+19, %00000000, 0, 76, 0, 0 ; vibrato amount edit
-      .byte 0
+   .scope comps
+      COMPONENT_DEFINITION arrowed_edit, n_oscs, px+3, py+3, 0, MAX_OSCS_PER_VOICE, 1
+      COMPONENT_DEFINITION arrowed_edit, n_envs, px+3, py+6, 1, 3, 1
+      COMPONENT_DEFINITION checkbox, lfo_activate, px+2, py+8, 8, 1
+      COMPONENT_DEFINITION checkbox, retrigger, px+2, py+12, 8, 1
+      COMPONENT_DEFINITION checkbox, porta_activate, px+2, py+14, 8, 0
+      COMPONENT_DEFINITION drag_edit, porta_rate, px+2, py+16, %00000000, 0, 255, 0, 0
+      COMPONENT_DEFINITION drag_edit, vibrato_amount, px+7, py+19, %00000000, 0, 76, 0, 0
+      COMPONENT_LIST_END
+   .endscope
    capts:
       .byte CCOLOR_CAPTION, px+3, py
       .word cp
@@ -66,7 +68,7 @@
       ldx gui_definitions::current_synth_timbre
       lda mouse_definitions::curr_component_ofs
       clc
-      adc #5
+      adc #4
       tay ; there's no component type where the data is before this index
       ; now jump to component which has been clicked/dragged
       phx
@@ -137,27 +139,27 @@
       ldx gui_definitions::current_synth_timbre
       ; number of oscillators
       lda concerto_synth::timbres::Timbre::n_oscs, x
-      ldy #(0*checkbox_data_size+0*drag_edit_data_size+1*arrowed_edit_data_size-1)
+      LDY_COMPONENT_MEMBER arrowed_edit, n_oscs, value
       sta comps, y
       ; number of envelopes
       lda concerto_synth::timbres::Timbre::n_envs, x
-      ldy #(0*checkbox_data_size+0*drag_edit_data_size+2*arrowed_edit_data_size-1)
+      LDY_COMPONENT_MEMBER arrowed_edit, n_envs, value
       sta comps, y
       ; LFO activate checkbox
       lda concerto_synth::timbres::Timbre::n_lfos, x
-      ldy #(1*checkbox_data_size+0*drag_edit_data_size+2*arrowed_edit_data_size-1)
+      LDY_COMPONENT_MEMBER checkbox, lfo_activate, checked
       sta comps, y
       ; retrigger checkbox
       lda concerto_synth::timbres::Timbre::retrig, x
-      ldy #(2*checkbox_data_size+0*drag_edit_data_size+2*arrowed_edit_data_size-1)
+      LDY_COMPONENT_MEMBER checkbox, retrigger, checked
       sta comps, y
       ; porta activate checkbox
       lda concerto_synth::timbres::Timbre::porta, x
-      ldy #(3*checkbox_data_size+0*drag_edit_data_size+2*arrowed_edit_data_size-1)
+      LDY_COMPONENT_MEMBER checkbox, porta_activate, checked
       sta comps, y
       ; porta rate edit
       lda concerto_synth::timbres::Timbre::porta_r, x
-      ldy #(3*checkbox_data_size+1*drag_edit_data_size+2*arrowed_edit_data_size-2)
+      LDY_COMPONENT_MEMBER drag_edit, porta_rate, coarse_value
       sta comps, y
       ; vibrato amount edit
       lda concerto_synth::timbres::Timbre::vibrato, x
@@ -165,7 +167,7 @@
       jsr concerto_synth::map_scale5_to_twos_complement
       bra :++
    :  lda #0
-   :  ldy #(3*checkbox_data_size+2*drag_edit_data_size+2*arrowed_edit_data_size-2)
+   :  LDY_COMPONENT_MEMBER drag_edit, vibrato_amount, coarse_value
       sta comps, y
       rts
    .endproc

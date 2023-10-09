@@ -20,7 +20,9 @@
    ; Zero marks the end of the component string.
    ; Note that the total length of the component string must not exceed 256 bytes (including the ending 0).
    comps:
-      .byte 0 ; end of components
+   .scope comps
+      COMPONENT_LIST_END
+   .endscope
 
    ; caption list of the panel. Consists of the color, the x and y position,
    ; and a pointer to a zero-terminated screencode string (the "@" symbol is unusable as screencode 0 is "@").
@@ -43,7 +45,7 @@
    ; This method must read a value from a GUI component and store that value or otherwise process it.
    ; This method is called when the user interacts with GUI components and changes their values.
    ; (Data transfer direction: GUI components -> underlying data)
-   ; Input: It can rely on the current ("curr_...") mouse variables being populated correctly,
+   ; Input: The write method may rely on the current ("curr_...") mouse variables being populated correctly,
    ;        most importantly, curr_component_id and curr_component_ofs, which give the id of the clicked
    ;        component and its memory offset within the panel's component string.
    ;        It is usually unnecessary to check curr_panel, as the fact that this panel's write routine
