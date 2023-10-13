@@ -25,7 +25,7 @@ dummy_sr:
 .ifdef ::concerto_full_daw
    ; brings up the synth GUI
    ; puts all synth related panels into the GUI stack
-   load_synth_gui:
+   .proc load_synth_gui
       jsr guiutils::cls
       lda #9 ; GUI stack size (how many panels are visible)
       sta panels::panels_stack_pointer
@@ -49,8 +49,9 @@ dummy_sr:
       sta panels::panels_stack+8
       jsr refresh_gui
       rts
+   .endproc
 
-   load_clip_gui:
+   .proc load_clip_gui
       jsr guiutils::cls
       lda #2 ; GUI stack size (how many panels are visible)
       sta panels::panels_stack_pointer
@@ -60,8 +61,9 @@ dummy_sr:
       sta panels::panels_stack+1
       jsr refresh_gui
       rts
+   .endproc
 
-   load_arrangement_gui:
+   .proc load_arrangement_gui
       jsr guiutils::cls
       lda #1 ; GUI stack size (how many panels are visible)
       sta panels::panels_stack_pointer
@@ -69,10 +71,12 @@ dummy_sr:
       sta panels::panels_stack+0
       jsr refresh_gui
       rts
+   .endproc 
+
 .else
    ; brings up the synth GUI
    ; puts all synth related panels into the GUI stack
-   load_synth_gui:
+   .proc load_synth_gui
       jsr guiutils::cls
       lda #8 ; GUI stack size (how many panels are visible)
       sta panels::panels_stack_pointer
@@ -94,33 +98,12 @@ dummy_sr:
       sta panels::panels_stack+7
       jsr refresh_gui
       rts
+   .endproc
 .endif
-
-; Goes through the various requests which can be issued during events and addresses them.
-; Expects mouse_definitions::curr_panel to be set to the relevant panel.
-.proc handle_component_requests
-   ; check if component wants an update
-   lda gui_definitions::request_component_write
-   beq @end_write_request
-   stz gui_definitions::request_component_write
-   lda mouse_definitions::curr_panel
-   asl
-   tax
-   INDEXED_JSR panels::jump_table_write, @end_write_request
-@end_write_request:
-   ; check if component wants a redraw
-   lda gui_definitions::request_components_redraw
-   beq @end_redraw_request
-   lda mouse_definitions::curr_panel
-   jsr draw_components
-   stz gui_definitions::request_components_redraw
-@end_redraw_request:
-   rts
-.endproc
 
 
 ; reads through the stack and draws everything
-draw_gui:
+.proc draw_gui
    dg_counter = mzpbe ; counter variable
    stz dg_counter
 @loop:
@@ -135,11 +118,11 @@ draw_gui:
    ; draw GUI components
    ldy dg_counter
    lda panels::panels_stack, y
-   jsr draw_components
+   jsr panels::draw_components
    ; draw captions
    ldy dg_counter
    lda panels::panels_stack, y
-   jsr draw_captions
+   jsr panels::draw_captions
    ; advance in loop
    lda dg_counter
    inc
@@ -147,44 +130,11 @@ draw_gui:
    sta dg_counter
    bne @loop
    rts
+.endproc
 
-; draws all captions from the caption string of a panel
-; expects panel ID in register A
-draw_captions:
-   dcp_pointer = mzpwa
-   asl
-   tax
-   lda panels::capts, x
-   sta dcp_pointer
-   lda panels::capts+1, x
-   sta dcp_pointer+1
-   ldy #0
-@loop:
-   lda (dcp_pointer), y
-   beq @end_loop
-   sta guiutils::color
-   iny
-   lda (dcp_pointer), y
-   sta guiutils::cur_x
-   iny
-   lda (dcp_pointer), y
-   sta guiutils::cur_y
-   iny
-   lda (dcp_pointer), y
-   sta guiutils::str_pointer
-   iny
-   lda (dcp_pointer), y
-   sta guiutils::str_pointer+1
-   iny
-   phy
-   jsr guiutils::print
-   ply
-   jmp @loop
-@end_loop:
-   rts
 
 ; goes through the stack of active GUI panels and refreshes every one of them
-refresh_gui:
+.proc refresh_gui
    rfg_counter = mzpbe ; counter variable
    stz rfg_counter
 @loop:
@@ -204,116 +154,34 @@ refresh_gui:
 
    jsr draw_gui
    rts
+.endproc
 
 
-
-
-
-
-
-
-; goes through a GUI component string and draws all components in it
-; expects panel ID in register A
-draw_components:
-   dc_pointer = mzpwa
-   asl
-   tax
-   lda panels::comps, x
-   sta dc_pointer
-   lda panels::comps+1, x
-   sta dc_pointer+1
-   ldy #0
-@loop:
-@return_addr:
-   lda (dc_pointer), y
-   bmi @end_loop ; end on type 255
-   iny
-   asl
-   tax
-   INDEXED_JSR components::jump_table_draw, @return_addr
-@end_loop:
-   rts
-
-
-; given the panel, where the mouse is currently at,
-; this subroutine finds which GUI component is being clicked
-mouse_get_component:
-   ; panel number in mouse_definitions::curr_panel
-   ; mouse x and y coordinates in mouse_definitions::curr_x and mouse_definitions::curr_y
-   ; zero page variables:
-   gc_pointer = mzpwa
-   gc_cx = mzpwd     ; x and y in multiples of 4 (!) pixels to support half character grid
-   gc_cy = mzpwd+1
-   gc_counter = mzpbe
-   ; determine mouse position in multiples of 4 pixels (divide by 4)
-   lda mouse_definitions::curr_x+1
-   lsr
-   sta gc_cx+1
-   lda mouse_definitions::curr_x
-   ror
-   sta gc_cx
-   lda gc_cx+1
-   lsr
-   ror gc_cx
-   ; (high byte is uninteresting, thus not storing it back)
-   lda mouse_definitions::curr_y+1
-   lsr
-   sta gc_cy+1
-   lda mouse_definitions::curr_y
-   ror
-   sta gc_cy
-   lda gc_cy+1
-   lsr
-   ror gc_cy
-   ; copy pointer to component string to ZP
+; Goes through the various requests which can be issued during events and addresses them.
+; Expects mouse_definitions::curr_panel to be set to the relevant panel.
+.proc handle_component_requests
+   ; check if component wants an update
+   lda gui_definitions::request_component_write
+   beq @end_write_request
+   stz gui_definitions::request_component_write
    lda mouse_definitions::curr_panel
    asl
    tax
-   lda panels::comps, x
-   sta gc_pointer
-   lda panels::comps+1, x
-   sta gc_pointer+1
-   ; iterate over gui elements
-   lda #255
-   sta gc_counter
-   lda #0
-@check_gui_loop:
-   tay
-   ; increment control element identifier
-   inc gc_counter
-   ; look up which component type is next (type 255 is end of GUI component list)
-   lda (gc_pointer), y
-   bmi @no_hit ; if component is 255, go end
-   pha ; remember component type
-   asl
-   tax
-   iny
-   phy ; remember .Y incase it's a hit
-   ; jump to according component check
-   INDEXED_JSR components::jump_table_check_mouse, @return_addr
-@return_addr:
-   ply ; recall .Y prior to component check
-   plx ; recall component type
-   bcs @hit
-   ; no hit ... move on to the next component
-   tya
-   adc components::component_sizes, x ; carry is clear as per BCS above
-   bra @check_gui_loop
-@hit:
-   tya
-   sta mouse_definitions::curr_component_ofs
-   lda gc_counter
-   sta mouse_definitions::curr_component_id
+   INDEXED_JSR panels::jump_table_write, @end_write_request
+@end_write_request:
+   ; check if component wants a redraw
+   lda gui_definitions::request_components_redraw
+   beq @end_redraw_request
+   lda mouse_definitions::curr_panel
+   jsr panels::draw_components
+   stz gui_definitions::request_components_redraw
+@end_redraw_request:
    rts
-@no_hit:
-   ; 255 still in .A
-   sta mouse_definitions::curr_component_id
-   rts
-
+.endproc   
 
 ; click event. looks in mouse variables which panel has been clicked and calls its routine
 ; also looks which component has been clicked and calls according routine
-click_event:
+.proc click_event
    ; call GUI component's click subroutine, to update it.
    ; For that, we need the info about the component from the GUI component string
    ; of the respective panel.
@@ -333,14 +201,13 @@ click_event:
    asl
    tax
    jmp (components::jump_table_event_click, x) ; the called routines will do the rts for us.
-
-
+.endproc
 
 
 ; drag event. looks in mouse variables which panel's component has been dragged and calls its routine
 ; expects L/R information in mouse_definitions::curr_data_1 (0 for left drag, 1 for right drag)
 ; and dragging distance in mouse_definitions::curr_data_2
-drag_event:
+.proc drag_event
    ; call GUI component's drag subroutine, to update it.
    ; For that, we need the info about the component from the GUI component string
    ; of the respective panel.
@@ -359,8 +226,7 @@ drag_event:
    asl
    tax
    jmp (components::jump_table_event_drag, x) ; the called routines will do the rts for us.
-
-
+.endproc
 
 .include "backward_definitions.asm"
 

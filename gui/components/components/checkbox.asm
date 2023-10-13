@@ -19,14 +19,14 @@
    ; the panel's list of captions.
 
    .proc draw
-      lda (dc_pointer), y
+      lda (components_common::data_pointer), y
       sta guiutils::draw_x
       iny
-      lda (dc_pointer), y
+      lda (components_common::data_pointer), y
       sta guiutils::draw_y
       iny
       iny
-      lda (dc_pointer), y
+      lda (components_common::data_pointer), y
       sta guiutils::draw_data1
       phy
       jsr guiutils::draw_checkbox

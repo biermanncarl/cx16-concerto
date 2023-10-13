@@ -111,7 +111,7 @@ do_idle:
    jsr gui::panels::mouse_get_panel
    lda mouse_definitions::curr_panel
    bmi :+
-   jsr gui::mouse_get_component
+   jsr gui::panels::mouse_get_component
    lda mouse_definitions::curr_component_id
    sta mouse_definitions::prev_component_id
    lda mouse_definitions::curr_component_ofs
@@ -145,7 +145,7 @@ do_hold_L:
    beq :+
    jmp end_mouse_tick ; not the same, but a different one
 :  ; yes, the same. check if also the same component
-   jsr gui::mouse_get_component
+   jsr gui::panels::mouse_get_component
    lda mouse_definitions::curr_component_id
    bpl :+
    jmp end_mouse_tick ; no component being clicked

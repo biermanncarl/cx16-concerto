@@ -86,6 +86,65 @@
    panels_stack_pointer: .byte 0 ; number of panels currently at the stack
 
 
+   ; goes through a GUI component string and draws all components in it
+   ; expects panel ID in register A
+   .proc draw_components
+      dc_pointer = mzpwa
+      asl
+      tax
+      lda panels::comps, x
+      sta dc_pointer
+      lda panels::comps+1, x
+      sta dc_pointer+1
+      ldy #0
+   @loop:
+   @return_addr:
+      lda (dc_pointer), y
+      bmi @end_loop ; end on type 255
+      iny
+      asl
+      tax
+      INDEXED_JSR components::jump_table_draw, @return_addr
+   @end_loop:
+      rts
+   .endproc
+
+
+   ; draws all captions from the caption string of a panel
+   ; expects panel ID in register A
+   .proc draw_captions
+      dcp_pointer = mzpwa
+      asl
+      tax
+      lda panels::capts, x
+      sta dcp_pointer
+      lda panels::capts+1, x
+      sta dcp_pointer+1
+      ldy #0
+   @loop:
+      lda (dcp_pointer), y
+      beq @end_loop
+      sta guiutils::color
+      iny
+      lda (dcp_pointer), y
+      sta guiutils::cur_x
+      iny
+      lda (dcp_pointer), y
+      sta guiutils::cur_y
+      iny
+      lda (dcp_pointer), y
+      sta guiutils::str_pointer
+      iny
+      lda (dcp_pointer), y
+      sta guiutils::str_pointer+1
+      iny
+      phy
+      jsr guiutils::print
+      ply
+      jmp @loop
+   @end_loop:
+      rts
+   .endproc
 
 
    ; Returns the index of the panel the mouse is currently over in mouse_definitions::curr_panel.
@@ -158,6 +217,82 @@
       rts
    .endproc
 
+
+   ; given the panel, where the mouse is currently at,
+   ; this subroutine finds which GUI component is being clicked
+   .proc mouse_get_component
+      ; panel number in mouse_definitions::curr_panel
+      ; mouse x and y coordinates in mouse_definitions::curr_x and mouse_definitions::curr_y
+      ; zero page variables:
+      gc_pointer = mzpwa
+      gc_cx = mzpwd     ; x and y in multiples of 4 (!) pixels to support half character grid
+      gc_cy = mzpwd+1
+      gc_counter = mzpbe
+      ; determine mouse position in multiples of 4 pixels (divide by 4)
+      lda mouse_definitions::curr_x+1
+      lsr
+      sta gc_cx+1
+      lda mouse_definitions::curr_x
+      ror
+      sta gc_cx
+      lda gc_cx+1
+      lsr
+      ror gc_cx
+      ; (high byte is uninteresting, thus not storing it back)
+      lda mouse_definitions::curr_y+1
+      lsr
+      sta gc_cy+1
+      lda mouse_definitions::curr_y
+      ror
+      sta gc_cy
+      lda gc_cy+1
+      lsr
+      ror gc_cy
+      ; copy pointer to component string to ZP
+      lda mouse_definitions::curr_panel
+      asl
+      tax
+      lda panels::comps, x
+      sta gc_pointer
+      lda panels::comps+1, x
+      sta gc_pointer+1
+      ; iterate over gui elements
+      lda #255
+      sta gc_counter
+      lda #0
+   @check_gui_loop:
+      tay
+      ; increment control element identifier
+      inc gc_counter
+      ; look up which component type is next (type 255 is end of GUI component list)
+      lda (gc_pointer), y
+      bmi @no_hit ; if component is 255, go end
+      pha ; remember component type
+      asl
+      tax
+      iny
+      phy ; remember .Y incase it's a hit
+      ; jump to according component check
+      INDEXED_JSR components::jump_table_check_mouse, @return_addr
+   @return_addr:
+      ply ; recall .Y prior to component check
+      plx ; recall component type
+      bcs @hit
+      ; no hit ... move on to the next component
+      tya
+      adc components::component_sizes, x ; carry is clear as per BCS above
+      bra @check_gui_loop
+   @hit:
+      tya
+      sta mouse_definitions::curr_component_ofs
+      lda gc_counter
+      sta mouse_definitions::curr_component_id
+      rts
+   @no_hit:
+      ; 255 still in .A
+      sta mouse_definitions::curr_component_id
+      rts
+   .endproc
 
 .endscope
 

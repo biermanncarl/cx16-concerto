@@ -20,19 +20,19 @@
    .endstruct
 
    .proc draw
-      lda (dc_pointer), y
+      lda (components_common::data_pointer), y
       sta guiutils::draw_x
       iny
-      lda (dc_pointer), y
+      lda (components_common::data_pointer), y
       sta guiutils::draw_y
       iny
-      lda (dc_pointer), y
+      lda (components_common::data_pointer), y
       sta guiutils::draw_width
       iny
-      lda (dc_pointer), y
+      lda (components_common::data_pointer), y
       sta guiutils::str_pointer
       iny
-      lda (dc_pointer), y
+      lda (components_common::data_pointer), y
       sta guiutils::str_pointer+1
       iny
       phy

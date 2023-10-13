@@ -20,24 +20,24 @@
 
    .proc draw
       dlb_strp = guiutils::str_pointer
-      lda (dc_pointer), y
+      lda (components_common::data_pointer), y
       sta guiutils::draw_x
       iny
-      lda (dc_pointer), y
+      lda (components_common::data_pointer), y
       sta guiutils::draw_y
       iny
-      lda (dc_pointer), y
+      lda (components_common::data_pointer), y
       sta guiutils::draw_width
       iny
       iny
       ; now determine the label of the selected option
-      lda (dc_pointer), y
+      lda (components_common::data_pointer), y
       sta dlb_strp
       iny
-      lda (dc_pointer), y
+      lda (components_common::data_pointer), y
       sta dlb_strp+1
       iny
-      lda (dc_pointer), y  ; put index of selected option in X
+      lda (components_common::data_pointer), y  ; put index of selected option in X
       tax
       iny
       phy
