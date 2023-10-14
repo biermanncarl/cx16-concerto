@@ -396,8 +396,7 @@
    lda cf_fine
    sta mzpbf ; 7 cycles
 
-   clc
-   ror mzpwb+1
+   lsr mzpwb+1
    ror mzpwb
    bbr7 mzpbf, @skip_bit7
    clc
@@ -406,10 +405,9 @@
    sta cf_output
    lda mzpwb+1
    adc cf_output+1
-   sta cf_output+1 ; 38 cycles
+   sta cf_output+1 ; 36 cycles
 @skip_bit7:
-   clc
-   ror mzpwb+1
+   lsr mzpwb+1
    ror mzpwb
    bbr6 mzpbf, @skip_bit6
    clc
@@ -420,8 +418,7 @@
    adc cf_output+1
    sta cf_output+1
 @skip_bit6:
-   clc
-   ror mzpwb+1
+   lsr mzpwb+1
    ror mzpwb
    bbr5 mzpbf, @skip_bit5
    clc
@@ -432,8 +429,7 @@
    adc cf_output+1
    sta cf_output+1
 @skip_bit5:
-   clc
-   ror mzpwb+1
+   lsr mzpwb+1
    ror mzpwb
    bbr4 mzpbf, @skip_bit4
    clc
@@ -444,8 +440,7 @@
    adc cf_output+1
    sta cf_output+1
 @skip_bit4:
-   clc
-   ror mzpwb+1
+   lsr mzpwb+1
    ror mzpwb
    bbr3 mzpbf, @skip_bit3
    clc
@@ -456,8 +451,7 @@
    adc cf_output+1
    sta cf_output+1
 @skip_bit3:
-   clc
-   ror mzpwb+1
+   lsr mzpwb+1
    ror mzpwb
    bbr2 mzpbf, @skip_bit2
    clc
@@ -468,8 +462,7 @@
    adc cf_output+1
    sta cf_output+1
 @skip_bit2:
-   clc
-   ror mzpwb+1
+   lsr mzpwb+1
    ror mzpwb
    bbr1 mzpbf, @skip_bit1
    clc
@@ -480,8 +473,7 @@
    adc cf_output+1
    sta cf_output+1
 @skip_bit1:
-   clc
-   ror mzpwb+1
+   lsr mzpwb+1
    ror mzpwb
    bbr0 mzpbf, @skip_bit0
    clc
@@ -490,8 +482,8 @@
    sta cf_output
    lda mzpwb+1
    adc cf_output+1
-   sta cf_output+1 ; 38 * 8 cycles = 304 cycles
-   ; total 373 cycles + page crossings ~= 47 us
+   sta cf_output+1 ; 36 * 8 cycles = 288 cycles
+   ; total 357 cycles + page crossings ~= 45 us
 @skip_bit0:
 .endmacro
 
@@ -825,14 +817,13 @@ scale5_16_internal:
    lda scale5_moddepth
    and #%01110000
    beq :+
-   clc
-   ror
+   lsr
    ror
    ror
    tax
    jmp (@tableL-2, x)  ; if x=0, nothing has to be done. if x=2,4,6 or 8, jump to respective subroutine
 :  jmp @endL
-   ; 24 cycles
+   ; 22 cycles
 @tableL:
    .word @sublevel_1
    .word @sublevel_2
