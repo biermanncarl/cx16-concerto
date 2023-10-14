@@ -58,7 +58,7 @@
    .endproc
 
    .proc check_mouse
-      cde_bittest = mzpbf
+      cde_bittest = gui_variables::mzpbf
       ; get edit's options
       iny
       iny
@@ -103,16 +103,16 @@
    event_click = components_common::dummy_subroutine
 
    .proc event_drag
-      inc gui_definitions::request_component_write
+      inc gui_variables::request_component_write
       ; first check if drag edit has fine editing enabled
-      ldy mouse_definitions::prev_component_ofs
+      ldy mouse_variables::prev_component_ofs
       iny
       iny
       lda (components_common::data_pointer), y
       and #%00000001
       beq @coarse_drag  ; if there is no fine editing enabled, we jump straight to coarse editing
       ; check mouse for fine or coarse dragging mode
-      lda mouse_definitions::curr_data_1
+      lda mouse_variables::curr_data_1
       beq @coarse_drag
       jmp @fine_drag
    @coarse_drag:
@@ -125,7 +125,7 @@
       iny
       iny
       ; check if dragging up or down
-      lda mouse_definitions::curr_data_2
+      lda mouse_variables::curr_data_2
       bmi @coarse_drag_down
    @coarse_drag_up:
       ; check if adding the increment crosses the border
@@ -134,12 +134,12 @@
       sec
       sbc (components_common::data_pointer), y ; now we have the distance to the upper border in the accumulator
       sec
-      sbc mouse_definitions::curr_data_2 ; if this overflowed, we are crossing the border
+      sbc mouse_variables::curr_data_2 ; if this overflowed, we are crossing the border
       bcc @coarse_up_overflow
    @coarse_up_normal:
       lda (components_common::data_pointer), y
       clc
-      adc mouse_definitions::curr_data_2
+      adc mouse_variables::curr_data_2
       sta (components_common::data_pointer), y
       ; check if zero forbidden
       pla
@@ -168,14 +168,14 @@
       sec
       sbc (components_common::data_pointer), y ; now we have the distance to the min value in the accumulator
       clc
-      adc mouse_definitions::curr_data_2 ; if the result is negative, we are crossing the border
+      adc mouse_variables::curr_data_2 ; if the result is negative, we are crossing the border
       bcc @coarse_down_overflow
    @coarse_down_normal:
       iny
       iny
       lda (components_common::data_pointer), y
       clc
-      adc mouse_definitions::curr_data_2
+      adc mouse_variables::curr_data_2
       sta (components_common::data_pointer), y
       ; check if zero forbidden
       pla
@@ -207,7 +207,7 @@
       iny
       iny
       ; check if dragging up or down
-      lda mouse_definitions::curr_data_2
+      lda mouse_variables::curr_data_2
       bmi @fine_drag_down
    @fine_drag_up:
       ; check if adding the increment crosses the border
@@ -215,12 +215,12 @@
       sec
       sbc (components_common::data_pointer), y ; now we have the distance to the upper border in the accumulator
       sec
-      sbc mouse_definitions::curr_data_2 ; if this overflowed, we are crossing the border
+      sbc mouse_variables::curr_data_2 ; if this overflowed, we are crossing the border
       bcc @fine_up_overflow
    @fine_up_normal:
       lda (components_common::data_pointer), y
       clc
-      adc mouse_definitions::curr_data_2
+      adc mouse_variables::curr_data_2
       sta (components_common::data_pointer), y
       bra @update_gui
    @fine_up_overflow:
@@ -232,12 +232,12 @@
       ; check if adding the increment crosses the min value
       lda (components_common::data_pointer), y ; load current value
       clc
-      adc mouse_definitions::curr_data_2 ; if overflow occurs, we are crossing the border
+      adc mouse_variables::curr_data_2 ; if overflow occurs, we are crossing the border
       bcc @fine_down_overflow
    @fine_down_normal:
       lda (components_common::data_pointer), y
       clc
-      adc mouse_definitions::curr_data_2
+      adc mouse_variables::curr_data_2
       sta (components_common::data_pointer), y
       bra @update_gui
    @fine_down_overflow:
@@ -246,7 +246,7 @@
       sta (components_common::data_pointer), y
       bra @update_gui
    @update_gui:
-      ldy mouse_definitions::prev_component_ofs
+      ldy mouse_variables::prev_component_ofs
       jsr draw
       rts
    .endproc

@@ -36,7 +36,7 @@
    .endproc
 
    .proc check_mouse
-      ccb_width = mzpbf
+      ccb_width = gui_variables::mzpbf
       ; this is basically a "mouse is inside box" check
       ; with variable width
       ; get the width of the checkbox
@@ -70,8 +70,8 @@
    .endproc
 
    .proc event_click
-      inc gui_definitions::request_component_write ; register a change on the GUI
-      ldy mouse_definitions::curr_component_ofs
+      inc gui_variables::request_component_write ; register a change on the GUI
+      ldy mouse_variables::curr_component_ofs
       iny
       iny
       iny
@@ -85,7 +85,7 @@
       lda #1
       sta (components_common::data_pointer), y
    @update_gui:
-      ldy mouse_definitions::curr_component_ofs
+      ldy mouse_variables::curr_component_ofs
       jsr draw
       rts
    .endproc

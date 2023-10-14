@@ -46,8 +46,8 @@
    ;    components_common::mouse_downscaled_y.
    ; in multiples of 4 pixels (half character size).
    ; Relevant information (such as the number of the tab which the mouse is over etc.) can be stored in
-   ;    mouse_definitions::curr_data_1 and
-   ;    mouse_definitions::curr_data_2.
+   ;    mouse_variables::curr_data_1 and
+   ;    mouse_variables::curr_data_2.
    ; This information is then available in mouse events such as event_click or event_drag.
    ; Return:
    ; * in case of NO HIT: carry flag must be reset.
@@ -63,11 +63,11 @@
    ; The Zeropage pointer is
    ;    components_common::data_pointer.
    ; The relative index is given in
-   ;    mouse_definitions::curr_component_ofs,
+   ;    mouse_variables::curr_component_ofs,
    ; so that the component's data can be accessed by loading the latter into .Y and then (components_common::data_pointer),y.
    ; Relevant data produced by check_mouse is available in
-   ;    mouse_definitions::curr_data_1 and
-   ;    mouse_definitions::curr_data_2.
+   ;    mouse_variables::curr_data_1 and
+   ;    mouse_variables::curr_data_2.
    ; The component's updated state is subsequently read by the parent panel's write subroutine.
    .proc event_click
       rts
@@ -80,13 +80,13 @@
    ; The Zeropage pointer is
    ;    components_common::data_pointer.
    ; The relative index is given in
-   ;    mouse_definitions::prev_component_ofs,  (!! not curr_component_ofs)
+   ;    mouse_variables::prev_component_ofs,  (!! not curr_component_ofs)
    ; so that the component's data can be accessed by loading the latter into .Y and then (components_common::data_pointer),y.
    ; When the dragging operation was initiated by holding the left mouse button,
-   ;    mouse_definitions::curr_data_1
+   ;    mouse_variables::curr_data_1
    ; is set to 0. If it was the right mouse button, it is set to 1.
    ; The vertical dragging distance within the last tick is given in
-   ;    mouse_definitions::curr_data_2
+   ;    mouse_variables::curr_data_2
    ; in two's complement and single pixel precision. (horizontal dragging distance is not added yet)
    ; The component's updated state is subsequently read by the parent panel's write subroutine.
    .proc event_drag

@@ -4,37 +4,10 @@
 
 ::GUI_PANELS_PANELS_ASM = 1
 
-; Panels are rectangular areas on the screen that contain basic GUI elements
-; like listboxes, checkboxes etc.
-; They behave a bit like windows.
-; The look and behaviour of all panels are hard coded.
-; However, panels can be made visible/invisible individually, and also their order can be changed.
-; The order affects which panels appear on top and thus also receive mouse events first.
-; This is used to be able to dynamically swap out parts of the GUI, or do things like popup menus.
-; The tool for that is a "panel stack" that defines which panels are shown in which order.
-
-; Each panel has multiple byte strings hard coded. Those byte strings define elements shown on the GUI.
-;   * one string that defines all interactive GUI components, such as checkboxes, listboxes etc.
-;     It is often called "comps", "component string" or something similar.
-;     In many subroutines, this component string is given as a zero page pointer together with an offset.
-;     Those component strings can inherently only be 256 bytes or shorter.
-;   * one string that defines all static labels displaying text. Those are not interactive.
-;     It is often called "captions" or something similar.
-;     It too can only be 256 bytes or shorter. However, this doesn't include the captions themselves,
-;     but only pointers to them.
-; Also, some crucial data like position and size and the addresses of aforementioned data blocks are
-; stored in arrays that can be accessed via the panel's index.
-
-; The data blocks that contain the data about the GUI components are partially regarded as constant,
-; and partially as variable.
-; Technically, everything about a component could be changed at runtime. However, e.g. for drag edits,
-; only the shown value and the display state (fine or coarse) are intended to be changed at runtime.
-
-
 .scope panels
    .include "../../common/utility_macros.asm"
    .include "utils.asm"
-   .include "../mouse_definitions.asm"
+   .include "../mouse_variables.asm"
 
    .ifdef ::concerto_full_daw
       .include "configs/full_daw_gui.asm"
@@ -89,7 +62,7 @@
    ; goes through a GUI component string and draws all components in it
    ; expects panel ID in register A
    .proc draw_components
-      dc_pointer = mzpwa
+      dc_pointer = gui_variables::mzpwa
       asl
       tax
       lda panels::comps, x
@@ -113,7 +86,7 @@
    ; draws all captions from the caption string of a panel
    ; expects panel ID in register A
    .proc draw_captions
-      dcp_pointer = mzpwa
+      dcp_pointer = gui_variables::mzpwa
       asl
       tax
       lda panels::capts, x
@@ -147,17 +120,17 @@
    .endproc
 
 
-   ; Returns the index of the panel the mouse is currently over in mouse_definitions::curr_panel.
+   ; Returns the index of the panel the mouse is currently over in mouse_variables::curr_panel.
    ; Bit 7 set means the mouse isn't over any panel.
    .proc mouse_get_panel
       ; grab those zero page variables for this routine
-      gp_cx = mzpwa
-      gp_cy = mzpwd
+      gp_cx = gui_variables::mzpwa
+      gp_cy = gui_variables::mzpwd
       ; determine position in characters (divide by 8)
-      lda mouse_definitions::curr_x+1
+      lda mouse_variables::curr_x+1
       lsr
       sta gp_cx+1
-      lda mouse_definitions::curr_x
+      lda mouse_variables::curr_x
       ror
       sta gp_cx
       lda gp_cx+1
@@ -166,10 +139,10 @@
       lsr
       ror gp_cx
       ; (high byte is uninteresting, thus not storing it back)
-      lda mouse_definitions::curr_y+1
+      lda mouse_variables::curr_y+1
       lsr
       sta gp_cy+1
-      lda mouse_definitions::curr_y
+      lda mouse_variables::curr_y
       ror
       sta gp_cy
       lda gp_cy+1
@@ -208,12 +181,12 @@
       bcc @loop ; gp_cy is too big
       ; we're inside! return index
       tya
-      sta mouse_definitions::curr_panel
+      sta mouse_variables::curr_panel
       rts
    @end_loop:
       ; found no match
       lda #255
-      sta mouse_definitions::curr_panel
+      sta mouse_variables::curr_panel
       rts
    .endproc
 
@@ -221,35 +194,35 @@
    ; given the panel, where the mouse is currently at,
    ; this subroutine finds which GUI component is being clicked
    .proc mouse_get_component
-      ; panel number in mouse_definitions::curr_panel
-      ; mouse x and y coordinates in mouse_definitions::curr_x and mouse_definitions::curr_y
+      ; panel number in mouse_variables::curr_panel
+      ; mouse x and y coordinates in mouse_variables::curr_x and mouse_variables::curr_y
       ; zero page variables:
-      gc_pointer = mzpwa
-      gc_cx = mzpwd     ; x and y in multiples of 4 (!) pixels to support half character grid
-      gc_cy = mzpwd+1
-      gc_counter = mzpbe
+      gc_pointer = gui_variables::mzpwa
+      gc_cx = gui_variables::mzpwd     ; x and y in multiples of 4 (!) pixels to support half character grid
+      gc_cy = gui_variables::mzpwd+1
+      gc_counter = gui_variables::mzpbe
       ; determine mouse position in multiples of 4 pixels (divide by 4)
-      lda mouse_definitions::curr_x+1
+      lda mouse_variables::curr_x+1
       lsr
       sta gc_cx+1
-      lda mouse_definitions::curr_x
+      lda mouse_variables::curr_x
       ror
       sta gc_cx
       lda gc_cx+1
       lsr
       ror gc_cx
       ; (high byte is uninteresting, thus not storing it back)
-      lda mouse_definitions::curr_y+1
+      lda mouse_variables::curr_y+1
       lsr
       sta gc_cy+1
-      lda mouse_definitions::curr_y
+      lda mouse_variables::curr_y
       ror
       sta gc_cy
       lda gc_cy+1
       lsr
       ror gc_cy
       ; copy pointer to component string to ZP
-      lda mouse_definitions::curr_panel
+      lda mouse_variables::curr_panel
       asl
       tax
       lda panels::comps, x
@@ -284,13 +257,13 @@
       bra @check_gui_loop
    @hit:
       tya
-      sta mouse_definitions::curr_component_ofs
+      sta mouse_variables::curr_component_ofs
       lda gc_counter
-      sta mouse_definitions::curr_component_id
+      sta mouse_variables::curr_component_id
       rts
    @no_hit:
       ; 255 still in .A
-      sta mouse_definitions::curr_component_id
+      sta mouse_variables::curr_component_id
       rts
    .endproc
 

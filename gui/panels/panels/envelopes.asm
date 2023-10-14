@@ -59,7 +59,7 @@
 
    .proc write
       ; first, determine the offset of the envelope in the Timbre data
-      lda gui_definitions::current_synth_timbre
+      lda gui_variables::current_synth_timbre
       ldx active_tab ; envelope number
    @loop:
       cpx #0
@@ -71,13 +71,13 @@
    @end_loop:
       tax ; envelope index is in x
       ; prepare drag edit readout
-      lda mouse_definitions::curr_component_ofs
+      lda mouse_variables::curr_component_ofs
       clc
       adc #5 ; 6 because most of the control elements are drag edits anyway
       tay ; drag edit's coarse value offset is in Y
       ; now determine which component has been dragged
       phx
-      lda mouse_definitions::curr_component_id
+      lda mouse_variables::curr_component_id
       asl
       tax
       jmp (@jmp_tbl, x)
@@ -89,10 +89,10 @@
       .word @release
    @tab_select:
       plx
-      lda mouse_definitions::curr_data_1
+      lda mouse_variables::curr_data_1
       sta active_tab
       jsr refresh
-      inc gui_definitions::request_components_redraw
+      inc gui_variables::request_components_redraw
       rts
    @attack:
       plx
@@ -131,7 +131,7 @@
 
    .proc refresh
       ; first, determine the offset of the envelope in the Timbre data
-      lda gui_definitions::current_synth_timbre
+      lda gui_variables::current_synth_timbre
       ldx active_tab ; envelope number
    @loop:
       cpx #0

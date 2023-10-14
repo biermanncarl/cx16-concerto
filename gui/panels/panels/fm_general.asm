@@ -78,7 +78,7 @@
       sta guiutils::draw_data1
       jsr guiutils::draw_frame
       ; draw FM algorithm
-      ldx gui_definitions::current_synth_timbre
+      ldx gui_variables::current_synth_timbre
       lda concerto_synth::timbres::Timbre::fm_general::con, x
       sta guiutils::draw_data1
       jsr guiutils::draw_fm_alg
@@ -86,19 +86,19 @@
    .endproc
 
    .proc write
-      wfm_bits = mzpbe
+      wfm_bits = gui_variables::mzpbe
       ; invalidate all FM timbres that have been loaded onto the YM2151 (i.e. enforce reload after timbre has been changed)
       jsr concerto_synth::voices::panic
       jsr concerto_synth::voices::invalidate_fm_timbres
       ; do the usual stuff
-      ldx gui_definitions::current_synth_timbre
-      lda mouse_definitions::curr_component_ofs
+      ldx gui_variables::current_synth_timbre
+      lda mouse_variables::curr_component_ofs
       clc
       adc #5
       tay ; there's no component type where the data is before this index
       ; now determine which component has been dragged
       phx
-      lda mouse_definitions::curr_component_id
+      lda mouse_variables::curr_component_id
       asl
       tax
       jmp (@jmp_tbl, x)
@@ -227,8 +227,8 @@
 
 
    .proc refresh
-      @rfm_bits = mzpbd
-      ldx gui_definitions::current_synth_timbre
+      @rfm_bits = gui_variables::mzpbd
+      ldx gui_variables::current_synth_timbre
       ; connection scheme
       lda concerto_synth::timbres::Timbre::fm_general::con, x
       LDY_COMPONENT_MEMBER arrowed_edit, connection, value

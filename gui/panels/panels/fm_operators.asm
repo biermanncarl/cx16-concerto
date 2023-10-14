@@ -92,7 +92,7 @@
       jsr concerto_synth::voices::invalidate_fm_timbres
       ; determine operator index
       ldx active_tab
-      lda gui_definitions::current_synth_timbre
+      lda gui_variables::current_synth_timbre
       clc
    @loop:
       dex
@@ -102,12 +102,12 @@
    @loop_done:
       tax
       ; component offset
-      lda mouse_definitions::curr_component_ofs
+      lda mouse_variables::curr_component_ofs
       adc #5 ; carry should be clear from previous code
       tay ; there's no component type where the data is before this index
       ; now determine which component has been dragged
       phx
-      lda mouse_definitions::curr_component_id
+      lda mouse_variables::curr_component_id
       asl
       tax
       jmp (@jmp_tbl, x)
@@ -126,10 +126,10 @@
       .word @vol_sens
    @tab_select:
       plx
-      lda mouse_definitions::curr_data_1
+      lda mouse_variables::curr_data_1
       sta active_tab
       jsr refresh
-      inc gui_definitions::request_components_redraw
+      inc gui_variables::request_components_redraw
       rts
    @attack:
       plx
@@ -203,7 +203,7 @@
    .proc refresh
       ; determine operator index
       ldx active_tab
-      lda gui_definitions::current_synth_timbre
+      lda gui_variables::current_synth_timbre
       clc
    @loop:
       dex

@@ -33,10 +33,10 @@
       rts
    .endproc
 
-   ; which arrow clicked is returned in mouse_definitions::curr_data_1
+   ; which arrow clicked is returned in mouse_variables::curr_data_1
    ; left: 1
    ; right: 2
-   ; May clutter mouse_definitions::curr_data_1, even if no click detected
+   ; May clutter mouse_variables::curr_data_1, even if no click detected
    .proc check_mouse
       ; check if mouse is over the edit
       ; check x direction
@@ -49,7 +49,7 @@
       cmp #0 ; arrow to the left
       bne @check_right_arrow
       lda #1
-      sta mouse_definitions::curr_data_1
+      sta mouse_variables::curr_data_1
       bra @horizontal_in
    @out:
       clc
@@ -58,7 +58,7 @@
       cmp #5
       bne @out ; the non-arrow inside of the arrowed edit is considered "out", i.e., a non-click
       lda #2
-      sta mouse_definitions::curr_data_1
+      sta mouse_variables::curr_data_1
    @horizontal_in:
       ; check y direction
       lda components_common::mouse_downscaled_y
@@ -71,15 +71,15 @@
    .endproc
 
    .proc event_click
-      cae_value = mzpbe
+      cae_value = gui_variables::mzpbe
       ; check if one of the arrows has been clicked
-      lda mouse_definitions::curr_data_1
+      lda mouse_variables::curr_data_1
       bne :+
       rts
    :  ; yes, one of the arrows has been clicked...
-      inc gui_definitions::request_component_write ; register a change on the GUI
+      inc gui_variables::request_component_write ; register a change on the GUI
       ; now, get value from edit
-      lda mouse_definitions::curr_component_ofs
+      lda mouse_variables::curr_component_ofs
       clc
       adc #data_members::value
       tay
@@ -87,7 +87,7 @@
       sta cae_value
       ; now, decide whether left or right was clicked
       dey
-      lda mouse_definitions::curr_data_1
+      lda mouse_variables::curr_data_1
       cmp #1
       bne @right
    @left:   ; decrement value
@@ -130,7 +130,7 @@
       iny
       sta (components_common::data_pointer), y
    @update_gui:
-      ldy mouse_definitions::curr_component_ofs
+      ldy mouse_variables::curr_component_ofs
       jsr draw
       rts
    .endproc

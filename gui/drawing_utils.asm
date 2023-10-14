@@ -175,7 +175,7 @@ cur_y: .byte 0
 ; color
 color: .byte 0
 ; string pointer
-str_pointer = mzpwe
+str_pointer = gui_variables::mzpwe
 ; draw a component at position and with dimensions:
 draw_x: .byte 0
 draw_y: .byte 0
@@ -610,7 +610,7 @@ draw_arrowed_edit:
 ; data1: number on display
 ; data2: bit 0: coarse/fine available, bit1: coarse/fine switch, bit2: signed
 draw_drag_edit:
-   dde_bittest = mzpbf ; mzpbf used! (use something else for bit-testing in this routine if this clashes with something else)
+   dde_bittest = gui_variables::mzpbf ; mzpbf used! (use something else for bit-testing in this routine if this clashes with something else)
    lda draw_x
    sta cur_x
    lda draw_y
@@ -754,7 +754,7 @@ draw_listbox:
 ; width in draw_width, height in draw_height (also marks number of strings)
 ; pointer to stringlist in str_pointer
 draw_lb_popup:
-   dlbp_line_counter = mzpbf
+   dlbp_line_counter = gui_variables::mzpbf
    lda draw_x
    sta cur_x
    lda draw_y
@@ -1329,12 +1329,6 @@ vtui_input_str:
    sta   (@ptr),y ; trailing zero to finish string
    cli
 	rts
-
-
-
-
-
-
 
 
 

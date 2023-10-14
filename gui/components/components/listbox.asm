@@ -69,7 +69,7 @@
 
    .proc check_mouse
       ; listbox check is identical to checkbox check.
-      clb_width = mzpbf
+      clb_width = gui_variables::mzpbf
       ; this is basically an "mouse is inside box" check
       ; with variable width
       ; get the width of the listbox
@@ -103,14 +103,14 @@
    .endproc
 
    .proc event_click
-      ; we don't activate gui_definitions::request_component_write because the first click on the listbox
+      ; we don't activate gui_variables::request_component_write because the first click on the listbox
       ; doesn't change any actual data,
       ; bring up popup panel
       ; TODO: later we would need to calculate the popup position based on the listbox position
       ; and a possibly oversized popup (so that it would range beyond the screen)
       ; We'll deal with that as soon as this becomes an issue.
       ; For now, we'll just directly place it where we want it.
-      ldy mouse_definitions::curr_component_ofs
+      ldy mouse_variables::curr_component_ofs
       lda (components_common::data_pointer), y
       sta panels__listbox_popup__box_x
       iny
@@ -130,15 +130,15 @@
       iny
       lda (components_common::data_pointer), y
       sta panels__listbox_popup__strlist+1
-      lda mouse_definitions::curr_component_ofs
+      lda mouse_variables::curr_component_ofs
       sta panels__listbox_popup__lb_ofs
       lda components_common::data_pointer
       sta panels__listbox_popup__lb_addr
       lda components_common::data_pointer+1
       sta panels__listbox_popup__lb_addr+1
-      lda mouse_definitions::curr_component_id
+      lda mouse_variables::curr_component_id
       sta panels__listbox_popup__lb_id
-      lda mouse_definitions::curr_panel
+      lda mouse_variables::curr_panel
       sta panels__listbox_popup__lb_panel
       ; now do the GUI stack stuff
       ldx panels__panels_stack_pointer

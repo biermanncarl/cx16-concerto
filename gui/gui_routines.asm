@@ -1,26 +1,11 @@
 ; Copyright 2021, 2023 Carl Georg Biermann
 
-; This file contains most of the GUI relevant code at the moment.
-; It is called mainly by the mouse.asm driver, and sends commands to the guiutils.asm
-; to output GUI elements.
-; The appearance and behaviour of the GUI is also hard coded in this file.
-; The interaction between the GUI and the timbre (and later perhaps song) data
-; is currently also done in this file.
-
-
-
-.scope gui
-
-.include "gui_definitions.asm"
+.include "gui_variables.asm"
 .include "components/components.asm"
 .include "panels/panels.asm"
 
-; TODO: remove when not used in this file anymore
-; placeholder for unimplemented/unnecessary subroutines
-dummy_sr:
-   rts
 
-
+.scope gui_routines
 
 .ifdef ::concerto_full_daw
    ; brings up the synth GUI
@@ -104,7 +89,7 @@ dummy_sr:
 
 ; reads through the stack and draws everything
 .proc draw_gui
-   dg_counter = mzpbe ; counter variable
+   dg_counter = gui_variables::mzpbe ; counter variable
    stz dg_counter
 @loop:
    ; TODO: clear area on screen (but when exactly is it needed?)
@@ -135,7 +120,7 @@ dummy_sr:
 
 ; goes through the stack of active GUI panels and refreshes every one of them
 .proc refresh_gui
-   rfg_counter = mzpbe ; counter variable
+   rfg_counter = gui_variables::mzpbe ; counter variable
    stz rfg_counter
 @loop:
    ; call panel-specific drawing subroutine
@@ -158,23 +143,23 @@ dummy_sr:
 
 
 ; Goes through the various requests which can be issued during events and addresses them.
-; Expects mouse_definitions::curr_panel to be set to the relevant panel.
+; Expects mouse_variables::curr_panel to be set to the relevant panel.
 .proc handle_component_requests
    ; check if component wants an update
-   lda gui_definitions::request_component_write
+   lda gui_variables::request_component_write
    beq @end_write_request
-   stz gui_definitions::request_component_write
-   lda mouse_definitions::curr_panel
+   stz gui_variables::request_component_write
+   lda mouse_variables::curr_panel
    asl
    tax
    INDEXED_JSR panels::jump_table_write, @end_write_request
 @end_write_request:
    ; check if component wants a redraw
-   lda gui_definitions::request_components_redraw
+   lda gui_variables::request_components_redraw
    beq @end_redraw_request
-   lda mouse_definitions::curr_panel
+   lda mouse_variables::curr_panel
    jsr panels::draw_components
-   stz gui_definitions::request_components_redraw
+   stz gui_variables::request_components_redraw
 @end_redraw_request:
    rts
 .endproc   
@@ -185,17 +170,17 @@ dummy_sr:
    ; call GUI component's click subroutine, to update it.
    ; For that, we need the info about the component from the GUI component string
    ; of the respective panel.
-   ce_pointer = mzpwa ; it is important that this is the same as dc_pointer, because this routine indirectly calls "their" subroutine, expecting this pointer at the same place
+   ce_pointer = gui_variables::mzpwa ; it is important that this is the same as dc_pointer, because this routine indirectly calls "their" subroutine, expecting this pointer at the same place
    ; put GUI component string pointer to ZP
-   stz gui_definitions::request_component_write
-   lda mouse_definitions::curr_panel
+   stz gui_variables::request_component_write
+   lda mouse_variables::curr_panel
    asl
    tax
    lda panels::comps, x
    sta ce_pointer
    lda panels::comps+1, x
    sta ce_pointer+1
-   ldy mouse_definitions::curr_component_ofs ; load component's offset
+   ldy mouse_variables::curr_component_ofs ; load component's offset
    dey
    lda (ce_pointer), y ; and get its type
    asl
@@ -205,29 +190,27 @@ dummy_sr:
 
 
 ; drag event. looks in mouse variables which panel's component has been dragged and calls its routine
-; expects L/R information in mouse_definitions::curr_data_1 (0 for left drag, 1 for right drag)
-; and dragging distance in mouse_definitions::curr_data_2
+; expects L/R information in mouse_variables::curr_data_1 (0 for left drag, 1 for right drag)
+; and dragging distance in mouse_variables::curr_data_2
 .proc drag_event
    ; call GUI component's drag subroutine, to update it.
    ; For that, we need the info about the component from the GUI component string
    ; of the respective panel.
-   de_pointer = mzpwa ; it is important that this is the same as dc_pointer, because this routine indirectly calls "their" subroutine, expecting this pointer at the same place
-   stz gui_definitions::request_component_write
-   lda mouse_definitions::curr_panel
+   de_pointer = gui_variables::mzpwa ; it is important that this is the same as dc_pointer, because this routine indirectly calls "their" subroutine, expecting this pointer at the same place
+   stz gui_variables::request_component_write
+   lda mouse_variables::curr_panel
    asl
    tax
    lda panels::comps, x
    sta de_pointer
    lda panels::comps+1, x
    sta de_pointer+1   ; put GUI component string pointer to ZP
-   ldy mouse_definitions::curr_component_ofs ; load component's offset
+   ldy mouse_variables::curr_component_ofs ; load component's offset
    dey
    lda (de_pointer), y ; and get its type
    asl
    tax
    jmp (components::jump_table_event_drag, x) ; the called routines will do the rts for us.
 .endproc
-
-.include "backward_definitions.asm"
 
 .endscope

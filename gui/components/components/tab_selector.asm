@@ -34,11 +34,11 @@
       rts
    .endproc
 
-   ; which tab clicked is returned in mouse_definitions::curr_data_1
+   ; which tab clicked is returned in mouse_variables::curr_data_1
    .proc check_mouse
       ; check if mouse is over the tab selector area of the panel
       ; check x direction first
-      ldx mouse_definitions::curr_panel
+      ldx mouse_variables::curr_panel
       lda panels__px, x
       asl ; multiply by 2 to be 4 pixel multiple
       sec
@@ -75,22 +75,22 @@
       cmp (components_common::data_pointer), y
       bcs @out ; if carry set, no tab has been clicked
       ; otherwise, tab has been selected
-      sta mouse_definitions::curr_data_1 ; store tab being clicked
+      sta mouse_variables::curr_data_1 ; store tab being clicked
       sec
       rts
    .endproc
 
    .proc event_click
-      inc gui_definitions::request_component_write
+      inc gui_variables::request_component_write
       ; put new tab into GUI component list
-      lda mouse_definitions::curr_data_1
-      ldy mouse_definitions::curr_component_ofs
+      lda mouse_variables::curr_data_1
+      ldy mouse_variables::curr_component_ofs
       iny
       iny
       iny
       sta (components_common::data_pointer), y
       ; and redraw it
-      ldy mouse_definitions::curr_component_ofs
+      ldy mouse_variables::curr_component_ofs
       jsr draw
       rts
    .endproc

@@ -58,12 +58,12 @@
 
    .proc write
       ; prepare component string offset
-      lda mouse_definitions::curr_component_ofs
+      lda mouse_variables::curr_component_ofs
       clc
       adc #4 ; we're reading only arrowed edits
       tay
       ; prepare jump
-      lda mouse_definitions::curr_component_id
+      lda mouse_variables::curr_component_id
       asl
       tax
       jmp (@jmp_tbl, x)

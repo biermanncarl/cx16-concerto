@@ -53,12 +53,12 @@
 
    .proc write
       ; prepare component string offset
-      lda mouse_definitions::curr_component_ofs
+      lda mouse_variables::curr_component_ofs
       clc
       adc #4 ; currently, we're reading only arrowed edits and drag edits
       tay
       ; prepare jump
-      lda mouse_definitions::curr_component_id
+      lda mouse_variables::curr_component_id
       asl
       tax
       jmp (@jmp_tbl, x)
@@ -75,31 +75,31 @@
    @timbre_selector:
       ; read data from component string and write it to the Timbre setting
       lda comps, y
-      sta gui_definitions::current_synth_timbre
-      jsr refresh_gui
+      sta gui_variables::current_synth_timbre
+      jsr gui_routines__refresh_gui
       rts
    @load_preset:
       sei
       jsr concerto_synth::voices::panic
-      ldx gui_definitions::current_synth_timbre
+      ldx gui_variables::current_synth_timbre
       jsr concerto_synth::timbres::load_timbre
-      jsr refresh_gui
+      jsr gui_routines__refresh_gui
       cli
       rts
    @save_preset:
-      ldx gui_definitions::current_synth_timbre
+      ldx gui_variables::current_synth_timbre
       jsr concerto_synth::timbres::save_timbre
       rts
    @copy_preset:
-      lda gui_definitions::current_synth_timbre
+      lda gui_variables::current_synth_timbre
       sta concerto_synth::timbres::copying
       rts
    @paste_preset:
       sei
       jsr concerto_synth::voices::panic
-      ldx gui_definitions::current_synth_timbre
+      ldx gui_variables::current_synth_timbre
       jsr concerto_synth::timbres::copy_paste
-      jsr refresh_gui
+      jsr gui_routines__refresh_gui
       cli
       rts
    @change_file_name:
@@ -131,7 +131,7 @@
       sei
       jsr concerto_synth::voices::panic
       jsr concerto_synth::timbres::load_bank
-      jsr refresh_gui
+      jsr gui_routines__refresh_gui
       cli
       rts
    @save_bank:

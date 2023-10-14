@@ -21,17 +21,17 @@
       ; get mouse coordinates (in 8 pixel multiples) and put them into data
       lda components_common::mouse_downscaled_x
       lsr
-      sta mouse_definitions::curr_data_1
+      sta mouse_variables::curr_data_1
       lda components_common::mouse_downscaled_y
       lsr
-      sta mouse_definitions::curr_data_2
+      sta mouse_variables::curr_data_2
       sec
       rts
    .endproc
 
    .proc event_click
       ; Similar to a button. Just tell the panel that it needs to do *something* (it will know what to do when it is told *which* dummy was clicked)
-      inc gui_definitions::request_component_write
+      inc gui_variables::request_component_write
       rts
    .endproc
 

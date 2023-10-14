@@ -45,7 +45,7 @@
       ; check if mouse is over the button
       ; this code is nearly identical to the check_checkbox bit,
       ; apart from the number of INYs required, and the different Y position (off by 1)
-      cb_width = mzpbf
+      cb_width = gui_variables::mzpbf
       ; this is basically a "mouse is inside box" check
       ; with variable width
       ; get the width of the button
@@ -82,7 +82,7 @@
 
    .proc event_click
       ; register the click to trigger a write_...
-      inc gui_definitions::request_component_write
+      inc gui_variables::request_component_write
       ; nothing else to be done here. click events are handled inside the panels'
       ; write_... subroutines, because they can identify individual buttons and know
       ; what actions to perform. (This here is just a generic button)

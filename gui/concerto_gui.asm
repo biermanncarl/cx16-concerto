@@ -13,13 +13,21 @@
 play_volume:
    .byte 63
 
+; macros
 .include "../common/x16.asm"
-.include "gui_zeropage.asm"
 .include "gui_macros.asm"
-.include "mouse_definitions.asm"
-.include "gui_utils.asm"
-.include "gui.asm"
-.include "mouse.asm"
+; variable definitions
+.include "gui_variables.asm"
+.include "mouse_variables.asm"
+; submodules
+.include "drawing_utils.asm"
+.include "components/components.asm"
+.include "panels/panels.asm"
+; higher level routines
+.include "gui_routines.asm"
+.include "mouse_routines.asm"
+; backward definitions
+.include "gui_backward_definitions.asm"
 
 ; concerto_gui::initialize
 ; Initializes and draws the GUI on screen. Expects 80x60 characters screen mode.
@@ -27,7 +35,7 @@ play_volume:
 ; PARAMETERS: none
 ; AFFECTS: A, X, Y
 initialize:
-   jsr gui::load_synth_gui
+   jsr gui_routines::load_synth_gui
    jsr mouse::mouse_init
    rts
 
@@ -40,6 +48,7 @@ hide_mouse = mouse::mouse_hide
 ; concerto_gui::gui_tick
 ; Reads the mouse and performs actions according to the mouse input. Call this regularly in your main loop.
 ; It is NOT recommended to call this in the interrupt service routine.
+; You can safely stop calling this regularly at any time, no special shutdown of the GUI is needed.
 ; PARAMETERS: none
 ; AFFECTS: A, X, Y
 gui_tick = mouse::mouse_tick

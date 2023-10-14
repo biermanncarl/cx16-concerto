@@ -111,7 +111,7 @@
 
    .proc write
       ; first, determine the offset of the oscillator in the Timbre data
-      lda gui_definitions::current_synth_timbre
+      lda gui_variables::current_synth_timbre
       ldx active_tab ; envelope number
    @loop:
       cpx #0
@@ -123,13 +123,13 @@
    @end_loop:
       tax ; oscillator index is in x
       ; prepare component readout
-      lda mouse_definitions::curr_component_ofs
+      lda mouse_variables::curr_component_ofs
       clc
       adc #5
       tay ; there's no component type where the data is before this index
       ; now determine which component has been changed
       phx
-      lda mouse_definitions::curr_component_id
+      lda mouse_variables::curr_component_id
       asl
       tax
       jmp (@jmp_tbl, x)
@@ -153,10 +153,10 @@
       .word @vmdep ; vol mod depth
    @tab_slector:
       plx
-      lda mouse_definitions::curr_data_1
+      lda mouse_variables::curr_data_1
       sta active_tab
       jsr refresh
-      inc gui_definitions::request_components_redraw
+      inc gui_variables::request_components_redraw
       rts
    @waveform:
       plx
@@ -288,7 +288,7 @@
 
    .proc refresh
       ; first, determine the offset of the oscillator in the Timbre data
-      lda gui_definitions::current_synth_timbre
+      lda gui_variables::current_synth_timbre
       ldx active_tab ; envelope number
    @loop:
       cpx #0

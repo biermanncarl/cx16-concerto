@@ -65,14 +65,14 @@
    .endproc
 
    .proc write
-      ldx gui_definitions::current_synth_timbre
-      lda mouse_definitions::curr_component_ofs
+      ldx gui_variables::current_synth_timbre
+      lda mouse_variables::curr_component_ofs
       clc
       adc #4
       tay ; there's no component type where the data is before this index
       ; now jump to component which has been clicked/dragged
       phx
-      lda mouse_definitions::curr_component_id
+      lda mouse_variables::curr_component_id
       asl
       tax
       jmp (@jmp_tbl, x)
@@ -136,7 +136,7 @@
 
 
    .proc refresh
-      ldx gui_definitions::current_synth_timbre
+      ldx gui_variables::current_synth_timbre
       ; number of oscillators
       lda concerto_synth::timbres::Timbre::n_oscs, x
       LDY_COMPONENT_MEMBER arrowed_edit, n_oscs, value

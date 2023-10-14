@@ -1,10 +1,10 @@
-; Copyright 2023 Carl Georg Biermann
+; Copyright 2021-2023 Carl Georg Biermann
 
 
-.ifndef ::GUI_GUI_DEFINITIONS_ASM
-::GUI_GUI_DEFINITIONS_ASM = 1
+.ifndef ::GUI_GUI_VARIABLES_ASM
+::GUI_GUI_VARIABLES_ASM = 1
 
-.scope gui_definitions
+.scope gui_variables
    ; (INACTIVE)
    ; Set to nonzero value to request an update of GUI components (data transfer: underlying data -> GUI components).
    ; This is mainly intended for situations when the underlying data on several panels has changed, or it is not
@@ -26,6 +26,25 @@
 
    ; Which timbre is currently viewed in the synth page.
    current_synth_timbre: .byte 0
+
+
+   ; These are variables located at the zero page.
+   ; The abbreviations stand for "my zero page word B" or "my zero page byte D" and so on
+   ; Each variable serves several purposes, depending on the context.
+   .pushseg
+      .zeropage
+
+      ; my zero page words (main program)
+      mzpwa:   .word 0
+      mzpwd:   .word 0
+      mzpwe:   .word 0   ; this is used mainly as a pointer for string operations
+
+      ; The user interface also uses the "shared" zero page variables from the synth,
+      ; which are safe to use in the main program
+      mzpbd = concerto_synth::mzpbd
+      mzpbe = concerto_synth::mzpbe
+      mzpbf = concerto_synth::mzpbf
+   .popseg
 .endscope
 
-.endif ; .ifndef ::GUI_GUI_DEFINITIONS_ASM
+.endif ; .ifndef ::GUI_GUI_VARIABLES_ASM
