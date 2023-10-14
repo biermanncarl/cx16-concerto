@@ -13,6 +13,7 @@
 
 .scope guiutils
 
+original_map_base: .byte 0
 ; variables used by the DISPLAY_BYTE macro
 display_100s:       .byte 0
 display_10s:        .byte 0

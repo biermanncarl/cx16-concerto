@@ -35,15 +35,21 @@ play_volume:
 ; PARAMETERS: none
 ; AFFECTS: A, X, Y
 initialize:
+   lda VERA_L1_mapbase
+   sta guiutils::original_map_base
    jsr gui_routines::load_synth_gui
    jsr mouse::mouse_init
    rts
 
-; concerto_gui::hide_mouse
-; Hides the mouse cursor.
+; concerto_gui::hide_gui
+; Hides the mouse cursor and restores the previous tilemap base.
 ; PARAMETERS: none
 ; AFFECTS: A, X
-hide_mouse = mouse::mouse_hide
+hide: 
+   lda guiutils::original_map_base
+   sta VERA_L1_mapbase
+   jsr mouse::mouse_hide
+   rts
 
 ; concerto_gui::gui_tick
 ; Reads the mouse and performs actions according to the mouse input. Call this regularly in your main loop.

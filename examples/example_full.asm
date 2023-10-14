@@ -41,6 +41,6 @@ start:
 .include "example_full_mainloop.asm"
 
    jsr concerto_synth::deactivate_synth
-   jsr concerto_gui::hide_mouse
+   jsr concerto_gui::hide
 
    rts            ; return to BASIC
