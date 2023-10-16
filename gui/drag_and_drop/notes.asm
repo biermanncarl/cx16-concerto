@@ -104,11 +104,24 @@ event_edit_note_border_unselected_color = 0
 event_edit_note_border_selected_color = 10
 
 
+; Buffers
+; -------
+; Consider 
+; * reusing these for multiple purposes
+; * moving them to "golden RAM" ($0400-$07FF)
 
-; column buffer
+; column buffers
 ; used for drawing.
 column_buffer:
    .res event_edit_height
+; used for hitbox generation
+note_is_selected:
+   .res event_edit_height
+note_id_low:
+   .res event_edit_height
+note_id_high:
+   .res event_edit_height
+
 
 ; Calculates the row of a note and checks if it is inside the view vertically.
 ; Expects the note's pitch in note_pitch.
@@ -253,7 +266,7 @@ change_song_tempo = timing::recalculate_rhythm_values ; TODO: actually recalcula
    lda argument_x+1
    sta running_time_stamp_h
 
-   ; clear the column buffer
+   ; clear the column buffer (don't need to clear the hitbox buffers)
    ldx #(detail::event_edit_height-1)
 @clear_column_buffer_loop:
    stz detail::column_buffer, x
@@ -261,7 +274,7 @@ change_song_tempo = timing::recalculate_rhythm_values ; TODO: actually recalcula
    bpl @clear_column_buffer_loop
 
    ; TODO: clear the hitbox list
-   ; TODO: calculate keyboard roll offset
+   ; TODO: calculate keyboard roll visualization offset
 
    stz end_of_data
 
@@ -303,7 +316,7 @@ change_song_tempo = timing::recalculate_rhythm_values ; TODO: actually recalcula
    cmp #event_type_note_on
    bne @pre_parsing_next_event
 @pre_parsing_note_on:
-   lda #1 ; for the purpose of pre-parsing, this is much simpler than in the actual parsing (just toggle on-off)
+   lda #2 ; for the purpose of pre-parsing, this is much simpler than in the actual parsing (just toggle on-off). Set to 2 so they won't look like they start at the left border of the time window
    bra @pre_parsing_write_to_buffer
 @pre_parsing_note_off:
    lda #column_buffer_no_note

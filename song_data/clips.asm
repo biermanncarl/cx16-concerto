@@ -9,7 +9,7 @@
 
 ; A clip has the following properties:
 ; * Instrument id
-; * Mono/poly selector
+; * Mono/poly selector (affects voice pooling during playback)
 ; * Length in ticks
 ; * Starting time in ticks
 ; * End time in ticks

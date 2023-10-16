@@ -76,6 +76,7 @@
 ; Some more thoughts on how to implement my method:
 ; As for each event type, selection and unselection requires different actions, the drag&drop code cannot do the bulk work of selecting/unselecting on its own.
 ; It will call the specific d&d type's routines for that purpose.
+; For example, whenever a note is (un)selected, the corresponding note-off needs to be (un)selected, too.
 ; However, the d&d code must still know which events are selected and which ones aren't, to figure out things like "if an unselected event is dragged, all selected
 ; events become unselected first and then the selected event is moved (unless Ctrl is held down, in which case it gets added to the selection)" or "if a selected event is dragged, the entire selection
 ; is moved".
