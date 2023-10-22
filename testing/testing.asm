@@ -176,4 +176,93 @@ first_unsuccessful_test = $78 ; first test to fail
 :
 .endmacro
 
+; expect a 16 bit number in .A/.X (low byte in .A, high byte in .X) to be equal to the specified 16 bit value
+.macro EXPECT_EQ_16 value
+   .local @fail
+   .local @end
+   cpx #>value
+   bne @fail
+   cmp #<value
+   bne @fail
+   jsr testing::succeed
+   bra @end
+@fail:
+   jsr testing::fail
+@end:
+.endmacro
+
+; expect a 16 bit number in .A/.X (low byte in .A, high byte in .X) to be greater than the specified 16 bit value
+.macro EXPECT_GT_16 value
+   .local @succeed
+   .local @fail
+   .local @end
+   cpx #>value
+   bcc @fail
+   bne @succeed
+   cmp #<value
+   bcc @fail
+   beq @fail
+@succeed:
+   jsr testing::succeed
+   bra @end
+@fail:
+   jsr testing::fail
+@end:
+.endmacro
+
+; expect a 16 bit number in .A/.X (low byte in .A, high byte in .X) to be greater than or equal to the specified 16 bit value
+.macro EXPECT_GE_16 value
+   .local @succeed
+   .local @fail
+   .local @end
+   cpx #>value
+   bcc @fail
+   bne @succeed
+   cmp #<value
+   bcc @fail
+@succeed:
+   jsr testing::succeed
+   bra @end
+@fail:
+   jsr testing::fail
+@end:
+.endmacro
+
+; expect a 16 bit number in .A/.X (low byte in .A, high byte in .X) to be lower than the specified 16 bit value
+.macro EXPECT_LT_16 value
+   .local @succeed
+   .local @fail
+   .local @end
+   cpx #>value
+   bcc @succeed
+   bne @fail
+   cmp #<value
+   bcs @fail
+@succeed:
+   jsr testing::succeed
+   bra @end
+@fail:
+   jsr testing::fail
+@end:
+.endmacro
+
+; expect a 16 bit number in .A/.X (low byte in .A, high byte in .X) to be lower than or equal to the specified 16 bit value
+.macro EXPECT_LE_16 value
+   .local @succeed
+   .local @fail
+   .local @end
+   cpx #>value
+   bcc @succeed
+   bne @fail
+   cmp #<value
+   beq @succeed
+   bcs @fail
+@succeed:
+   jsr testing::succeed
+   bra @end
+@fail:
+   jsr testing::fail
+@end:
+.endmacro
+
 .endscope
