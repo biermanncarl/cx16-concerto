@@ -55,8 +55,6 @@ event_vector_a:
    .res 2
 event_vector_b:
    .res 2
-event_source: ; 0 if the loaded event data originated from event_vector_a, 1 if the loaded event data originated from event_vector_b
-   .res 1
 argument_x:
    .res 2
 argument_y:
@@ -75,12 +73,6 @@ temp_variable_a:
 temp_variable_b:
    .res 1
 temp_variable_c:
-   .res 1
-temp_variable_d:
-   .res 1
-temp_variable_e:
-   .res 1
-temp_variable_f:
    .res 1
 .popseg
 
@@ -226,10 +218,7 @@ change_song_tempo = timing::recalculate_rhythm_values ; TODO: actually recalcula
    ; ===========
    running_time_stamp_l = detail::temp_variable_a
    running_time_stamp_h = detail::temp_variable_b
-   current_event_l = detail::temp_variable_c
-   current_event_m = detail::temp_variable_d
-   current_event_h = detail::temp_variable_e
-   end_of_data = detail::temp_variable_f
+   end_of_data = detail::temp_variable_c
    thirtysecondth_stride = detail::temp_variable_z ; how many thirtysecondth notes we advance with every column
    thirtysecondth_count = detail::temp_variable_y
    column_index = detail::temp_variable_x
@@ -271,21 +260,27 @@ change_song_tempo = timing::recalculate_rhythm_values ; TODO: actually recalcula
    dex
    bpl @clear_column_buffer_loop
 
+   ; event sources: unselected and selected events
+   lda event_vector_a
+   sta item_selection::unselected_events
+   lda event_vector_a+1
+   sta item_selection::unselected_events+1
+   lda event_vector_b
+   sta item_selection::selected_events
+   lda event_vector_b+1
+   sta item_selection::selected_events+1
+   jsr item_selection::reset_stream
+
    ; TODO: clear the hitbox list
    ; TODO: calculate keyboard roll visualization offset
 
    stz end_of_data
 
-   ; get first entry (TODO: make abstract "load_next_event" function which checks both selected and unselected events)
-   lda event_vector_a
-   ldx event_vector_a+1
-   jsr v40b::get_first_entry
+   ; get first entry
+   jsr item_selection::stream_get_next_event
    bcs @pre_parsing_end_of_data
 @clip_is_not_empty:
    ; we have at least one event. get that event's time stamp
-   sta current_event_l
-   stx current_event_m
-   sty current_event_h
    jsr v40b::read_entry
 
 
@@ -322,14 +317,7 @@ change_song_tempo = timing::recalculate_rhythm_values ; TODO: actually recalcula
    sta detail::column_buffer, x
 @pre_parsing_next_event:
    ; get next event
-   stz event_source
-   lda current_event_l
-   ldx current_event_m
-   ldy current_event_h
-   jsr v40b::get_next_entry
-   sta current_event_l
-   stx current_event_m
-   sty current_event_h
+   jsr item_selection::stream_get_next_event
    bcs @pre_parsing_end_of_data
    jsr v40b::read_entry
    bra @pre_parsing_loop
@@ -375,12 +363,7 @@ change_song_tempo = timing::recalculate_rhythm_values ; TODO: actually recalcula
    jmp @end_parse_events
 :
 @main_parse_events_loop:
-   ; get next event (TODO: "next" event is already in current_event_l etc. --> do this check at the end of the parsing loop)
-
-   lda current_event_l
-   ldx current_event_m
-   ldy current_event_h
-   jsr v40b::read_entry
+   ; We assume the next event's data to be already loaded in the event_time_stamp_h etc. variables
    ; check if time stamp is within current column
    lda event_time_stamp_h
    cmp running_time_stamp_h
@@ -400,7 +383,7 @@ change_song_tempo = timing::recalculate_rhythm_values ; TODO: actually recalcula
    jsr detail::calculateRowAndCheckBounds
    bcc @parse_next_event ; if outside our view (vertically), skip the event
    lda detail::column_buffer, x ; check what's inside the current row
-   ; since it's a note-on, we don't check if what's in there is selected. We get that info from the event source (event_source)
+   ; since it's a note-on, we don't check if what's in there is selected. We get that info from the event source (item_selection::last_event_source)
    asl ; get rid of upper bit
    cmp #(2*column_buffer_short_note)
    beq @crowded_on
@@ -408,13 +391,13 @@ change_song_tempo = timing::recalculate_rhythm_values ; TODO: actually recalcula
    beq @crowded_on
    ; in all other cases, we do a note on ... even when they don't make sense (e.g. note-on on top of an already running note)
 @new_note:
-   lda event_source
+   lda item_selection::last_event_source
    lsr ; move "selected" bit into carry
    lda #(2*1) ; active note, minimum length 1, left shifted once (undoing it next instruction)
    ror ; move "selected" bit to the top of the value
    bra @write_to_column_buffer
 @crowded_on:
-   lda event_source
+   lda item_selection::last_event_source
    lsr ; move "selected" bit into carry
    lda #(2*column_buffer_multiple_last_on) ; multiplied by 2 as we right shift it next instruction
    ror ; move "selected" bit to the top of the value
@@ -438,14 +421,14 @@ change_song_tempo = timing::recalculate_rhythm_values ; TODO: actually recalcula
    ; TODO: hitbox generation!
    bra @write_to_column_buffer ; could be optimized to stz and direct branch
 @crowded_off:
-   lda event_source
+   lda item_selection::last_event_source
    lsr ; put selection bit into carry
    lda #(2*column_buffer_multiple_last_off)
    ror ; append the selection bit
    ; TODO: hitbox generation! (yes, even in crowded environments we want hitboxes, so "box selection" works)
    bra @write_to_column_buffer
 @short_note:
-   lda event_source
+   lda item_selection::last_event_source
    lsr ; put selection bit into carry
    lda #(2*column_buffer_short_note)
    ror ; append the selection bit
@@ -455,20 +438,12 @@ change_song_tempo = timing::recalculate_rhythm_values ; TODO: actually recalcula
    bra @parse_next_event
 
 @parse_next_event:
-   lda current_event_l
-   ldx current_event_m
-   ldy current_event_h
-   jsr v40b::get_next_entry
-   bcc :+ ; new data available?
-   inc end_of_data
-   bra @end_parse_events
-:  ; new data available.
-   sta current_event_l
-   stx current_event_m
-   sty current_event_h
-   stz event_source
+   jsr item_selection::stream_get_next_event
+   bcs :+ ; new data available?
+   ; new data available.
+   jsr v40b::read_entry
    jmp @main_parse_events_loop
-
+:  inc end_of_data
 @end_parse_events:
 
 @start_drawing_and_buffer_update:
