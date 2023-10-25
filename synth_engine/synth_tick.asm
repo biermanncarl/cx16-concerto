@@ -521,6 +521,7 @@ end_env: ; jump here when done with all envelopes
    ; Sample and Hold
    ; phaseL is a counter, which upon hitting 0 initiates the generation of a new random value
    ; phaseH is the seed as well as the random value itself (LFSR algorithm)
+   ; (?? -- this is not how LFSR is supposed to work!)
 @alg_snh:
    plx
    ; countdown

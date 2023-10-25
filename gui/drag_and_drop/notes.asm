@@ -2,8 +2,11 @@
 
 ; This contains implementation of drag and drop of notes within clips.
 
-.include "../dynamic_memory/vector_40bit.asm"
-.include "../song_data/timing.asm"
+.include "../../common/x16.asm"
+.include "../../dynamic_memory/vector_40bit.asm"
+.include "../../song_data/timing.asm"
+.include "../../song_data/events.asm"
+.include "item_selection.asm"
 
 .scope notes
 height = 2
@@ -35,11 +38,6 @@ event_time_stamp_h = v40b::value_1
 event_type = v40b::value_2
 event_data_1 = v40b::value_3
 event_data_2 = v40b::value_4
-
-event_type_note_off = 0
-event_type_hard_off = 2 ; stops all notes within the clip immediately
-event_type_note_on  = 4
-; TODO: effects 8 and above
 
 ; aliases for specific event types
 note_pitch = event_data_1 ; for note-on and note-off events
@@ -177,7 +175,7 @@ change_song_tempo = timing::recalculate_rhythm_values ; TODO: actually recalcula
    lda #(1*test_quarter_ticks)
    sta event_time_stamp_l
    stz event_time_stamp_h
-   lda #event_type_note_on
+   lda #events::event_type_note_on
    sta event_type
    lda #50
    sta note_pitch
@@ -188,7 +186,7 @@ change_song_tempo = timing::recalculate_rhythm_values ; TODO: actually recalcula
    ; note-off
    lda #(1*test_quarter_ticks+5)
    sta event_time_stamp_l
-   lda #event_type_note_off
+   lda #events::event_type_note_off
    sta event_type
    lda #50
    sta note_pitch
@@ -200,7 +198,7 @@ change_song_tempo = timing::recalculate_rhythm_values ; TODO: actually recalcula
    lda #(1*test_quarter_ticks+10)
    sta event_time_stamp_l
    stz event_time_stamp_h
-   lda #event_type_note_on
+   lda #events::event_type_note_on
    sta event_type
    lda #50
    sta note_pitch
@@ -313,7 +311,7 @@ change_song_tempo = timing::recalculate_rhythm_values ; TODO: actually recalcula
    ; check event type
    lda event_type
    beq @pre_parsing_note_off
-   cmp #event_type_note_on
+   cmp #events::event_type_note_on
    bne @pre_parsing_next_event
 @pre_parsing_note_on:
    lda #2 ; for the purpose of pre-parsing, this is much simpler than in the actual parsing (just toggle on-off). Set to 2 so they won't look like they start at the left border of the time window
@@ -395,7 +393,7 @@ change_song_tempo = timing::recalculate_rhythm_values ; TODO: actually recalcula
    ; interpret event type
    lda event_type
    beq @handle_note_off
-   cmp #event_type_note_on
+   cmp #events::event_type_note_on
    beq @handle_note_on
 
 @handle_note_on:

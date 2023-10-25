@@ -140,6 +140,16 @@ first_unsuccessful_test = $78 ; first test to fail
 :
 .endmacro
 
+; expect .A to be greater than or equal to variable
+.macro EXPECT_GE_MEM address
+   cmp address
+   bcs :+
+   jsr testing::fail
+   bra :++
+:  jsr testing::succeed
+:
+.endmacro
+
 ; expect carry flag to be set
 .macro EXPECT_CARRY_SET
    bcs :+
@@ -191,6 +201,21 @@ first_unsuccessful_test = $78 ; first test to fail
 @end:
 .endmacro
 
+; expect a 16 bit number in .A/.X equal to a 16 bit variable (low byte in .A, high byte in .X)
+.macro EXPECT_EQ_MEM_16 address
+   .local @fail
+   .local @end
+   cpx address+1
+   bne @fail
+   cmp address
+   bne @fail
+   jsr testing::succeed
+   bra @end
+@fail:
+   jsr testing::fail
+@end:
+.endmacro
+
 ; expect a 16 bit number in .A/.X (low byte in .A, high byte in .X) to be greater than the specified 16 bit value
 .macro EXPECT_GT_16 value
    .local @succeed
@@ -200,6 +225,25 @@ first_unsuccessful_test = $78 ; first test to fail
    bcc @fail
    bne @succeed
    cmp #<value
+   bcc @fail
+   beq @fail
+@succeed:
+   jsr testing::succeed
+   bra @end
+@fail:
+   jsr testing::fail
+@end:
+.endmacro
+
+; expect a 16 bit number in .A/.X to be greater than a 16 bit variable (low byte in .A, high byte in .X)
+.macro EXPECT_GT_MEM_16 address
+   .local @succeed
+   .local @fail
+   .local @end
+   cpx address+1
+   bcc @fail
+   bne @succeed
+   cmp address
    bcc @fail
    beq @fail
 @succeed:
@@ -228,6 +272,24 @@ first_unsuccessful_test = $78 ; first test to fail
 @end:
 .endmacro
 
+; expect a 16 bit number in .A/.X to be equal to or greater than a 16 bit variable (low byte in .A, high byte in .X)
+.macro EXPECT_GE_MEM_16 address
+   .local @succeed
+   .local @fail
+   .local @end
+   cpx address+1
+   bcc @fail
+   bne @succeed
+   cmp address
+   bcc @fail
+@succeed:
+   jsr testing::succeed
+   bra @end
+@fail:
+   jsr testing::fail
+@end:
+.endmacro
+
 ; expect a 16 bit number in .A/.X (low byte in .A, high byte in .X) to be lower than the specified 16 bit value
 .macro EXPECT_LT_16 value
    .local @succeed
@@ -237,6 +299,24 @@ first_unsuccessful_test = $78 ; first test to fail
    bcc @succeed
    bne @fail
    cmp #<value
+   bcs @fail
+@succeed:
+   jsr testing::succeed
+   bra @end
+@fail:
+   jsr testing::fail
+@end:
+.endmacro
+
+; expect a 16 bit number in .A/.X to be lower than a 16 bit variable (low byte in .A, high byte in .X)
+.macro EXPECT_LT_MEM_16 address
+   .local @succeed
+   .local @fail
+   .local @end
+   cpx address+1
+   bcc @succeed
+   bne @fail
+   cmp address
    bcs @fail
 @succeed:
    jsr testing::succeed
@@ -264,5 +344,78 @@ first_unsuccessful_test = $78 ; first test to fail
    jsr testing::fail
 @end:
 .endmacro
+
+; expect a 16 bit number in .A/.X to be lower than or equal to a 16 bit variable (low byte in .A, high byte in .X)
+.macro EXPECT_LE_MEM_16 address
+   .local @succeed
+   .local @fail
+   .local @end
+   cpx address+1
+   bcc @succeed
+   bne @fail
+   cmp address
+   beq @succeed
+   bcs @fail
+@succeed:
+   jsr testing::succeed
+   bra @end
+@fail:
+   jsr testing::fail
+@end:
+.endmacro
+
+
+
+; conditionals, returning carry set if true, or carry clear if false
+; ==================================================================
+
+; tests if a 16 bit number in .A/.X is equal to a 16 bit value (low byte in .A, high byte in .X)
+.macro IS_EQ_16 value
+   .local @fail
+   .local @end
+   cpx #>value
+   bne @fail
+   cmp #<value
+   bne @fail
+   sec
+   bra @end
+@fail:
+   clc
+@end:
+.endmacro
+
+; tests if a 16 bit number in .A/.X is equal to a 16 bit variable (low byte in .A, high byte in .X)
+.macro IS_EQ_MEM_16 address
+   .local @fail
+   .local @end
+   cpx address+1
+   bne @fail
+   cmp address
+   bne @fail
+   sec
+   bra @end
+@fail:
+   clc
+@end:
+.endmacro
+
+; tests if a 16 bit number in .A/.X is equal to or greater than a 16 bit variable (low byte in .A, high byte in .X)
+.macro IS_GE_MEM_16 address
+   .local @succeed
+   .local @fail
+   .local @end
+   cpx address+1
+   bcc @fail
+   bne @succeed
+   cmp address
+   bcc @fail
+@succeed:
+   sec
+   bra @end
+@fail:
+   clc
+@end:
+.endmacro
+
 
 .endscope

@@ -14,12 +14,14 @@
 ; In that case, the vector consists of a single empty chunk.
 ;
 ; Individual elements can be addressed via two different ways:
-; * "Direct pointer": 3-byte pointer: B/H (2-byte pointer to a chunk) and the index inside the chunk. This is the addressing used by most of the functions. 
-;   .A is index inside the chunk, .Y/.X is the B/H pointer (B is in .Y, H in .X)
+; * "Direct pointer": 3-byte pointer: B/H (2-byte pointer to a chunk) and the index inside the chunk. This is the addressing used by most of the functions.
+;   The order of bytes is I,H,B
+;   When communicating with registers, .A is index inside the chunk, .Y/.X is the B/H pointer (B is in .Y, H in .X)
 ; * "Vector+Index": 2-byte B/H pointer to first chunk and 2-byte global index in the entire vector
 ; Those two modes could be converted into each other.
 ; Please that of the upper 16-bit index, only 15 bits are supported. The most significant bit must be zero.
 ; Possibly, one part of the address will be implicitly given during some operations (e.g. by previous operations)
+; As for the doubly linked list, a B value of zero indicates an invalid pointer.
 
 
 ; POTENTIAL OPTIMIZATIONS:

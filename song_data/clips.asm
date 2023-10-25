@@ -63,6 +63,16 @@
 ; it needs to search for channels with the same player id, and among those for channels that have the correct pitch set.
 ; --> this is tedious for finding notes! (imagine hard note-offs or effects that need to be applied to all notes in a clip!)
 ;
+; New idea how to handle polyphony efficiently (if linear search is too slow)
+; Free voices are stored in a ring buffer.
+; Playing back clips can request voices from this ring buffer.
+; When they receive a voice, the clip remembers the index of the clip, and the voice remembers a number, let's say -1, to
+; remember that no other voice is currently being used by the same clip.
+; Whenever the clip receives another additional voice, that voice is set to remember the previously acquired voice,
+; and the clip remembers the new voice. This creates a linked list of voices which are used by a certain clip.
+; They can be traversed efficiently to find the index of a note-off event and to broadcast effects.
+;
+;
 ; Store active voices in a 16 byte array ! per playing clip ? --> lots of RAM used just for this
 ;
 ; Note length vs. note-off

@@ -4,7 +4,7 @@
 ; is connected up with the common code.
 
 ; The basic idea is that there are several types of dragable objects. Each of them can have exactly one list
-; of dragable items (objects). The code in this file operates on these lists.
+; of dragable items (hitboxes). The code in this file operates on these lists.
 
 ; * think about how to generalize different dynamic drag&drop use cases
 ;   * use cases:
@@ -108,27 +108,27 @@ notes_type = 0
 effects_type = 1
 clips_type = 2
 
-; variables to communicate objects which are stored in the object lists
-object_pos_x = v40b::value_0 ; on-screen-position in multiples of 4 pixels
-object_pos_y = v40b::value_1 ; on-screen-position in multiples of 4 pixels
-object_width = v40b::value_2 ; on-screen width in multiples of 4 pixels (height is implied by active_type)
+; variables to communicate hitboxes which are stored in the hitbox lists
+hitbox_pos_x = v40b::value_0 ; on-screen-position in multiples of 4 pixels
+hitbox_pos_y = v40b::value_1 ; on-screen-position in multiples of 4 pixels
+hitbox_width = v40b::value_2 ; on-screen width in multiples of 4 pixels (height is implied by active_type)
 object_id_l = v40b::value_3 ; identifier (low)
 object_id_h = v40b::value_4 ; identifier (high)
 
 .include "lookup_tables.asm"
 
 .scope detail
-; addresses to vectors of objects which can be dragged (B/H)
-object_vector_b:
+; addresses to vectors of hitboxes which can be dragged (B/H)
+hitbox_vector_b:
    .res num_types
-object_vector_h:
+hitbox_vector_h:
    .res num_types
 
-.proc load_object_list
+.proc load_hitbox_list
    ldy active_type
-   lda detail::object_vector_h, y
+   lda detail::hitbox_vector_h, y
    tax
-   lda detail::object_vector_b, y
+   lda detail::hitbox_vector_b, y
    rts
 .endproc
 
@@ -145,12 +145,12 @@ temp_variable_b:
    ldy #(num_types-1)
 @init_loop:
    phy
-   ; create object vectors
+   ; create hitbox vectors
    jsr v40b::new
    ply
-   sta detail::object_vector_b, y
+   sta detail::hitbox_vector_b, y
    txa
-   sta detail::object_vector_h, y
+   sta detail::hitbox_vector_h, y
    dey
    cpy #255
    bne @init_loop
@@ -158,32 +158,32 @@ temp_variable_b:
 .endproc
 
 
-; Remove all objects from an onject list
-.proc clear_objects
-   jsr detail::load_object_list
+; Remove all hitboxes from a hitbox list
+.proc clear_hitboxes
+   jsr detail::load_hitbox_list
    jsr v40b::clear
    rts
 .endproc
 
 
-; Add an object to a list
-; Expects object data in the API variables.
+; Add a hitbox to a list
+; Expects hitbox data in the API variables.
 ; If successful, carry is clear. Carry is set when the operation failed due to full heap.
-.proc add_object
-   jsr detail::load_object_list
+.proc add_hitbox
+   jsr detail::load_hitbox_list
    jsr v40b::append_new_entry
    rts
 .endproc
 
 
-; Checks if the mouse is currently over an object.
+; Checks if the mouse is currently over a hitbox.
 ; Expects mouse position in .A/.X (x position in multiples of 4 pixel, y position in multiples of 4 pixel)
 ; Carry will be set if no match was found. If a match was found, carry is clear.
-; Returns the id of the object in .A/.X (low/high).
+; Returns the id of the associated object in .A/.X (low/high).
 .proc mouse_over
    sta temp_variable_a
    stx temp_variable_b
-   jsr detail::load_object_list
+   jsr detail::load_hitbox_list
    jsr v40b::get_first_entry
    bcs @end
 @loop:
@@ -193,21 +193,21 @@ temp_variable_b:
    jsr v40b::read_entry
    ; Check Y coordinate
    lda temp_variable_b
-   cmp object_pos_y ; carry will be set if mouse is at the height or below the object
+   cmp hitbox_pos_y ; carry will be set if mouse is at the height or below the hitbox
    bcc @continue
-   ; Now check if mouse is at the height or above the object. For that we subtract the object height from the mouse coordinate and then compare
+   ; Now check if mouse is at the height or above the hitbox. For that we subtract the hitbox height from the mouse coordinate and then compare
    ldy active_type
-   sbc object_heights, y ; carry is already set
-   dec ; subtract one more than the object height
-   cmp object_pos_y ; carry will be clear if mose is above "one line below" the object (that is, in other words, on the object or above it)
+   sbc hitbox_heights, y ; carry is already set
+   dec ; subtract one more than the hitbox height
+   cmp hitbox_pos_y ; carry will be clear if mouse is above "one line below" the hitbox (that is, in other words, on the hitbox or above it)
    bcs @continue
    ; Check X coordinate (same formulas as above)
    sta temp_variable_a
-   cmp object_pos_x
+   cmp hitbox_pos_x
    bcc @continue
-   sbc object_width
+   sbc hitbox_width
    dec
-   cmp object_pos_x
+   cmp hitbox_pos_x
    bcs @continue
    ; We got a hit!
    ply ; tidy up the stack
