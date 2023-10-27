@@ -87,7 +87,7 @@ last_event_source:
 ; That means, note-offs first, then note-ons, then effects.
 ; If no more events are available, carry is set upon return, clear otherwise.
 ; If another event is available, its pointer is returned in .A/.X/.Y
-; If another event is available, the content of last_event_source is set to 0 in case the last event was unselected, or 1 if it was selected
+; If another event is available, the content of last_event_source is set to 0 in case the last event was unselected, or $80 if it was selected
 .proc stream_get_next_event
     ; Check if more events are available
     ldy next_selected_event+2
@@ -177,7 +177,7 @@ last_event_source:
     sta next_selected_event
     stx next_selected_event+1
     sty next_selected_event+2
-    lda #1
+    lda #$80
     sta last_event_source
     bra @return_pointer
 @next_unselected:

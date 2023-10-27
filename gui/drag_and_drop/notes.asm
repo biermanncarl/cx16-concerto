@@ -2,6 +2,9 @@
 
 ; This contains implementation of drag and drop of notes within clips.
 
+.ifndef ::GUI_DRAG_AND_DROP_NOTES_ASM
+::GUI_DRAG_AND_DROP_NOTES_ASM = 1
+
 .include "../../common/x16.asm"
 .include "../../dynamic_memory/vector_40bit.asm"
 .include "../../song_data/timing.asm"
@@ -65,78 +68,149 @@ argument_z:
 
 ; Temporary variables
 .scope detail
-; zeropage variables
-.pushseg
-.zeropage
-temp_variable_a:
-   .res 1
-temp_variable_b:
-   .res 1
-temp_variable_c:
-   .res 1
-.popseg
+   ; zeropage variables
+   .pushseg
+   .zeropage
+   temp_variable_a:
+      .res 1
+   temp_variable_b:
+      .res 1
+   temp_variable_c:
+      .res 1
+   .popseg
 
-temp_variable_z:
-   .res 1
-temp_variable_y:
-   .res 1
-temp_variable_x:
-   .res 1
+   temp_variable_z:
+      .res 1
+   temp_variable_y:
+      .res 1
+   temp_variable_x:
+      .res 1
 
-; Editing area rectangle
-event_edit_pos_x = 25
-event_edit_pos_y = 5
-event_edit_width = 50
-event_edit_height = 45
-event_edit_background_color = 15
-event_edit_note_color = 2
-event_edit_note_border_unselected_color = 0
-event_edit_note_border_selected_color = 10
-
-
-; Buffers
-; -------
-; Consider 
-; * reusing these for multiple purposes
-; * moving them to "golden RAM" ($0400-$07FF)
-
-; column buffers
-; used for drawing.
-column_buffer:
-   .res event_edit_height
-; used for hitbox generation
-note_is_selected:
-   .res event_edit_height
-note_id_low:
-   .res event_edit_height
-note_id_high:
-   .res event_edit_height
+   ; Editing area rectangle
+   event_edit_pos_x = 25
+   event_edit_pos_y = 5
+   event_edit_width = 50
+   event_edit_height = 45
+   event_edit_background_color = 15
+   event_edit_note_color = 2
+   event_edit_note_border_unselected_color = 0
+   event_edit_note_border_selected_color = 10
 
 
-; Calculates the row of a note and checks if it is inside the view vertically.
-; Expects the note's pitch in note_pitch.
-; Expects the lowest note inside the view in argument_y
-; Sets carry when inside the bounds, clears it otherwise.
-; Returns the row index in .X.
-.proc calculateRowAndCheckBounds
-   lda #event_edit_height-1
-   clc
-   adc argument_y ; This exact addition is done every time, could be optimized.
-   sec
-   sbc note_pitch
-   tax
-   ; check if note is on-screen
-   cmp #0
-   bcc @exit_no_other_action
-   cmp #event_edit_height
-   bcs @exit_clear_carry
-   sec
-   rts
-@exit_clear_carry:
-   clc
-@exit_no_other_action:
-   rts
-.endproc
+   ; Buffers
+   ; -------
+   ; Consider 
+   ; * reusing these for multiple purposes
+   ; * moving them to "golden RAM" ($0400-$07FF)
+
+   ; column buffers
+   ; used for drawing.
+   column_buffer:
+      .res event_edit_height
+   ; used for hitbox generation
+   note_is_selected:
+      .res event_edit_height
+   note_id_low:
+      .res event_edit_height
+   note_id_high:
+      .res event_edit_height
+
+
+   ; Calculates the row of a note and checks if it is inside the view vertically.
+   ; Expects the note's pitch in note_pitch.
+   ; Expects the lowest note inside the view in argument_y
+   ; Sets carry when inside the bounds, clears it otherwise.
+   ; Returns the row index in .X.
+   .proc calculateRowAndCheckBounds
+      lda #event_edit_height-1
+      clc
+      adc argument_y ; This exact addition is done every time, could be optimized.
+      sec
+      sbc note_pitch
+      tax
+      ; check if note is on-screen
+      cmp #0
+      bcc @exit_no_other_action
+      cmp #event_edit_height
+      bcs @exit_clear_carry
+      sec
+      rts
+   @exit_clear_carry:
+      clc
+   @exit_no_other_action:
+      rts
+   .endproc
+
+   ; Sets the note hitbox active on the row with index .X
+   ; Basically just copies the event pointer into the buffer.
+   ; preserves .X and .Y
+   .proc startNoteHitbox
+      lda item_selection::last_event_source
+      sta note_is_selected, x
+      bne @selected
+   @unselected:
+      lda item_selection::next_unselected_id
+      ldy item_selection::next_unselected_id+1
+      bra @store_id
+   @selected:
+      lda item_selection::next_selected_id
+      ldy item_selection::next_selected_id+1
+   @store_id:
+      sta note_id_low, x
+      tya
+      sta note_id_high, x
+      rts
+   .endproc
+
+   ; Finishes off a note hitbox on the row with index .X
+   ; column end position is expected in detail::temp_variable_x
+   ; preserves .X
+   .proc finishNoteHitbox
+      column_index = detail::temp_variable_x
+
+      ; hitbox width
+      lda column_buffer, x
+      bpl @normal_note
+   @short_note:
+      lda #1
+   @normal_note:
+      asl
+      sta hitbox_width
+      ; hitbox x position
+      lda column_index ; possibly an inc is needed ... trial & error will tell
+      asl
+      sec
+      sbc hitbox_width
+      sta hitbox_pos_x
+      ; hitbox y position
+      txa
+      clc
+      adc #detail::event_edit_pos_y
+      asl
+      sta hitbox_pos_y
+      ; hitbox object id
+      lda note_id_low, x
+      sta object_id_l
+      lda note_id_high, x
+      ora note_is_selected, x  ; maybe we could do this in startNoteHitbox and save the note_is_selected buffer? Let's see if we'll need them separate at all.
+      sta object_id_h
+
+      ; append the entry
+      lda note_is_selected, x
+      phx
+      bne @selected
+   @unselected:
+      lda event_vector_a
+      ldx event_vector_a+1
+      bra @append
+   @selected:
+      lda event_vector_b
+      ldx event_vector_b+1
+   @append:
+      jsr v40b::append_new_entry
+      plx
+      rts
+   .endproc
 
 .endscope
 
@@ -164,7 +238,7 @@ change_song_tempo = timing::recalculate_rhythm_values ; TODO: actually recalcula
    sta event_vector_a
    stx event_vector_a+1
    ; note-on
-   lda #(1*test_quarter_ticks)
+   lda #(3*test_quarter_ticks)
    sta event_time_stamp_l
    stz event_time_stamp_h
    lda #events::event_type_note_on
@@ -176,7 +250,7 @@ change_song_tempo = timing::recalculate_rhythm_values ; TODO: actually recalcula
    ldx event_vector_a+1
    jsr v40b::append_new_entry
    ; note-off
-   lda #(1*test_quarter_ticks+5)
+   lda #(3*test_quarter_ticks+5)
    sta event_time_stamp_l
    lda #events::event_type_note_off
    sta event_type
@@ -187,12 +261,52 @@ change_song_tempo = timing::recalculate_rhythm_values ; TODO: actually recalcula
    ldx event_vector_a+1
    jsr v40b::append_new_entry
    ; note-on
-   lda #(1*test_quarter_ticks+10)
+   lda #<(3*test_quarter_ticks+test_first_eighth_ticks)
    sta event_time_stamp_l
-   stz event_time_stamp_h
+   lda #>(3*test_quarter_ticks+test_first_eighth_ticks)
+   sta event_time_stamp_h
    lda #events::event_type_note_on
    sta event_type
    lda #50
+   sta note_pitch
+   stz event_data_2
+   lda event_vector_a
+   ldx event_vector_a+1
+   jsr v40b::append_new_entry
+   ; note-off
+   lda #<(3*test_quarter_ticks+2*test_first_eighth_ticks)
+   sta event_time_stamp_l
+   lda #>(3*test_quarter_ticks+2*test_first_eighth_ticks)
+   sta event_time_stamp_h
+   lda #events::event_type_note_off
+   sta event_type
+   lda #50
+   sta note_pitch
+   stz event_data_2
+   lda event_vector_a
+   ldx event_vector_a+1
+   jsr v40b::append_new_entry
+   ; note-on
+   lda #<(4*test_quarter_ticks)
+   sta event_time_stamp_l
+   lda #>(4*test_quarter_ticks)
+   sta event_time_stamp_h
+   lda #events::event_type_note_on
+   sta event_type
+   lda #52
+   sta note_pitch
+   stz event_data_2
+   lda event_vector_a
+   ldx event_vector_a+1
+   jsr v40b::append_new_entry
+   ; note-off
+   lda #<(4*test_quarter_ticks+80)
+   sta event_time_stamp_l
+   lda #>(4*test_quarter_ticks+80)
+   sta event_time_stamp_h
+   lda #events::event_type_note_off
+   sta event_type
+   lda #52
    sta note_pitch
    stz event_data_2
    lda event_vector_a
@@ -253,7 +367,7 @@ change_song_tempo = timing::recalculate_rhythm_values ; TODO: actually recalcula
    lda argument_x+1
    sta running_time_stamp_h
 
-   ; clear the column buffer (don't need to clear the hitbox buffers)
+   ; clear the column buffer (don't need to clear the hitbox buffers because if the column_buffer is cleared, the others won't get read)
    ldx #(detail::event_edit_height-1)
 @clear_column_buffer_loop:
    stz detail::column_buffer, x
@@ -271,7 +385,11 @@ change_song_tempo = timing::recalculate_rhythm_values ; TODO: actually recalcula
    sta item_selection::selected_events+1
    jsr item_selection::reset_stream
 
-   ; TODO: clear the hitbox list
+   ; initialize the hitbox list
+   lda hitbox_types::notes_type
+   sta active_hitbox_type
+   jsr clear_hitboxes
+
    ; TODO: calculate keyboard roll visualization offset
 
    stz end_of_data
@@ -309,10 +427,11 @@ change_song_tempo = timing::recalculate_rhythm_values ; TODO: actually recalcula
    cmp #events::event_type_note_on
    bne @pre_parsing_next_event
 @pre_parsing_note_on:
+   jsr detail::startNoteHitbox
    lda #2 ; for the purpose of pre-parsing, this is much simpler than in the actual parsing (just toggle on-off). Set to 2 so they won't look like they start at the left border of the time window
    bra @pre_parsing_write_to_buffer
 @pre_parsing_note_off:
-   lda #column_buffer_no_note
+   lda #column_buffer_no_note ; as the hitbox already ends off-screen, we don't need to register it at all, just switch the row "off"
 @pre_parsing_write_to_buffer:
    sta detail::column_buffer, x
 @pre_parsing_next_event:
@@ -382,57 +501,38 @@ change_song_tempo = timing::recalculate_rhythm_values ; TODO: actually recalcula
 @handle_note_on:
    jsr detail::calculateRowAndCheckBounds
    bcc @parse_next_event ; if outside our view (vertically), skip the event
+   jsr detail::startNoteHitbox
    lda detail::column_buffer, x ; check what's inside the current row
-   ; since it's a note-on, we don't check if what's in there is selected. We get that info from the event source (item_selection::last_event_source)
-   asl ; get rid of upper bit
-   cmp #(2*column_buffer_short_note)
+   cmp #column_buffer_short_note
    beq @crowded_on
-   cmp #(2*column_buffer_multiple_last_off)
+   cmp #column_buffer_multiple_last_off
    beq @crowded_on
    ; in all other cases, we do a note on ... even when they don't make sense (e.g. note-on on top of an already running note)
 @new_note:
-   lda item_selection::last_event_source
-   lsr ; move "selected" bit into carry
-   lda #(2*1) ; active note, minimum length 1, left shifted once (undoing it next instruction)
-   ror ; move "selected" bit to the top of the value
+   lda #1 ; active note, minimum length 1
    bra @write_to_column_buffer
 @crowded_on:
-   lda item_selection::last_event_source
-   lsr ; move "selected" bit into carry
-   lda #(2*column_buffer_multiple_last_on) ; multiplied by 2 as we right shift it next instruction
-   ror ; move "selected" bit to the top of the value
+   lda #column_buffer_multiple_last_on
    bra @write_to_column_buffer
 @handle_note_off:
-   ; extract "selection bit", remember it; push it out --> we multiply the "size" by 2 already to get multiples of 4 pixels size)
    ; handle different cases
-   ; possibly create hitbox (leave as TODO for now)
-   ; add selection bit back
    ; write to column buffer
    jsr detail::calculateRowAndCheckBounds
    bcc @parse_next_event ; if outside our view (vertically), skip the event
+   jsr detail::finishNoteHitbox
    lda detail::column_buffer, x ; check what's inside the current row
-   asl ; get rid of the upper bit
-   cmp #(2*column_buffer_multiple_last_on)
+   cmp #column_buffer_multiple_last_on
    beq @crowded_off
-   cmp #(2*1) ; note started this column
+   cmp #1 ; note started this column
    beq @short_note
    ; we have a note running over at least one full column
    lda #0
-   ; TODO: hitbox generation!
    bra @write_to_column_buffer ; could be optimized to stz and direct branch
 @crowded_off:
-   lda item_selection::last_event_source
-   lsr ; put selection bit into carry
-   lda #(2*column_buffer_multiple_last_off)
-   ror ; append the selection bit
-   ; TODO: hitbox generation! (yes, even in crowded environments we want hitboxes, so "box selection" works)
+   lda #column_buffer_multiple_last_off
    bra @write_to_column_buffer
 @short_note:
-   lda item_selection::last_event_source
-   lsr ; put selection bit into carry
-   lda #(2*column_buffer_short_note)
-   ror ; append the selection bit
-   ; TODO: hitbox generation!
+   lda #column_buffer_short_note
 @write_to_column_buffer:
    sta detail::column_buffer, x
    bra @parse_next_event
@@ -539,3 +639,5 @@ change_song_tempo = timing::recalculate_rhythm_values ; TODO: actually recalcula
 .endproc
 
 .endscope
+
+.endif ; .ifndef ::GUI_DRAG_AND_DROP_NOTES_ASM

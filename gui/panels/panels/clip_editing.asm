@@ -5,14 +5,14 @@
 ::GUI_PANELS_PANELS_TEMPLATE_ASM = 1
 
 .include "common.asm"
-.include "../../drag_and_drop/notes.asm"
+.include "../../drag_and_drop/drag_and_drop.asm"
 
 ; editing area for clips
 .scope clip_editing
-   px = notes::detail::event_edit_pos_x
-   py = notes::detail::event_edit_pos_y-3 ; for navigation buttons at the top (temporary solution, until we implement a more convenient navigation solution)
-   wd = notes::detail::event_edit_width
-   hg = notes::detail::event_edit_height+3
+   px = dnd::notes::detail::event_edit_pos_x
+   py = dnd::notes::detail::event_edit_pos_y-3 ; for navigation buttons at the top (temporary solution, until we implement a more convenient navigation solution)
+   wd = dnd::notes::detail::event_edit_width
+   hg = dnd::notes::detail::event_edit_height+3
 
    comps:
    .scope comps
@@ -44,15 +44,15 @@
 
    .proc draw
       lda time_stamp
-      sta notes::argument_x
+      sta dnd::notes::argument_x
       lda time_stamp+1
-      sta notes::argument_x+1
+      sta dnd::notes::argument_x+1
       lda low_note
-      sta notes::argument_y
+      sta dnd::notes::argument_y
       lda zoom_level
-      sta notes::argument_z
+      sta dnd::notes::argument_z
       ; event vectors are set by setup_test_clip (and we never touch them elsewhere yet)
-      jsr notes::draw_events
+      jsr dnd::notes::draw_events
       rts
    .endproc
 
@@ -88,7 +88,7 @@
       ; TODO: provide different strides at different zoom levels
       lda time_stamp
       sec
-      sbc timing::detail::quarter_ticks
+      sbc dnd::timing::detail::quarter_ticks
       sta time_stamp
       lda time_stamp+1
       sbc #0
@@ -113,7 +113,7 @@
       ; TODO: provide different strides at different zoom levels
       lda time_stamp
       clc
-      adc timing::detail::quarter_ticks
+      adc dnd::timing::detail::quarter_ticks
       sta time_stamp
       lda time_stamp+1
       adc #0

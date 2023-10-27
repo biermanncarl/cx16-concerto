@@ -660,6 +660,21 @@ destroy = dll::destroy_list
    rts
 .endproc
 
+; stores away the API registers, so that another function may use them
+; .proc push_api_registers
+;    lda value_0
+;    pha
+;    lda value_1
+;    pha
+;    lda value_2
+;    pha
+;    lda value_3
+;    pha
+;    lda value_4
+;    pha
+;    rts
+; .endproc
+
 
 ; Converts an entry from the "vector+index" representation to "direct pointer" representation.
 ; Expects the pointer to the vector (B/H) in .A/.X.

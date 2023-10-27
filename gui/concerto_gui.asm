@@ -39,6 +39,9 @@ initialize:
    sta guiutils::original_map_base
    jsr gui_routines::load_synth_gui
    jsr mouse::mouse_init
+.ifdef ::concerto_full_daw
+   jsr panels::dnd::initialize
+.endif
    rts
 
 ; concerto_gui::hide_gui
