@@ -92,9 +92,10 @@ argument_z:
    event_edit_width = 50
    event_edit_height = 45
    event_edit_background_color = 15
-   event_edit_note_color = 2
-   event_edit_note_border_unselected_color = 0
-   event_edit_note_border_selected_color = 10
+   event_edit_note_color_unselected = 2
+   event_edit_note_color_selected = 7
+   event_edit_note_border_color = 0
+   event_edit_note_border_color_high_velocity = 10 ; ??
 
 
    ; Buffers
@@ -317,7 +318,59 @@ change_song_tempo = timing::recalculate_rhythm_values ; TODO: actually recalcula
    jsr v40b::new
    sta event_vector_b
    stx event_vector_b+1
-   ; TODO
+   ; note-on
+   lda #<(4*test_quarter_ticks+test_first_eighth_ticks)
+   sta event_time_stamp_l
+   lda #>(4*test_quarter_ticks+test_first_eighth_ticks)
+   sta event_time_stamp_h
+   lda #events::event_type_note_on
+   sta event_type
+   lda #55
+   sta note_pitch
+   stz event_data_2
+   lda event_vector_b
+   ldx event_vector_b+1
+   jsr v40b::append_new_entry
+   ; note-off
+   lda #<(4*test_quarter_ticks+2*test_first_eighth_ticks)
+   sta event_time_stamp_l
+   lda #>(4*test_quarter_ticks+2*test_first_eighth_ticks)
+   sta event_time_stamp_h
+   lda #events::event_type_note_off
+   sta event_type
+   lda #55
+   sta note_pitch
+   stz event_data_2
+   lda event_vector_b
+   ldx event_vector_b+1
+   jsr v40b::append_new_entry
+   ; note-on
+   lda #<(5*test_quarter_ticks+1)
+   sta event_time_stamp_l
+   lda #>(5*test_quarter_ticks+1)
+   sta event_time_stamp_h
+   lda #events::event_type_note_on
+   sta event_type
+   lda #48
+   sta note_pitch
+   stz event_data_2
+   lda event_vector_b
+   ldx event_vector_b+1
+   jsr v40b::append_new_entry
+   ; note-off
+   lda #<(5*test_quarter_ticks+80)
+   sta event_time_stamp_l
+   lda #>(5*test_quarter_ticks+80)
+   sta event_time_stamp_h
+   lda #events::event_type_note_off
+   sta event_type
+   lda #48
+   sta note_pitch
+   stz event_data_2
+   lda event_vector_b
+   ldx event_vector_b+1
+   jsr v40b::append_new_entry
+
    rts
 .endproc
 
@@ -608,13 +661,12 @@ change_song_tempo = timing::recalculate_rhythm_values ; TODO: actually recalcula
    lda #79
 @draw_note:
    sta VERA_data0
-   lda detail::column_buffer, x
-   bpl :+
-   lda #(detail::event_edit_note_border_selected_color)
+   lda detail::note_is_selected, x
+   beq :+
+   lda #(16*detail::event_edit_note_color_selected)
    bra :++
-:  lda #(detail::event_edit_note_border_unselected_color)
-:  clc
-   adc #(16*detail::event_edit_note_color)
+:  lda #(16*detail::event_edit_note_color_unselected)
+:  ora #(detail::event_edit_note_border_color)
    sta VERA_data0
    bra @advance_row
 @draw_multiple:
