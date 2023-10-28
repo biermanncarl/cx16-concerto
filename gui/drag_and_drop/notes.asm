@@ -9,6 +9,7 @@
 .include "../../dynamic_memory/vector_40bit.asm"
 .include "../../song_data/timing.asm"
 .include "../../song_data/events.asm"
+.include "hitboxes.asm"
 .include "item_selection.asm"
 
 .scope notes
@@ -176,25 +177,25 @@ argument_z:
       lda #1
    @normal_note:
       asl
-      sta hitbox_width
+      sta hitboxes::hitbox_width
       ; hitbox x position
       lda column_index ; possibly an inc is needed ... trial & error will tell
       asl
       sec
-      sbc hitbox_width
-      sta hitbox_pos_x
+      sbc hitboxes::hitbox_width
+      sta hitboxes::hitbox_pos_x
       ; hitbox y position
       txa
       clc
       adc #detail::event_edit_pos_y
       asl
-      sta hitbox_pos_y
+      sta hitboxes::hitbox_pos_y
       ; hitbox object id
       lda note_id_low, x
-      sta object_id_l
+      sta hitboxes::object_id_l
       lda note_id_high, x
       ora note_is_selected, x  ; maybe we could do this in startNoteHitbox and save the note_is_selected buffer? Let's see if we'll need them separate at all.
-      sta object_id_h
+      sta hitboxes::object_id_h
 
       ; append the entry
       lda note_is_selected, x
@@ -439,9 +440,9 @@ change_song_tempo = timing::recalculate_rhythm_values ; TODO: actually recalcula
    jsr item_selection::reset_stream
 
    ; initialize the hitbox list
-   lda hitbox_types::notes_type
-   sta active_hitbox_type
-   jsr clear_hitboxes
+   lda hitboxes::hitbox_types::notes_type
+   sta hitboxes::active_hitbox_type
+   jsr hitboxes::clear_hitboxes
 
    ; TODO: calculate keyboard roll visualization offset
 
