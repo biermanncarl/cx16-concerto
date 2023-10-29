@@ -17,14 +17,23 @@
 ; aliases for specific event types
 note_pitch = events::event_data_1 ; for note-on and note-off events
 
+; Starting time (left border) of the visualzation area
+window_time_stamp:
+   .word 0
+; Starting pitch (bottom border) of the visualization area, lowest on-screen pitch
+window_pitch:
+   .byte 48
+; Temporal zoom level (0 to 4)
+; 0 means single-tick precision, 1 means 1/32 grid, 2 means 1/16, 3 means 1/8, 4 means 1/4 and so forth
+temporal_zoom:
+   .byte 2
+
 
 .pushseg
 .zeropage
 event_vector_a: ; todo: remove ownership of note data from this file
    .res 2
 event_vector_b:
-   .res 2
-argument_x:
    .res 2
 argument_y:
    .res 1
@@ -85,13 +94,12 @@ argument_z:
 
    ; Calculates the row of a note and checks if it is inside the view vertically.
    ; Expects the note's pitch in note_pitch.
-   ; Expects the lowest note inside the view in argument_y
    ; Sets carry when inside the bounds, clears it otherwise.
    ; Returns the row index in .X.
    .proc calculateRowAndCheckBounds
       lda #event_edit_height-1
       clc
-      adc argument_y ; This exact addition is done every time, could be optimized.
+      adc window_pitch ; This exact addition is done every time, could be optimized.
       sec
       sbc note_pitch
       tax
@@ -343,10 +351,7 @@ change_song_tempo = timing::recalculate_rhythm_values ; TODO: actually recalcula
 
 ; Draws the editing area of notes within a clip. (Later perhaps effects, too)
 ; Expects pointer to unselected events in event_vector_a, selected events in event_vector_b
-; Expects time stamp of the left border in argument_x (low and high). Must be aligned with the currently selected grid.
-; Expects the pitch of the lowest on-screen note in argument_y
-; Expects the temporal zoom level in argument_z (0 means single-tick precision, 1 means 1/32 grid, 2 means 1/16, 3 means 1/8, 4 means 1/4 and so forth)
-.proc draw_events
+.proc draw
    ; DEFINITIONS
    ; ===========
    running_time_stamp_l = detail::temp_variable_a
@@ -369,22 +374,18 @@ change_song_tempo = timing::recalculate_rhythm_values ; TODO: actually recalcula
    ; INITIALIZATION
    ; ==============
 
-   ; column starting point
-   lda argument_x+1
-   ldx argument_x
+   ; running time stamp and column starting point
+   lda window_time_stamp+1
+   sta running_time_stamp_h
+   ldx window_time_stamp
+   stx running_time_stamp_l
    jsr timing::disassemble_time_stamp
    stx thirtysecondth_count
 
    ; column stride
-   ldx argument_z
+   ldx temporal_zoom
    jsr timing::get_note_duration_thirtysecondths
    sta thirtysecondth_stride
-
-   ; running time stamp
-   lda argument_x
-   sta running_time_stamp_l
-   lda argument_x+1
-   sta running_time_stamp_h
 
    ; clear the column buffer (don't need to clear the hitbox buffers because if the column_buffer is cleared, the others won't get read)
    ldx #(detail::event_edit_height-1)
@@ -427,12 +428,12 @@ change_song_tempo = timing::recalculate_rhythm_values ; TODO: actually recalcula
    ; 2. register any notes which begin off-screen but continue into the view
    ; =============================================================================================================================
 @pre_parsing_loop:
-   lda argument_x+1
+   lda running_time_stamp_h ; running time stamp is kept at the left border's time stamp during pre-parsing
    cmp events::event_time_stamp_h
    bcc @end_pre_parsing_loop ; if time stamp's high is bigger than reference, we must end
    bne @continue_pre_parsing_loop ; if they're not equal, (and implicitly not bigger), it must be smaller -> we can continue
    lda events::event_time_stamp_l ; high bytes are equal --> need to check low byte
-   cmp argument_x
+   cmp running_time_stamp_l
    bcs @end_pre_parsing_loop ; if time stamp's low byte is equal or higher than threshold, we end
 @continue_pre_parsing_loop:
    ; interpret current event
@@ -485,7 +486,7 @@ change_song_tempo = timing::recalculate_rhythm_values ; TODO: actually recalcula
    adc thirtysecondth_stride
    sta thirtysecondth_count
    tax
-   lda argument_z ; zoom level
+   lda temporal_zoom ; zoom level
    jsr timing::get_note_duration_ticks
    clc
    adc running_time_stamp_l
@@ -671,27 +672,6 @@ height = 2 * detail::event_edit_height
 .proc drag
    ; TODO
    rts
-.endproc
-
-.proc draw
-   ; TODO optimize away this wrapper function! Make the zoom/vpos/timestamp internal state of this file.
-   lda timestamp
-   sta argument_x
-   lda timestamp+1
-   sta argument_x+1
-   lda vpos
-   sta argument_y
-   lda zoom
-   sta argument_z
-   ; event vectors are set by setup_test_clip (and we never touch them elsewhere yet)
-   jsr draw_events
-   rts
-zoom:
-   .byte 2
-vpos:
-   .byte 36
-timestamp:
-   .word 0
 .endproc
 
 

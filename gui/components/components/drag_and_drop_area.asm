@@ -23,7 +23,6 @@
     .proc draw
         ; Todo: switch on type
         phy
-        ;.byte $db
         lda (components_common::data_pointer), y
         asl
         tax
