@@ -6,7 +6,12 @@
 
 .scope components
    .include "../../common/utility_macros.asm"
-   .include "configs/default.asm"
+
+   .ifdef ::concerto_full_daw
+      .include "configs/full_daw_gui.asm"
+   .else
+      .include "configs/only_synth_gui.asm"
+   .endif
 
    ; Give each component type an id
    .scope ids

@@ -89,6 +89,8 @@ end_mouse_tick:
 
 ; no buttons are pressed. waiting for button presses.
 do_idle:
+   lda #1
+   sta mouse_variables::drag_start ; in case there is a drag event, this variable is set to 1 for the first call of drag event
    ; check button presses
    ; check left
    lda mouse_variables::curr_buttons
@@ -198,6 +200,7 @@ do_dragging:
    sbc mouse_variables::curr_y
    sta mouse_variables::curr_data_2
    jsr gui_routines::drag_event
+   stz mouse_variables::drag_start
 :  jmp end_mouse_tick
 
 .endscope

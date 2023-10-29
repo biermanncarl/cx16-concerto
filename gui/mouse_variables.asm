@@ -24,6 +24,8 @@
     curr_component_ofs: .byte 0
     curr_data_1: .byte 0 ; used to store the current tab selected, which arrow is clicked etc.
     curr_data_2: .byte 0 ; used to store dragging distance (y direction)
+    ; others
+    drag_start: .byte 0 ; used to indicate whether a drag event is the first since the mouse button has been held down
 .endscope
 
 .endif ; .ifndef ::GUI_mouse_variables_ASM

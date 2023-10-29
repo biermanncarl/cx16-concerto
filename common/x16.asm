@@ -171,6 +171,7 @@ SCREEN_SET_CHARSET            := $FF62
 MOUSE_CONFIG                  := $FF68
 MOUSE_GET                     := $FF6B
 MOUSE_SCAN                    := $FF71
+KBDBUF_GET_MODIFIERS          := $FEC0
 SCINIT                        := $FF81
 IOINIT                        := $FF84
 RAMTAS                        := $FF87

@@ -40,7 +40,7 @@ initialize:
    jsr gui_routines::load_synth_gui
    jsr mouse::mouse_init
 .ifdef ::concerto_full_daw
-   jsr panels::dnd::initialize
+   jsr components::dnd::hitboxes::initialize
 .endif
    rts
 

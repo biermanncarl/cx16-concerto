@@ -7,7 +7,8 @@
 .include "../../../common/random.asm"
 heap_max_ram_bank = 10
 .include "../../../dynamic_memory/vector_40bit.asm"
-.include "../notes.asm"
+.include "../../../song_data/events.asm"
+.include "../item_selection.asm"
 
 ; option to enforce a unique order of events (less generic test scenario)
 ; Uncomment to run generic test with partially ambivalent order.
@@ -68,9 +69,9 @@ start:
 @end_inc_timestamp:
     ; fill the new event data
     lda time_stamp
-    sta notes::event_time_stamp_l
+    sta events::event_time_stamp_l
     lda time_stamp+1
-    sta notes::event_time_stamp_h
+    sta events::event_time_stamp_h
     ; choose a random event type
     jsr rng::random_byte
     cmp previous_event_type ; need to ensure that the event type is same or higher than previous event in the same time stamp (otherwise would be invalid data)
@@ -78,13 +79,13 @@ start:
 .ifdef enforce_unique_order
     beq @increment_time_stamp ; If we want unique order of events, we cannot have the same event twice in a row
 .endif
-    sta notes::event_type
+    sta events::event_type
     sta previous_event_type
     ; fill the "data": use the counter, so we can check later if the merge operation was correct
     lda loop_counter
-    sta notes::event_data_1
+    sta events::event_data_1
     lda loop_counter+1
-    sta notes::event_data_2
+    sta events::event_data_2
 
     ; choose a stream to add the event
     jsr rng::random_bit
@@ -164,25 +165,25 @@ start:
     ;----------------
 .ifdef enforce_unique_order
     ; index should be the same as the running index
-    lda notes::event_data_1
-    ldx notes::event_data_2
+    lda events::event_data_1
+    ldx events::event_data_2
     EXPECT_EQ_MEM_16 loop_counter
 .endif
 
     ; event type must increase monotonically within the same time stamp
-    lda notes::event_time_stamp_l
-    ldx notes::event_time_stamp_h
+    lda events::event_time_stamp_l
+    ldx events::event_time_stamp_h
     IS_EQ_MEM_16 time_stamp
     bcc @skip_type_check
-    lda notes::event_type
+    lda events::event_type
     EXPECT_GE_MEM previous_event_type
 @skip_type_check:
-    lda notes::event_type
+    lda events::event_type
     sta previous_event_type
 
     ; time stamp must increase monotonically
-    lda notes::event_time_stamp_l
-    ldx notes::event_time_stamp_h
+    lda events::event_time_stamp_l
+    ldx events::event_time_stamp_h
     EXPECT_GE_MEM_16 time_stamp
     sta time_stamp
     stx time_stamp+1

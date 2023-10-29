@@ -95,11 +95,9 @@
 
 .scope dnd ; drag'n'drop
 
+.include "dragables.asm"
 .include "hitboxes.asm"
-.include "notes.asm"
-.include "effects.asm"
-.include "clips.asm"
-.include "lookup_tables.asm"
+.include "backward_definitions.asm"
 
 .endscope
 

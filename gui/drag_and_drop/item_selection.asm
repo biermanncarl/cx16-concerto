@@ -10,6 +10,7 @@
 .ifndef DRAG_AND_DROP_ITEM_SELECTION_ASM
 DRAG_AND_DROP_ITEM_SELECTION_ASM = 1
 
+.include "../../common/x16.asm"
 .include "../../dynamic_memory/vector_40bit.asm"
 
 .scope item_selection
@@ -17,9 +18,9 @@ DRAG_AND_DROP_ITEM_SELECTION_ASM = 1
 .pushseg
 .zeropage
 ; pointers to the 40bit vectors with events
-selected_events: ; owned by this module ?!
+selected_events: ; not owned by this module
     .res 2
-unselected_events: ; definitely NOT owned
+unselected_events: ; not owned by this module
     .res 2
 ; other variables (no pointers) only here for speed and code size, could be moved out of ZP
 next_selected_event:

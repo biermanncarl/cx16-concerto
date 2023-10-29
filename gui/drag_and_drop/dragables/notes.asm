@@ -5,57 +5,22 @@
 .ifndef ::GUI_DRAG_AND_DROP_NOTES_ASM
 ::GUI_DRAG_AND_DROP_NOTES_ASM = 1
 
-.include "../../common/x16.asm"
-.include "../../dynamic_memory/vector_40bit.asm"
-.include "../../song_data/timing.asm"
-.include "../../song_data/events.asm"
-.include "hitboxes.asm"
-.include "item_selection.asm"
+.include "../../../common/x16.asm"
+.include "../../../dynamic_memory/vector_40bit.asm"
+.include "../../../song_data/timing.asm"
+.include "../../../song_data/events.asm"
+.include "../item_selection.asm"
+.include "common.asm"
 
 .scope notes
-height = 2
-
-
-; Needs input:
-; * new position do drag to (x,y)
-; * object id
-; Outputs:
-; * new actual position of object (x,y). Reason: hitbox update!
-.proc drag
-   ; TODO
-   rts
-.endproc
-
-
-
-
-
-; implementation stuff (possibly move it into different file later)
-; =================================================================
-
-; Value Definitions
-; =================
-
-; Data member meaning of 40bit values in note data
-event_time_stamp_l = v40b::value_0
-event_time_stamp_h = v40b::value_1
-event_type = v40b::value_2
-event_data_1 = v40b::value_3
-event_data_2 = v40b::value_4
 
 ; aliases for specific event types
-note_pitch = event_data_1 ; for note-on and note-off events
-
-
-
-; API variables
-; =============
-
+note_pitch = events::event_data_1 ; for note-on and note-off events
 
 
 .pushseg
 .zeropage
-event_vector_a:
+event_vector_a: ; todo: remove ownership of note data from this file
    .res 2
 event_vector_b:
    .res 2
@@ -177,25 +142,25 @@ argument_z:
       lda #1
    @normal_note:
       asl
-      sta hitboxes::hitbox_width
+      sta hitboxes__hitbox_width
       ; hitbox x position
       lda column_index ; possibly an inc is needed ... trial & error will tell
       asl
       sec
-      sbc hitboxes::hitbox_width
-      sta hitboxes::hitbox_pos_x
+      sbc hitboxes__hitbox_width
+      sta hitboxes__hitbox_pos_x
       ; hitbox y position
       txa
       clc
       adc #detail::event_edit_pos_y
       asl
-      sta hitboxes::hitbox_pos_y
+      sta hitboxes__hitbox_pos_y
       ; hitbox object id
       lda note_id_low, x
-      sta hitboxes::object_id_l
+      sta hitboxes__object_id_l
       lda note_id_high, x
       ora note_is_selected, x  ; maybe we could do this in startNoteHitbox and save the note_is_selected buffer? Let's see if we'll need them separate at all.
-      sta hitboxes::object_id_h
+      sta hitboxes__object_id_h
 
       ; append the entry
       lda note_is_selected, x
@@ -241,76 +206,76 @@ change_song_tempo = timing::recalculate_rhythm_values ; TODO: actually recalcula
    stx event_vector_a+1
    ; note-on
    lda #(3*test_quarter_ticks)
-   sta event_time_stamp_l
-   stz event_time_stamp_h
+   sta events::event_time_stamp_l
+   stz events::event_time_stamp_h
    lda #events::event_type_note_on
-   sta event_type
+   sta events::event_type
    lda #50
    sta note_pitch
-   stz event_data_2
+   stz events::event_data_2
    lda event_vector_a
    ldx event_vector_a+1
    jsr v40b::append_new_entry
    ; note-off
    lda #(3*test_quarter_ticks+5)
-   sta event_time_stamp_l
+   sta events::event_time_stamp_l
    lda #events::event_type_note_off
-   sta event_type
+   sta events::event_type
    lda #50
    sta note_pitch
-   stz event_data_2
+   stz events::event_data_2
    lda event_vector_a
    ldx event_vector_a+1
    jsr v40b::append_new_entry
    ; note-on
    lda #<(3*test_quarter_ticks+test_first_eighth_ticks)
-   sta event_time_stamp_l
+   sta events::event_time_stamp_l
    lda #>(3*test_quarter_ticks+test_first_eighth_ticks)
-   sta event_time_stamp_h
+   sta events::event_time_stamp_h
    lda #events::event_type_note_on
-   sta event_type
+   sta events::event_type
    lda #50
    sta note_pitch
-   stz event_data_2
+   stz events::event_data_2
    lda event_vector_a
    ldx event_vector_a+1
    jsr v40b::append_new_entry
    ; note-off
    lda #<(3*test_quarter_ticks+2*test_first_eighth_ticks)
-   sta event_time_stamp_l
+   sta events::event_time_stamp_l
    lda #>(3*test_quarter_ticks+2*test_first_eighth_ticks)
-   sta event_time_stamp_h
+   sta events::event_time_stamp_h
    lda #events::event_type_note_off
-   sta event_type
+   sta events::event_type
    lda #50
    sta note_pitch
-   stz event_data_2
+   stz events::event_data_2
    lda event_vector_a
    ldx event_vector_a+1
    jsr v40b::append_new_entry
    ; note-on
    lda #<(4*test_quarter_ticks)
-   sta event_time_stamp_l
+   sta events::event_time_stamp_l
    lda #>(4*test_quarter_ticks)
-   sta event_time_stamp_h
+   sta events::event_time_stamp_h
    lda #events::event_type_note_on
-   sta event_type
+   sta events::event_type
    lda #52
    sta note_pitch
-   stz event_data_2
+   stz events::event_data_2
    lda event_vector_a
    ldx event_vector_a+1
    jsr v40b::append_new_entry
    ; note-off
    lda #<(4*test_quarter_ticks+80)
-   sta event_time_stamp_l
+   sta events::event_time_stamp_l
    lda #>(4*test_quarter_ticks+80)
-   sta event_time_stamp_h
+   sta events::event_time_stamp_h
    lda #events::event_type_note_off
-   sta event_type
+   sta events::event_type
    lda #52
    sta note_pitch
-   stz event_data_2
+   stz events::event_data_2
    lda event_vector_a
    ldx event_vector_a+1
    jsr v40b::append_new_entry
@@ -321,53 +286,53 @@ change_song_tempo = timing::recalculate_rhythm_values ; TODO: actually recalcula
    stx event_vector_b+1
    ; note-on
    lda #<(4*test_quarter_ticks+test_first_eighth_ticks)
-   sta event_time_stamp_l
+   sta events::event_time_stamp_l
    lda #>(4*test_quarter_ticks+test_first_eighth_ticks)
-   sta event_time_stamp_h
+   sta events::event_time_stamp_h
    lda #events::event_type_note_on
-   sta event_type
+   sta events::event_type
    lda #55
    sta note_pitch
-   stz event_data_2
+   stz events::event_data_2
    lda event_vector_b
    ldx event_vector_b+1
    jsr v40b::append_new_entry
    ; note-off
    lda #<(4*test_quarter_ticks+2*test_first_eighth_ticks)
-   sta event_time_stamp_l
+   sta events::event_time_stamp_l
    lda #>(4*test_quarter_ticks+2*test_first_eighth_ticks)
-   sta event_time_stamp_h
+   sta events::event_time_stamp_h
    lda #events::event_type_note_off
-   sta event_type
+   sta events::event_type
    lda #55
    sta note_pitch
-   stz event_data_2
+   stz events::event_data_2
    lda event_vector_b
    ldx event_vector_b+1
    jsr v40b::append_new_entry
    ; note-on
    lda #<(5*test_quarter_ticks+1)
-   sta event_time_stamp_l
+   sta events::event_time_stamp_l
    lda #>(5*test_quarter_ticks+1)
-   sta event_time_stamp_h
+   sta events::event_time_stamp_h
    lda #events::event_type_note_on
-   sta event_type
+   sta events::event_type
    lda #48
    sta note_pitch
-   stz event_data_2
+   stz events::event_data_2
    lda event_vector_b
    ldx event_vector_b+1
    jsr v40b::append_new_entry
    ; note-off
    lda #<(5*test_quarter_ticks+80)
-   sta event_time_stamp_l
+   sta events::event_time_stamp_l
    lda #>(5*test_quarter_ticks+80)
-   sta event_time_stamp_h
+   sta events::event_time_stamp_h
    lda #events::event_type_note_off
-   sta event_type
+   sta events::event_type
    lda #48
    sta note_pitch
-   stz event_data_2
+   stz events::event_data_2
    lda event_vector_b
    ldx event_vector_b+1
    jsr v40b::append_new_entry
@@ -440,9 +405,9 @@ change_song_tempo = timing::recalculate_rhythm_values ; TODO: actually recalcula
    jsr item_selection::reset_stream
 
    ; initialize the hitbox list
-   lda hitboxes::hitbox_types::notes_type
-   sta hitboxes::active_hitbox_type
-   jsr hitboxes::clear_hitboxes
+   lda dragables__ids__notes
+   sta dragables__active_hitbox_type
+   jsr hitboxes__clear_hitboxes
 
    ; TODO: calculate keyboard roll visualization offset
 
@@ -463,10 +428,10 @@ change_song_tempo = timing::recalculate_rhythm_values ; TODO: actually recalcula
    ; =============================================================================================================================
 @pre_parsing_loop:
    lda argument_x+1
-   cmp event_time_stamp_h
+   cmp events::event_time_stamp_h
    bcc @end_pre_parsing_loop ; if time stamp's high is bigger than reference, we must end
    bne @continue_pre_parsing_loop ; if they're not equal, (and implicitly not bigger), it must be smaller -> we can continue
-   lda event_time_stamp_l ; high bytes are equal --> need to check low byte
+   lda events::event_time_stamp_l ; high bytes are equal --> need to check low byte
    cmp argument_x
    bcs @end_pre_parsing_loop ; if time stamp's low byte is equal or higher than threshold, we end
 @continue_pre_parsing_loop:
@@ -476,7 +441,7 @@ change_song_tempo = timing::recalculate_rhythm_values ; TODO: actually recalcula
    jsr detail::calculateRowAndCheckBounds
    bcc @pre_parsing_next_event ; when outside the view vertically, continue to next event
    ; check event type
-   lda event_type
+   lda events::event_type
    beq @pre_parsing_note_off
    cmp #events::event_type_note_on
    bne @pre_parsing_next_event
@@ -538,16 +503,16 @@ change_song_tempo = timing::recalculate_rhythm_values ; TODO: actually recalcula
 @main_parse_events_loop:
    ; We assume the next event's data to be already loaded in the event_time_stamp_h etc. variables
    ; check if time stamp is within current column
-   lda event_time_stamp_h
+   lda events::event_time_stamp_h
    cmp running_time_stamp_h
    bcc @time_stamp_within_column ; if carry is clear this means event time stamp is lower than column's border
    bne @end_parse_events ; if the time stamps aren't equal (and also event time stamp is not lower), the event time stamp is higher --> quit event parsing
-   lda event_time_stamp_l ; high time stamps are equal, need to check low time stamp
+   lda events::event_time_stamp_l ; high time stamps are equal, need to check low time stamp
    cmp running_time_stamp_l
    bcs @end_parse_events ; if carry is clear this means event time stamp is lower than column's border
 @time_stamp_within_column:
    ; interpret event type
-   lda event_type
+   lda events::event_type
    beq @handle_note_off
    cmp #events::event_type_note_on
    beq @handle_note_on
@@ -687,9 +652,48 @@ change_song_tempo = timing::recalculate_rhythm_values ; TODO: actually recalcula
 
    ; TODO: finish off unfinished notes by creating their hitboxes
 
-
    rts
 .endproc
+
+
+; lookup table values
+hitbox_height = 2
+px = 2 * detail::event_edit_pos_x
+py = 2 * detail::event_edit_pos_y
+width = 2 * detail::event_edit_width
+height = 2 * detail::event_edit_height
+
+; Needs input:
+; * new position do drag to (x,y)
+; * object id
+; Outputs:
+; * new actual position of object (x,y). Reason: hitbox update!
+.proc drag
+   ; TODO
+   rts
+.endproc
+
+.proc draw
+   ; TODO optimize away this wrapper function! Make the zoom/vpos/timestamp internal state of this file.
+   lda timestamp
+   sta argument_x
+   lda timestamp+1
+   sta argument_x+1
+   lda vpos
+   sta argument_y
+   lda zoom
+   sta argument_z
+   ; event vectors are set by setup_test_clip (and we never touch them elsewhere yet)
+   jsr draw_events
+   rts
+zoom:
+   .byte 2
+vpos:
+   .byte 36
+timestamp:
+   .word 0
+.endproc
+
 
 .endscope
 
