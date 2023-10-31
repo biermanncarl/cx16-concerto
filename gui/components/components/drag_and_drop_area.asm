@@ -88,11 +88,13 @@
         ply
         plx
         pla
-        ; load the return value
+        ; load the hitbox the mouse points at into mouse registers
+        lda #1
+        sta mouse_variables::curr_data_1 ; signal that the mouse does point at a hitbox
         lda dnd::hitboxes::object_id_l
-        sta mouse_variables::curr_data_1
-        lda dnd::hitboxes::object_id_h
         sta mouse_variables::curr_data_2
+        lda dnd::hitboxes::object_id_h
+        sta mouse_variables::curr_data_3
         sec
         rts
 
@@ -103,8 +105,7 @@
         jsr v40b::get_next_entry
         bcc @loop
     @no_hit:
-        stz mouse_variables::curr_data_1
-        stz mouse_variables::curr_data_2
+        stz mouse_variables::curr_data_1 ; signal that the mouse doesn't point at a hitbox
         sec
         rts
     .endproc
@@ -114,7 +115,22 @@
         bne :+
         rts
     :
-        .byte $db
+        ; for now, remove the note as a quick test
+        lda mouse_variables::curr_data_2
+        sta v40b::value_0
+        lda mouse_variables::curr_data_3
+        sta v40b::value_1
+        jsr dnd::dragables::notes::detail::getEntryFromHitboxObjectId
+        pha
+        phx
+        phy
+        jsr dnd::dragables::notes::detail::findNoteOff
+        jsr v40b::delete_entry
+        ply
+        plx
+        pla
+        jsr v40b::delete_entry
+        inc gui_variables::request_components_redraw
         rts
     .endproc
 

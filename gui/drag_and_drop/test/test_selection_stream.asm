@@ -24,10 +24,10 @@ time_stamp:
 previous_event_type:
     .byte 0
 
-next_selected_id:
-    .word 0
-next_unselected_id:
-    .word 0
+last_selected_id:
+    .word $ffff
+last_unselected_id:
+    .word $ffff
 
 
 ; some errors only occur very rarely, so this number should be as high as possible to increase chances of hitting it
@@ -144,20 +144,20 @@ start:
     lda item_selection::last_event_source
     bne @next_selected
 @next_unselected:
-    lda next_unselected_id
-    ldx next_unselected_id+1
-    EXPECT_EQ_MEM_16 next_unselected_id
-    inc next_unselected_id
+    lda last_unselected_id
+    ldx last_unselected_id+1
+    EXPECT_EQ_MEM_16 last_unselected_id
+    inc last_unselected_id
     bne :+
-    inc next_unselected_id+1
+    inc last_unselected_id+1
 :   bra @end_check_id
 @next_selected:
-    lda next_selected_id
-    ldx next_selected_id+1
-    EXPECT_EQ_MEM_16 next_selected_id
-    inc next_selected_id
+    lda last_selected_id
+    ldx last_selected_id+1
+    EXPECT_EQ_MEM_16 last_selected_id
+    inc last_selected_id
     bne :+
-    inc next_selected_id+1
+    inc last_selected_id+1
 :   bra @end_check_id
 @end_check_id:
 

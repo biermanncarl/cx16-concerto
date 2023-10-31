@@ -31,9 +31,9 @@ temporal_zoom:
 
 .pushseg
 .zeropage
-event_vector_a: ; todo: remove ownership of note data from this file
+unselected_events_vector: ; todo: remove ownership of note data from this file
    .res 2
-event_vector_b:
+selected_events_vector:
    .res 2
 argument_y:
    .res 1
@@ -124,12 +124,12 @@ argument_z:
       sta note_is_selected, x
       bne @selected
    @unselected:
-      lda item_selection::next_unselected_id
-      ldy item_selection::next_unselected_id+1
+      lda item_selection::last_unselected_id
+      ldy item_selection::last_unselected_id+1
       bra @store_id
    @selected:
-      lda item_selection::next_selected_id
-      ldy item_selection::next_selected_id+1
+      lda item_selection::last_selected_id
+      ldy item_selection::last_selected_id+1
    @store_id:
       sta note_id_low, x
       tya
@@ -180,6 +180,69 @@ argument_z:
       rts
    .endproc
 
+   ; Given a hitbox' object id (inclusive the selected bit in the high byte), return the pointer to the respective entry
+   ; Expects the hitbox id in v40b::value_0/v40b::value_1 (low/high) (not preserved!)
+   ; Returns the entry pointer in .A/.X/.Y
+   .proc getEntryFromHitboxObjectId
+      lda v40b::value_1
+      bmi @load_selected
+   @load_unselected:
+      ldy unselected_events_vector
+      ldx unselected_events_vector+1
+      bra @continue
+   @load_selected:
+      ldy selected_events_vector
+      ldx selected_events_vector+1
+      and #$7F ; remove the selected bit
+   @continue:
+      sta v40b::value_1
+      tya
+      jsr v40b::convert_vector_and_index_to_direct_pointer
+      rts
+   .endproc
+
+   ; Given the pointer to a note-on event, finds the corresponding note-off event by linear search.
+   ; If no matching note-off is found, carry will be set, otherwise clear.
+   .proc findNoteOff
+      pitch = temp_variable_a
+      ; This function could become a bottleneck!
+      ; TODO: to make it faster, read only the data we truly need, instead of using v40b::read_entry
+      pha
+      phx
+      phy
+      jsr v40b::read_entry
+      lda note_pitch
+      sta pitch
+      ply
+      plx
+      pla
+   @loop:
+      jsr v40b::get_next_entry
+      bcs @end ; search failed, end reached before the note-off was found
+      pha
+      phx
+      phy
+      jsr v40b::read_entry
+      lda events::event_type
+      cmp #events::event_type_note_off
+      bne @continue_loop
+      lda note_pitch
+      cmp pitch
+      beq @success
+   @continue_loop:
+      ply
+      plx
+      pla
+      bra @loop
+   @success:
+      ; recover the pointer from the stack
+      ply
+      plx
+      pla
+      clc
+   @end:
+      rts
+   .endproc
 .endscope
 
 
@@ -189,7 +252,6 @@ change_song_tempo = timing::recalculate_rhythm_values ; TODO: actually recalcula
 
 
 ; Sets up a clip with some notes for testing.
-; Returns a pointer to the clip in event_vector_a
 .proc setup_test_clip
    test_first_eighth_ticks = 32
    test_second_eighth_ticks = 32
@@ -203,8 +265,8 @@ change_song_tempo = timing::recalculate_rhythm_values ; TODO: actually recalcula
    
    ; create unselected vector
    jsr v40b::new
-   sta event_vector_a
-   stx event_vector_a+1
+   sta unselected_events_vector
+   stx unselected_events_vector+1
    ; note-on
    lda #(3*test_quarter_ticks)
    sta events::event_time_stamp_l
@@ -214,8 +276,8 @@ change_song_tempo = timing::recalculate_rhythm_values ; TODO: actually recalcula
    lda #50
    sta note_pitch
    stz events::event_data_2
-   lda event_vector_a
-   ldx event_vector_a+1
+   lda unselected_events_vector
+   ldx unselected_events_vector+1
    jsr v40b::append_new_entry
    ; note-off
    lda #(3*test_quarter_ticks+5)
@@ -225,8 +287,8 @@ change_song_tempo = timing::recalculate_rhythm_values ; TODO: actually recalcula
    lda #50
    sta note_pitch
    stz events::event_data_2
-   lda event_vector_a
-   ldx event_vector_a+1
+   lda unselected_events_vector
+   ldx unselected_events_vector+1
    jsr v40b::append_new_entry
    ; note-on
    lda #<(3*test_quarter_ticks+test_first_eighth_ticks)
@@ -238,8 +300,8 @@ change_song_tempo = timing::recalculate_rhythm_values ; TODO: actually recalcula
    lda #50
    sta note_pitch
    stz events::event_data_2
-   lda event_vector_a
-   ldx event_vector_a+1
+   lda unselected_events_vector
+   ldx unselected_events_vector+1
    jsr v40b::append_new_entry
    ; note-off
    lda #<(3*test_quarter_ticks+2*test_first_eighth_ticks)
@@ -251,8 +313,8 @@ change_song_tempo = timing::recalculate_rhythm_values ; TODO: actually recalcula
    lda #50
    sta note_pitch
    stz events::event_data_2
-   lda event_vector_a
-   ldx event_vector_a+1
+   lda unselected_events_vector
+   ldx unselected_events_vector+1
    jsr v40b::append_new_entry
    ; note-on
    lda #<(4*test_quarter_ticks)
@@ -264,8 +326,8 @@ change_song_tempo = timing::recalculate_rhythm_values ; TODO: actually recalcula
    lda #52
    sta note_pitch
    stz events::event_data_2
-   lda event_vector_a
-   ldx event_vector_a+1
+   lda unselected_events_vector
+   ldx unselected_events_vector+1
    jsr v40b::append_new_entry
    ; note-off
    lda #<(4*test_quarter_ticks+80)
@@ -277,14 +339,14 @@ change_song_tempo = timing::recalculate_rhythm_values ; TODO: actually recalcula
    lda #52
    sta note_pitch
    stz events::event_data_2
-   lda event_vector_a
-   ldx event_vector_a+1
+   lda unselected_events_vector
+   ldx unselected_events_vector+1
    jsr v40b::append_new_entry
 
    ; create selected vector
    jsr v40b::new
-   sta event_vector_b
-   stx event_vector_b+1
+   sta selected_events_vector
+   stx selected_events_vector+1
    ; note-on
    lda #<(4*test_quarter_ticks+test_first_eighth_ticks)
    sta events::event_time_stamp_l
@@ -295,8 +357,8 @@ change_song_tempo = timing::recalculate_rhythm_values ; TODO: actually recalcula
    lda #55
    sta note_pitch
    stz events::event_data_2
-   lda event_vector_b
-   ldx event_vector_b+1
+   lda selected_events_vector
+   ldx selected_events_vector+1
    jsr v40b::append_new_entry
    ; note-off
    lda #<(4*test_quarter_ticks+2*test_first_eighth_ticks)
@@ -308,8 +370,8 @@ change_song_tempo = timing::recalculate_rhythm_values ; TODO: actually recalcula
    lda #55
    sta note_pitch
    stz events::event_data_2
-   lda event_vector_b
-   ldx event_vector_b+1
+   lda selected_events_vector
+   ldx selected_events_vector+1
    jsr v40b::append_new_entry
    ; note-on
    lda #<(5*test_quarter_ticks+1)
@@ -321,8 +383,8 @@ change_song_tempo = timing::recalculate_rhythm_values ; TODO: actually recalcula
    lda #48
    sta note_pitch
    stz events::event_data_2
-   lda event_vector_b
-   ldx event_vector_b+1
+   lda selected_events_vector
+   ldx selected_events_vector+1
    jsr v40b::append_new_entry
    ; note-off
    lda #<(5*test_quarter_ticks+80)
@@ -334,8 +396,8 @@ change_song_tempo = timing::recalculate_rhythm_values ; TODO: actually recalcula
    lda #48
    sta note_pitch
    stz events::event_data_2
-   lda event_vector_b
-   ldx event_vector_b+1
+   lda selected_events_vector
+   ldx selected_events_vector+1
    jsr v40b::append_new_entry
 
    rts
@@ -343,7 +405,7 @@ change_song_tempo = timing::recalculate_rhythm_values ; TODO: actually recalcula
 
 
 ; Draws the editing area of notes within a clip. (Later perhaps effects, too)
-; Expects pointer to unselected events in event_vector_a, selected events in event_vector_b
+; Expects pointer to unselected events in unselected_events_vector, selected events in selected_events_vector
 .proc draw
    ; DEFINITIONS
    ; ===========
@@ -388,13 +450,13 @@ change_song_tempo = timing::recalculate_rhythm_values ; TODO: actually recalcula
    bpl @clear_column_buffer_loop
 
    ; event sources: unselected and selected events
-   lda event_vector_a
+   lda unselected_events_vector
    sta item_selection::unselected_events
-   lda event_vector_a+1
+   lda unselected_events_vector+1
    sta item_selection::unselected_events+1
-   lda event_vector_b
+   lda selected_events_vector
    sta item_selection::selected_events
-   lda event_vector_b+1
+   lda selected_events_vector+1
    sta item_selection::selected_events+1
    jsr item_selection::reset_stream
 

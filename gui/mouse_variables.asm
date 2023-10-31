@@ -22,8 +22,11 @@
     curr_panel: .byte 0 ; the index of the panel the mouse is at, high bit set (128 or bigger) if no panel.
     curr_component_id: .byte 0
     curr_component_ofs: .byte 0
-    curr_data_1: .byte 0 ; used to store the current tab selected, which arrow is clicked etc.
-    curr_data_2: .byte 0 ; used to store dragging distance (y direction)
+    ; Mouse data, set by components' check_mouse routines to convey more information about the clicked at objects,
+    ; e.g. the current tab selected, which arrow is clicked etc.
+    curr_data_1: .byte 0
+    curr_data_2: .byte 0 ; also used to store dragging distance (y direction) (use a different variable for that if necessary)
+    curr_data_3: .byte 0
     ; others
     drag_start: .byte 0 ; used to indicate whether a drag event is the first since the mouse button has been held down
 .endscope

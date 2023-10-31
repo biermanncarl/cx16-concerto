@@ -25,11 +25,11 @@ unselected_events: ; not owned by this module
 ; other variables (no pointers) only here for speed and code size, could be moved out of ZP
 next_selected_event:
     .res 3
-next_selected_id:
+last_selected_id:
     .res 2
 next_unselected_event:
     .res 3
-next_unselected_id:
+last_unselected_id:
     .res 2
 ; current_timestamp:
     ; .res 0
@@ -52,10 +52,11 @@ last_event_source:
     ; stz current_timestamp+1
 
     ; reset id counters
-    stz next_selected_id
-    stz next_selected_id+1
-    stz next_unselected_id
-    stz next_unselected_id+1
+    lda #$ff
+    sta last_selected_id
+    sta last_selected_id+1
+    sta last_unselected_id
+    sta last_unselected_id+1
     ; reset the event pointers to the beginning
     lda selected_events
     ldx selected_events+1
@@ -89,6 +90,7 @@ last_event_source:
 ; If no more events are available, carry is set upon return, clear otherwise.
 ; If another event is available, its pointer is returned in .A/.X/.Y
 ; If another event is available, the content of last_event_source is set to 0 in case the last event was unselected, or $80 if it was selected
+; The respective id (last_selected_id/last_unselected_id) is advanced accordingly.
 .proc stream_get_next_event
     ; Check if more events are available
     ldy next_selected_event+2
@@ -163,9 +165,9 @@ last_event_source:
     bra @next_unselected
 
 @next_selected:
-    inc next_selected_id
+    inc last_selected_id
     bne :+
-    inc next_selected_id+1
+    inc last_selected_id+1
 :   lda next_selected_event
     ldx next_selected_event+1
     ldy next_selected_event+2
@@ -182,9 +184,9 @@ last_event_source:
     sta last_event_source
     bra @return_pointer
 @next_unselected:
-    inc next_unselected_id
+    inc last_unselected_id
     bne :+
-    inc next_unselected_id+1
+    inc last_unselected_id+1
 :   lda next_unselected_event
     ldx next_unselected_event+1
     ldy next_unselected_event+2
