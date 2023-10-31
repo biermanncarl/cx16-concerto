@@ -22,7 +22,7 @@ window_time_stamp:
    .word 0
 ; Starting pitch (bottom border) of the visualization area, lowest on-screen pitch
 window_pitch:
-   .byte 48
+   .byte 12
 ; Temporal zoom level (0 to 4)
 ; 0 means single-tick precision, 1 means 1/32 grid, 2 means 1/16, 3 means 1/8, 4 means 1/4 and so forth
 temporal_zoom:
@@ -145,18 +145,21 @@ argument_z:
 
       ; hitbox width
       lda column_buffer, x
-      bpl @normal_note
-   @short_note:
-      lda #1
-   @normal_note:
+      dec ; the column buffer contains a value always one bigger than the note width
       asl
       sta hitboxes__hitbox_width
       ; hitbox x position
-      lda column_index ; possibly an inc is needed ... trial & error will tell
+      lda column_index
       asl
       sec
       sbc hitboxes__hitbox_width
       sta hitboxes__hitbox_pos_x
+      ; grant short notes a hitbox of non-zero width. (We do it after the x position calculation, as otherwise, we would get x wrong in case of a short note)
+      lda hitboxes__hitbox_width
+      bne :+
+      lda #2
+      sta hitboxes__hitbox_width
+   :  
       ; hitbox y position
       txa
       clc
@@ -171,18 +174,8 @@ argument_z:
       sta hitboxes__object_id_h
 
       ; append the entry
-      lda note_is_selected, x
       phx
-      bne @selected
-   @unselected:
-      lda event_vector_a
-      ldx event_vector_a+1
-      bra @append
-   @selected:
-      lda event_vector_b
-      ldx event_vector_b+1
-   @append:
-      jsr v40b::append_new_entry
+      jsr hitboxes__add_hitbox
       plx
       rts
    .endproc
@@ -406,7 +399,7 @@ change_song_tempo = timing::recalculate_rhythm_values ; TODO: actually recalcula
    jsr item_selection::reset_stream
 
    ; initialize the hitbox list
-   lda dragables__ids__notes
+   lda #dragables__ids__notes
    sta dragables__active_hitbox_type
    jsr hitboxes__clear_hitboxes
 
@@ -586,7 +579,6 @@ change_song_tempo = timing::recalculate_rhythm_values ; TODO: actually recalcula
 
    ; update column buffer and draw stuff
    lda detail::column_buffer, x
-   and #$7F ; get rid of selection bit for now
    beq @draw_space
    cmp #column_buffer_multiple_last_off
    beq @update_multiple_last_off
