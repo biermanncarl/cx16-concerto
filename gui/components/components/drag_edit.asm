@@ -112,7 +112,8 @@
       and #%00000001
       beq @coarse_drag  ; if there is no fine editing enabled, we jump straight to coarse editing
       ; check mouse for fine or coarse dragging mode
-      lda mouse_variables::curr_data_1
+      lda mouse_variables::status
+      cmp #mouse_variables::ms_hold_L
       beq @coarse_drag
       jmp @fine_drag
    @coarse_drag:
@@ -125,7 +126,7 @@
       iny
       iny
       ; check if dragging up or down
-      lda mouse_variables::curr_data_2
+      lda mouse_variables::delta_y
       bmi @coarse_drag_down
    @coarse_drag_up:
       ; check if adding the increment crosses the border
@@ -134,12 +135,12 @@
       sec
       sbc (components_common::data_pointer), y ; now we have the distance to the upper border in the accumulator
       sec
-      sbc mouse_variables::curr_data_2 ; if this overflowed, we are crossing the border
+      sbc mouse_variables::delta_y ; if this overflowed, we are crossing the border
       bcc @coarse_up_overflow
    @coarse_up_normal:
       lda (components_common::data_pointer), y
       clc
-      adc mouse_variables::curr_data_2
+      adc mouse_variables::delta_y
       sta (components_common::data_pointer), y
       ; check if zero forbidden
       pla
@@ -168,14 +169,14 @@
       sec
       sbc (components_common::data_pointer), y ; now we have the distance to the min value in the accumulator
       clc
-      adc mouse_variables::curr_data_2 ; if the result is negative, we are crossing the border
+      adc mouse_variables::delta_y ; if the result is negative, we are crossing the border
       bcc @coarse_down_overflow
    @coarse_down_normal:
       iny
       iny
       lda (components_common::data_pointer), y
       clc
-      adc mouse_variables::curr_data_2
+      adc mouse_variables::delta_y
       sta (components_common::data_pointer), y
       ; check if zero forbidden
       pla
@@ -207,7 +208,7 @@
       iny
       iny
       ; check if dragging up or down
-      lda mouse_variables::curr_data_2
+      lda mouse_variables::delta_y
       bmi @fine_drag_down
    @fine_drag_up:
       ; check if adding the increment crosses the border
@@ -215,12 +216,12 @@
       sec
       sbc (components_common::data_pointer), y ; now we have the distance to the upper border in the accumulator
       sec
-      sbc mouse_variables::curr_data_2 ; if this overflowed, we are crossing the border
+      sbc mouse_variables::delta_y ; if this overflowed, we are crossing the border
       bcc @fine_up_overflow
    @fine_up_normal:
       lda (components_common::data_pointer), y
       clc
-      adc mouse_variables::curr_data_2
+      adc mouse_variables::delta_y
       sta (components_common::data_pointer), y
       bra @update_gui
    @fine_up_overflow:
@@ -232,12 +233,12 @@
       ; check if adding the increment crosses the min value
       lda (components_common::data_pointer), y ; load current value
       clc
-      adc mouse_variables::curr_data_2 ; if overflow occurs, we are crossing the border
+      adc mouse_variables::delta_y ; if overflow occurs, we are crossing the border
       bcc @fine_down_overflow
    @fine_down_normal:
       lda (components_common::data_pointer), y
       clc
-      adc mouse_variables::curr_data_2
+      adc mouse_variables::delta_y
       sta (components_common::data_pointer), y
       bra @update_gui
    @fine_down_overflow:

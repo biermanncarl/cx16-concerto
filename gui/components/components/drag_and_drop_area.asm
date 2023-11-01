@@ -17,8 +17,15 @@
 
 .scope drag_and_drop_area
     .struct data_members
-        type .byte ; there can only be one area of each type. Most of its respective properties are hard coded.
+        ; One of the dragables::ids
+        type .byte ; there can only be one area of each type. Most of their respective properties are hard coded.
     .endstruct
+
+    .scope hitbox_handle
+        none = 0
+        bulk = 1
+        right_end = 2
+    .endscope
  
     .proc draw
         ; Todo: switch on type
@@ -89,7 +96,7 @@
         plx
         pla
         ; load the hitbox the mouse points at into mouse registers
-        lda #1
+        lda #hitbox_handle::bulk
         sta mouse_variables::curr_data_1 ; signal that the mouse does point at a hitbox
         lda dnd::hitboxes::object_id_l
         sta mouse_variables::curr_data_2
@@ -105,7 +112,7 @@
         jsr v40b::get_next_entry
         bcc @loop
     @no_hit:
-        stz mouse_variables::curr_data_1 ; signal that the mouse doesn't point at a hitbox
+        stz mouse_variables::curr_data_1 ; hitbox_handle::none
         sec
         rts
     .endproc
@@ -135,7 +142,113 @@
     .endproc
 
     .proc event_drag
+        .scope drag_action
+            ID_GENERATOR 0, none, scroll_normal, scroll_fast, zoom, box_select, drag, resize
+        .endscope
+
+        lda mouse_variables::drag_start
+        beq @drag_continue
+    @drag_start:
+        ; start of a dragging operation. figure out what we're actually doing
+        lda mouse_variables::curr_buttons
+        and #2 ; check for right button
+        bne @right_button
+        stz drag_action_state ; #drag_action::none
         rts
+    @right_button:
+        ;.byte $db
+        lda mouse_variables::curr_data_1
+        beq @scroll
+        stz drag_action_state ; #drag_action::none
+        rts
+    @scroll:
+        lda #drag_action::scroll_normal
+        sta drag_action_state
+        bra @drag_continue
+    
+    ; do the actual drag operation
+    @drag_continue:
+        lda drag_action_state
+        asl
+        tax
+        jmp (@jump_table_drag, x)
+    @jump_table_drag:
+        .word components_common::dummy_subroutine ; none
+        .word doScrollNormal
+
+    drag_action_state:
+        .byte 0 ; by putting this variable in here, we assume there can be only one dragging operation going on at the same time
+    .endproc
+
+    ; Do a signed division by 8 and modulo 8 operation on the argument in .A.
+    ; Returns the quotient in .A and the remainder in .Y.
+    ; Preserves .X
+    .proc signedDivMod8
+        pha
+        and #7
+        tay
+        pla
+        clc
+        adc #128
+        lsr
+        lsr
+        lsr
+        sec
+        sbc #128/8
+        rts
+        ; pha
+        ; cmp #0
+        ; bmi @negative
+    ; @positive:
+        ; and #7
+        ; tay
+        ; pla
+        ; lsr
+        ; lsr
+        ; lsr
+        ; rts
+    ; @negative:
+        ; and #7
+        ; ora #%11111000
+        ; tay
+        ; pla
+        ; lsr
+        ; lsr
+        ; lsr
+        ; ora #%11100000
+        ; rts
+    .endproc
+
+    .proc doScrollNormal
+        ; y coordinate
+        lda mouse_variables::delta_y
+        clc
+        adc accumulated_y
+        jsr signedDivMod8
+        sty accumulated_y
+        tax
+        ; x coordinate
+        lda mouse_variables::delta_x
+        clc
+        adc accumulated_x
+        jsr signedDivMod8
+        sty accumulated_x
+
+        ; check if we actually do anything
+        cmp #0
+        beq @do_scroll
+        cpx #0
+        bne @do_scroll
+        rts
+    @do_scroll:
+        inc gui_variables::request_components_redraw
+        jmp dnd::dragables::notes::doScrollNormal ; TODO: jump to hitbox type specific scroll routine
+    
+    ; by putting this variable in here, we assume there can be only one scrolling operation going on at any one time
+    accumulated_x:
+        .byte 0
+    accumulated_y:
+        .byte 0
     .endproc
 .endscope
 

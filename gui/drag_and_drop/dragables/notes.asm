@@ -22,7 +22,7 @@ window_time_stamp:
    .word 0
 ; Starting pitch (bottom border) of the visualization area, lowest on-screen pitch
 window_pitch:
-   .byte 12
+   .byte 30
 ; Temporal zoom level (0 to 4)
 ; 0 means single-tick precision, 1 means 1/32 grid, 2 means 1/16, 3 means 1/8, 4 means 1/4 and so forth
 temporal_zoom:
@@ -725,6 +725,35 @@ height = 2 * detail::event_edit_height
 ; * new actual position of object (x,y). Reason: hitbox update!
 .proc drag
    ; TODO
+   rts
+.endproc
+
+; Expect signed delta x in .A and delta y in .X
+.proc doScrollNormal
+   ; do only vertical scroll now (horizontal TBD)
+   txa
+   eor #$ff
+   inc
+   bmi @down
+@up:
+   clc
+   adc window_pitch
+   bcs @clamp_top
+   cmp #(255 - detail::event_edit_height)
+   bcs @clamp_top
+   sta window_pitch
+   rts
+@clamp_top:
+   lda #(255 - detail::event_edit_height)
+   sta window_pitch
+   rts
+
+@down:
+   clc
+   adc window_pitch
+   bcs :+
+   lda #0
+:  sta window_pitch
    rts
 .endproc
 

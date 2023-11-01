@@ -86,7 +86,7 @@
    ;    mouse_variables::curr_data_1
    ; is set to 0. If it was the right mouse button, it is set to 1.
    ; The vertical dragging distance within the last tick is given in
-   ;    mouse_variables::curr_data_2
+   ;    mouse_variables::delta_y
    ; in two's complement and single pixel precision. (horizontal dragging distance is not added yet)
    ; The component's updated state is subsequently read by the parent panel's write subroutine.
    .proc event_drag

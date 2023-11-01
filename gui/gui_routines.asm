@@ -191,7 +191,7 @@
 
 ; drag event. looks in mouse variables which panel's component has been dragged and calls its routine
 ; expects L/R information in mouse_variables::curr_data_1 (0 for left drag, 1 for right drag)
-; and dragging distance in mouse_variables::curr_data_2
+; and dragging distance in mouse_variables::delta_y / delta_x
 .proc drag_event
    ; call GUI component's drag subroutine, to update it.
    ; For that, we need the info about the component from the GUI component string

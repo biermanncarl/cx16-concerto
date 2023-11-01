@@ -20,18 +20,10 @@
 
 .scope mouse
 
-; status definitions
-ms_idle = 0
-ms_hold_L = 1
-ms_hold_R = 2
-
-; "private" mouse variables
-ms_status: .byte 0
-
 ; get mouse running
 mouse_init:
    ; initialize variables
-   stz ms_status
+   stz mouse_variables::status
    ; KERNAL call
    lda #1
    ldx #80
@@ -50,7 +42,7 @@ mouse_hide:
 ; that are sent to the GUI components (or rather, decides which GUI subroutines are called).
 mouse_tick:
    ; move previous position to ref (only if status is not 0)
-   lda ms_status
+   lda mouse_variables::status
    beq :+
    lda mouse_variables::curr_x
    sta mouse_variables::prev_x
@@ -75,7 +67,7 @@ mouse_tick:
    sta mouse_variables::curr_y+1
    ; call status subroutine
    ; the mouse handles incoming data differently, depending upon which status it is currently in
-   lda ms_status
+   lda mouse_variables::status
    asl
    tax
    jmp (@jmp_table, x)
@@ -97,16 +89,16 @@ do_idle:
    and #1
    beq :+
    ; left button held down
-   lda #ms_hold_L
-   sta ms_status
+   lda #mouse_variables::ms_hold_L
+   sta mouse_variables::status
    jmp @mouse_down_checks
 :  ; check right
    lda mouse_variables::curr_buttons
    and #2
    beq :+
    ; right button held down
-   lda #ms_hold_R
-   sta ms_status
+   lda #mouse_variables::ms_hold_R
+   sta mouse_variables::status
    jmp @mouse_down_checks
 :  jmp end_mouse_tick
 @mouse_down_checks:
@@ -133,8 +125,8 @@ do_hold_L:
    bne @button_pressed
    ; no buttons pressed anymore --> left click
    ; reset mouse status
-   lda #ms_idle
-   sta ms_status
+   lda #mouse_variables::ms_idle
+   sta mouse_variables::status
    ; and do click operation:
    ; check if previous panel & component are the same. If yes, issue a click event.
    jsr panels::mouse_get_panel
@@ -161,9 +153,6 @@ do_hold_L:
    jsr gui_routines::click_event
    jmp end_mouse_tick
 @button_pressed:  ; a button is pressed.  do dragging
-   ; left mouse button dragging = 0 in mouse_variables::curr_data_1
-   lda #0
-   sta mouse_variables::curr_data_1
    jmp do_dragging
    jmp end_mouse_tick ; unreachable code ... optimize away?
 
@@ -173,13 +162,10 @@ do_hold_R:
    lda mouse_variables::curr_buttons
    bne :+
    ; no buttons pressed anymore --> right click (unused)
-   lda #ms_idle
-   sta ms_status
+   lda #mouse_variables::ms_idle
+   sta mouse_variables::status
    jmp end_mouse_tick
 :  ; a button is still being pressed. do fine dragging
-   ; right mouse button dragging = 1 in mouse_variables::curr_data_1
-   lda #1
-   sta mouse_variables::curr_data_1
    jmp do_dragging
    jmp end_mouse_tick
 
@@ -193,12 +179,16 @@ do_dragging:
    sta mouse_variables::curr_component_id
    lda mouse_variables::prev_component_ofs
    sta mouse_variables::curr_component_ofs
-   ; get Y difference to last frame
+   ; get distance to last frame
    ; we assume it's smaller than 127, so we ignore the high byte xD
+   lda mouse_variables::prev_x
+   sec
+   sbc mouse_variables::curr_x
+   sta mouse_variables::delta_x
    lda mouse_variables::prev_y
    sec
    sbc mouse_variables::curr_y
-   sta mouse_variables::curr_data_2
+   sta mouse_variables::delta_y
    jsr gui_routines::drag_event
    stz mouse_variables::drag_start
 :  jmp end_mouse_tick
