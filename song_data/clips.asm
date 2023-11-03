@@ -9,6 +9,7 @@
 
 ; A clip has the following properties:
 ; * Instrument id
+; * Drum pad bool (either separate bool or special instrument id)
 ; * Mono/poly selector (affects voice pooling during playback)
 ; * Length in ticks
 ; * Starting time in ticks
@@ -41,6 +42,18 @@
 ; This has several advantages:
 ; * backwards search in stream data is simplified (no need to have extra logic to check if we're running into header data)
 ; * it simplifies browsing clips when there's a collection of clips (as in an arrangement)
+
+; Drum pads
+; Clips can be selected to operate as "drum pads". The basic idea is to make several timbres accessible from a single clip
+; in a convenient way, so that drums can be programmed within a single clip.
+; A certain range of timbres (e.g. 16 to 31) are accessible for drum pad clips.
+; When a note in a drum pad clip is played, the lower nibble of the pitch is interpreted as the timbre
+; (e.g. add 16 to arrive at the 16 "drum pad timbres"). The note is played at a certain predefined pitch
+; (somewhere in the center of the MIDI pitch range). The high nibble is then added to that pitch
+; so that the pitch of the sound can be slightly changed by playing in different repititions of the 16 timbres.
+; Of course, timbres accessible from the drum pad can still be used as normal timbres.
+; It would be nice to add a visualization to the synth section showing up when one edits a timbre which can be
+; played from the drum pad. (E.g. a green "DRUM PAD" lighting up below the timbre selector).
 
 
 
