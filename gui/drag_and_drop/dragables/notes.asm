@@ -754,6 +754,14 @@ height = 2 * detail::event_edit_height
    lda window_time_stamp+1
    adc timing::time_stamp_parameter+1
    sta window_time_stamp+1
+   ; check if we overshot over t=0
+   bcs :+
+   lda timing::time_stamp_parameter+1
+   bpl :+
+   ; set back to t=0
+   stz window_time_stamp
+   stz window_time_stamp+1
+:
 
    ; VERTICAL SCROLL
    pla ; get vertical scroll distance from stack
