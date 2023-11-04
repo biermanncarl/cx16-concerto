@@ -19,7 +19,7 @@ note_pitch = events::event_data_1 ; for note-on and note-off events
 
 ; Starting time (left border) of the visualzation area
 window_time_stamp:
-   .word 0
+   .word 300
 ; Starting pitch (bottom border) of the visualization area, lowest on-screen pitch
 window_pitch:
    .byte 30
@@ -256,6 +256,7 @@ change_song_tempo = timing::recalculate_rhythm_values ; TODO: actually recalcula
    test_first_eighth_ticks = 32
    test_second_eighth_ticks = 32
    test_quarter_ticks = test_first_eighth_ticks + test_second_eighth_ticks
+   start_time_stamp = 8*test_quarter_ticks
    ; make sure all the ticks are properly populated
    lda #test_first_eighth_ticks
    sta timing::first_eighth_ticks
@@ -268,32 +269,9 @@ change_song_tempo = timing::recalculate_rhythm_values ; TODO: actually recalcula
    sta unselected_events_vector
    stx unselected_events_vector+1
    ; note-on
-   lda #(3*test_quarter_ticks)
+   lda #<(start_time_stamp)
    sta events::event_time_stamp_l
-   stz events::event_time_stamp_h
-   lda #events::event_type_note_on
-   sta events::event_type
-   lda #50
-   sta note_pitch
-   stz events::event_data_2
-   lda unselected_events_vector
-   ldx unselected_events_vector+1
-   jsr v40b::append_new_entry
-   ; note-off
-   lda #(3*test_quarter_ticks+5)
-   sta events::event_time_stamp_l
-   lda #events::event_type_note_off
-   sta events::event_type
-   lda #50
-   sta note_pitch
-   stz events::event_data_2
-   lda unselected_events_vector
-   ldx unselected_events_vector+1
-   jsr v40b::append_new_entry
-   ; note-on
-   lda #<(3*test_quarter_ticks+test_first_eighth_ticks)
-   sta events::event_time_stamp_l
-   lda #>(3*test_quarter_ticks+test_first_eighth_ticks)
+   lda #>(start_time_stamp)
    sta events::event_time_stamp_h
    lda #events::event_type_note_on
    sta events::event_type
@@ -304,9 +282,9 @@ change_song_tempo = timing::recalculate_rhythm_values ; TODO: actually recalcula
    ldx unselected_events_vector+1
    jsr v40b::append_new_entry
    ; note-off
-   lda #<(3*test_quarter_ticks+2*test_first_eighth_ticks)
+   lda #<(start_time_stamp+5)
    sta events::event_time_stamp_l
-   lda #>(3*test_quarter_ticks+2*test_first_eighth_ticks)
+   lda #>(start_time_stamp+5)
    sta events::event_time_stamp_h
    lda #events::event_type_note_off
    sta events::event_type
@@ -317,9 +295,35 @@ change_song_tempo = timing::recalculate_rhythm_values ; TODO: actually recalcula
    ldx unselected_events_vector+1
    jsr v40b::append_new_entry
    ; note-on
-   lda #<(4*test_quarter_ticks)
+   lda #<(start_time_stamp+test_first_eighth_ticks)
    sta events::event_time_stamp_l
-   lda #>(4*test_quarter_ticks)
+   lda #>(start_time_stamp+test_first_eighth_ticks)
+   sta events::event_time_stamp_h
+   lda #events::event_type_note_on
+   sta events::event_type
+   lda #50
+   sta note_pitch
+   stz events::event_data_2
+   lda unselected_events_vector
+   ldx unselected_events_vector+1
+   jsr v40b::append_new_entry
+   ; note-off
+   lda #<(start_time_stamp+2*test_first_eighth_ticks)
+   sta events::event_time_stamp_l
+   lda #>(start_time_stamp+2*test_first_eighth_ticks)
+   sta events::event_time_stamp_h
+   lda #events::event_type_note_off
+   sta events::event_type
+   lda #50
+   sta note_pitch
+   stz events::event_data_2
+   lda unselected_events_vector
+   ldx unselected_events_vector+1
+   jsr v40b::append_new_entry
+   ; note-on
+   lda #<(start_time_stamp+test_quarter_ticks)
+   sta events::event_time_stamp_l
+   lda #>(start_time_stamp+test_quarter_ticks)
    sta events::event_time_stamp_h
    lda #events::event_type_note_on
    sta events::event_type
@@ -330,9 +334,9 @@ change_song_tempo = timing::recalculate_rhythm_values ; TODO: actually recalcula
    ldx unselected_events_vector+1
    jsr v40b::append_new_entry
    ; note-off
-   lda #<(4*test_quarter_ticks+80)
+   lda #<(start_time_stamp+test_quarter_ticks+80)
    sta events::event_time_stamp_l
-   lda #>(4*test_quarter_ticks+80)
+   lda #>(start_time_stamp+test_quarter_ticks+80)
    sta events::event_time_stamp_h
    lda #events::event_type_note_off
    sta events::event_type
@@ -348,9 +352,9 @@ change_song_tempo = timing::recalculate_rhythm_values ; TODO: actually recalcula
    sta selected_events_vector
    stx selected_events_vector+1
    ; note-on
-   lda #<(4*test_quarter_ticks+test_first_eighth_ticks)
+   lda #<(start_time_stamp+test_quarter_ticks+test_first_eighth_ticks)
    sta events::event_time_stamp_l
-   lda #>(4*test_quarter_ticks+test_first_eighth_ticks)
+   lda #>(start_time_stamp+test_quarter_ticks+test_first_eighth_ticks)
    sta events::event_time_stamp_h
    lda #events::event_type_note_on
    sta events::event_type
@@ -361,9 +365,9 @@ change_song_tempo = timing::recalculate_rhythm_values ; TODO: actually recalcula
    ldx selected_events_vector+1
    jsr v40b::append_new_entry
    ; note-off
-   lda #<(4*test_quarter_ticks+2*test_first_eighth_ticks)
+   lda #<(start_time_stamp+test_quarter_ticks+2*test_first_eighth_ticks)
    sta events::event_time_stamp_l
-   lda #>(4*test_quarter_ticks+2*test_first_eighth_ticks)
+   lda #>(start_time_stamp+test_quarter_ticks+2*test_first_eighth_ticks)
    sta events::event_time_stamp_h
    lda #events::event_type_note_off
    sta events::event_type
@@ -374,9 +378,9 @@ change_song_tempo = timing::recalculate_rhythm_values ; TODO: actually recalcula
    ldx selected_events_vector+1
    jsr v40b::append_new_entry
    ; note-on
-   lda #<(5*test_quarter_ticks+1)
+   lda #<(start_time_stamp+2*test_quarter_ticks+1)
    sta events::event_time_stamp_l
-   lda #>(5*test_quarter_ticks+1)
+   lda #>(start_time_stamp+2*test_quarter_ticks+1)
    sta events::event_time_stamp_h
    lda #events::event_type_note_on
    sta events::event_type
@@ -387,9 +391,9 @@ change_song_tempo = timing::recalculate_rhythm_values ; TODO: actually recalcula
    ldx selected_events_vector+1
    jsr v40b::append_new_entry
    ; note-off
-   lda #<(5*test_quarter_ticks+80)
+   lda #<(start_time_stamp+2*test_quarter_ticks+80)
    sta events::event_time_stamp_l
-   lda #>(5*test_quarter_ticks+80)
+   lda #>(start_time_stamp+2*test_quarter_ticks+80)
    sta events::event_time_stamp_h
    lda #events::event_type_note_off
    sta events::event_type
@@ -730,8 +734,29 @@ height = 2 * detail::event_edit_height
 
 ; Expect signed delta x in .A and delta y in .X
 .proc doScrollNormal
-   ; do only vertical scroll now (horizontal TBD)
-   txa
+   ; First, see where we are situated on the time axis
+   phx ; store vertical scroll distance to the stack
+   pha ; store horizontal scroll distance to the stack
+
+   lda window_time_stamp
+   sta timing::time_stamp_parameter
+   lda window_time_stamp+1
+   sta timing::time_stamp_parameter+1
+   ldy temporal_zoom
+   ldx #1 ; snap to grid
+   pla ; scroll distance
+   jsr timing::move_along_grid ; calculate the time stamp delta
+   ; now add the delta to the time stamp
+   lda window_time_stamp
+   clc
+   adc timing::time_stamp_parameter
+   sta window_time_stamp
+   lda window_time_stamp+1
+   adc timing::time_stamp_parameter+1
+   sta window_time_stamp+1
+
+   ; VERTICAL SCROLL
+   pla ; get vertical scroll distance from stack
    eor #$ff
    inc
    bmi @down

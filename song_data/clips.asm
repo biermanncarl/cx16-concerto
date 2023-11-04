@@ -50,7 +50,7 @@
 ; When a note in a drum pad clip is played, the lower nibble of the pitch is interpreted as the timbre
 ; (e.g. add 16 to arrive at the 16 "drum pad timbres"). The note is played at a certain predefined pitch
 ; (somewhere in the center of the MIDI pitch range). The high nibble is then added to that pitch
-; so that the pitch of the sound can be slightly changed by playing in different repititions of the 16 timbres.
+; so that the pitch of the sound can be slightly changed by playing in different repetitions of the 16 timbres.
 ; Of course, timbres accessible from the drum pad can still be used as normal timbres.
 ; It would be nice to add a visualization to the synth section showing up when one edits a timbre which can be
 ; played from the drum pad. (E.g. a green "DRUM PAD" lighting up below the timbre selector).

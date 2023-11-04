@@ -236,7 +236,7 @@
 
         ; check if we actually do anything
         cmp #0
-        beq @do_scroll
+        bne @do_scroll
         cpx #0
         bne @do_scroll
         rts
