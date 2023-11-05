@@ -710,7 +710,15 @@ change_song_tempo = timing::recalculate_rhythm_values ; TODO: actually recalcula
    jmp @columns_loop
 @end_column_loop:
 
-   ; TODO: finish off unfinished notes by creating their hitboxes
+   ; finish off unfinished notes by creating their hitboxes
+   ldx #0
+@finish_hitboxes_loop:
+   lda detail::column_buffer, x
+   beq :+
+   jsr detail::finishNoteHitbox
+:  inx
+   cpx #detail::event_edit_height
+   bne @finish_hitboxes_loop
 
    rts
 .endproc
