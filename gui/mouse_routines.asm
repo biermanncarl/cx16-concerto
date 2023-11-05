@@ -74,7 +74,7 @@ mouse_tick:
 @jmp_table:
    .word do_idle
    .word do_hold_L
-   .word do_hold_R
+   .word do_hold_other
 end_mouse_tick:
    jsr gui_routines::handle_component_requests
    rts
@@ -92,15 +92,14 @@ do_idle:
    lda #mouse_variables::ms_hold_L
    sta mouse_variables::status
    jmp @mouse_down_checks
-:  ; check right
+:  ; check other buttons
    lda mouse_variables::curr_buttons
-   and #2
    beq :+
    ; right button held down
-   lda #mouse_variables::ms_hold_R
+   lda #mouse_variables::ms_hold_other
    sta mouse_variables::status
-   jmp @mouse_down_checks
-:  jmp end_mouse_tick
+   bra @mouse_down_checks
+:  bra end_mouse_tick
 @mouse_down_checks:
    jsr panels::mouse_get_panel
    lda mouse_variables::curr_panel
@@ -113,10 +112,10 @@ do_idle:
    lda mouse_variables::curr_panel
    sta mouse_variables::prev_panel ; now move it into "ref" to compare it when mouse button is released (to see if still the same component is being clicked)
                     ; and for dragging stuff
-   jmp end_mouse_tick
+   bra end_mouse_tick
 :  lda #255
    sta mouse_variables::prev_panel
-   jmp end_mouse_tick
+   bra end_mouse_tick
 
 ; left button is held down. (and no other button has been pressed)
 do_hold_L:
@@ -132,32 +131,32 @@ do_hold_L:
    jsr panels::mouse_get_panel
    lda mouse_variables::curr_panel
    bpl :+
-   jmp end_mouse_tick ; no panel clicked.
+   bra end_mouse_tick ; no panel clicked.
 :  ; a panel has been clicked.
    ; still the same as on mouse-down?
    cmp mouse_variables::prev_panel
    beq :+
-   jmp end_mouse_tick ; not the same, but a different one
+   bra end_mouse_tick ; not the same, but a different one
 :  ; yes, the same. check if also the same component
    jsr panels::mouse_get_component
    lda mouse_variables::curr_component_id
    bpl :+
-   jmp end_mouse_tick ; no component being clicked
+   bra end_mouse_tick ; no component being clicked
 :  ; yes, a component being clicked.
    ; still the same as on mouse-down?
    cmp mouse_variables::prev_component_id
    beq :+
-   jmp end_mouse_tick ; not the same, but a different one
+   bra end_mouse_tick ; not the same, but a different one
 :  ; yes, the same component as when the mouse button was pressed down.
    ; NOW, issue a click event.
    jsr gui_routines::click_event
-   jmp end_mouse_tick
+   bra end_mouse_tick
 @button_pressed:  ; a button is pressed.  do dragging
-   jmp do_dragging
+   bra do_dragging
    jmp end_mouse_tick ; unreachable code ... optimize away?
 
 ; right button is held down. (and no other button has been pressed)
-do_hold_R:
+do_hold_other:
    ; check for any buttons pressed
    lda mouse_variables::curr_buttons
    bne :+
@@ -166,7 +165,7 @@ do_hold_R:
    sta mouse_variables::status
    jmp end_mouse_tick
 :  ; a button is still being pressed. do fine dragging
-   jmp do_dragging
+   bra do_dragging
    jmp end_mouse_tick
 
 do_dragging:

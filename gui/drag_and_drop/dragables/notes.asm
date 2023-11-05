@@ -26,7 +26,8 @@ window_pitch:
 ; Temporal zoom level (0 to 4)
 ; 0 means single-tick precision, 1 means 1/32 grid, 2 means 1/16, 3 means 1/8, 4 means 1/4 and so forth
 temporal_zoom:
-   .byte 2
+   .byte 0
+max_temporal_zoom = 4
 
 
 .pushseg
@@ -787,6 +788,24 @@ height = 2 * detail::event_edit_height
    bcs :+
    lda #0
 :  sta window_pitch
+   rts
+.endproc
+
+; Expects the relative change in zoom level in .A
+.proc doZoom
+   clc
+   adc temporal_zoom
+   bpl :+
+   lda #0
+:  sta temporal_zoom
+   bcc @check_top
+@end:
+   rts
+@check_top:
+   cmp #(max_temporal_zoom+1)
+   bcc @end
+   lda #max_temporal_zoom
+   sta temporal_zoom
    rts
 .endproc
 

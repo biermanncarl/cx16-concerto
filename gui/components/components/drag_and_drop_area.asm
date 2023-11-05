@@ -26,6 +26,14 @@
         bulk = 1
         right_end = 2
     .endscope
+
+    .scope detail
+        ; by putting these variables in here (globally), we assume there can be only one scrolling operation going on at any one time
+        accumulated_x:
+            .byte 0
+        accumulated_y:
+            .byte 0
+    .endscope
  
     .proc draw
         ; Todo: switch on type
@@ -153,14 +161,20 @@
         lda mouse_variables::curr_buttons
         and #2 ; check for right button
         bne @right_button
+        lda mouse_variables::curr_buttons
+        and #4 ; check for middle button
+        bne @middle_button
         stz drag_action_state ; #drag_action::none
         rts
     @right_button:
-        ;.byte $db
         lda mouse_variables::curr_data_1
-        beq @scroll
+        beq @scroll ; only scroll when the mouse did not point at any note (?)
         stz drag_action_state ; #drag_action::none
         rts
+    @middle_button:
+        lda #drag_action::zoom
+        sta drag_action_state
+        bra @drag_continue
     @scroll:
         lda #drag_action::scroll_normal
         sta drag_action_state
@@ -175,6 +189,8 @@
     @jump_table_drag:
         .word components_common::dummy_subroutine ; none
         .word doScrollNormal
+        .word components_common::dummy_subroutine ; scroll fast, not implemented yet
+        .word doZoom
 
     drag_action_state:
         .byte 0 ; by putting this variable in here, we assume there can be only one dragging operation going on at the same time
@@ -196,43 +212,22 @@
         sec
         sbc #128/8
         rts
-        ; pha
-        ; cmp #0
-        ; bmi @negative
-    ; @positive:
-        ; and #7
-        ; tay
-        ; pla
-        ; lsr
-        ; lsr
-        ; lsr
-        ; rts
-    ; @negative:
-        ; and #7
-        ; ora #%11111000
-        ; tay
-        ; pla
-        ; lsr
-        ; lsr
-        ; lsr
-        ; ora #%11100000
-        ; rts
     .endproc
 
     .proc doScrollNormal
         ; y coordinate
         lda mouse_variables::delta_y
         clc
-        adc accumulated_y
+        adc detail::accumulated_y
         jsr signedDivMod8
-        sty accumulated_y
+        sty detail::accumulated_y
         tax
         ; x coordinate
         lda mouse_variables::delta_x
         clc
-        adc accumulated_x
+        adc detail::accumulated_x
         jsr signedDivMod8
-        sty accumulated_x
+        sty detail::accumulated_x
 
         ; check if we actually do anything
         cmp #0
@@ -243,12 +238,22 @@
     @do_scroll:
         inc gui_variables::request_components_redraw
         jmp dnd::dragables::notes::doScrollNormal ; TODO: jump to hitbox type specific scroll routine
-    
-    ; by putting this variable in here, we assume there can be only one scrolling operation going on at any one time
-    accumulated_x:
-        .byte 0
-    accumulated_y:
-        .byte 0
+    .endproc
+
+    .proc doZoom
+        ; y coordinate
+        lda mouse_variables::delta_y
+        clc
+        adc detail::accumulated_y
+        jsr signedDivMod8
+        sty detail::accumulated_y
+
+        cmp #0
+        bne @do_zoom
+        rts
+    @do_zoom:
+        inc gui_variables::request_components_redraw
+        jmp dnd::dragables::notes::doZoom
     .endproc
 .endscope
 

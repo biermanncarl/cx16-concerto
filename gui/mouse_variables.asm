@@ -13,7 +13,7 @@
     ; status definitions
     ms_idle = 0
     ms_hold_L = 1
-    ms_hold_R = 2
+    ms_hold_other = 2
     status: .byte 0
     ; reference values
     prev_x: .word 0
