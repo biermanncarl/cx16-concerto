@@ -14,9 +14,6 @@
 
 .scope notes
 
-; aliases for specific event types
-note_pitch = events::event_data_1 ; for note-on and note-off events
-
 ; Starting time (left border) of the visualzation area
 window_time_stamp:
    .word 300
@@ -26,7 +23,7 @@ window_pitch:
 ; Temporal zoom level (0 to 4)
 ; 0 means single-tick precision, 1 means 1/32 grid, 2 means 1/16, 3 means 1/8, 4 means 1/4 and so forth
 temporal_zoom:
-   .byte 0
+   .byte 2
 max_temporal_zoom = 4
 
 
@@ -102,7 +99,7 @@ argument_z:
       clc
       adc window_pitch ; This exact addition is done every time, could be optimized.
       sec
-      sbc note_pitch
+      sbc events::note_pitch
       tax
       ; check if note is on-screen
       cmp #0
@@ -201,49 +198,6 @@ argument_z:
       jsr v40b::convert_vector_and_index_to_direct_pointer
       rts
    .endproc
-
-   ; Given the pointer to a note-on event, finds the corresponding note-off event by linear search.
-   ; If no matching note-off is found, carry will be set, otherwise clear.
-   .proc findNoteOff
-      pitch = temp_variable_a
-      ; This function could become a bottleneck!
-      ; TODO: to make it faster, read only the data we truly need, instead of using v40b::read_entry
-      pha
-      phx
-      phy
-      jsr v40b::read_entry
-      lda note_pitch
-      sta pitch
-      ply
-      plx
-      pla
-   @loop:
-      jsr v40b::get_next_entry
-      bcs @end ; search failed, end reached before the note-off was found
-      pha
-      phx
-      phy
-      jsr v40b::read_entry
-      lda events::event_type
-      cmp #events::event_type_note_off
-      bne @continue_loop
-      lda note_pitch
-      cmp pitch
-      beq @success
-   @continue_loop:
-      ply
-      plx
-      pla
-      bra @loop
-   @success:
-      ; recover the pointer from the stack
-      ply
-      plx
-      pla
-      clc
-   @end:
-      rts
-   .endproc
 .endscope
 
 
@@ -277,7 +231,7 @@ change_song_tempo = timing::recalculate_rhythm_values ; TODO: actually recalcula
    lda #events::event_type_note_on
    sta events::event_type
    lda #50
-   sta note_pitch
+   sta events::note_pitch
    stz events::event_data_2
    lda unselected_events_vector
    ldx unselected_events_vector+1
@@ -290,7 +244,7 @@ change_song_tempo = timing::recalculate_rhythm_values ; TODO: actually recalcula
    lda #events::event_type_note_off
    sta events::event_type
    lda #50
-   sta note_pitch
+   sta events::note_pitch
    stz events::event_data_2
    lda unselected_events_vector
    ldx unselected_events_vector+1
@@ -303,7 +257,7 @@ change_song_tempo = timing::recalculate_rhythm_values ; TODO: actually recalcula
    lda #events::event_type_note_on
    sta events::event_type
    lda #50
-   sta note_pitch
+   sta events::note_pitch
    stz events::event_data_2
    lda unselected_events_vector
    ldx unselected_events_vector+1
@@ -316,7 +270,7 @@ change_song_tempo = timing::recalculate_rhythm_values ; TODO: actually recalcula
    lda #events::event_type_note_off
    sta events::event_type
    lda #50
-   sta note_pitch
+   sta events::note_pitch
    stz events::event_data_2
    lda unselected_events_vector
    ldx unselected_events_vector+1
@@ -329,7 +283,7 @@ change_song_tempo = timing::recalculate_rhythm_values ; TODO: actually recalcula
    lda #events::event_type_note_on
    sta events::event_type
    lda #52
-   sta note_pitch
+   sta events::note_pitch
    stz events::event_data_2
    lda unselected_events_vector
    ldx unselected_events_vector+1
@@ -342,7 +296,7 @@ change_song_tempo = timing::recalculate_rhythm_values ; TODO: actually recalcula
    lda #events::event_type_note_off
    sta events::event_type
    lda #52
-   sta note_pitch
+   sta events::note_pitch
    stz events::event_data_2
    lda unselected_events_vector
    ldx unselected_events_vector+1
@@ -360,7 +314,7 @@ change_song_tempo = timing::recalculate_rhythm_values ; TODO: actually recalcula
    lda #events::event_type_note_on
    sta events::event_type
    lda #55
-   sta note_pitch
+   sta events::note_pitch
    stz events::event_data_2
    lda selected_events_vector
    ldx selected_events_vector+1
@@ -373,7 +327,7 @@ change_song_tempo = timing::recalculate_rhythm_values ; TODO: actually recalcula
    lda #events::event_type_note_off
    sta events::event_type
    lda #55
-   sta note_pitch
+   sta events::note_pitch
    stz events::event_data_2
    lda selected_events_vector
    ldx selected_events_vector+1
@@ -386,7 +340,7 @@ change_song_tempo = timing::recalculate_rhythm_values ; TODO: actually recalcula
    lda #events::event_type_note_on
    sta events::event_type
    lda #48
-   sta note_pitch
+   sta events::note_pitch
    stz events::event_data_2
    lda selected_events_vector
    ldx selected_events_vector+1
@@ -399,7 +353,7 @@ change_song_tempo = timing::recalculate_rhythm_values ; TODO: actually recalcula
    lda #events::event_type_note_off
    sta events::event_type
    lda #48
-   sta note_pitch
+   sta events::note_pitch
    stz events::event_data_2
    lda selected_events_vector
    ldx selected_events_vector+1

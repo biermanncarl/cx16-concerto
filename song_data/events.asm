@@ -18,6 +18,9 @@ SONG_DATA_EVENTS_ASM = 1
     event_type = v40b::value_2
     event_data_1 = v40b::value_3
     event_data_2 = v40b::value_4
+
+    ; aliases for specific event types
+    note_pitch = event_data_1 ; for note-on and note-off events
 .endscope
 
 .endif ; .ifndef SONG_DATA_EVENTS_ASM

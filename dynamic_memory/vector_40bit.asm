@@ -441,6 +441,9 @@ destroy = dll::destroy_list
 ; Expects the pointer to a valid entry in .A/.X/.Y
 ; Expects the values in value_0 through value_h
 ; When it fails due to full heap, exits with carry set. Otherwise carry will be clear upon exit.
+; Returns the pointer to the inserted entry in .A/.X/.Y (!!Untested!!)
+; Caution! The pointer to the inserted entry isn't necessarily the same as the argument!
+; Entries can have been moved around.
 .proc insert_entry
    ; First, we try to insert an element at the back of the current chunk.
    ; If that's not possible, we split the current chunk in two by moving half of the entries to a new chunk.
@@ -538,7 +541,8 @@ destroy = dll::destroy_list
    ; Make room for the new element by moving all existing elements over by one space.
    ; compute byte offset of the highest byte that needs to be moved: multiply by 5 and add offset of first payload byte
    dec ; The chunk size before insertion is the index of the last element after insertion ...
-   dec ; ... but we want the index of the last chunk before insertion. (both can be optimized away with below ADC instruction)
+   pha ; ... remember that index for the user to enjoy.
+   dec ; ... but we want the index of the last chunk before insertion.
    sta zp_pointer_2
    asl ; as the index cannot be higher than 49, carry will be clear in the next operations
    asl
@@ -585,6 +589,11 @@ destroy = dll::destroy_list
    iny
    lda value_4
    sta (zp_pointer), y
+
+   ; Get the address of the newly inserted entry
+   pla ; index inside the chunk
+   ldx zp_pointer+1
+   ldy RAM_BANK
 
    clc
    rts
