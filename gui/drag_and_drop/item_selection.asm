@@ -324,6 +324,7 @@ back_buffer:
 ; * In .A/.X/.Y, expects the pointer to the object to be selected,
 ; * in next_selected_event, expects the pointer to either the beginning of the (possibly empty) vector of selected events, OR any selected event known to come before the one to be selected.
 ;   (not preserved!)
+; * next_selected_event is updated to the newly "selected" event, so that selection of subsequent events can be done without searching through the entire vector for the right insert position.
 ; If the object is a note-on, the corresponding note-off is automatically selected, too.
 ; To unselect, swap the vectors using swapSelectedUnselectedVectors, call this function, and then swap back.
 .proc selectEvent
@@ -347,9 +348,9 @@ back_buffer:
     ; ====================================================================================================================
     ; Do the most basic implementation now ... possible improvements/optimizations for speed can be done later if needed.
     ; Remember the pointer to the event, so we can delete it later
-    pha
-    phx
-    phy
+    sta next_unselected_event
+    stx next_unselected_event+1
+    sty next_unselected_event+2
     ; Load the values of the entry to be selected
     jsr v40b::read_entry
 
@@ -383,35 +384,44 @@ back_buffer:
     ldy next_selected_event+2
     jsr v40b::insert_entry
     ; Remember the pointer to the newly inserted event, as entries might get moved around in an insert operation.
-    sta next_selected_event
-    stx next_selected_event+1
-    sty next_selected_event+2
+    pha
+    phx
+    phy
 @check_note_off:
     ; If the event type is a note-on, we have to also select the note-off.
     lda events::event_type
     cmp #events::event_type_note_on
-    bne @delete_entry
+    php ; remember the zero flag
+    ; Recall pointer to original event
+    lda next_unselected_event
+    ldx next_unselected_event+1
+    ldy next_unselected_event+2
+    plp
+    beq @delete_entry
 
 @select_note_off:
     ; We assume the note-off IS THERE (no error handling in case it's not).
-    ; Recall pointer to original event
-    ply
-    plx
-    pla
     ; remember the original pointer again, so we can delete it later from the unselected vector.
     ; We can't delete it now because findNoteOff still needs it.
     pha
     phx
     phy
     jsr findNoteOff
-    jsr selectEvent ; recursive call
-
-@delete_entry:
-    ; Finally, delete the original (unselected) event
+    jsr selectEvent ; recursive call (where we will certainly NOT do another note-off selection)
     ply
     plx
     pla
+
+@delete_entry:
+    ; Finally, delete the original (unselected) event
     jsr v40b::delete_entry
+    ; and restore the selected event pointer
+    ply
+    plx
+    pla
+    sta next_selected_event
+    stx next_selected_event+1
+    sty next_selected_event+2
     rts
 .endproc
 
