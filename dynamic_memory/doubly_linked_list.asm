@@ -3,7 +3,8 @@
 ; This file implements a doubly linked lists (DLLs), consisting of chunks of 256 bytes size.
 ; The first four bytes of each element are used for the forward- and backward referencing pointers,
 ; and the other 252 bytes are payload.
-; This file does NOT implement routines to manage the content of the chunks in a DLL.
+; This file does NOT implement routines to manage the content of the chunks in a DLL (with the
+; exception of the delete_element function, which might move data around).
 
 ; The structure of the header in each element is as follows
 ;
@@ -332,7 +333,9 @@ temp_variable_a:
 
 ; Deletes any element from a list. (Untested!)
 ; Expects pointer to an element in .A/.X
-; Returns pointer to the succeeding element of the deleted one (possibly NULL)
+; If the resulting list is empty, carry will be set.
+; If the first element is deleted, the content of the second element will be moved into the first element,
+; and the second element will be deleted instead, in order to not invalidate pointers to the list.
 .proc delete_element
    ;
    ; We have a list as follows:                               .A/.X
@@ -353,10 +356,13 @@ temp_variable_a:
    ; Agenda
    ; - set up reading from V
    ; - collect pointers to U and W from it
+   ; - if U is NULL:
+   ;   - copy content of W to V (if W is not NULL, otherwise handle empty list case)
+   ;   - delete W (recursively)
+   ;   - return (or just JMP to self --> no additional stack usage and no additional RTS)
    ; - release V
-   ; - if W was not NULL: store U in W's predecessor
-   ; - if U was not NULL: store W in U's successor
-   ; - load W in .A/.X for output
+   ; - if W was not NULL: store U in W's predecessor-pointer
+   ; - store W in U's successor-pointer
 
    ; set up reading from V
    sta RAM_BANK ; store V.B
@@ -371,6 +377,7 @@ temp_variable_a:
    sta zp_pointer_2+1 ; store W.H
    iny
    lda (zp_pointer),y
+   beq @delete_first_element
    sta detail::temp_variable_a ; store U.B
    iny
    lda (zp_pointer),y
@@ -396,9 +403,7 @@ temp_variable_a:
 
    ; point U to W
    ldx RAM_BANK ; recall W.B
-   phx ; save W.B during bank switch
    lda detail::temp_variable_a
-   beq @end_u ; skip if U is NULL
    sta RAM_BANK
    lda detail::temp_variable_a+1
    sta zp_pointer+1
@@ -409,11 +414,42 @@ temp_variable_a:
    lda zp_pointer_2+1
    sta (zp_pointer),y ; store W.H
 @end_u:
+   clc
+   rts
 
-   ; load pointer to W into .A/.X
-   pla ; recall W.B
-   ldx zp_pointer_2+1
+@delete_first_element:
+   ; check if it's the last element, as well.
+   ldx zp_pointer_2 ; recall W.B
+   beq @delete_the_only_element
+@not_last_element:
+   ; copy content of Element W to Element V
+   stz zp_pointer_2
+   ldy #4 ; start with payload
+@copy_loop:
+   lda RAM_BANK ; remember V.B
+   stx RAM_BANK ; set up W.B
+   tax ; remember V.B
+   lda (zp_pointer_2), y ; load byte from Element W
+   pha
+   lda RAM_BANK ; remember W.B
+   stx RAM_BANK ; set up V.B
+   tax ; remember W.B
+   pla
+   sta (zp_pointer), y ; write byte to Element V
+   iny
+   bne @copy_loop
 
+   ; Now that we copied the content of Element W to Element V, we can delete Element W.
+   txa ; recall W.B
+   ldx zp_pointer_2+1 ; recall W.H
+   bra delete_element ; we can call this function recursively because W is guaranteed to not be the first element, so we won't happen to do the same recursive call again.
+
+@delete_the_only_element:
+   ; if it's the last element, we can just delete it and return
+   lda RAM_BANK
+   ldx zp_pointer+1
+   jsr heap::release_chunk
+   sec
    rts
 .endproc
 

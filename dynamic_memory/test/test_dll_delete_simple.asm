@@ -29,43 +29,36 @@ start:
    bne @fill_loop_1
    ; and ... ooops, let go of the pointer (aka memory leak) ...
 
-   ; deleting the only element from a list should result in NULL
+   ; deleting the only element from a list should result in carry set
    jsr dll::create_list
    jsr dll::delete_element
-   EXPECT_EQ 0
+   EXPECT_CARRY_SET
 
 
-   ; deleting the first element should yield the second element
+   ; deleting the first element in a two elements list
    ; create a list of two elements
    jsr dll::create_list
    sta list_a
    stx list_a+1
    jsr dll::append_new_element
-   ; save pointer of second element
-   sta list_b
-   stx list_b+1
    ; delete first element
    lda list_a
    ldx list_a+1
    jsr dll::delete_element
-   ; compare to second element
-   EXPECT_EQ_MEM list_b
-   txa
-   EXPECT_EQ_MEM list_b+1
-   ; check that former second element is the last element
-   lda list_b
-   ldx list_b+1
-   jsr dll::is_last_element
-   EXPECT_CARRY_SET
+   ; do some checks
+   EXPECT_CARRY_CLEAR
+   lda list_a
+   ldx list_a+1
    jsr dll::is_first_element
    EXPECT_CARRY_SET
+   jsr dll::is_last_element
+   EXPECT_CARRY_SET
    ; tidy up
-   lda list_b
-   ldx list_b+1
+   lda list_a
+   ldx list_a+1
    jsr dll::destroy_list
 
-
-   ; deleting the last element of a element list should yield NULL
+   ; deleting the second element in a two elements list
    ; create a list of two elements
    jsr dll::create_list
    sta list_a
@@ -76,8 +69,7 @@ start:
    stx list_b+1
    ; delete second element
    jsr dll::delete_element
-   ; compare to second element
-   EXPECT_EQ 0
+   EXPECT_CARRY_CLEAR
    ; check that former first element is now the first and last element
    lda list_a
    ldx list_a+1
@@ -89,7 +81,7 @@ start:
    jsr dll::destroy_list
 
 
-   ; deleting the second element should yield the third element
+   ; deleting the second element in a three element list
    ; create a list of three elements
    jsr dll::create_list
    sta list_a
@@ -102,9 +94,7 @@ start:
    ; delete second element
    jsr dll::get_previous_element
    jsr dll::delete_element
-   EXPECT_EQ_MEM list_b
-   txa
-   EXPECT_EQ_MEM list_b+1
+   EXPECT_CARRY_CLEAR
    ; check the previous element
    lda list_b
    ldx list_b+1
