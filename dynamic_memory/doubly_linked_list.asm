@@ -333,7 +333,8 @@ temp_variable_a:
 
 ; Deletes any element from a list. (Untested!)
 ; Expects pointer to an element in .A/.X
-; If the resulting list is empty, carry will be set.
+; If the given element is the only element in the list, carry will be set and the element will not be deleted
+; in order to not invalidate pointers to the list.
 ; If the first element is deleted, the content of the second element will be moved into the first element,
 ; and the second element will be deleted instead, in order to not invalidate pointers to the list.
 .proc delete_element
@@ -420,7 +421,7 @@ temp_variable_a:
 @delete_first_element:
    ; check if it's the last element, as well.
    ldx zp_pointer_2 ; recall W.B
-   beq @delete_the_only_element
+   beq @only_one_element
 @not_last_element:
    ; copy content of Element W to Element V
    stz zp_pointer_2
@@ -444,11 +445,8 @@ temp_variable_a:
    ldx zp_pointer_2+1 ; recall W.H
    bra delete_element ; we can call this function recursively because W is guaranteed to not be the first element, so we won't happen to do the same recursive call again.
 
-@delete_the_only_element:
-   ; if it's the last element, we can just delete it and return
-   lda RAM_BANK
-   ldx zp_pointer+1
-   jsr heap::release_chunk
+@only_one_element:
+   ; if it's the last element, we can just return
    sec
    rts
 .endproc

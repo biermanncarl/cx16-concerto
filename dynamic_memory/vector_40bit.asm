@@ -637,7 +637,7 @@ destroy = dll::destroy_list
    ply
 @copy_loop:
    cpy zp_pointer_2
-   beq @end
+   beq @end_copy_loop
    ; read
    lda (zp_pointer),y
    tax
@@ -655,17 +655,15 @@ destroy = dll::destroy_list
    adc #(entry_size+1)
    tay
    bra @copy_loop
+@end_copy_loop:
+   clc
+   rts
 
 @chunk_is_empty:
-   ; check if the vector is empty --> in that case we don't delete the chunk
+:  ; delete the current element of the list -- if it's not the only one (handled by delete_element)
    lda RAM_BANK
-   jsr is_empty
-   bcc :+
-   rts
-:  ; delete the current element of the list
-   jsr dll::delete_element
-@end:
-   clc
+   ldx zp_pointer+1
+   jsr dll::delete_element ; if it returns carry set, it's the only element, and as it's empty, the vector is empty
    rts
 .endproc
 

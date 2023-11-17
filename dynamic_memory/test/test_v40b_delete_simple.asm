@@ -76,16 +76,32 @@ start:
    ldx vec_a+1
    jsr v40b::get_first_entry
    jsr v40b::delete_entry
+   EXPECT_CARRY_CLEAR
 
    ; check basic properties of the vector
    lda vec_a
    ldx vec_a+1
+   jsr v40b::is_empty
+   EXPECT_CARRY_CLEAR
    jsr v40b::get_first_entry
+   EXPECT_CARRY_CLEAR
    jsr v40b::is_first_entry
    EXPECT_CARRY_SET
    jsr v40b::is_last_entry
    EXPECT_CARRY_SET
    EXPECT_ENTRY_EQUAL_TO $52, $55, $59, $5B, $5E
+
+   ; delete the the remaining entry
+   lda vec_a
+   ldx vec_a+1
+   jsr v40b::get_first_entry
+   EXPECT_CARRY_CLEAR
+   jsr v40b::delete_entry
+   EXPECT_CARRY_SET
+   lda vec_a
+   ldx vec_a+1
+   jsr v40b::is_empty
+   EXPECT_CARRY_SET
 
    FINISH_TEST
    rts
