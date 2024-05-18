@@ -139,7 +139,7 @@
         pha
         phx
         phy
-        jsr dnd::dragables::notes::detail::findNoteOff
+        jsr dnd::dragables::item_selection::findNoteOff
         jsr v40b::delete_entry
         ply
         plx

@@ -29,7 +29,7 @@ max_temporal_zoom = 4
 
 .pushseg
 .zeropage
-unselected_events_vector: ; todo: remove ownership of note data from this file
+unselected_events_vector: ; todo: remove ownership of note data from this file (so that these pointers only help processing music data, not storing it)
    .res 2
 selected_events_vector:
    .res 2
@@ -417,7 +417,7 @@ change_song_tempo = timing::recalculate_rhythm_values ; TODO: actually recalcula
    sta item_selection::selected_events
    lda selected_events_vector+1
    sta item_selection::selected_events+1
-   jsr item_selection::reset_stream
+   jsr item_selection::resetStream
 
    ; initialize the hitbox list
    lda #dragables__ids__notes
@@ -429,7 +429,7 @@ change_song_tempo = timing::recalculate_rhythm_values ; TODO: actually recalcula
    stz end_of_data
 
    ; get first entry
-   jsr item_selection::stream_get_next_event
+   jsr item_selection::streamGetNextEvent
    bcs @pre_parsing_end_of_data
 @clip_is_not_empty:
    ; we have at least one event. get that event's time stamp
@@ -470,7 +470,7 @@ change_song_tempo = timing::recalculate_rhythm_values ; TODO: actually recalcula
    sta detail::column_buffer, x
 @pre_parsing_next_event:
    ; get next event
-   jsr item_selection::stream_get_next_event
+   jsr item_selection::streamGetNextEvent
    bcs @pre_parsing_end_of_data
    jsr v40b::read_entry
    bra @pre_parsing_loop
@@ -572,7 +572,7 @@ change_song_tempo = timing::recalculate_rhythm_values ; TODO: actually recalcula
    bra @parse_next_event
 
 @parse_next_event:
-   jsr item_selection::stream_get_next_event
+   jsr item_selection::streamGetNextEvent
    bcs :+ ; new data available?
    ; new data available.
    jsr v40b::read_entry

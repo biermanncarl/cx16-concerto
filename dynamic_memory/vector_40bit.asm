@@ -138,7 +138,7 @@ destroy = dll::destroy_list
    pha
    phx
    jsr dll::get_next_element
-   jsr dll::destroy_list ; !! we depend on destroy_list only deleting list elements to the right and the one passed in, not any ones to the right
+   jsr dll::destroy_list ; !! we depend on destroy_list only deleting list elements to the right and the one passed in, not any ones to the left
    plx
    pla
    ; set pointer to next list element to 0
@@ -660,7 +660,7 @@ destroy = dll::destroy_list
    rts
 
 @chunk_is_empty:
-:  ; delete the current element of the list -- if it's not the only one (handled by delete_element)
+   ; delete the current element of the list -- if it's not the only one (handled by delete_element)
    lda RAM_BANK
    ldx zp_pointer+1
    jsr dll::delete_element ; if it returns carry set, it's the only element, and as it's empty, the vector is empty

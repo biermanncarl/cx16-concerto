@@ -47,7 +47,6 @@ back_buffer:
 ; Given the pointer to a note-on event in .A/.X/.Y, finds the corresponding note-off event by linear search.
 ; If no matching note-off is found, carry will be set, otherwise clear.
 .proc findNoteOff
-    pitch = temp_variable_a
     ; This function could become a bottleneck!
     ; TODO: to make it faster, read only the data we truly need, instead of using v40b::read_entry
     pha
@@ -85,6 +84,8 @@ back_buffer:
     clc
 @end:
     rts
+pitch:
+    .byte 0 ; can be optimized away to use a different variable
 .endproc
 
 
@@ -99,8 +100,8 @@ back_buffer:
 
 ; Resets/initializes the common event stream.
 ; Expects the selected_events and unselected_events pointers to be set to the respective vectors.
-; TODO: actually, we can just keep the selected_events vector, and receive the unselected in .A/.X/.Y ... TBD
-.proc reset_stream
+; TODO: actually, we can just keep the selected_events vector, and receive the unselected in .A/.X/.Y ... TBD (#dataOwnership)
+.proc resetStream
     ; reset time stamp
     ; stz current_timestamp
     ; stz current_timestamp+1
@@ -212,7 +213,7 @@ back_buffer:
 ; If another event is available, its pointer is returned in .A/.X/.Y
 ; If another event is available, the content of last_event_source is set to 0 in case the last event was unselected, or $80 if it was selected
 ; The respective id (last_selected_id/last_unselected_id) is advanced accordingly.
-.proc stream_get_next_event
+.proc streamGetNextEvent
     ; Check if more events are available
     ldy next_selected_event+2
     bne @selected_not_empty
@@ -278,7 +279,7 @@ back_buffer:
 ; Swaps the stream in the active ZP buffer with the back buffer.
 ; This enables concurrent usage of two streams, which is most important for the ISR,
 ; which could interrupt the main program's stream usage.
-; TODO: check if we really need this.
+; TODO: check if we really need this. - maybe could be optimized away
 .proc swapBackFrontStreams
     ldx #0
 @swap_loop:
@@ -299,7 +300,7 @@ back_buffer:
 ; Individual item selection and unselection
 ; =========================================
 ; This is a separate API, which cannot be used at the same time as the
-; "Common streams" API as it works with partly the same ZP variables.
+; "Common streams" API as it works with partly the same ZP variables, and some functions (the "merge" ones) use the streams API internally.
 ; (this could be changed, though, so that each API has its own ZP variables
 ; and can be used fully independently from each other).
 
@@ -322,12 +323,12 @@ back_buffer:
 
 ; Moves an event from the unselected to the selected vector.
 ; * In .A/.X/.Y, expects the pointer to the object to be selected,
-; * in next_selected_event, expects the pointer to either the beginning of the (possibly empty) vector of selected events, OR any selected event known to come before the one to be selected.
+; * in selectEvent::event, expects the pointer to either the beginning of the (possibly empty) vector of selected events, OR any selected event known to come before the one to be selected.
 ;   (not preserved!)
-; * next_selected_event is updated to the newly "selected" event, so that selection of subsequent events can be done without searching through the entire vector for the right insert position.
+; * selectEvent::event is updated to the newly "selected" event, so that selection of subsequent events can be done without searching through the entire vector for the right insert position.
 ; If the object is a note-on, the corresponding note-off is automatically selected, too.
-; To unselect, swap the vectors using swapSelectedUnselectedVectors, call this function, and then swap back.
 .proc selectEvent
+    event = next_selected_event
     ; Actually, this could/should be a generic function, usable in both directions.
     ; Can it be partially recursive?
     ; * if the event is a note-on, it finds the note-off, calls itself on the note-off and then proceeds with normal operation
@@ -343,7 +344,9 @@ back_buffer:
     ; * read the entry to be selected (into value_0 ... value_4)
     ; * delete it
     ; * insert it directly at target location
-
+    ; !If selectAllEvents doesn't use this function, the extra effort to preserve the next_selected_event pointer
+    ; can be scrapped (see the commit of the initial implementation of this function 334183bd2f6a4ea7cde24fc29e0e916a6495871e
+    ; -- which still might need debugging).
 
     ; ====================================================================================================================
     ; Do the most basic implementation now ... possible improvements/optimizations for speed can be done later if needed.
@@ -425,6 +428,120 @@ back_buffer:
     rts
 .endproc
 
+
+; Moves an event from the selected to the unselected vector.
+; * In .A/.X/.Y, expects the pointer to the object to be unselected,
+; * in unselectEvent::event, expects the pointer to either the beginning of the (possibly empty) vector of unselected events, OR any unselected event known to come before the one to be unselected.
+;   (not preserved!)
+; * unselectEvent::event is updated to the newly "unselected" event, so that unselection of subsequent events can be done without searching through the entire vector for the right insert position.
+; If the object is a note-on, the corresponding note-off is automatically unselected, too.
+.proc unselectEvent
+    event = selectEvent::event
+    jsr swapSelectedUnselectedVectors
+    jsr selectEvent
+    jsr swapSelectedUnselectedVectors
+    rts
+.endproc
+
+
+; Merges all unselected events into the selected events vector. (Untested!)
+; To unselect all, call swapSelectedUnselectedVectors before and after this function.
+.proc selectAllEvents
+    ; Using stream API.
+    ; Basically stream them, but instead of just "consuming" the event, it gets inserted into the selected vector.
+    ; We need to do some more book-keeping to not break the stream API's illusion that it's just normally streaming.
+    jsr resetStream
+@merge_loop:
+    jsr streamGetNextEvent
+    bcs @merge_loop_end ; returns event pointer in .A/.X/.Y
+    pha
+    ; is the next event already selected?
+    lda last_event_source
+    bpl @insert_event ; action required
+    ; already selected, no action required --> go to next
+    pla
+    bra @merge_loop
+
+@insert_event:
+    ; insert event into selected events vector
+    pla
+    jsr v40b::read_entry
+
+    ldy next_selected_event+2
+    beq @append_event ; are we already at the end of the selected events vector?
+    ; selected events vector isn't empty: insert before next_selected_event
+    lda next_selected_event
+    ldx next_selected_event+1
+    jsr v40b::insert_entry
+    ; Use the fact that v40b::insert_entry returns the new position of the inserted entry:
+    jsr v40b::get_next_entry
+    bcc :+
+    ldy #0 ; set to nullptr if next selected event doesn't exist
+:   sta next_selected_event
+    stx next_selected_event+1
+    sty next_selected_event+2
+    bra @merge_loop
+@append_event:
+    lda selected_events
+    ldx selected_events+1
+    jsr v40b::append_new_entry
+    ; don't need to deal with next_selected_event, since it is already nullptr, which is what we want in this case
+    bra @merge_loop
+
+@merge_loop_end:
+    ; remove all events from unselected vector
+    lda unselected_events
+    ldx unselected_events+1
+    jsr v40b::clear
+    rts
+.endproc
+
+
+; Merges all selected events into the unselected events vector.
+.proc unSelectAllEvents
+    jsr swapSelectedUnselectedVectors
+    jsr selectAllEvents
+    jsr swapSelectedUnselectedVectors
+    rts
+.endproc
+
+
+
+.if 0
+    ; Earlier attempt at writing this functionality (not sure if finished)
+    ; Merges all unselected events into the selected events vector.
+    ; To unselect all, call swapSelectedUnselectedVectors before and after this function.
+    .proc selectAllEvents
+        ; This function is implemented for small code size.
+        ; Should it become a bottleneck, this could be implemented without calling selectEvent.
+        ; The main point of optimization would be that we don't have to delete the events from the
+        ; unselected vector individually (an expensive operation), but could discard them at the
+        ; end at once. We would also not need to care about finding matching note-offs, as they
+        ; will always be contained in "all".
+
+        ; Initialization
+        lda selected_events
+        ldx selected_events+1
+        jsr v40b::get_first_entry
+        sta next_selected_event
+        stx next_selected_event+1
+        sty next_selected_event+2
+        ; we basically grab the first event over and over again (as they get deleted one by one)
+    @merge_loop:
+        lda unselected_events
+        ldx unselected_events+1
+        jsr v40b::get_first_entry
+        bcs @end_merge_loop
+
+        
+        bra @merge_loop
+    @end_merge_loop:
+
+
+        rts
+    .endproc
+
+.endif
 
 .endscope
 
