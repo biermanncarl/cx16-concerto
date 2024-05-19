@@ -1,4 +1,4 @@
-; Copyright 2023 Carl Georg Biermann
+; Copyright 2023-2024 Carl Georg Biermann
 
 ; This file implements work with selections. The features work with streams of events.
 ; Events are located in the entries of a 40bit vector, with the time stamp as the first 16 bits.
@@ -15,15 +15,21 @@ DRAG_AND_DROP_ITEM_SELECTION_ASM = 1
 
 .scope item_selection
 
+
 .pushseg
 .zeropage
 start_of_stream_variables:
+; these variables are only here in ZP for speed and code size, could be moved out if needed
+
+; PART OF API
 ; pointers to the 40bit vectors with events
-selected_events: ; not owned by this module
+selected_events: ; data not owned by this module
     .res 2
-unselected_events: ; not owned by this module
+unselected_events: ; data not owned by this module
     .res 2
-; other variables (no pointers) only here for speed and code size, could be moved out of ZP
+
+; NOT PART OF API
+; other variables (no pointers)
 next_selected_event:
     .res 3
 last_selected_id:
@@ -34,8 +40,10 @@ last_unselected_id:
     .res 2
 last_event_source:
     .res 1
+
 end_of_stream_variables:
 .popseg
+
 
 ; When the ISR uses this code, it might interrupt other routines using it,
 ; so it has to swap out the ZP variables.
@@ -48,7 +56,7 @@ back_buffer:
 ; If no matching note-off is found, carry will be set, otherwise clear.
 .proc findNoteOff
     ; This function could become a bottleneck!
-    ; TODO: to make it faster, read only the data we truly need, instead of using v40b::read_entry
+    ; TODO: to make it faster, read only the data we truly need, instead of using v40b::read_entry, to optimize for speed
     pha
     phx
     phy
@@ -102,10 +110,6 @@ pitch:
 ; Expects the selected_events and unselected_events pointers to be set to the respective vectors.
 ; TODO: actually, we can just keep the selected_events vector, and receive the unselected in .A/.X/.Y ... TBD (#dataOwnership)
 .proc resetStream
-    ; reset time stamp
-    ; stz current_timestamp
-    ; stz current_timestamp+1
-
     ; reset id counters
     lda #$ff
     sta last_selected_id
@@ -140,7 +144,7 @@ pitch:
 .endproc
 
 
-; Compares two events and decides which of them comes sooner.
+; Compares two events and decides which of them comes sooner. (not part of stream API)
 ; Expects
 ; * pointer to a valid event in next_selected_event
 ; * pointer to another valid event in next_unselected_event
@@ -276,6 +280,41 @@ pitch:
 .endproc
 
 
+.macro SET_SELECTED_VECTOR vector_address
+    lda vector_address
+    sta ::concerto_gui::components::dnd::dragables::item_selection::selected_events
+    lda vector_address+1
+    sta ::concerto_gui::components::dnd::dragables::item_selection::selected_events+1
+.endmacro
+
+.macro SET_UNSELECTED_VECTOR vector_address
+    lda vector_address
+    sta ::concerto_gui::components::dnd::dragables::item_selection::unselected_events
+    lda vector_address+1
+    sta ::concerto_gui::components::dnd::dragables::item_selection::unselected_events+1
+.endmacro
+
+; maybe move into v40b?
+.macro SWAP_VECTORS vector_a, vector_b
+    lda vector_a
+    ldy vector_b
+    sty vector_a
+    sta vector_b
+    lda vector_a+1
+    ldy vector_b+1
+    sty vector_a+1
+    sta vector_b+1
+.endmacro
+
+
+; Swaps the selected and unselected vector.
+; This is useful to unselect items.
+.proc swapSelectedUnselectedVectors
+    SWAP_VECTORS selected_events, unselected_events
+    rts
+.endproc
+
+
 ; Swaps the stream in the active ZP buffer with the back buffer.
 ; This enables concurrent usage of two streams, which is most important for the ISR,
 ; which could interrupt the main program's stream usage.
@@ -295,8 +334,6 @@ pitch:
 .endproc
 
 
-
-
 ; Individual item selection and unselection
 ; =========================================
 ; This is a separate API, which cannot be used at the same time as the
@@ -305,30 +342,10 @@ pitch:
 ; and can be used fully independently from each other).
 
 
-; Swaps the selected and unselected vector.
-; This is useful to unselect items.
-.proc swapSelectedUnselectedVectors
-    lda selected_events
-    ldy unselected_events
-    sta unselected_events
-    sty selected_events
-    lda selected_events+1
-    ldy unselected_events+1
-    sta unselected_events+1
-    sty selected_events+1
-    rts
-.endproc
-
-
-
 ; Moves an event from the unselected to the selected vector.
 ; * In .A/.X/.Y, expects the pointer to the object to be selected,
-; * in selectEvent::event, expects the pointer to either the beginning of the (possibly empty) vector of selected events, OR any selected event known to come before the one to be selected.
-;   (not preserved!)
-; * selectEvent::event is updated to the newly "selected" event, so that selection of subsequent events can be done without searching through the entire vector for the right insert position.
 ; If the object is a note-on, the corresponding note-off is automatically selected, too.
 .proc selectEvent
-    event = next_selected_event
     ; Actually, this could/should be a generic function, usable in both directions.
     ; Can it be partially recursive?
     ; * if the event is a note-on, it finds the note-off, calls itself on the note-off and then proceeds with normal operation
@@ -344,9 +361,6 @@ pitch:
     ; * read the entry to be selected (into value_0 ... value_4)
     ; * delete it
     ; * insert it directly at target location
-    ; !If selectAllEvents doesn't use this function, the extra effort to preserve the next_selected_event pointer
-    ; can be scrapped (see the commit of the initial implementation of this function 334183bd2f6a4ea7cde24fc29e0e916a6495871e
-    ; -- which still might need debugging).
 
     ; ====================================================================================================================
     ; Do the most basic implementation now ... possible improvements/optimizations for speed can be done later if needed.
@@ -354,89 +368,112 @@ pitch:
     sta next_unselected_event
     stx next_unselected_event+1
     sty next_unselected_event+2
-    ; Load the values of the entry to be selected
-    jsr v40b::read_entry
-
-    ; We do linear search to find the address to insert the event.
-    ; next_selected_event is the candidate where to insert the event.
-    lda next_selected_event+2
-    ldx next_selected_event+1
-    jsr v40b::is_empty
-    bcs @append
-@search_loop:
-    jsr compareEvents
-    bcc @insert_position_found
-    lda next_selected_event
-    ldx next_selected_event+1
-    ldy next_selected_event+2
-    jsr v40b::get_next_entry
-    bcs @append
+    lda selected_events
+    ldx selected_events+1
+    jsr v40b::get_first_entry
     sta next_selected_event
     stx next_selected_event+1
     sty next_selected_event+2
-    bra @search_loop
-
-@append:
-    lda next_selected_event+2
-    ldx next_selected_event+1
-    jsr v40b::append_new_entry
-    bra @check_note_off
-@insert_position_found:
-    lda next_selected_event
-    ldx next_selected_event+1
-    ldy next_selected_event+2
-    jsr v40b::insert_entry
-    ; Remember the pointer to the newly inserted event, as entries might get moved around in an insert operation.
-    pha
-    phx
-    phy
-@check_note_off:
-    ; If the event type is a note-on, we have to also select the note-off.
-    lda events::event_type
-    cmp #events::event_type_note_on
-    php ; remember the zero flag
-    ; Recall pointer to original event
+    jsr insertInSelectedEvents
+    beq @handle_note_off ; if it wasn't a note-on, we can go straight to deleting this event
     lda next_unselected_event
     ldx next_unselected_event+1
     ldy next_unselected_event+2
-    plp
-    beq @delete_entry
-
-@select_note_off:
-    ; We assume the note-off IS THERE (no error handling in case it's not).
-    ; remember the original pointer again, so we can delete it later from the unselected vector.
-    ; We can't delete it now because findNoteOff still needs it.
-    pha
-    phx
-    phy
-    jsr findNoteOff
-    jsr selectEvent ; recursive call (where we will certainly NOT do another note-off selection)
-    ply
-    plx
-    pla
-
-@delete_entry:
-    ; Finally, delete the original (unselected) event
+@delete_event:
     jsr v40b::delete_entry
-    ; and restore the selected event pointer
-    ply
-    plx
-    pla
+    rts
+
+@handle_note_off:
+    ; As the event was a note-on, need to also select note-off.
+    ; save the position of the recently selected event
     sta next_selected_event
     stx next_selected_event+1
     sty next_selected_event+2
-    rts
+    ; first, save the currently selected element, so we can delete it later
+    lda next_unselected_event
+    ldx next_unselected_event+1
+    ldy next_unselected_event+2
+    pha
+    phx
+    phy
+    ; copy the note-off to selected events
+    jsr findNoteOff
+    sta next_unselected_event
+    stx next_unselected_event+1
+    sty next_unselected_event+2
+    jsr insertInSelectedEvents
+    ; delete note-off first because then we know for sure where the remaining note-on is (the other way round we wouldn't know for sure)
+    lda next_unselected_event
+    ldx next_unselected_event+1
+    ldy next_unselected_event+2
+    jsr v40b::delete_entry
+    ; restore note-on
+    ply
+    plx
+    pla
+    bra @delete_event
+
+    ; sub routine which does the insertion of a single event in the "selected" events vector.
+    ; Expects:
+    ;   * in next_unselected_event, pointer event to be copied
+    ;   * in next_selected_event, pointer to any event known to (temporally) come before the given event
+    ;     in the "selected" vector, or the beginning of the vector if such an event is not contained
+    ; Returns:
+    ;   * in zero flag, whether the event was a note-on (z=0 if yes, z=1 if not)
+    ;   * in .A/.X/.Y, the position of the copied event where it has been inserted
+    ;   * next_unselected_event is preserved
+    .proc insertInSelectedEvents
+    @search_loop:
+        jsr compareEvents
+        bcc @insert_position_found
+        lda next_selected_event
+        ldx next_selected_event+1
+        ldy next_selected_event+2
+        jsr v40b::get_next_entry
+        bcs @append
+        sta next_selected_event
+        stx next_selected_event+1
+        sty next_selected_event+2
+        bra @search_loop
+
+    @append:
+        jsr readEventAndCheckNoteOn
+        php
+        lda selected_events ; alternatively, we could use the values in next_selected_event and thus make it independent from selected_events being set correctly.
+        ldx selected_events+1 ; This could allow for efficient "selection" into varying vectors.
+        jsr v40b::append_new_entry
+        lda selected_events
+        ldx selected_events+1
+        jsr v40b::get_last_entry
+        plp
+        rts
+    @insert_position_found:
+        jsr readEventAndCheckNoteOn
+        php
+        lda next_selected_event
+        ldx next_selected_event+1
+        ldy next_selected_event+2
+        jsr v40b::insert_entry
+        plp
+        rts
+
+        .proc readEventAndCheckNoteOn
+            lda next_unselected_event
+            ldx next_unselected_event+1
+            ldy next_unselected_event+2
+            jsr v40b::read_entry
+            lda events::event_type
+            cmp #events::event_type_note_on
+            rts
+        .endproc
+    .endproc
 .endproc
 
 
 ; Moves an event from the selected to the unselected vector.
 ; * In .A/.X/.Y, expects the pointer to the object to be unselected,
-; * in unselectEvent::event, expects the pointer to either the beginning of the (possibly empty) vector of unselected events, OR any unselected event known to come before the one to be unselected.
-;   (not preserved!)
-; * unselectEvent::event is updated to the newly "unselected" event, so that unselection of subsequent events can be done without searching through the entire vector for the right insert position.
 ; If the object is a note-on, the corresponding note-off is automatically unselected, too.
 .proc unselectEvent
-    event = selectEvent::event
     jsr swapSelectedUnselectedVectors
     jsr selectEvent
     jsr swapSelectedUnselectedVectors
@@ -450,6 +487,7 @@ pitch:
     ; Using stream API.
     ; Basically stream them, but instead of just "consuming" the event, it gets inserted into the selected vector.
     ; We need to do some more book-keeping to not break the stream API's illusion that it's just normally streaming.
+    ; One thing we don't do here is to correct the selected/unselected id as it is not needed here.
     jsr resetStream
 @merge_loop:
     jsr streamGetNextEvent

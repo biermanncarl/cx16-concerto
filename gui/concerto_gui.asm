@@ -1,4 +1,4 @@
-; Copyright 2021-2022 Carl Georg Biermann
+; Copyright 2021-2024 Carl Georg Biermann
 
 
 ; Include this file to your program to include the concerto synth GUI.
@@ -41,6 +41,7 @@ initialize:
    jsr mouse::mouse_init
 .ifdef ::concerto_full_daw
    jsr components::dnd::hitboxes::initialize
+   jsr components::drag_and_drop_area::initialize
 .endif
    rts
 

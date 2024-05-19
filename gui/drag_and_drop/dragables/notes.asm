@@ -409,14 +409,8 @@ change_song_tempo = timing::recalculate_rhythm_values ; TODO: actually recalcula
    bpl @clear_column_buffer_loop
 
    ; event sources: unselected and selected events
-   lda unselected_events_vector
-   sta item_selection::unselected_events
-   lda unselected_events_vector+1
-   sta item_selection::unselected_events+1
-   lda selected_events_vector
-   sta item_selection::selected_events
-   lda selected_events_vector+1
-   sta item_selection::selected_events+1
+   SET_SELECTED_VECTOR selected_events_vector
+   SET_UNSELECTED_VECTOR unselected_events_vector
    jsr item_selection::resetStream
 
    ; initialize the hitbox list

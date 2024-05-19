@@ -1,4 +1,4 @@
-; Copyright 2023 Carl Georg Biermann
+; Copyright 2023-2024 Carl Georg Biermann
 
 .ifndef ::GUI_COMPONENTS_COMPONENTS_DRAG_AND_DROP_AREA_ASM
 
@@ -9,7 +9,7 @@
 ; The drag and drop functionality is tailored towards the needs of
 ; editing notes, effects and clips in arrangement views.
 ; This component serves as glue code between the normal GUI code and
-; the 
+; the algorithms that operate on the notes, effects and clips data.
 
 .include "common.asm"
 .include "../../drag_and_drop/drag_and_drop.asm"
@@ -33,6 +33,12 @@
             .byte 0
         accumulated_y:
             .byte 0
+        
+        ; Vectors for processing events
+        temp_events:
+            .res 2
+        clipboard_events:
+            .res 2
     .endscope
  
     .proc draw
@@ -48,6 +54,12 @@
         rts
     .endproc
 
+
+    ; If the mouse is inside the editing area, carry will be set, otherwise clear.
+    ; If the mouse touches a dragable object,
+    ; * mouse_variables::curr_data_1 will contain hitbox_handle::bulk or hitbox_handle::right_end depending on where it is
+    ; * mouse_variables::curr_data_2 and _3 will contain the id of the hitbox (curr_data_3's MSB signals whether the hitbox is a selected or unselected one)
+    ; and if not, mouse_variables::curr_data_1 will contain hitbox_handle::none.
     .proc check_mouse
         temp_zp = gui_variables::mzpbf
         ; This is basically a "mouse is inside box" check with variable width and height.
@@ -99,6 +111,7 @@
         cmp dnd::hitboxes::hitbox_width
         bcs @continue
         ; We got a hit!
+        ; TODO: implement right_handle !
         ; tidy up the stack
         ply
         plx
@@ -125,27 +138,15 @@
         rts
     .endproc
 
+
     .proc event_click
+        ; TODO: implementation of notes/effects/clips jump table (needed?)
+        ; This is somewhat a "drag_end" operation -- not sure if we need it?
         lda mouse_variables::curr_data_1
-        bne :+
+        bne :+ ; clicked any hitbox?
         rts
     :
-        ; for now, remove the note as a quick test
-        lda mouse_variables::curr_data_2
-        sta v40b::value_0
-        lda mouse_variables::curr_data_3
-        sta v40b::value_1
-        jsr dnd::dragables::notes::detail::getEntryFromHitboxObjectId
-        pha
-        phx
-        phy
-        jsr dnd::dragables::item_selection::findNoteOff
-        jsr v40b::delete_entry
-        ply
-        plx
-        pla
-        jsr v40b::delete_entry
-        inc gui_variables::request_components_redraw
+        ; TODO
         rts
     .endproc
 
@@ -154,10 +155,18 @@
             ID_GENERATOR 0, none, scroll_normal, scroll_fast, zoom, box_select, drag, resize
         .endscope
 
+        ; preparations
+        SET_SELECTED_VECTOR dnd::dragables::notes::selected_events_vector
+        SET_UNSELECTED_VECTOR dnd::dragables::notes::unselected_events_vector
+
         lda mouse_variables::drag_start
-        beq @drag_continue
+        bne @drag_start
+        jmp @drag_continue
     @drag_start:
         ; start of a dragging operation. figure out what we're actually doing
+        lda mouse_variables::curr_buttons
+        and #1 ; check for left button
+        bne @left_button
         lda mouse_variables::curr_buttons
         and #2 ; check for right button
         bne @right_button
@@ -165,6 +174,40 @@
         and #4 ; check for middle button
         bne @middle_button
         stz drag_action_state ; #drag_action::none
+        rts
+    @left_button:
+        ; LMB down: mostly selection / unselection stuff
+        inc gui_variables::request_components_redraw
+        lda mouse_variables::curr_data_1
+        bne :+ ; no event clicked? -> unselect all, start box selection
+        jsr dnd::dragables::item_selection::unSelectAllEvents
+        ; TODO: implement drag box
+        ; lda #drag_action::box_select
+        lda #drag_action::none
+        sta drag_action_state
+        rts
+    :
+        lda mouse_variables::curr_data_2
+        sta v40b::value_0
+        lda mouse_variables::curr_data_3
+        sta v40b::value_1
+        bmi @already_selected
+        @not_yet_selected:
+            ; event wasn't selected yet --> we want to unselect all, and select the clicked-at one
+            ; This is difficult because the moment we unselect all events, the pointer to the clicked-at event becomes unusable.
+            ; Therefore, we first need to select the clicked-at event into temp, before unselecting all others.
+            ; TODO: debug this!
+            SET_SELECTED_VECTOR detail::temp_events
+            jsr dnd::dragables::notes::detail::getEntryFromHitboxObjectId
+            jsr dnd::dragables::item_selection::selectEvent
+            SET_SELECTED_VECTOR dnd::dragables::notes::selected_events_vector
+            jsr dnd::dragables::item_selection::unSelectAllEvents
+            ; now, swap selected with temp vector, as they have the correct contents already
+            SWAP_VECTORS detail::temp_events, dnd::dragables::notes::selected_events_vector
+        @already_selected:
+        
+        
+        ; jsr dnd::dragables::item_selection::unSelectAllEvents  ; makes the event pointer in the hitbox entry invalid!!
         rts
     @right_button:
         lda mouse_variables::curr_data_1
@@ -255,6 +298,20 @@
         inc gui_variables::request_components_redraw
         jmp dnd::dragables::notes::doZoom
     .endproc
+
+    .proc initialize
+        ; create vectors for temporary event storage
+        jsr v40b::new
+        sta detail::temp_events
+        stx detail::temp_events+1
+        jsr v40b::new
+        sta detail::clipboard_events
+        stx detail::clipboard_events+1
+        ; just for testing
+        jsr dnd::dragables::notes::setup_test_clip
+        rts
+    .endproc
+
 .endscope
 
 .endif ; .ifndef ::GUI_COMPONENTS_COMPONENTS_DRAG_AND_DROP_AREA_ASM

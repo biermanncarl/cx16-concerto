@@ -1,7 +1,7 @@
 ; Copyright 2023 Carl Georg Biermann
 
-.ifndef SONG_DATA_EVENTS_ASM
-SONG_DATA_EVENTS_ASM = 1
+.ifndef ::SONG_DATA_EVENTS_ASM
+::SONG_DATA_EVENTS_ASM = 1
 
 .include "../dynamic_memory/vector_40bit.asm"
 
@@ -23,4 +23,4 @@ SONG_DATA_EVENTS_ASM = 1
     note_pitch = event_data_1 ; for note-on and note-off events
 .endscope
 
-.endif ; .ifndef SONG_DATA_EVENTS_ASM
+.endif ; .ifndef ::SONG_DATA_EVENTS_ASM

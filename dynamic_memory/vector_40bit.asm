@@ -6,22 +6,22 @@
 ;
 ; As doubly linked lists, the vectors consist of chunks à 256 bytes located in banked RAM.
 ; The first four bytes of each chunk are dedicated to forward and backward pointers.
-; The fifth byte contains the number of elements contained in the chunk.
+; The fifth byte contains the number of entries contained in the chunk.
 ; The sixth byte is reserved / left empty.
 ; All remaining 250 bytes contain up to 50 values à 40 bits / five bytes each.
 ;
 ; Empty chunks within the vector are not allowed, unless the vector is empty.
 ; In that case, the vector consists of a single empty chunk.
 ;
-; Individual elements can be addressed via two different ways:
+; Individual entries can be addressed via two different ways:
 ; * "Direct pointer": 3-byte pointer: B/H (2-byte pointer to a chunk) and the index inside the chunk. This is the addressing used by most of the functions.
 ;   The order of bytes is I,H,B
 ;   When communicating with registers, .A is index inside the chunk, .Y/.X is the B/H pointer (B is in .Y, H in .X)
 ; * "Vector+Index": 2-byte B/H pointer to first chunk and 2-byte global index in the entire vector
 ; Those two modes could be converted into each other.
-; Please that of the upper 16-bit index, only 15 bits are supported. The most significant bit must be zero.
+; As for the doubly linked list, a B value of zero indicates an invalid (null) pointer.
+; Please note that of the upper 16-bit index, only 15 bits are supported. The most significant bit must be zero.
 ; Possibly, one part of the address will be implicitly given during some operations (e.g. by previous operations)
-; As for the doubly linked list, a B value of zero indicates an invalid pointer.
 
 
 ; POTENTIAL OPTIMIZATIONS:
@@ -315,6 +315,26 @@ destroy = dll::destroy_list
 .endproc
 
 
+; Sets the .A/.X/.Y pointer up to read the last entry of a vector. (Untested!)
+; Expects the pointer to the vector in .A/.X.
+; Returns pointer to last element in .A/.X/.Y.
+; If the last element exists, carry is clear. Carry is set if it doesn't exist.
+.proc get_last_entry
+   jsr is_empty
+   php
+   jsr dll::get_last_element
+   sta RAM_BANK
+   stx zp_pointer+1
+   lda #4
+   sta zp_pointer
+   lda (zp_pointer)
+   dec
+   ldy RAM_BANK
+   plp
+   rts
+.endproc
+
+
 ; Checks if a given element is the last one of a vector.
 ; Expects the pointer to the element in .A/.X/.Y
 ; If it's the last element, carry is set. Otherwise clear.
@@ -333,7 +353,7 @@ destroy = dll::destroy_list
    lda #4
    sta zp_pointer
    lda (zp_pointer) ; look up length of the list
-   dec ; length = index of laste entry + 1 --> subtracting one to make it equal the last index
+   dec ; length = index of last entry + 1 --> subtracting one to make it equal the last index
    sta zp_pointer
    pla
    cmp zp_pointer

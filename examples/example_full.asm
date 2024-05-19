@@ -1,4 +1,4 @@
-; Copyright 2021-2022 Carl Georg Biermann
+; Copyright 2021-2024 Carl Georg Biermann
 
 
 ; Compile with: cl65 -t cx16 -o CONCERTO.PRG -C cx16-asm.cfg -u __EXEHDR__ "example_full.asm"
@@ -34,9 +34,6 @@ start:
    jsr concerto_gui::initialize
 
    jsr concerto_synth::activate_synth
-
-   ; just for testing
-   jsr concerto_gui::components::dnd::dragables::notes::setup_test_clip
 
 .include "example_full_mainloop.asm"
 
