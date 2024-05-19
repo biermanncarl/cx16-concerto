@@ -561,7 +561,6 @@ destroy = dll::destroy_list
    ; Make room for the new element by moving all existing elements over by one space.
    ; compute byte offset of the highest byte that needs to be moved: multiply by 5 and add offset of first payload byte
    dec ; The chunk size before insertion is the index of the last element after insertion ...
-   pha ; ... remember that index for the user to enjoy.
    dec ; ... but we want the index of the last chunk before insertion.
    sta zp_pointer_2
    asl ; as the index cannot be higher than 49, carry will be clear in the next operations
@@ -571,6 +570,7 @@ destroy = dll::destroy_list
    tay ; this will be the offset of the first byte we need to move
    ; Compute byte offset of lowest entry needing to be moved (same recipe)
    lda detail::temp_variable_a
+   pha ; ... remember that index for the user to enjoy (it'll be the index of the newly inserted entry).
    ; multiply by 5
    asl ; as the maximum number expected in .A is 49 (decimal), carry will be clear
    asl
