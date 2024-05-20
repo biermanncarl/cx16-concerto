@@ -233,4 +233,11 @@ VIA_IFR            := $9F0D  ; Interrupt Flag Register
 VIA_IER            := $9F0E  ; Interrupt Enable Register
 VIA_ORA_IRA        := $9F0F  ; Same as Reg 1 except no "Handshake"
 
+; Keyboard modifiers
+KBD_MODIFIER_SHIFT = $01
+KBD_MODIFIER_ALT   = $02
+KBD_MODIFIER_CTRL  = $04
+KBD_MODIFIER_LOGO  = $08
+KBD_MODIFIER_CAPS  = $10
+
 .endif ; .ifndef COMMON_X16_ASM

@@ -312,6 +312,8 @@ pitch:
 
 ; maybe move into v40b?
 .macro SWAP_VECTORS vector_a, vector_b
+    pha
+    phy
     lda vector_a
     ldy vector_b
     sty vector_a
@@ -320,6 +322,8 @@ pitch:
     ldy vector_b+1
     sty vector_a+1
     sta vector_b+1
+    ply
+    pla
 .endmacro
 
 
