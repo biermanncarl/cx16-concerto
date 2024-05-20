@@ -44,13 +44,41 @@ last_event_source:
 end_of_stream_variables:
 .popseg
 
-
 ; When the ISR uses this code, it might interrupt other routines using it,
 ; so it has to swap out the ZP variables.
 back_buffer_size = end_of_stream_variables - start_of_stream_variables
 back_buffer:
     .res back_buffer_size
 
+.scope detail
+.proc loadNextUnselectedEvent
+    lda next_unselected_event
+    ldx next_unselected_event+1
+    ldy next_unselected_event+2
+    rts
+.endproc
+
+.proc storeNextUnselectedEvent
+    sta next_unselected_event
+    stx next_unselected_event+1
+    sty next_unselected_event+2
+    rts
+.endproc
+
+.proc loadNextSelectedEvent
+    lda next_selected_event
+    ldx next_selected_event+1
+    ldy next_selected_event+2
+    rts
+.endproc
+
+.proc storeNextSelectedEvent
+    sta next_selected_event
+    stx next_selected_event+1
+    sty next_selected_event+2
+    rts
+.endproc
+.endscope
 
 ; Given the pointer to a note-on event in .A/.X/.Y, finds the corresponding note-off event by linear search.
 ; If no matching note-off is found, carry will be set, otherwise clear.
@@ -122,9 +150,7 @@ pitch:
     jsr v40b::get_first_entry
     bcs @selected_is_empty
 @selected_is_populated:
-    sta next_selected_event
-    stx next_selected_event+1
-    sty next_selected_event+2
+    jsr detail::storeNextSelectedEvent
     bra @continue_to_unselected
 @selected_is_empty:
     stz next_selected_event+2 ; invalidate
@@ -134,9 +160,7 @@ pitch:
     jsr v40b::get_first_entry
     bcs @unselected_is_empty
 @unselected_is_populated:
-    sta next_unselected_event
-    stx next_unselected_event+1
-    sty next_unselected_event+2
+    jsr detail::storeNextUnselectedEvent
     rts
 @unselected_is_empty:
     stz next_unselected_event+2 ; invalidate
@@ -241,36 +265,28 @@ pitch:
     inc last_selected_id
     bne :+
     inc last_selected_id+1
-:   lda next_selected_event
-    ldx next_selected_event+1
-    ldy next_selected_event+2
+:   jsr detail::loadNextSelectedEvent
     pha
     phx
     phy
     jsr v40b::get_next_entry
     stz next_selected_event+2 ; mark next event as invalid preemptively (will override it if not invalid)
     bcs @return_pointer
-    sta next_selected_event
-    stx next_selected_event+1
-    sty next_selected_event+2
+    jsr detail::storeNextSelectedEvent
     bra @return_pointer
 @next_unselected:
     stz last_event_source
     inc last_unselected_id
     bne :+
     inc last_unselected_id+1
-:   lda next_unselected_event
-    ldx next_unselected_event+1
-    ldy next_unselected_event+2
+:   jsr detail::loadNextUnselectedEvent
     pha
     phx
     phy
     jsr v40b::get_next_entry
     stz next_unselected_event+2 ; mark next event as invalid preemptively (will override it if not invalid)
     bcs @return_pointer
-    sta next_unselected_event
-    stx next_unselected_event+1
-    sty next_unselected_event+2
+    jsr detail::storeNextUnselectedEvent
 @return_pointer:
     ply
     plx
@@ -365,22 +381,16 @@ pitch:
     ; ====================================================================================================================
     ; Do the most basic implementation now ... possible improvements/optimizations for speed can be done later if needed.
     ; Remember the pointer to the event, so we can delete it later
-    sta next_unselected_event
-    stx next_unselected_event+1
-    sty next_unselected_event+2
+    jsr detail::storeNextUnselectedEvent
     lda selected_events
     ldx selected_events+1
     jsr v40b::get_first_entry
     bcc :+
     ldy #0 ; set to NULL if doesn't exist
-:   sta next_selected_event
-    stx next_selected_event+1
-    sty next_selected_event+2
+:   jsr detail::storeNextSelectedEvent
     jsr insertInSelectedEvents
     beq @handle_note_off ; if it wasn't a note-on, we can go straight to deleting this event
-    lda next_unselected_event
-    ldx next_unselected_event+1
-    ldy next_unselected_event+2
+    jsr detail::loadNextUnselectedEvent
 @delete_event:
     jsr v40b::delete_entry
     rts
@@ -388,26 +398,18 @@ pitch:
 @handle_note_off:
     ; As the event was a note-on, need to also select note-off.
     ; save the position of the recently selected event
-    sta next_selected_event
-    stx next_selected_event+1
-    sty next_selected_event+2
+    jsr detail::storeNextSelectedEvent
     ; first, save the currently selected element, so we can delete it later
-    lda next_unselected_event
-    ldx next_unselected_event+1
-    ldy next_unselected_event+2
+    jsr detail::loadNextUnselectedEvent
     pha
     phx
     phy
     ; copy the note-off to selected events
     jsr findNoteOff
-    sta next_unselected_event
-    stx next_unselected_event+1
-    sty next_unselected_event+2
+    jsr detail::storeNextUnselectedEvent
     jsr insertInSelectedEvents
     ; delete note-off first because then we know for sure where the remaining note-on is (the other way round we wouldn't know for sure)
-    lda next_unselected_event
-    ldx next_unselected_event+1
-    ldy next_unselected_event+2
+    jsr detail::loadNextUnselectedEvent
     jsr v40b::delete_entry
     ; restore note-on
     ply
@@ -430,14 +432,10 @@ pitch:
         beq @append ; append if next selected is NULL
         jsr compareEvents
         bcc @insert_position_found
-        lda next_selected_event
-        ldx next_selected_event+1
-        ldy next_selected_event+2
+        jsr detail::loadNextSelectedEvent
         jsr v40b::get_next_entry
         bcs @append
-        sta next_selected_event
-        stx next_selected_event+1
-        sty next_selected_event+2
+        jsr detail::storeNextSelectedEvent
         bra @search_loop
 
     @append:
@@ -454,17 +452,13 @@ pitch:
     @insert_position_found:
         jsr readEventAndCheckNoteOn
         php
-        lda next_selected_event
-        ldx next_selected_event+1
-        ldy next_selected_event+2
+        jsr detail::loadNextSelectedEvent
         jsr v40b::insert_entry
         plp
         rts
 
         .proc readEventAndCheckNoteOn
-            lda next_unselected_event
-            ldx next_unselected_event+1
-            ldy next_unselected_event+2
+            jsr detail::loadNextUnselectedEvent
             jsr v40b::read_entry
             lda events::event_type
             cmp #events::event_type_note_on
@@ -519,9 +513,7 @@ pitch:
     jsr v40b::get_next_entry
     bcc :+
     ldy #0 ; set to nullptr if next selected event doesn't exist
-:   sta next_selected_event
-    stx next_selected_event+1
-    sty next_selected_event+2
+:   jsr detail::storeNextSelectedEvent
     bra @merge_loop
 @append_event:
     lda selected_events
@@ -565,9 +557,7 @@ pitch:
         lda selected_events
         ldx selected_events+1
         jsr v40b::get_first_entry
-        sta next_selected_event
-        stx next_selected_event+1
-        sty next_selected_event+2
+        jsr detail::storeNextSelectedEvent
         ; we basically grab the first event over and over again (as they get deleted one by one)
     @merge_loop:
         lda unselected_events
