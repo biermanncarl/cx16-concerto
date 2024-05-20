@@ -181,7 +181,7 @@
         lda mouse_variables::curr_data_1
         bne :+ ; no event clicked? -> unselect all, start box selection
         jsr dnd::dragables::item_selection::unSelectAllEvents
-        ; TODO: implement drag box
+        ; TODO: implement box selection
         ; lda #drag_action::box_select
         lda #drag_action::none
         sta drag_action_state

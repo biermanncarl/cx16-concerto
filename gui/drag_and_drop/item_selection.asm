@@ -236,6 +236,8 @@ pitch:
     bcc @next_unselected
 
 @next_selected:
+    lda #$80
+    sta last_event_source
     inc last_selected_id
     bne :+
     inc last_selected_id+1
@@ -251,10 +253,9 @@ pitch:
     sta next_selected_event
     stx next_selected_event+1
     sty next_selected_event+2
-    lda #$80
-    sta last_event_source
     bra @return_pointer
 @next_unselected:
+    stz last_event_source
     inc last_unselected_id
     bne :+
     inc last_unselected_id+1
@@ -270,7 +271,6 @@ pitch:
     sta next_unselected_event
     stx next_unselected_event+1
     sty next_unselected_event+2
-    stz last_event_source
 @return_pointer:
     ply
     plx
@@ -371,7 +371,9 @@ pitch:
     lda selected_events
     ldx selected_events+1
     jsr v40b::get_first_entry
-    sta next_selected_event
+    bcc :+
+    ldy #0 ; set to NULL if doesn't exist
+:   sta next_selected_event
     stx next_selected_event+1
     sty next_selected_event+2
     jsr insertInSelectedEvents
@@ -424,6 +426,8 @@ pitch:
     ;   * next_unselected_event is preserved
     .proc insertInSelectedEvents
     @search_loop:
+        ldy next_selected_event+2
+        beq @append ; append if next selected is NULL
         jsr compareEvents
         bcc @insert_position_found
         lda next_selected_event
