@@ -58,6 +58,8 @@ argument_z:
       .res 1
    temp_variable_x:
       .res 1
+   temp_variable_w:
+      .res 1
 
    ; Editing area rectangle
    event_edit_pos_x = 25
@@ -372,8 +374,9 @@ change_song_tempo = timing::recalculate_rhythm_values ; TODO: actually recalcula
    running_time_stamp_h = detail::temp_variable_b
    end_of_data = detail::temp_variable_c
    thirtysecondth_stride = detail::temp_variable_z ; how many thirtysecondth notes we advance with every column
-   thirtysecondth_count = detail::temp_variable_y
+   thirtysecondth_count = detail::temp_variable_y ; how many thirtysecondth notes since a grid-aligned quarter. Only its mod 8 value matters.
    column_index = detail::temp_variable_x
+   ticks_since_last_full_thirtysecondth = detail::temp_variable_w ; only relevant at zoom level 0
 
    ; column data format
    ; The high bit of the row's byte indicates whether the note is selected or not.
@@ -395,6 +398,7 @@ change_song_tempo = timing::recalculate_rhythm_values ; TODO: actually recalcula
    stx running_time_stamp_l
    jsr timing::disassemble_time_stamp
    stx thirtysecondth_count
+   sty ticks_since_last_full_thirtysecondth
 
    ; column stride
    ldx temporal_zoom
@@ -480,9 +484,51 @@ change_song_tempo = timing::recalculate_rhythm_values ; TODO: actually recalcula
    lda #detail::event_edit_pos_x
    sta column_index
 @columns_loop:
-   ; 1. calculate the time stamp up to which events are registered in this column
-   ; 2. loop over events relevant for the current column, update the column buffer (skip if end of data), meanwhile update hitboxes
-   ; 3. draw column
+   ; 1. decide whether to draw a temporal grid line
+   ; 2. calculate the time stamp up to which events are registered in this column
+   ; 3. loop over events relevant for the current column, update the column buffer (skip if end of data), meanwhile update drag&drop hitboxes
+   ; 4. draw column
+
+
+   ; Decide whether to draw a temporal grid line
+   ; ===========================================
+   ldx temporal_zoom
+   beq @decide_full_thirtysecondth
+@decide_resolution_times_four: ; if zoom level is at least 1, we simply look at the thirtysecondth count
+   jsr timing::get_note_duration_thirtysecondths
+   ; grid resolution times 4 minus 1 --> bit mask to check for exact multiple of 4.
+   asl
+   asl
+   dec
+   and thirtysecondth_count
+   bne @grid_line_off
+@grid_line_on:
+   lda #101 ; line character
+   bra @select_background_character
+@decide_full_thirtysecondth: ; at zoom level 0, we need to look at single ticks to decide whether we are at a full thirtysecondth note
+   ; additionally to finding the grid line position, this section advances the thirtysecondth_count variable correctly at zoom level 0
+   lda ticks_since_last_full_thirtysecondth
+   bne :+
+   ; it's zero. advance and activate grid line
+   inc ticks_since_last_full_thirtysecondth
+   bra @grid_line_on
+:  ; not zero. advance, check for equality to thirtysecondth note and do rollover. fall through to deactivate grid line
+   inc ticks_since_last_full_thirtysecondth
+   lda #1
+   ldx thirtysecondth_count
+   jsr timing::get_note_duration_ticks
+   ; got length of thirtysecondth note in .A
+   cmp ticks_since_last_full_thirtysecondth
+   bne :+
+   stz ticks_since_last_full_thirtysecondth
+   inc thirtysecondth_count
+:
+@grid_line_off:
+   lda #32 ; space character
+@select_background_character:
+   ; store the character in the code that draws the column
+   sta @draw_space+1
+
 
    ; Calculate relevant end time stamp for current column (up to which point do we need to register events for the current column)
    ; ====================================================
@@ -491,7 +537,7 @@ change_song_tempo = timing::recalculate_rhythm_values ; TODO: actually recalcula
 
    lda thirtysecondth_count
    clc
-   adc thirtysecondth_stride
+   adc thirtysecondth_stride ; At zoom level 0, this has no effect -- the correct advancement of thirtysecondth_count is done by the temporal grid code, instead.
    sta thirtysecondth_count
    tax
    lda temporal_zoom ; zoom level
@@ -626,9 +672,9 @@ change_song_tempo = timing::recalculate_rhythm_values ; TODO: actually recalcula
    sta detail::column_buffer, x
    bra @draw_multiple
 @draw_space:
-   lda #32
+   lda #101 ; the character here is subject to self-modifying code for efficient temporal grid drawing
    sta VERA_data0
-   lda #(16*detail::event_edit_background_color+0)
+   lda #(16*detail::event_edit_background_color+1)
    sta VERA_data0
    bra @advance_row
 @draw_start_of_note:
