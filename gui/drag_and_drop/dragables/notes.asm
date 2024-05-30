@@ -60,6 +60,10 @@ argument_z:
       .res 1
    temp_variable_w:
       .res 1
+   temp_variable_v:
+      .res 1
+   temp_variable_u:
+      .res 1
 
    ; Editing area rectangle
    event_edit_pos_x = 25
@@ -377,6 +381,8 @@ change_song_tempo = timing::recalculate_rhythm_values ; TODO: actually recalcula
    thirtysecondth_count = detail::temp_variable_y ; how many thirtysecondth notes since a grid-aligned quarter. Only its mod 8 value matters.
    column_index = detail::temp_variable_x
    ticks_since_last_full_thirtysecondth = detail::temp_variable_w ; only relevant at zoom level 0
+   piano_roll_offset = detail::temp_variable_v
+   piano_roll_index = detail::temp_variable_u
 
    ; column data format
    ; The high bit of the row's byte indicates whether the note is selected or not.
@@ -388,7 +394,7 @@ change_song_tempo = timing::recalculate_rhythm_values ; TODO: actually recalcula
    column_buffer_multiple_last_on = $7E ; at least two note-on events are present within the current column, the last event was a note-on event
    column_buffer_multiple_last_off = $7D ; at least two note-on events are present within the current column, the last event was a note-off event
 
-   ; INITIALIZATION
+    ; INITIALIZATION
    ; ==============
 
    ; running time stamp and column starting point
@@ -422,7 +428,16 @@ change_song_tempo = timing::recalculate_rhythm_values ; TODO: actually recalcula
    sta dragables__active_hitbox_type
    jsr hitboxes__clear_hitboxes
 
-   ; TODO: calculate keyboard roll visualization offset
+   ; calculate offset of piano roll of topmost note in the view
+   lda window_pitch
+   clc
+   adc #(detail::event_edit_height - 1)
+   sec
+@divide_by_twelve_loop:
+   sbc #12
+   bcs @divide_by_twelve_loop
+   adc #12
+   sta piano_roll_offset
 
    stz end_of_data
 
@@ -620,10 +635,13 @@ change_song_tempo = timing::recalculate_rhythm_values ; TODO: actually recalcula
 :  inc end_of_data
 @end_parse_events:
 
+   ; COLUMN DRAWING LOOP
+   ; -------------------
 @start_drawing_and_buffer_update:
+   ldy piano_roll_offset
    ; .X is Y position
-   ; .Y is X position
-   ldy column_index
+   ; column_index is X position
+   ; .Y is piano roll index
    ldx #0
 @rows_loop:
    ; TODO: use reusable routine to place the VERA "cursor"
@@ -634,7 +652,7 @@ change_song_tempo = timing::recalculate_rhythm_values ; TODO: actually recalcula
    clc
    adc #detail::event_edit_pos_y
    sta VERA_addr_mid
-   tya
+   lda column_index
    asl
    sta VERA_addr_low
 
@@ -674,7 +692,7 @@ change_song_tempo = timing::recalculate_rhythm_values ; TODO: actually recalcula
 @draw_space:
    lda #101 ; the character here is subject to self-modifying code for efficient temporal grid drawing
    sta VERA_data0
-   lda #(16*detail::event_edit_background_color+1)
+   lda piano_roll_lut, y
    sta VERA_data0
    bra @advance_row
 @draw_start_of_note:
@@ -693,13 +711,19 @@ change_song_tempo = timing::recalculate_rhythm_values ; TODO: actually recalcula
    lda #102
    bra @draw_note
 @advance_row:
+   dey
+   bpl :+
+   ldy #11
+:
    inx
    cpx #detail::event_edit_height
-   bne @rows_loop
+   beq :+
+   jmp @rows_loop
+:
 
-   iny
-   sty column_index
-   cpy #(detail::event_edit_pos_x+detail::event_edit_width)
+   inc column_index
+   lda column_index
+   cmp #(detail::event_edit_pos_x+detail::event_edit_width)
    beq @end_column_loop
    jmp @columns_loop
 @end_column_loop:
@@ -715,6 +739,12 @@ change_song_tempo = timing::recalculate_rhythm_values ; TODO: actually recalcula
    bne @finish_hitboxes_loop
 
    rts
+
+piano_roll_lut:
+   ; black and white key & grid color
+   @wk = 16+15
+   @bk = 16*15+12
+   .byte @wk, @bk, @wk, @bk, @wk, @wk, @bk, @wk, @bk, @wk, @bk, @wk
 .endproc
 
 
