@@ -137,6 +137,45 @@
         rts
     .endproc
 
+    ; Returns the mouse's relative motion in terms of whole characters (i.e. multiples of 8 pixels).
+    ; Accumulation of sub-character motion is done internally.
+    ; Returns delta x in .A
+    ; Returns delta y in .X
+    .proc getMouseChargridMotion
+        ; y coordinate
+        lda mouse_variables::delta_y
+        clc
+        adc dnd::accumulated_y
+        jsr signedDivMod8
+        sty dnd::accumulated_y
+        tax
+        ; x coordinate
+        lda mouse_variables::delta_x
+        clc
+        adc dnd::accumulated_x
+        jsr signedDivMod8
+        sty dnd::accumulated_x
+        rts
+
+        ; Do a signed division by 8 and modulo 8 operation on the argument in .A.
+        ; Returns the quotient in .A and the remainder in .Y.
+        ; Preserves .X
+        .proc signedDivMod8
+            pha
+            and #7
+            tay
+            pla
+            clc
+            adc #128
+            lsr
+            lsr
+            lsr
+            sec
+            sbc #128/8
+            rts
+        .endproc
+    .endproc
+
     .proc event_drag
         ; modifier keys status
         jsr KBDBUF_GET_MODIFIERS
@@ -249,47 +288,8 @@
         .word doZoom
     .endproc
 
-    ; Do a signed division by 8 and modulo 8 operation on the argument in .A.
-    ; Returns the quotient in .A and the remainder in .Y.
-    ; Preserves .X
-    .proc signedDivMod8
-        pha
-        and #7
-        tay
-        pla
-        clc
-        adc #128
-        lsr
-        lsr
-        lsr
-        sec
-        sbc #128/8
-        rts
-    .endproc
-
     .proc doScroll
-        ; y coordinate
-        lda mouse_variables::delta_y
-        ldy dnd::ctrl_key_pressed
-        beq :+
-        asl ; multiply by 4 for fast scrolling when CTRL is pressed
-        asl
-    :   clc
-        adc dnd::accumulated_y
-        jsr signedDivMod8
-        sty dnd::accumulated_y
-        tax
-        ; x coordinate
-        lda mouse_variables::delta_x
-        ldy dnd::ctrl_key_pressed
-        beq :+
-        asl ; fast scrolling
-        asl
-    :   clc
-        adc dnd::accumulated_x
-        jsr signedDivMod8
-        sty dnd::accumulated_x
-
+        jsr getMouseChargridMotion
         ; check if we actually do anything
         cmp #0
         bne @do_scroll
@@ -297,19 +297,27 @@
         bne @do_scroll
         rts
     @do_scroll:
+        ; check for fast scroll
+        ldy dnd::ctrl_key_pressed
+        beq :+
+        ; multiply relative distance by 4
+        asl
+        asl
+        tay
+        txa
+        asl
+        asl
+        tax
+        tya
+    :
         inc gui_variables::request_components_redraw
         jmp dnd::dragables::notes::doScrollNormal ; TODO: jump to hitbox type specific scroll routine
     .endproc
 
     .proc doZoom
-        ; y coordinate
-        lda mouse_variables::delta_y
-        clc
-        adc dnd::accumulated_y
-        jsr signedDivMod8
-        sty dnd::accumulated_y
-
-        cmp #0
+        jsr getMouseChargridMotion
+        ; check Y coordinate
+        txa
         bne @do_zoom
         rts
     @do_zoom:
