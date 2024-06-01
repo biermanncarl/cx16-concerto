@@ -26,25 +26,8 @@
         bulk = 1
         right_end = 2
     .endscope
-
-    .scope detail
-        ; by putting these variables in here (globally), we assume there can be only one scrolling operation going on at any one time
-        accumulated_x:
-            .byte 0
-        accumulated_y:
-            .byte 0
-        
-        ; Vectors for processing events
-        temp_events:
-            .res 2
-        clipboard_events:
-            .res 2
-        
-        ; Keyboard modifiers
-        ctrl_key_pressed:
-            .byte 0
-    .endscope
  
+
     .proc draw
         ; Todo: switch on type
         phy
@@ -155,17 +138,23 @@
     .endproc
 
     .proc event_drag
+        ; modifier keys status
+        jsr KBDBUF_GET_MODIFIERS
+        pha
+        and #KBD_MODIFIER_CTRL
+        sta dnd::ctrl_key_pressed
+        pla
+        and #KBD_MODIFIER_SHIFT
+        sta dnd::shift_key_pressed
+        ; TODO: do mouse delta-x/delta-y processing
+
         .scope drag_action
             ID_GENERATOR 0, none, scroll, zoom, box_select, drag, resize
         .endscope
 
-        ; preparations
+        ; note specific preparations
         SET_SELECTED_VECTOR dnd::dragables::notes::selected_events_vector
         SET_UNSELECTED_VECTOR dnd::dragables::notes::unselected_events_vector
-        ; CTRL key status
-        jsr KBDBUF_GET_MODIFIERS
-        and #KBD_MODIFIER_CTRL
-        sta detail::ctrl_key_pressed
 
         lda mouse_variables::drag_start
         bne @drag_start ; TODO: make this a sub routine (so that RTS goes to drag_continue)
@@ -183,21 +172,21 @@
         and #4 ; check for middle button
         beq :+
         jmp @middle_button
-    :   stz drag_action_state ; #drag_action::none
+    :   stz dnd::drag_action_state ; #drag_action::none
         rts
     @left_button:
         ; LMB down: mostly selection / unselection stuff
         inc gui_variables::request_components_redraw
         lda mouse_variables::curr_data_1
         bne @lmb_no_event_clicked ; no event clicked? -> unselect all, start box selection
-            lda detail::ctrl_key_pressed
-            bne :+ ; if CTRL is pressed, skip unselection of all
+            lda dnd::shift_key_pressed
+            bne :+ ; if SHIFT is pressed, skip unselection of all
                 jsr dnd::dragables::item_selection::unSelectAllEvents
             :
             ; TODO: implement box selection
             ; lda #drag_action::box_select
             lda #drag_action::none
-            sta drag_action_state
+            sta dnd::drag_action_state
             rts
         @lmb_no_event_clicked:
             lda mouse_variables::curr_data_2
@@ -206,9 +195,9 @@
             sta v40b::value_1
             bmi @already_selected
             @not_yet_selected:
-                lda detail::ctrl_key_pressed
+                lda dnd::shift_key_pressed
                 beq :+
-                ; CTRL was pressed --> allow multiple selection
+                ; SHIFT was pressed --> allow multiple selection
                 SET_SELECTED_VECTOR dnd::dragables::notes::selected_events_vector
                 jsr dnd::dragables::notes::detail::getEntryFromHitboxObjectId
                 jsr dnd::dragables::item_selection::selectEvent
@@ -217,16 +206,16 @@
                 ; event wasn't selected yet --> we want to unselect all, and select the clicked-at one
                 ; This is difficult because the moment we unselect all events, the pointer to the clicked-at event becomes unusable.
                 ; Therefore, we first need to select the clicked-at event into temp, before unselecting all others.
-                SET_SELECTED_VECTOR detail::temp_events
+                SET_SELECTED_VECTOR dnd::temp_events
                 jsr dnd::dragables::notes::detail::getEntryFromHitboxObjectId
                 jsr dnd::dragables::item_selection::selectEvent
                 SET_SELECTED_VECTOR dnd::dragables::notes::selected_events_vector
                 jsr dnd::dragables::item_selection::unSelectAllEvents
                 ; now, swap selected with temp vector, as they have the correct contents already
-                SWAP_VECTORS detail::temp_events, dnd::dragables::notes::selected_events_vector
+                SWAP_VECTORS dnd::temp_events, dnd::dragables::notes::selected_events_vector
                 rts
             @already_selected:
-                lda detail::ctrl_key_pressed
+                lda dnd::shift_key_pressed
                 beq :+
                 SET_SELECTED_VECTOR dnd::dragables::notes::selected_events_vector
                 jsr dnd::dragables::notes::detail::getEntryFromHitboxObjectId
@@ -237,20 +226,20 @@
     @right_button:
         lda mouse_variables::curr_data_1
         beq @scroll ; only scroll when the mouse did not point at any note (?)
-        stz drag_action_state ; #drag_action::none
+        stz dnd::drag_action_state ; #drag_action::none
         rts
     @middle_button:
         lda #drag_action::zoom
-        sta drag_action_state
+        sta dnd::drag_action_state
         bra @drag_continue
     @scroll:
         lda #drag_action::scroll
-        sta drag_action_state
+        sta dnd::drag_action_state
         bra @drag_continue
     
     ; do the actual drag operation
     @drag_continue:
-        lda drag_action_state
+        lda dnd::drag_action_state
         asl
         tax
         jmp (@jump_table_drag, x)
@@ -258,10 +247,6 @@
         .word components_common::dummy_subroutine ; none
         .word doScroll
         .word doZoom
-
-    
-    drag_action_state:
-        .byte 0 ; by putting this variable in here, we assume there can be only one dragging operation going on at the same time
     .endproc
 
     ; Do a signed division by 8 and modulo 8 operation on the argument in .A.
@@ -285,25 +270,25 @@
     .proc doScroll
         ; y coordinate
         lda mouse_variables::delta_y
-        ldy detail::ctrl_key_pressed
+        ldy dnd::ctrl_key_pressed
         beq :+
         asl ; multiply by 4 for fast scrolling when CTRL is pressed
         asl
     :   clc
-        adc detail::accumulated_y
+        adc dnd::accumulated_y
         jsr signedDivMod8
-        sty detail::accumulated_y
+        sty dnd::accumulated_y
         tax
         ; x coordinate
         lda mouse_variables::delta_x
-        ldy detail::ctrl_key_pressed
+        ldy dnd::ctrl_key_pressed
         beq :+
         asl ; fast scrolling
         asl
     :   clc
-        adc detail::accumulated_x
+        adc dnd::accumulated_x
         jsr signedDivMod8
-        sty detail::accumulated_x
+        sty dnd::accumulated_x
 
         ; check if we actually do anything
         cmp #0
@@ -320,9 +305,9 @@
         ; y coordinate
         lda mouse_variables::delta_y
         clc
-        adc detail::accumulated_y
+        adc dnd::accumulated_y
         jsr signedDivMod8
-        sty detail::accumulated_y
+        sty dnd::accumulated_y
 
         cmp #0
         bne @do_zoom
@@ -335,11 +320,11 @@
     .proc initialize
         ; create vectors for temporary event storage
         jsr v40b::new
-        sta detail::temp_events
-        stx detail::temp_events+1
+        sta dnd::temp_events
+        stx dnd::temp_events+1
         jsr v40b::new
-        sta detail::clipboard_events
-        stx detail::clipboard_events+1
+        sta dnd::clipboard_events
+        stx dnd::clipboard_events+1
         ; just for testing
         jsr dnd::dragables::notes::setup_test_clip
         rts
