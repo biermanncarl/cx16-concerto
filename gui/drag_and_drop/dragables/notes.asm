@@ -823,8 +823,51 @@ height = 2 * detail::event_edit_height
    rts
 .endproc
 
-; Expects the relative change in zoom level in .A
+
+
+
+.proc noteDrag
+   rts
+.endproc
+
+
+
+.proc doScroll
+   jsr dnd::getMouseChargridMotion
+   ; check if we actually do anything
+   cmp #0
+   bne @do_scroll
+   cpx #0
+   bne @do_scroll
+   rts
+@do_scroll:
+   ; check for fast scroll
+   ldy dnd::ctrl_key_pressed
+   beq :+
+   ; multiply relative distance by 4
+   asl
+   asl
+   tay
+   txa
+   asl
+   asl
+   tax
+   tya
+:
+   inc gui_variables::request_components_redraw
+   jmp dnd::dragables::notes::doScrollNormal ; TODO: jump to hitbox type specific scroll routine
+.endproc
+
 .proc doZoom
+   jsr dnd::getMouseChargridMotion
+   ; check Y coordinate
+   txa
+   bne @do_zoom
+   rts
+@do_zoom:
+   inc gui_variables::request_components_redraw
+
+   ; the relative change in zoom level is in .A
    clc
    adc temporal_zoom
    bpl :+
@@ -840,6 +883,121 @@ height = 2 * detail::event_edit_height
    sta temporal_zoom
    rts
 .endproc
+
+
+
+.scope drag_action
+   ID_GENERATOR 0, none, scroll, zoom, box_select, drag, resize
+.endscope
+
+; This routine does all the stuff necessary at the start of a drag operation.
+; It has to distinguish between all the different things one can do with the mouse in the notes DnD area.
+.proc dragStart
+   ; start of a dragging operation. figure out what we're actually doing
+   lda mouse_variables::curr_buttons
+   and #1 ; check for left button
+   bne @left_button
+   lda mouse_variables::curr_buttons
+   and #2 ; check for right button
+   beq :+
+   jmp @right_button
+:  lda mouse_variables::curr_buttons
+   and #4 ; check for middle button
+   beq :+
+   jmp @middle_button
+:  stz dnd::drag_action_state ; #drag_action::none
+   rts
+@left_button:
+   ; LMB down: mostly selection / unselection stuff
+   inc gui_variables::request_components_redraw
+   lda mouse_variables::curr_data_1
+   bne @lmb_event_clicked
+      ; no event clicked -> unselect all, start box selection
+      lda dnd::shift_key_pressed
+      bne :+ ; if SHIFT is pressed, skip unselection of all
+         jsr dnd::dragables::item_selection::unSelectAllEvents
+      :
+      lda #drag_action::box_select
+      sta dnd::drag_action_state
+      rts
+   @lmb_event_clicked:
+      ; after whatever we do here, it's a drag operation afterwards
+      lda #drag_action::drag
+      sta dnd::drag_action_state
+      ; selection logic
+      lda mouse_variables::curr_data_2
+      sta v40b::value_0
+      lda mouse_variables::curr_data_3
+      sta v40b::value_1
+      bmi @already_selected
+      @not_yet_selected:
+         lda dnd::shift_key_pressed
+         beq :+
+         ; SHIFT was pressed --> allow multiple selection
+         SET_SELECTED_VECTOR dnd::dragables::notes::selected_events_vector
+         jsr dnd::dragables::notes::detail::getEntryFromHitboxObjectId
+         jsr dnd::dragables::item_selection::selectEvent
+         rts
+      :
+         ; event wasn't selected yet --> we want to unselect all, and select the clicked-at one
+         ; This is difficult because the moment we unselect all events, the pointer to the clicked-at event becomes unusable.
+         ; Therefore, we first need to select the clicked-at event into temp, before unselecting all others.
+         SET_SELECTED_VECTOR dnd::temp_events
+         jsr dnd::dragables::notes::detail::getEntryFromHitboxObjectId
+         jsr dnd::dragables::item_selection::selectEvent
+         SET_SELECTED_VECTOR dnd::dragables::notes::selected_events_vector
+         jsr dnd::dragables::item_selection::unSelectAllEvents
+         ; now, swap selected with temp vector, as they have the correct contents already
+         SWAP_VECTORS dnd::temp_events, dnd::dragables::notes::selected_events_vector
+         rts
+      @already_selected:
+         lda dnd::shift_key_pressed
+         beq :+
+         SET_SELECTED_VECTOR dnd::dragables::notes::selected_events_vector
+         jsr dnd::dragables::notes::detail::getEntryFromHitboxObjectId
+         jsr dnd::dragables::item_selection::unselectEvent
+      :  rts
+@right_button:
+   lda mouse_variables::curr_data_1
+   beq @scroll ; only scroll when the mouse did not point at any note (?)
+   stz dnd::drag_action_state ; #drag_action::none
+   rts
+@middle_button:
+   lda #drag_action::zoom
+   sta dnd::drag_action_state
+   rts
+@scroll:
+   lda #drag_action::scroll
+   sta dnd::drag_action_state
+   rts
+.endproc
+
+
+.proc doDrag
+   ; preparations
+   SET_SELECTED_VECTOR dnd::dragables::notes::selected_events_vector
+   SET_UNSELECTED_VECTOR dnd::dragables::notes::unselected_events_vector
+
+   lda mouse_variables::drag_start
+   beq @drag_continue
+   jsr dragStart
+
+; do the actual drag operation
+@drag_continue:
+   lda dnd::drag_action_state
+   asl
+   tax
+   jmp (@jump_table_drag, x)
+@jump_table_drag:
+   .word components_common::dummy_subroutine ; none
+   .word doScroll
+   .word doZoom
+   .word components_common::dummy_subroutine ; box select, not implemented yet
+   .word noteDrag
+.endproc
+
+
+
 
 
 .endscope
