@@ -168,6 +168,27 @@ pitch:
 .endproc
 
 
+; Like resetStream, but it sets the unselected event pointer to NULL, so
+; streamGetNextEvent only returns selected events in sequence.
+; It also doesn't care about id (yet).
+; This routine could be optimized for size by factoring out common code with resetStream
+.proc resetStreamSelectedOnly
+    ; set unselected to NULL
+    stz next_unselected_event+2
+    ; reset the selected event pointer to the beginning
+    lda selected_events
+    ldx selected_events+1
+    jsr v40b::get_first_entry
+    bcs @selected_is_empty
+@selected_is_populated:
+    jsr detail::storeNextSelectedEvent
+    rts
+@selected_is_empty:
+    stz next_selected_event+2 ; invalidate
+    rts
+.endproc
+
+
 ; Compares two events and decides which of them comes sooner. (not part of stream API)
 ; Expects
 ; * pointer to a valid event in next_selected_event

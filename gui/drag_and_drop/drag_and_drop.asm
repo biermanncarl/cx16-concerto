@@ -95,7 +95,7 @@
 
 .scope dnd ; drag'n'drop
 
-.include "common.asm"
+.include "dnd_common.asm"
 .include "dragables.asm"
 .include "hitboxes.asm"
 .include "backward_definitions.asm"

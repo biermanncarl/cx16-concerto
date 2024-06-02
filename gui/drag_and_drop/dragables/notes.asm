@@ -62,8 +62,6 @@ argument_z:
       .res 1
    temp_variable_v:
       .res 1
-   temp_variable_u:
-      .res 1
 
    ; Editing area rectangle
    event_edit_pos_x = 25
@@ -382,7 +380,6 @@ change_song_tempo = timing::recalculate_rhythm_values ; TODO: actually recalcula
    column_index = detail::temp_variable_x
    ticks_since_last_full_thirtysecondth = detail::temp_variable_w ; only relevant at zoom level 0
    piano_roll_offset = detail::temp_variable_v
-   piano_roll_index = detail::temp_variable_u
 
    ; column data format
    ; The high bit of the row's byte indicates whether the note is selected or not.
@@ -826,7 +823,60 @@ height = 2 * detail::event_edit_height
 
 
 
+; Figures out the vertical (pitch) min and max note values, as well as the leftmost (first) note
+; so that we can clamp drag operations without danger.
+.proc dragNoteStart
+   rts
+.endproc
+
+
 .proc noteDrag
+   jsr dnd::getMouseChargridMotion
+   ; check if we actually do anything (could be moved into getMouseChargridMotion and returned in carry flag)
+   cmp #0
+   bne @do_drag
+   cpx #0
+   bne @do_drag
+   rts
+
+@do_drag:
+   delta_x = detail::temp_variable_z
+   delta_y = detail::temp_variable_y
+   sta delta_x
+   stx delta_y
+
+   jsr item_selection::resetStreamSelectedOnly
+@next_event:
+   jsr item_selection::streamGetNextEvent
+   bcs @events_loop_end
+   pha
+   phx
+   phy
+   jsr v40b::read_entry
+
+
+   ; horizontal: shift the time
+   ; TODO
+
+
+   ; pitch editing (vertical)
+   ; TODO: only note-on and note-off
+   ; TODO: clamp pitch
+   lda delta_y
+   ; clc ; we expect read_entry to unset carry
+   adc events::note_pitch
+   sta events::note_pitch
+
+
+   ply
+   plx
+   pla
+   jsr v40b::write_entry
+
+   bra @next_event
+@events_loop_end:
+
+   inc gui_variables::request_components_redraw
    rts
 .endproc
 
@@ -855,7 +905,7 @@ height = 2 * detail::event_edit_height
    tya
 :
    inc gui_variables::request_components_redraw
-   jmp dnd::dragables::notes::doScrollNormal ; TODO: jump to hitbox type specific scroll routine
+   jmp doScrollNormal ; TODO: jump to hitbox type specific scroll routine
 .endproc
 
 .proc doZoom
@@ -934,8 +984,8 @@ height = 2 * detail::event_edit_height
          lda dnd::shift_key_pressed
          beq :+
          ; SHIFT was pressed --> allow multiple selection
-         SET_SELECTED_VECTOR dnd::dragables::notes::selected_events_vector
-         jsr dnd::dragables::notes::detail::getEntryFromHitboxObjectId
+         SET_SELECTED_VECTOR selected_events_vector
+         jsr detail::getEntryFromHitboxObjectId
          jsr dnd::dragables::item_selection::selectEvent
          rts
       :
@@ -943,18 +993,18 @@ height = 2 * detail::event_edit_height
          ; This is difficult because the moment we unselect all events, the pointer to the clicked-at event becomes unusable.
          ; Therefore, we first need to select the clicked-at event into temp, before unselecting all others.
          SET_SELECTED_VECTOR dnd::temp_events
-         jsr dnd::dragables::notes::detail::getEntryFromHitboxObjectId
+         jsr detail::getEntryFromHitboxObjectId
          jsr dnd::dragables::item_selection::selectEvent
-         SET_SELECTED_VECTOR dnd::dragables::notes::selected_events_vector
+         SET_SELECTED_VECTOR selected_events_vector
          jsr dnd::dragables::item_selection::unSelectAllEvents
          ; now, swap selected with temp vector, as they have the correct contents already
-         SWAP_VECTORS dnd::temp_events, dnd::dragables::notes::selected_events_vector
+         SWAP_VECTORS dnd::temp_events, selected_events_vector
          rts
       @already_selected:
          lda dnd::shift_key_pressed
          beq :+
-         SET_SELECTED_VECTOR dnd::dragables::notes::selected_events_vector
-         jsr dnd::dragables::notes::detail::getEntryFromHitboxObjectId
+         SET_SELECTED_VECTOR selected_events_vector
+         jsr detail::getEntryFromHitboxObjectId
          jsr dnd::dragables::item_selection::unselectEvent
       :  rts
 @right_button:
@@ -975,12 +1025,17 @@ height = 2 * detail::event_edit_height
 
 .proc doDrag
    ; preparations
-   SET_SELECTED_VECTOR dnd::dragables::notes::selected_events_vector
-   SET_UNSELECTED_VECTOR dnd::dragables::notes::unselected_events_vector
+   SET_SELECTED_VECTOR selected_events_vector
+   SET_UNSELECTED_VECTOR unselected_events_vector
 
    lda mouse_variables::drag_start
    beq @drag_continue
    jsr dragStart
+   ; if we're starting a drag operation, we need to figure out a bunch of things
+   lda dnd::drag_action_state
+   cmp #drag_action::drag
+   bne @drag_continue
+   jsr dragNoteStart
 
 ; do the actual drag operation
 @drag_continue:
