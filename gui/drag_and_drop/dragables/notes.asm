@@ -823,8 +823,8 @@ height = 2 * detail::event_edit_height
 
 
 
-; Figures out the vertical (pitch) min and max note values, as well as the leftmost (first) note
-; so that we can clamp drag operations without danger.
+; Figures out the vertical (pitch) min and max note values, as well as the leftmost (first) event
+; so that we can clamp drag operations and move events without danger.
 .proc dragNoteStart
    rts
 .endproc
@@ -843,7 +843,7 @@ height = 2 * detail::event_edit_height
    delta_x = detail::temp_variable_z
    delta_y = detail::temp_variable_y
    sta delta_x
-   stx delta_y
+   stx delta_y ; TODO: clamp pitch, update min/max
 
    jsr item_selection::resetStreamSelectedOnly
 @next_event:
@@ -859,14 +859,17 @@ height = 2 * detail::event_edit_height
    ; TODO
 
 
-   ; pitch editing (vertical)
-   ; TODO: only note-on and note-off
-   ; TODO: clamp pitch
+   ; pitch editing (vertical) -- only for note-on and note-off
+   lda events::event_type
+   beq @do_pitch_update ; comparing to events::event_type_note_off
+   cmp #events::event_type_note_on
+   bne @end_pitch_update ; if neither note-on nor note-off, skip
+@do_pitch_update:
    lda delta_y
-   ; clc ; we expect read_entry to unset carry
+   clc
    adc events::note_pitch
    sta events::note_pitch
-
+@end_pitch_update:
 
    ply
    plx
