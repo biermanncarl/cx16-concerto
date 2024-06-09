@@ -783,6 +783,8 @@ height = 2 * detail::event_edit_height
    ldy temporal_zoom
    ldx #1 ; snap to grid
    pla ; scroll distance
+   eor #$ff
+   inc
    jsr timing::move_along_grid ; calculate the time stamp delta
    ; now add the delta to the time stamp
    lda window_time_stamp
@@ -803,8 +805,6 @@ height = 2 * detail::event_edit_height
 
    ; VERTICAL SCROLL
    pla ; get vertical scroll distance from stack
-   eor #$ff
-   inc
    bmi @down
 @up:
    clc
@@ -904,13 +904,13 @@ height = 2 * detail::event_edit_height
    stz delta_y
 @finish_vertical_clamp:
    ; add delta_y to min/max
-   lda delta_y
-   clc
-   adc detail::selection_min_pitch
+   lda detail::selection_min_pitch
+   sec
+   sbc delta_y
    sta detail::selection_min_pitch
-   lda delta_y
-   clc
-   adc detail::selection_max_pitch
+   lda detail::selection_max_pitch
+   sec
+   sbc delta_y
    sta detail::selection_max_pitch
 
 
@@ -927,7 +927,25 @@ height = 2 * detail::event_edit_height
 
    ; horizontal: shift the time
    ; TODO
+   ; for now, we shift all events by equal amount of ticks, which may not be the desired operation
+   ; when notes of equal measure can have unequal length depending on their position
 
+   ; placeholder: use delta_x directly for ticks
+   clc
+   lda delta_x
+   bmi @shift_left
+@shift_right:
+   adc events::event_time_stamp_l
+   sta events::event_time_stamp_l
+   bcc @end_horizontal_shift
+   inc events::event_time_stamp_h
+   bra @end_horizontal_shift
+@shift_left:
+   adc events::event_time_stamp_l
+   sta events::event_time_stamp_l
+   bcs @end_horizontal_shift
+   dec events::event_time_stamp_h
+@end_horizontal_shift:
 
    ; pitch editing (vertical) -- only for note-on and note-off
    lda events::event_type
@@ -935,9 +953,9 @@ height = 2 * detail::event_edit_height
    cmp #events::event_type_note_on
    bne @end_pitch_update ; if neither note-on nor note-off, skip
 @do_pitch_update:
-   lda delta_y
-   clc
-   adc events::note_pitch
+   lda events::note_pitch
+   sec
+   sbc delta_y
    sta events::note_pitch
 @end_pitch_update:
 

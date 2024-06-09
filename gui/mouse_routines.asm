@@ -180,13 +180,13 @@ do_dragging:
    sta mouse_variables::curr_component_ofs
    ; get distance to last frame
    ; we assume it's smaller than 127, so we ignore the high byte xD
-   lda mouse_variables::prev_x
+   lda mouse_variables::curr_x
    sec
-   sbc mouse_variables::curr_x
+   sbc mouse_variables::prev_x
    sta mouse_variables::delta_x
-   lda mouse_variables::prev_y
+   lda mouse_variables::curr_y
    sec
-   sbc mouse_variables::curr_y
+   sbc mouse_variables::prev_y
    sta mouse_variables::delta_y
    jsr gui_routines::drag_event
    stz mouse_variables::drag_start
