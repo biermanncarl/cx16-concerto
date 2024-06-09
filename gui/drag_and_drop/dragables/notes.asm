@@ -39,8 +39,16 @@ argument_z:
    .res 1
 .popseg
 
-; Temporary variables
+
 .scope detail
+   selection_min_pitch:
+      .res 1
+   selection_max_pitch:
+      .res 1
+   selection_min_time_stamp:
+      .res 2
+
+   ; Temporary variables
    ; zeropage variables
    .pushseg
    .zeropage
@@ -802,12 +810,12 @@ height = 2 * detail::event_edit_height
    clc
    adc window_pitch
    bcs @clamp_top
-   cmp #(255 - detail::event_edit_height)
+   cmp #(256 - detail::event_edit_height)
    bcs @clamp_top
    sta window_pitch
    rts
 @clamp_top:
-   lda #(255 - detail::event_edit_height)
+   lda #(256 - detail::event_edit_height)
    sta window_pitch
    rts
 
@@ -826,7 +834,39 @@ height = 2 * detail::event_edit_height
 ; Figures out the vertical (pitch) min and max note values, as well as the leftmost (first) event
 ; so that we can clamp drag operations and move events without danger.
 .proc dragNoteStart
+   SET_SELECTED_VECTOR selected_events_vector
+   stz detail::selection_max_pitch
+   lda #255
+   sta detail::selection_min_pitch
+
+   ; get time stamp of the first event
+   jsr item_selection::resetStreamSelectedOnly
+   jsr item_selection::streamGetNextEvent
+   bcc :+
    rts
+:  jsr v40b::read_entry
+   lda events::event_time_stamp_l
+   sta detail::selection_min_time_stamp
+   lda events::event_time_stamp_h
+   sta detail::selection_min_time_stamp+1
+   ; get min & max note pitch
+   jsr item_selection::resetStreamSelectedOnly
+@next_event:
+   jsr item_selection::streamGetNextEvent
+   bcc :+
+   rts
+:  jsr v40b::read_entry
+   lda events::event_type
+   cmp #events::event_type_note_on
+   bne @next_event
+   lda events::note_pitch
+   cmp detail::selection_max_pitch
+   bcc :+
+   sta detail::selection_max_pitch
+:  cmp detail::selection_min_pitch
+   bcs :+
+   sta detail::selection_min_pitch
+:  bra @next_event
 .endproc
 
 
@@ -844,7 +884,37 @@ height = 2 * detail::event_edit_height
    delta_y = detail::temp_variable_y
    sta delta_x
    stx delta_y ; TODO: clamp pitch, update min/max
+   ; clamp delta_y so that we don't drag any notes above/below the valid range
+   lda delta_y
+   bmi @clamp_downwards
+@clamp_upwards:
+   clc
+   adc detail::selection_max_pitch
+   bcc @finish_vertical_clamp
+   ; overflow - do clamping
+   ; set to zero for now, TODO: more elaborate clamping (if needed)
+   stz delta_y
+   bra @finish_vertical_clamp
+@clamp_downwards:
+   clc
+   adc detail::selection_min_pitch
+   bcs @finish_vertical_clamp
+   ; overflow - do clamping
+   ; set to zero for now, TODO: more elaborate clamping (if needed)
+   stz delta_y
+@finish_vertical_clamp:
+   ; add delta_y to min/max
+   lda delta_y
+   clc
+   adc detail::selection_min_pitch
+   sta detail::selection_min_pitch
+   lda delta_y
+   clc
+   adc detail::selection_max_pitch
+   sta detail::selection_max_pitch
 
+
+   ; ITERATION OVER EVENTS
    jsr item_selection::resetStreamSelectedOnly
 @next_event:
    jsr item_selection::streamGetNextEvent
