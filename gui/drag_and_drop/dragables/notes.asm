@@ -1133,7 +1133,8 @@ height = 2 * detail::event_edit_height
 
    ; the relative change in zoom level is in .A
    pla ; recall delta y
-   clc
+   eor #$ff
+   sec ; combined inc & sec
    adc temporal_zoom
    bpl :+
    lda #0
