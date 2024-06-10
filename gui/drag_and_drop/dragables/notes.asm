@@ -816,6 +816,8 @@ height = 2 * detail::event_edit_height
 
    ; VERTICAL SCROLL
    pla ; get vertical scroll distance from stack
+   eor #$ff ; negate because mouse up means displayed pitch goes down
+   inc
    bmi @down
 @up:
    clc
@@ -894,10 +896,7 @@ height = 2 * detail::event_edit_height
    delta_x = detail::temp_variable_z
    delta_y = detail::temp_variable_y
    sta delta_x
-   txa ; negate delta y because y coordinate up is pitch down (y coordinate up means screen position down)
-   eor #$ff
-   inc
-   sta delta_y
+   stx delta_y
 
    ; Find delta pitch
    ; ----------------

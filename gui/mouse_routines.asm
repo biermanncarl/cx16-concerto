@@ -203,9 +203,10 @@ do_dragging:
    sec
    sbc mouse_variables::prev_x
    sta mouse_variables::delta_x
-   lda mouse_variables::curr_y
+   ; for vertical delta we intentionally swap prev and curr because for most applications it's more convenient to let "up" have positive sign
+   lda mouse_variables::prev_y
    sec
-   sbc mouse_variables::prev_y
+   sbc mouse_variables::curr_y
    sta mouse_variables::delta_y
    jsr gui_routines::drag_event
    stz mouse_variables::drag_start
