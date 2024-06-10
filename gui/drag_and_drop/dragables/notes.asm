@@ -886,7 +886,10 @@ height = 2 * detail::event_edit_height
    delta_x = detail::temp_variable_z
    delta_y = detail::temp_variable_y
    sta delta_x
-   stx delta_y
+   txa ; negate delta y because y coordinate up is pitch down (y coordinate up means screen position down)
+   eor #$ff
+   inc
+   sta delta_y
 
    ; Find delta pitch
    ; ----------------
@@ -911,12 +914,12 @@ height = 2 * detail::event_edit_height
 @finish_vertical_clamp:
    ; add delta_y to min/max
    lda detail::selection_min_pitch
-   sec
-   sbc delta_y
+   clc
+   adc delta_y
    sta detail::selection_min_pitch
    lda detail::selection_max_pitch
-   sec
-   sbc delta_y
+   clc
+   adc delta_y
    sta detail::selection_max_pitch
 
    ; Find delta time
@@ -1058,8 +1061,8 @@ height = 2 * detail::event_edit_height
    bne @end_pitch_update ; if neither note-on nor note-off, skip
 @do_pitch_update:
    lda events::note_pitch
-   sec
-   sbc delta_y
+   clc
+   adc delta_y
    sta events::note_pitch
 @end_pitch_update:
 
