@@ -763,6 +763,7 @@ py = 2 * detail::event_edit_pos_y
 width = 2 * detail::event_edit_width
 height = 2 * detail::event_edit_height
 
+; Do we need this function?
 ; Needs input:
 ; * new position do drag to (x,y)
 ; * object id
@@ -773,10 +774,8 @@ height = 2 * detail::event_edit_height
    rts
 .endproc
 
-; Expect signed delta x in .A and delta y in .X
-.proc doScrollNormal
-   ; First, see where we are situated on the time axis
-   phx ; store vertical scroll distance to the stack
+; expects the horizontal distance in terms of grid positions in .A
+.proc moveTimeWindow
    pha ; store horizontal scroll distance to the stack
 
    lda window_time_stamp
@@ -805,6 +804,15 @@ height = 2 * detail::event_edit_height
    stz window_time_stamp
    stz window_time_stamp+1
 :
+   rts
+.endproc
+
+
+; Expect signed delta x in .A and delta y in .X
+.proc doScrollNormal
+   ; First, see where we are situated on the time axis
+   phx ; store vertical scroll distance to the stack
+   jsr moveTimeWindow
 
    ; VERTICAL SCROLL
    pla ; get vertical scroll distance from stack
@@ -1113,22 +1121,40 @@ height = 2 * detail::event_edit_height
    bne @do_zoom
    rts
 @do_zoom:
-   inc gui_variables::request_components_redraw
+   pha ; save delta y
+
+   ; make mouse position the "left side of the window" (trick to make zoom magnify what's at the mouse position)
+   lda mouse_variables::curr_x_downscaled
+   lsr
+   sec
+   sbc #detail::event_edit_pos_x
+   eor #$ff
+   inc
+   jsr moveTimeWindow
 
    ; the relative change in zoom level is in .A
+   pla ; recall delta y
    clc
    adc temporal_zoom
    bpl :+
    lda #0
 :  sta temporal_zoom
    bcc @check_top
-@end:
-   rts
+   bra @move_time_window
 @check_top:
    cmp #(max_temporal_zoom+1)
-   bcc @end
+   bcc @move_time_window
    lda #max_temporal_zoom
    sta temporal_zoom
+@move_time_window:
+   ; move what was previously at the mouse position back to mouse (2nd half of trick to make zoom magnify what's at the mouse position)
+   lda mouse_variables::curr_x_downscaled
+   lsr
+   sec
+   sbc #detail::event_edit_pos_x
+   jsr moveTimeWindow
+
+   inc gui_variables::request_components_redraw
    rts
 .endproc
 
@@ -1141,6 +1167,10 @@ height = 2 * detail::event_edit_height
 ; This routine does all the stuff necessary at the start of a drag operation.
 ; It has to distinguish between all the different things one can do with the mouse in the notes DnD area.
 .proc dragStart
+   ; reset the accumulated mouse motion
+   lda #4
+   sta dnd::accumulated_x
+   sta dnd::accumulated_y
    ; start of a dragging operation. figure out what we're actually doing
    lda mouse_variables::curr_buttons
    and #1 ; check for left button
