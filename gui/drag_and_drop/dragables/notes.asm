@@ -16,7 +16,7 @@
 
 ; Starting time (left border) of the visualzation area
 window_time_stamp:
-   .word 300
+   .word 0
 ; Starting pitch (bottom border) of the visualization area, lowest on-screen pitch
 window_pitch:
    .byte 30
@@ -47,6 +47,9 @@ argument_z:
       .res 1
    selection_min_time_stamp:
       .res 2
+
+   pointed_at_event: ; which event is the mouse pointer pointing at
+      .res 3
 
    ; Temporary variables
    ; zeropage variables
@@ -883,7 +886,10 @@ height = 2 * detail::event_edit_height
    delta_x = detail::temp_variable_z
    delta_y = detail::temp_variable_y
    sta delta_x
-   stx delta_y ; TODO: clamp pitch, update min/max
+   stx delta_y
+
+   ; Find delta pitch
+   ; ----------------
    ; clamp delta_y so that we don't drag any notes above/below the valid range
    lda delta_y
    bmi @clamp_downwards
@@ -913,8 +919,90 @@ height = 2 * detail::event_edit_height
    sbc delta_y
    sta detail::selection_max_pitch
 
+   ; Find delta time
+   ; ---------------
+   ; The delta time is applied to all selected events equally.
+   ; This might move some events "off-grid" because eighths and smaller time values don't necessarily have equal length (in ticks).
+   ; The alternative would be to separate off the sub-thirtysecondths ticks, add the actual note (grid) values, and then add the sub-thirtysecondths ticks
+   ; back ("grid-centered approach").
+   ; Despite the disadvantage of potentially de-quantizing events, the "uniform ticks delta" approach was chosen because of its advantages:
+   ; * It is lossless. Thirtysecondth notes can be of unequal length, 
+   ;   so there has to be a mapping between sub-thirtysecondth ticks from between longer and shorter time intervals.
+   ;   This conversion would be lossy, which could unintentionally move precisely timed off-grid events.
+   ; * In the grid-centered approach, due to its lossy nature, events which were originally at different time stamps
+   ;   could fall onto the same time stamp. This is undesirable. For example, short notes could become zero-length, or a note-on and note-off of two different
+   ;   notes could fall onto the same time stamp, at which time they might need to be swapped (because within a time stamp, note-offs must come before note-offs).
+   ; * "uniform ticks delta" is faster. Once the tick delta is determined, it can be blindly applied to every selected event.
+   ; * Dequantization isn't too bad, since it only comes into effect when notes are moved by less than quarter notes.
+   time_shift_l = detail::temp_variable_a
+   time_shift_h = detail::temp_variable_b
+   thirtysecondths = detail::temp_variable_c
+   stz time_shift_l
+   stz time_shift_h
+   lda delta_x
+   beq @end_determine_time_delta
 
-   ; ITERATION OVER EVENTS
+   lda detail::pointed_at_event
+   ldx detail::pointed_at_event+1
+   ldy detail::pointed_at_event+2
+   jsr v40b::read_entry
+   lda events::event_time_stamp_h
+   ldx events::event_time_stamp_l
+   jsr timing::disassemble_time_stamp
+   stx thirtysecondths
+
+   lda delta_x
+   bmi @time_delta_negative
+@time_delta_positive:
+   ; increment tick delta
+   lda temporal_zoom
+   ldx thirtysecondths
+   jsr timing::get_note_duration_ticks
+   clc
+   adc time_shift_l
+   sta time_shift_l
+   lda #0
+   adc time_shift_h
+   sta time_shift_h
+   ; update thirtysecondths
+   ldx temporal_zoom
+   jsr timing::get_note_duration_thirtysecondths
+   clc
+   adc thirtysecondths
+   sta thirtysecondths
+   ; loopy things
+   dec delta_x
+   beq @end_determine_time_delta
+   bra @time_delta_positive
+@time_delta_negative:
+   ; update thirtysecondths
+   ldx temporal_zoom
+   jsr timing::get_note_duration_thirtysecondths
+   eor #$ff ; subtracting .A from thirtysecondths ...
+   sec
+   adc thirtysecondths
+   sta thirtysecondths
+   ; decrement tick delta
+   lda temporal_zoom
+   ldx thirtysecondths
+   jsr timing::get_note_duration_ticks
+   eor #$ff
+   sec
+   adc time_shift_l
+   sta time_shift_l
+   lda time_shift_h
+   sbc #0
+   sta time_shift_h
+   ; loopy things
+   inc delta_x
+   beq @clamp_time_left
+   bra @time_delta_negative
+@clamp_time_left:
+@end_determine_time_delta:
+
+
+   ; iterate over events
+   ; -------------------
    jsr item_selection::resetStreamSelectedOnly
 @next_event:
    jsr item_selection::streamGetNextEvent
@@ -924,28 +1012,14 @@ height = 2 * detail::event_edit_height
    phy
    jsr v40b::read_entry
 
-
    ; horizontal: shift the time
-   ; TODO
-   ; for now, we shift all events by equal amount of ticks, which may not be the desired operation
-   ; when notes of equal measure can have unequal length depending on their position
-
-   ; placeholder: use delta_x directly for ticks
+   lda events::event_time_stamp_l
    clc
-   lda delta_x
-   bmi @shift_left
-@shift_right:
-   adc events::event_time_stamp_l
+   adc time_shift_l
    sta events::event_time_stamp_l
-   bcc @end_horizontal_shift
-   inc events::event_time_stamp_h
-   bra @end_horizontal_shift
-@shift_left:
-   adc events::event_time_stamp_l
-   sta events::event_time_stamp_l
-   bcs @end_horizontal_shift
-   dec events::event_time_stamp_h
-@end_horizontal_shift:
+   lda events::event_time_stamp_h
+   adc time_shift_h
+   sta events::event_time_stamp_h
 
    ; pitch editing (vertical) -- only for note-on and note-off
    lda events::event_type
@@ -1076,16 +1150,14 @@ height = 2 * detail::event_edit_height
          beq :+
          ; SHIFT was pressed --> allow multiple selection
          SET_SELECTED_VECTOR selected_events_vector
-         jsr detail::getEntryFromHitboxObjectId
-         jsr dnd::dragables::item_selection::selectEvent
+         jsr selectWithHitboxId
          rts
       :
          ; event wasn't selected yet --> we want to unselect all, and select the clicked-at one
          ; This is difficult because the moment we unselect all events, the pointer to the clicked-at event becomes unusable.
          ; Therefore, we first need to select the clicked-at event into temp, before unselecting all others.
          SET_SELECTED_VECTOR dnd::temp_events
-         jsr detail::getEntryFromHitboxObjectId
-         jsr dnd::dragables::item_selection::selectEvent
+         jsr selectWithHitboxId
          SET_SELECTED_VECTOR selected_events_vector
          jsr dnd::dragables::item_selection::unSelectAllEvents
          ; now, swap selected with temp vector, as they have the correct contents already
@@ -1111,6 +1183,15 @@ height = 2 * detail::event_edit_height
    lda #drag_action::scroll
    sta dnd::drag_action_state
    rts
+
+   .proc selectWithHitboxId
+      jsr detail::getEntryFromHitboxObjectId
+      sta detail::pointed_at_event
+      stx detail::pointed_at_event+1
+      sty detail::pointed_at_event+2
+      jsr dnd::dragables::item_selection::selectEvent
+      rts
+   .endproc
 .endproc
 
 
