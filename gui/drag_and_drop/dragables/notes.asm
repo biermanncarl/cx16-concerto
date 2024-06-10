@@ -946,7 +946,6 @@ height = 2 * detail::event_edit_height
    ; * Dequantization isn't too bad, since it only comes into effect when notes are moved by less than quarter notes.
    time_shift_l = detail::temp_variable_a
    time_shift_h = detail::temp_variable_b
-   thirtysecondths = detail::temp_variable_c
    stz time_shift_l
    stz time_shift_h
    lda delta_x
@@ -959,55 +958,17 @@ height = 2 * detail::event_edit_height
    jsr v40b::read_entry
    lda events::event_time_stamp_h
    ldx events::event_time_stamp_l
-   jsr timing::disassemble_time_stamp
-   stx thirtysecondths
-
+   sta timing::time_stamp_parameter+1
+   stx timing::time_stamp_parameter
+   ldx #0 ; no snap to grid -- could be changed e.g. with modifier key
+   ldy temporal_zoom
    lda delta_x
-   bmi @time_delta_negative
-@time_delta_positive:
-   ; increment tick delta
-   lda temporal_zoom
-   ldx thirtysecondths
-   jsr timing::get_note_duration_ticks
-   clc
-   adc time_shift_l
+   jsr timing::move_along_grid
+   lda timing::time_stamp_parameter
    sta time_shift_l
-   lda #0
-   adc time_shift_h
+   lda timing::time_stamp_parameter+1
    sta time_shift_h
-   ; update thirtysecondths
-   ldx temporal_zoom
-   jsr timing::get_note_duration_thirtysecondths
-   clc
-   adc thirtysecondths
-   sta thirtysecondths
-   ; loopy things
-   dec delta_x
-   beq @finish_determine_time_delta
-   bra @time_delta_positive
-@time_delta_negative:
-   ; update thirtysecondths
-   ldx temporal_zoom
-   jsr timing::get_note_duration_thirtysecondths
-   eor #$ff ; subtracting .A from thirtysecondths ...
-   sec
-   adc thirtysecondths
-   sta thirtysecondths
-   ; decrement tick delta
-   lda temporal_zoom
-   ldx thirtysecondths
-   jsr timing::get_note_duration_ticks
-   eor #$ff
-   sec
-   adc time_shift_l
-   sta time_shift_l
-   lda time_shift_h
-   sbc #0
-   sta time_shift_h
-   ; loopy things
-   inc delta_x
-   beq @clamp_time_left
-   bra @time_delta_negative
+   bpl @finish_determine_time_delta
 @clamp_time_left:
    ; check time_shift_h
    lda time_shift_h
