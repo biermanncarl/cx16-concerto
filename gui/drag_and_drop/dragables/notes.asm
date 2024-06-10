@@ -940,8 +940,9 @@ height = 2 * detail::event_edit_height
    stz time_shift_l
    stz time_shift_h
    lda delta_x
-   beq @end_determine_time_delta
-
+   bne :+
+   jmp @end_determine_time_delta
+:
    lda detail::pointed_at_event
    ldx detail::pointed_at_event+1
    ldy detail::pointed_at_event+2
@@ -972,7 +973,7 @@ height = 2 * detail::event_edit_height
    sta thirtysecondths
    ; loopy things
    dec delta_x
-   beq @end_determine_time_delta
+   beq @finish_determine_time_delta
    bra @time_delta_positive
 @time_delta_negative:
    ; update thirtysecondths
@@ -998,6 +999,35 @@ height = 2 * detail::event_edit_height
    beq @clamp_time_left
    bra @time_delta_negative
 @clamp_time_left:
+   ; check time_shift_h
+   lda time_shift_h
+   eor #$ff
+   ; these two cancel each other out:
+   ; inc ; .A contains negated time_shift_h
+   ; dec ; account for the fact that decrement of high byte by 1 is factually no decrement in high byte if you account for the carry from the low byte
+   cmp detail::selection_min_time_stamp+1 ; need to carry on with check if this is smaller than negated time_shift_h, i.e. if carry is set
+   beq :+
+   bcs @set_delta_tick_to_zero ; time_shift_h is larger than min time stamp --> need to clamp
+   bra @finish_determine_time_delta
+:  ; check time_shift_l
+   lda time_shift_l
+   eor #$ff
+   ; these two cancel each other out:
+   ; inc ; .A contains negated time_shift_l
+   ; dec ; convert the carry flag from cmp instruction from (.A >= mem) to (.A > mem)
+   cmp detail::selection_min_time_stamp
+   bcc @finish_determine_time_delta
+@set_delta_tick_to_zero:
+   stz time_shift_h
+   stz time_shift_l
+@finish_determine_time_delta:
+   lda detail::selection_min_time_stamp
+   clc
+   adc time_shift_l
+   sta detail::selection_min_time_stamp
+   lda detail::selection_min_time_stamp+1
+   adc time_shift_h
+   sta detail::selection_min_time_stamp+1
 @end_determine_time_delta:
 
 
