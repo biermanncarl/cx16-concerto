@@ -38,6 +38,12 @@
     delta_y: .byte 0
     ; others
     drag_start: .byte 0 ; used to indicate whether a drag event is the first since the mouse button has been held down
+    .pushseg
+    .zeropage
+        ; downscaled mouse coordinates in multiples of 4 pixels
+        curr_x_downscaled: .byte 0
+        curr_y_downscaled: .byte 0
+    .popseg
 .endscope
 
 .endif ; .ifndef ::GUI_mouse_variables_ASM

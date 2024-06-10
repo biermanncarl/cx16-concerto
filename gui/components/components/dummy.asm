@@ -19,10 +19,10 @@
    ; dummy always registers a click event, regardless of where the mouse is. Useful for popups.
    .proc check_mouse
       ; get mouse coordinates (in 8 pixel multiples) and put them into data
-      lda components_common::mouse_downscaled_x
+      lda mouse_variables::curr_x_downscaled
       lsr
       sta mouse_variables::curr_data_1
-      lda components_common::mouse_downscaled_y
+      lda mouse_variables::curr_y_downscaled
       lsr
       sta mouse_variables::curr_data_2
       sec

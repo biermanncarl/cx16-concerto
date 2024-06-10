@@ -55,7 +55,7 @@
         sta dnd::dragables::active_type
         tax
         ; check x direction
-        lda components_common::mouse_downscaled_x
+        lda mouse_variables::curr_x_downscaled
         sec
         sbc dnd::dragables::edit_positions_x, x ; now we have the distance of the mouse pointer to the left side of the checkbox
         ; now A must be smaller than the checkbox' width.
@@ -66,7 +66,7 @@
         rts
     @horizontal_in:  ; we're in
         ; check y direction
-        lda components_common::mouse_downscaled_y
+        lda mouse_variables::curr_y_downscaled
         sec
         sbc dnd::dragables::edit_positions_y, x
         cmp dnd::dragables::edit_height, x
@@ -85,14 +85,14 @@
         ; Check Y coordinate
         ; calculate relative position of the mouse to the hitbox
         ldy dnd::dragables::active_type
-        lda components_common::mouse_downscaled_y
+        lda mouse_variables::curr_y_downscaled
         sec
         sbc dnd::hitboxes::hitbox_pos_y
         ; should be less than the hitbox height
         cmp dnd::dragables::hitbox_heights, y
         bcs @continue
         ; Check X coordinate (same formulas as above)
-        lda components_common::mouse_downscaled_x
+        lda mouse_variables::curr_x_downscaled
         sec
         sbc dnd::hitboxes::hitbox_pos_x
         cmp dnd::hitboxes::hitbox_width

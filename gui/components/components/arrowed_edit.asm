@@ -40,7 +40,7 @@
    .proc check_mouse
       ; check if mouse is over the edit
       ; check x direction
-      lda components_common::mouse_downscaled_x
+      lda mouse_variables::curr_x_downscaled
       lsr ; we want cursor position in whole characters (8 pixel multiples), not half characters (4 pixel multiples)
       sec
       sbc (components_common::data_pointer), y ; subtract edit's position. so all valid values are smaller than edit size
@@ -61,7 +61,7 @@
       sta mouse_variables::curr_data_1
    @horizontal_in:
       ; check y direction
-      lda components_common::mouse_downscaled_y
+      lda mouse_variables::curr_y_downscaled
       lsr
       iny
       cmp (components_common::data_pointer), y

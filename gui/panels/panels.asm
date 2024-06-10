@@ -124,32 +124,15 @@
    ; Bit 7 set means the mouse isn't over any panel.
    .proc mouse_get_panel
       ; grab those zero page variables for this routine
-      gp_cx = gui_variables::mzpwa
-      gp_cy = gui_variables::mzpwd
-      ; determine position in characters (divide by 8)
-      lda mouse_variables::curr_x+1
+      characters_x = gui_variables::mzpwa
+      characters_y = gui_variables::mzpwa+1
+      ; determine position in characters (mouse position divided by 8)
+      lda mouse_variables::curr_x_downscaled
       lsr
-      sta gp_cx+1
-      lda mouse_variables::curr_x
-      ror
-      sta gp_cx
-      lda gp_cx+1
+      sta characters_x
+      lda mouse_variables::curr_y_downscaled
       lsr
-      ror gp_cx
-      lsr
-      ror gp_cx
-      ; (high byte is uninteresting, thus not storing it back)
-      lda mouse_variables::curr_y+1
-      lsr
-      sta gp_cy+1
-      lda mouse_variables::curr_y
-      ror
-      sta gp_cy
-      lda gp_cy+1
-      lsr
-      ror gp_cy
-      lsr
-      ror gp_cy
+      sta characters_y
       ; now check panels from top to bottom
       lda panels_stack_pointer
       tax
@@ -159,26 +142,26 @@
       ldy panels::panels_stack, x ; y will be panel's index
       ;lda px, y
       ;dec
-      ;cmp gp_cx
-      ;bcs @loop ; gp_cx is smaller than panel's x
-      lda gp_cx
+      ;cmp characters_x
+      ;bcs @loop ; characters_x is smaller than panel's x
+      lda characters_x
       cmp panels::px, y
-      bcc @loop ; gp_cx is smaller than panel's x
+      bcc @loop ; characters_x is smaller than panel's x
       lda panels::px, y
       clc
       adc panels::wd, y
       dec
-      cmp gp_cx
-      bcc @loop ; gp_cx is too big
-      lda gp_cy
+      cmp characters_x
+      bcc @loop ; characters_x is too big
+      lda characters_y
       cmp panels::py, y
-      bcc @loop ; gp_cy is smaller than panel's y
+      bcc @loop ; characters_y is smaller than panel's y
       lda panels::py, y
       clc
       adc panels::hg, y
       dec
-      cmp gp_cy
-      bcc @loop ; gp_cy is too big
+      cmp characters_y
+      bcc @loop ; characters_y is too big
       ; we're inside! return index
       tya
       sta mouse_variables::curr_panel
@@ -198,29 +181,7 @@
       ; mouse x and y coordinates in mouse_variables::curr_x and mouse_variables::curr_y
       ; zero page variables:
       gc_pointer = gui_variables::mzpwa
-      gc_cx = gui_variables::mzpwd     ; x and y in multiples of 4 (!) pixels to support half character grid
-      gc_cy = gui_variables::mzpwd+1
       gc_counter = gui_variables::mzpbe
-      ; determine mouse position in multiples of 4 pixels (divide by 4)
-      lda mouse_variables::curr_x+1
-      lsr
-      sta gc_cx+1
-      lda mouse_variables::curr_x
-      ror
-      sta gc_cx
-      lda gc_cx+1
-      lsr
-      ror gc_cx
-      ; (high byte is uninteresting, thus not storing it back)
-      lda mouse_variables::curr_y+1
-      lsr
-      sta gc_cy+1
-      lda mouse_variables::curr_y
-      ror
-      sta gc_cy
-      lda gc_cy+1
-      lsr
-      ror gc_cy
       ; copy pointer to component string to ZP
       lda mouse_variables::curr_panel
       asl

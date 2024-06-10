@@ -56,7 +56,7 @@
       dey
       dey
       ; check x direction
-      lda components_common::mouse_downscaled_x
+      lda mouse_variables::curr_x_downscaled
       lsr
       sec
       sbc (components_common::data_pointer), y ; now we have the distance of the mouse pointer to the left side of the button
@@ -69,7 +69,7 @@
       rts
    @horizontal_in:  ; we're in
       ; check y direction
-      lda components_common::mouse_downscaled_y
+      lda mouse_variables::curr_y_downscaled
       lsr
       dec ; this is to make up for the button actually being in the line below
       iny

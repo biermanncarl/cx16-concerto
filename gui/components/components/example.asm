@@ -42,8 +42,8 @@
    ; The Zeropage pointer is 
    ;    components_common::data_pointer.
    ; The mouse coordinates are in 
-   ;    components_common::mouse_downscaled_x and
-   ;    components_common::mouse_downscaled_y.
+   ;    mouse_variables::curr_x_downscaled and
+   ;    mouse_variables::curr_y_downscaled.
    ; in multiples of 4 pixels (half character size).
    ; Relevant information (such as the number of the tab which the mouse is over etc.) can be stored in
    ;    mouse_variables::curr_data_1 and

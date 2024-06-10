@@ -65,6 +65,25 @@ mouse_tick:
    sta mouse_variables::curr_y
    lda mouse_data+3
    sta mouse_variables::curr_y+1
+   ; update downsampled mouse coordinates
+   temp = gui_variables::mzpwa
+   ; determine mouse position in multiples of 4 pixels (divide by 4)
+   lda mouse_variables::curr_x+1
+   lsr
+   sta temp
+   lda mouse_variables::curr_x
+   ror
+   sta mouse_variables::curr_x_downscaled
+   lda temp
+   lsr
+   ror mouse_variables::curr_x_downscaled
+   ; (high byte is uninteresting, thus not storing it back)
+   lda mouse_variables::curr_y+1
+   lsr
+   lda mouse_variables::curr_y
+   ror
+   lsr
+   sta mouse_variables::curr_y_downscaled
    ; call status subroutine
    ; the mouse handles incoming data differently, depending upon which status it is currently in
    lda mouse_variables::status

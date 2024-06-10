@@ -42,7 +42,7 @@
       lda panels__px, x
       asl ; multiply by 2 to be 4 pixel multiple
       sec
-      sbc components_common::mouse_downscaled_x ; now we have negative mouse offset, need to negate it
+      sbc mouse_variables::curr_x_downscaled ; now we have negative mouse offset, need to negate it
       eor #255
       ;inc ; belongs to negation, would be cancelled by dec
       ; now we got relative y position in 4 pixel multiples
@@ -60,7 +60,7 @@
       lda panels__py, x
       asl ; multiply by 2 to be 4 pixel multiple
       sec
-      sbc components_common::mouse_downscaled_y ; now we have negative mouse offset, need to negate it
+      sbc mouse_variables::curr_y_downscaled ; now we have negative mouse offset, need to negate it
       eor #255
       ;inc ; belongs to negation, would be cancelled by dec
       ; now we got relative y position in 4 pixel multiples
