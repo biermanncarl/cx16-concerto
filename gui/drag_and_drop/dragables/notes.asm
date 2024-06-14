@@ -1266,6 +1266,61 @@ height = 2 * detail::event_edit_height
 .endproc
 
 
+.proc addNewNote
+   ; grid position
+   lda mouse_variables::curr_x_downscaled
+   lsr
+   eor #$ff
+   inc
+   clc
+   adc #detail::event_edit_pos_x
+   pha ; save grid position, so we can revert it later
+   jsr moveTimeWindow ; abusing the viewing window time stamp here
+   ; copy time stamp
+   lda window_time_stamp
+   sta events::event_time_stamp_l
+   lda window_time_stamp+1
+   sta events::event_time_stamp_h
+   ; get note pitch
+   lda mouse_variables::curr_y_downscaled
+   lsr
+   eor #$ff
+   clc
+   adc #(detail::event_edit_pos_y + detail::event_edit_height)
+   clc
+   adc window_pitch
+   sta events::note_pitch
+   ; add note-on
+   lda #events::event_type_note_on
+   sta events::event_type
+   lda selected_events_vector
+   ldx selected_events_vector+1
+   jsr v40b::append_new_entry
+   ; move time stamp over by one chargrid position
+   lda #$ff
+   jsr moveTimeWindow
+   ; copy time stamp
+   lda window_time_stamp
+   sta events::event_time_stamp_l
+   lda window_time_stamp+1
+   sta events::event_time_stamp_h
+   ; add note-off
+   lda #events::event_type_note_off
+   sta events::event_type
+   lda selected_events_vector
+   ldx selected_events_vector+1
+   jsr v40b::append_new_entry
+   ; restore viewing window
+   pla
+   dec
+   eor #$ff
+   inc
+   jsr moveTimeWindow
+
+   rts
+.endproc
+
+
 
 .scope drag_action
    ID_GENERATOR 0, none, scroll, zoom, box_select, drag, resize
@@ -1297,7 +1352,15 @@ height = 2 * detail::event_edit_height
    inc gui_variables::request_components_redraw
    lda mouse_variables::curr_data_1
    bne @lmb_event_clicked
-      ; no event clicked -> unselect all, start box selection
+      ; no event clicked.
+      lda dnd::ctrl_key_pressed
+      beq :+ ; if CTRL is pressed, add a new note
+         jsr dnd::dragables::item_selection::unSelectAllEvents
+         jsr addNewNote
+         lda #drag_action::resize
+         sta dnd::drag_action_state
+         rts
+      :
       lda dnd::shift_key_pressed
       bne :+ ; if SHIFT is pressed, skip unselection of all
          jsr dnd::dragables::item_selection::unSelectAllEvents
