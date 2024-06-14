@@ -1320,7 +1320,40 @@ height = 2 * detail::event_edit_height
    rts
 .endproc
 
-.proc potentiallyDeleteSelection
+
+.scope drag_action
+   ID_GENERATOR 0, none, scroll, zoom, box_select, drag, resize
+.endscope
+
+.proc commonLeftClick
+   ; duplicate?
+   lda dnd::ctrl_key_pressed
+   beq @check_delete
+   lda selected_events_vector
+   ldx selected_events_vector+1
+   jsr v40b::get_first_entry ; since we just selected an event, I don't deal with the case that there's nothing in this vector
+@duplicate_loop:
+   pha
+   phx
+   phy
+   jsr v40b::read_entry
+   lda temp_events
+   ldx temp_events+1
+   jsr v40b::append_new_entry
+   ply
+   plx
+   pla
+   jsr v40b::get_next_entry
+   bcc @duplicate_loop
+@end_duplicate:
+   SET_SELECTED_VECTOR temp_events
+   jsr item_selection::unSelectAllEvents
+   lda #drag_action::drag
+   sta drag_action_state
+   rts
+
+@check_delete:
+   ; delete?
    lda dnd::alt_key_pressed
    bne @do_delete
    rts
@@ -1330,12 +1363,6 @@ height = 2 * detail::event_edit_height
    jsr v40b::clear
    rts
 .endproc
-
-
-
-.scope drag_action
-   ID_GENERATOR 0, none, scroll, zoom, box_select, drag, resize
-.endscope
 
 ; This routine does all the stuff necessary at the start of a drag operation.
 ; It has to distinguish between all the different things one can do with the mouse in the notes DnD area.
@@ -1405,22 +1432,20 @@ height = 2 * detail::event_edit_height
          ; event wasn't selected yet --> we want to unselect all, and select the clicked-at one
          ; This is difficult because the moment we unselect all events, the pointer to the clicked-at event becomes unusable.
          ; Therefore, we first need to select the clicked-at event into temp, before unselecting all others.
-         SET_SELECTED_VECTOR dnd::temp_events
+         SET_SELECTED_VECTOR temp_events
          jsr selectWithHitboxId
          SET_SELECTED_VECTOR selected_events_vector
          jsr dnd::dragables::item_selection::unSelectAllEvents
          ; now, swap selected with temp vector, as they have the correct contents already
-         SWAP_VECTORS dnd::temp_events, selected_events_vector
-         jsr potentiallyDeleteSelection
-         rts
+         SWAP_VECTORS temp_events, selected_events_vector
+         jmp commonLeftClick
       @already_selected:
          lda dnd::shift_key_pressed
          beq :+
          SET_SELECTED_VECTOR selected_events_vector
          jsr detail::getEntryFromHitboxObjectId
          jsr dnd::dragables::item_selection::unselectEvent
-      :  jsr potentiallyDeleteSelection
-         rts
+      :  jmp commonLeftClick
 @right_button:
    lda mouse_variables::curr_data_1
    beq @scroll ; only scroll when the mouse did not point at any note (?)
