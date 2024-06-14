@@ -1078,12 +1078,6 @@ height = 2 * detail::event_edit_height
 @event_loop_start:
    jsr item_selection::streamGetNextEvent ; todo: use streamPeekNextSelectedEvent ?
    bcc @process_next_event
-   ; Finishing.
-   ; decrement the minimum time stamp by 1 in order to prevent zero-length notes.
-   lda detail::selection_shortest_note_length
-   bne :+
-   dec detail::selection_shortest_note_length+1
-:  dec detail::selection_shortest_note_length
    rts
 @process_next_event:
    ; save current event pointer
@@ -1112,7 +1106,7 @@ height = 2 * detail::event_edit_height
    jsr v40b::read_entry
    ; get note length and compare with minimum
    lda events::event_time_stamp_l
-   sec
+   clc ; clc instead of sec is intentional here: we want to "shorten" the note by 1 tick in order to prevent zero-length notes
    sbc time_stamp_temp_l
    sta time_stamp_temp_l
    lda events::event_time_stamp_h
