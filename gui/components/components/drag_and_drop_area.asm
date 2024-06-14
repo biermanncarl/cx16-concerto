@@ -21,12 +21,6 @@
         type .byte ; there can only be one area of each type. Most of their respective properties are hard coded.
     .endstruct
 
-    .scope hitbox_handle
-        none = 0
-        bulk = 1
-        right_end = 2
-    .endscope
- 
 
     .proc draw
         ; Todo: switch on type
@@ -95,24 +89,11 @@
         lda mouse_variables::curr_x_downscaled
         sec
         sbc dnd::hitboxes::hitbox_pos_x
+        inc ; increment so we can distinguish right end
         cmp dnd::hitboxes::hitbox_width
-        bcs @continue
-        ; We got a hit!
-        ; TODO: implement right_handle !
-        ; tidy up the stack
-        ply
-        plx
-        pla
-        ; load the hitbox the mouse points at into mouse registers
-        lda #hitbox_handle::bulk
-        sta mouse_variables::curr_data_1 ; signal that the mouse does point at a hitbox
-        lda dnd::hitboxes::object_id_l
-        sta mouse_variables::curr_data_2
-        lda dnd::hitboxes::object_id_h
-        sta mouse_variables::curr_data_3
-        sec
-        rts
-
+        beq @hit_right_end
+        bcc @hit_bulk
+        ; .A is neither equal to nor smaller than hitbox width - 1 --> no hit
     @continue:
         ply
         plx
@@ -120,7 +101,26 @@
         jsr v40b::get_next_entry
         bcc @loop
     @no_hit:
-        stz mouse_variables::curr_data_1 ; hitbox_handle::none
+        stz mouse_variables::curr_data_1 ; dnd::hitboxes::hitbox_handle::none
+        sec
+        rts
+
+        ; We got a hit!
+    @hit_right_end:
+        lda #dnd::hitboxes::hitbox_handle::right_end
+        bra :+
+    @hit_bulk:
+        lda #dnd::hitboxes::hitbox_handle::bulk
+    :   ; tidy up the stack
+        ply
+        ply
+        ply
+        ; load the hitbox the mouse points at into mouse registers
+        sta mouse_variables::curr_data_1 ; signal that the mouse does point at a hitbox
+        lda dnd::hitboxes::object_id_l
+        sta mouse_variables::curr_data_2
+        lda dnd::hitboxes::object_id_h
+        sta mouse_variables::curr_data_3
         sec
         rts
     .endproc
@@ -140,12 +140,15 @@
     .proc event_drag
         ; modifier keys status
         jsr KBDBUF_GET_MODIFIERS
-        pha
+        tax
         and #KBD_MODIFIER_CTRL
         sta dnd::ctrl_key_pressed
-        pla
+        txa
         and #KBD_MODIFIER_SHIFT
         sta dnd::shift_key_pressed
+        txa
+        and #KBD_MODIFIER_ALT
+        sta dnd::alt_key_pressed
 
         jmp dnd::dragables::notes::doDrag
     .endproc

@@ -13,6 +13,9 @@ hitboxes__object_id_l = hitboxes::object_id_l
 hitboxes__object_id_h = hitboxes::object_id_h
 hitboxes__clear_hitboxes = hitboxes::clear_hitboxes
 hitboxes__add_hitbox = hitboxes::add_hitbox
+hitboxes__hitbox_handle__none = hitboxes::hitbox_handle::none
+hitboxes__hitbox_handle__bulk = hitboxes::hitbox_handle::bulk
+hitboxes__hitbox_handle__right_end = hitboxes::hitbox_handle::right_end
 
 dragables__active_hitbox_type = dragables::active_type
 dragables__ids__notes = dragables::ids::notes

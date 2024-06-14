@@ -1,4 +1,4 @@
-; Copyright 2023 Carl Georg Biermann
+; Copyright 2023-2024 Carl Georg Biermann
 
 .ifndef ::GUI_DRAG_AND_DROP_DRAG_AND_DROP_DEFINITIONS_ASM
 ::GUI_DRAG_AND_DROP_DRAG_AND_DROP_DEFINITIONS_ASM = 1
@@ -7,7 +7,12 @@
 
 .scope hitboxes
 
-
+; enum for designating where the mouse got hold of a hitbox
+.scope hitbox_handle
+   none = 0
+   bulk = 1
+   right_end = 2
+.endscope
 
 ; variables to communicate hitboxes which are stored in the hitbox lists
 hitbox_pos_x = v40b::value_0 ; on-screen-position in multiples of 4 pixels

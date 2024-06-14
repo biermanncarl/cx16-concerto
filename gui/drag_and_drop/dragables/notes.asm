@@ -1,4 +1,4 @@
-; Copyright 2023 Carl Georg Biermann
+; Copyright 2023-2024 Carl Georg Biermann
 
 ; This contains implementation of drag and drop of notes within clips.
 
@@ -33,10 +33,10 @@ unselected_events_vector: ; todo: remove ownership of note data from this file (
    .res 2
 selected_events_vector:
    .res 2
-argument_y:
-   .res 1
-argument_z:
-   .res 1
+; argument_y:
+;    .res 1
+; argument_z:
+;    .res 1
 .popseg
 
 
@@ -47,6 +47,7 @@ argument_z:
       .res 1
    selection_min_time_stamp:
       .res 2
+   selection_shortest_note_length = selection_min_time_stamp ; used in the same way during note resize operations
 
    pointed_at_event: ; which event is the mouse pointer pointing at
       .res 3
@@ -172,7 +173,7 @@ argument_z:
       bne :+
       lda #2
       sta hitboxes__hitbox_width
-   :  
+   :
       ; hitbox y position
       txa
       clc
@@ -211,6 +212,79 @@ argument_z:
       sta v40b::value_1
       tya
       jsr v40b::convert_vector_and_index_to_direct_pointer
+      rts
+   .endproc
+
+
+   ; Given an event, grid motion and maximal allowed left motion, figures out the number of ticks the event is shifted.
+   ; Also updates the maximum left-motion based on the determined value.
+   ; In .A/.X/.Y, expects the pointer to the event that is being dragged.
+   ; In selection_min_time_stamp, expects the maximum number of ticks that the events may be moved left.
+   ; In delta_x, expects the signed chargrid distance, the event is moved.
+   ; Returns the time stamp delta in time_shift_l/time_shift_h.
+   .proc determineTimeShift
+      ; Find delta time
+      ; ---------------
+      ; The delta time is applied to all selected events equally.
+      ; This might move some events "off-grid" because eighths and smaller time values don't necessarily have equal length (in ticks).
+      ; The alternative would be to separate off the sub-thirtysecondths ticks, add the actual note (grid) values, and then add the sub-thirtysecondths ticks
+      ; back ("grid-centered approach").
+      ; Despite the disadvantage of potentially de-quantizing events, the "uniform ticks delta" approach was chosen because of its advantages:
+      ; * It is lossless. Thirtysecondth notes can be of unequal length, 
+      ;   so there has to be a mapping between sub-thirtysecondth ticks from between longer and shorter time intervals.
+      ;   This conversion would be lossy, which could unintentionally move precisely timed off-grid events.
+      ; * In the grid-centered approach, due to its lossy nature, events which were originally at different time stamps
+      ;   could fall onto the same time stamp. This is undesirable. For example, short notes could become zero-length, or a note-on and note-off of two different
+      ;   notes could fall onto the same time stamp, at which time they might need to be swapped (because within a time stamp, note-offs must come before note-offs).
+      ; * "uniform ticks delta" is faster. Once the tick delta is determined, it can be blindly applied to every selected event.
+      ; * Dequantization isn't too bad, since it only comes into effect when notes are moved by less than quarter notes.
+      time_shift_l = detail::temp_variable_a
+      time_shift_h = detail::temp_variable_b
+      delta_x = detail::temp_variable_z
+      lda events::event_time_stamp_h
+      ldx events::event_time_stamp_l
+      sta timing::time_stamp_parameter+1
+      stx timing::time_stamp_parameter
+      ldx #0 ; no snap to grid -- could be changed e.g. with modifier key
+      ldy temporal_zoom
+      lda delta_x
+      jsr timing::move_along_grid
+      lda timing::time_stamp_parameter
+      sta time_shift_l
+      lda timing::time_stamp_parameter+1
+      sta time_shift_h
+      bpl @finish_determine_time_delta
+   @clamp_time_left:
+      ; check time_shift_h
+      lda time_shift_h
+      eor #$ff
+      ; these two cancel each other out:
+      ; inc ; .A contains negated time_shift_h
+      ; dec ; account for the fact that decrement of high byte by 1 is factually no decrement in high byte if you account for the carry from the low byte
+      cmp detail::selection_min_time_stamp+1 ; need to carry on with check if this is smaller than negated time_shift_h, i.e. if carry is set
+      beq :+
+      bcs @set_delta_tick_to_zero ; time_shift_h is larger than min time stamp --> need to clamp
+      bra @finish_determine_time_delta
+   :  ; check time_shift_l
+      lda time_shift_l
+      eor #$ff
+      ; these two cancel each other out:
+      ; inc ; .A contains negated time_shift_l
+      ; dec ; convert the carry flag from cmp instruction from (.A >= mem) to (.A > mem)
+      cmp detail::selection_min_time_stamp
+      bcc @finish_determine_time_delta
+   @set_delta_tick_to_zero:
+      stz time_shift_h
+      stz time_shift_l
+   @finish_determine_time_delta:
+      lda detail::selection_min_time_stamp
+      clc
+      adc time_shift_l
+      sta detail::selection_min_time_stamp
+      lda detail::selection_min_time_stamp+1
+      adc time_shift_h
+      sta detail::selection_min_time_stamp+1
+   @end_determine_time_delta:
       rts
    .endproc
 .endscope
@@ -893,7 +967,7 @@ height = 2 * detail::event_edit_height
    rts
 
 @do_drag:
-   delta_x = detail::temp_variable_z
+   delta_x = detail::determineTimeShift::delta_x
    delta_y = detail::temp_variable_y
    sta delta_x
    stx delta_y
@@ -931,74 +1005,17 @@ height = 2 * detail::event_edit_height
 
    ; Find delta time
    ; ---------------
-   ; The delta time is applied to all selected events equally.
-   ; This might move some events "off-grid" because eighths and smaller time values don't necessarily have equal length (in ticks).
-   ; The alternative would be to separate off the sub-thirtysecondths ticks, add the actual note (grid) values, and then add the sub-thirtysecondths ticks
-   ; back ("grid-centered approach").
-   ; Despite the disadvantage of potentially de-quantizing events, the "uniform ticks delta" approach was chosen because of its advantages:
-   ; * It is lossless. Thirtysecondth notes can be of unequal length, 
-   ;   so there has to be a mapping between sub-thirtysecondth ticks from between longer and shorter time intervals.
-   ;   This conversion would be lossy, which could unintentionally move precisely timed off-grid events.
-   ; * In the grid-centered approach, due to its lossy nature, events which were originally at different time stamps
-   ;   could fall onto the same time stamp. This is undesirable. For example, short notes could become zero-length, or a note-on and note-off of two different
-   ;   notes could fall onto the same time stamp, at which time they might need to be swapped (because within a time stamp, note-offs must come before note-offs).
-   ; * "uniform ticks delta" is faster. Once the tick delta is determined, it can be blindly applied to every selected event.
-   ; * Dequantization isn't too bad, since it only comes into effect when notes are moved by less than quarter notes.
-   time_shift_l = detail::temp_variable_a
-   time_shift_h = detail::temp_variable_b
+   time_shift_l = detail::determineTimeShift::time_shift_l
+   time_shift_h = detail::determineTimeShift::time_shift_h
    stz time_shift_l
    stz time_shift_h
    lda delta_x
-   bne :+
-   jmp @end_determine_time_delta
-:
+   beq @end_determine_time_delta
    lda detail::pointed_at_event
    ldx detail::pointed_at_event+1
    ldy detail::pointed_at_event+2
    jsr v40b::read_entry
-   lda events::event_time_stamp_h
-   ldx events::event_time_stamp_l
-   sta timing::time_stamp_parameter+1
-   stx timing::time_stamp_parameter
-   ldx #0 ; no snap to grid -- could be changed e.g. with modifier key
-   ldy temporal_zoom
-   lda delta_x
-   jsr timing::move_along_grid
-   lda timing::time_stamp_parameter
-   sta time_shift_l
-   lda timing::time_stamp_parameter+1
-   sta time_shift_h
-   bpl @finish_determine_time_delta
-@clamp_time_left:
-   ; check time_shift_h
-   lda time_shift_h
-   eor #$ff
-   ; these two cancel each other out:
-   ; inc ; .A contains negated time_shift_h
-   ; dec ; account for the fact that decrement of high byte by 1 is factually no decrement in high byte if you account for the carry from the low byte
-   cmp detail::selection_min_time_stamp+1 ; need to carry on with check if this is smaller than negated time_shift_h, i.e. if carry is set
-   beq :+
-   bcs @set_delta_tick_to_zero ; time_shift_h is larger than min time stamp --> need to clamp
-   bra @finish_determine_time_delta
-:  ; check time_shift_l
-   lda time_shift_l
-   eor #$ff
-   ; these two cancel each other out:
-   ; inc ; .A contains negated time_shift_l
-   ; dec ; convert the carry flag from cmp instruction from (.A >= mem) to (.A > mem)
-   cmp detail::selection_min_time_stamp
-   bcc @finish_determine_time_delta
-@set_delta_tick_to_zero:
-   stz time_shift_h
-   stz time_shift_l
-@finish_determine_time_delta:
-   lda detail::selection_min_time_stamp
-   clc
-   adc time_shift_l
-   sta detail::selection_min_time_stamp
-   lda detail::selection_min_time_stamp+1
-   adc time_shift_h
-   sta detail::selection_min_time_stamp+1
+   jsr detail::determineTimeShift
 @end_determine_time_delta:
 
 
@@ -1033,6 +1050,128 @@ height = 2 * detail::event_edit_height
    adc delta_y
    sta events::note_pitch
 @end_pitch_update:
+
+   ply
+   plx
+   pla
+   jsr v40b::write_entry
+
+   bra @next_event
+@events_loop_end:
+
+   inc gui_variables::request_components_redraw
+   rts
+.endproc
+
+
+; Figures out the minimum note length of all selected notes
+; so that we can clamp note-resize operations (i.e. not make notes shorter than 0)
+.proc resizeNoteStart
+   time_stamp_temp_l = detail::temp_variable_a
+   time_stamp_temp_h = detail::temp_variable_b
+   SET_SELECTED_VECTOR selected_events_vector
+   lda #255
+   sta detail::selection_shortest_note_length
+   sta detail::selection_shortest_note_length+1
+
+   jsr item_selection::resetStreamSelectedOnly
+@event_loop_start:
+   jsr item_selection::streamGetNextEvent
+   bcc :+
+   rts
+:  ; save current event pointer
+   pha
+   phx
+   phy
+   jsr v40b::read_entry
+   ; recall part of event pointer (don't recall .A yet because we still work with it)
+   ply
+   plx
+   lda events::event_type
+   cmp #events::event_type_note_on
+   beq @process_note_on
+   ; no note-on, skip event
+   pla ; tidy up stack
+   bra @event_loop_start
+@process_note_on:
+   ; store time stamp of note-on
+   lda events::event_time_stamp_l
+   sta time_stamp_temp_l
+   lda events::event_time_stamp_h
+   sta time_stamp_temp_h
+   ; get note-off
+   pla ; recall last byte of the note-on pointer
+   jsr item_selection::findNoteOff
+   jsr v40b::read_entry
+   ; get note length and compare with minimum
+   lda events::event_time_stamp_l
+   sec
+   sbc time_stamp_temp_l
+   sta time_stamp_temp_l
+   lda events::event_time_stamp_h
+   sbc time_stamp_temp_h
+   sta time_stamp_temp_h
+   cmp detail::selection_shortest_note_length+1
+   bcs @event_loop_start ; current note is longer --> go to next
+   bne @save_note_length ; not bigger & not equal --> must be smaller
+   ; compare low bytes
+   lda time_stamp_temp_l
+   cmp detail::selection_shortest_note_length
+   bcs @event_loop_start
+@save_note_length:
+   lda time_stamp_temp_l
+   sta detail::selection_shortest_note_length
+   lda time_stamp_temp_h
+   sta detail::selection_shortest_note_length+1
+   bra @event_loop_start
+.endproc
+
+
+.proc noteResize
+   jsr dnd::getMouseChargridMotion
+   ; check if we actually do anything (could be moved into getMouseChargridMotion and returned in carry flag)
+   cmp #0
+   bne @do_resize
+   rts
+
+@do_resize:
+   delta_x = detail::determineTimeShift::delta_x
+   sta delta_x
+
+   ; Find delta time
+   ; ---------------
+   time_shift_l = detail::determineTimeShift::time_shift_l
+   time_shift_h = detail::determineTimeShift::time_shift_h
+   lda detail::pointed_at_event
+   ldx detail::pointed_at_event+1
+   ldy detail::pointed_at_event+2
+   jsr item_selection::findNoteOff
+   jsr v40b::read_entry
+   jsr detail::determineTimeShift
+
+   ; iterate over events
+   ; -------------------
+   jsr item_selection::resetStreamSelectedOnly
+@next_event:
+   jsr item_selection::streamGetNextEvent
+   bcs @events_loop_end
+   pha
+   phx
+   phy
+   jsr v40b::read_entry
+
+   ; shift the time of note-off events
+   lda events::event_type
+   bne @end_time_update ; #events::event_type_note_off
+@do_time_update:
+   lda events::event_time_stamp_l
+   clc
+   adc time_shift_l
+   sta events::event_time_stamp_l
+   lda events::event_time_stamp_h
+   adc time_shift_h
+   sta events::event_time_stamp_h
+@end_time_update:
 
    ply
    plx
@@ -1161,9 +1300,14 @@ height = 2 * detail::event_edit_height
       sta dnd::drag_action_state
       rts
    @lmb_event_clicked:
-      ; after whatever we do here, it's a drag operation afterwards
+      ; after whatever we do here, it's either a drag or resize operation afterwards
       lda #drag_action::drag
-      sta dnd::drag_action_state
+      ldx mouse_variables::curr_data_1
+      cpx #hitboxes__hitbox_handle__right_end
+      bne :+
+      lda #drag_action::resize
+   :  sta dnd::drag_action_state
+
       ; selection logic
       lda mouse_variables::curr_data_2
       sta v40b::value_0
@@ -1231,8 +1375,12 @@ height = 2 * detail::event_edit_height
    ; if we're starting a drag operation, we need to figure out a bunch of things
    lda dnd::drag_action_state
    cmp #drag_action::drag
-   bne @drag_continue
+   bne :+
    jsr dragNoteStart
+   bra @drag_continue
+:  cmp #drag_action::resize
+   bne @drag_continue
+   jsr resizeNoteStart ; TODO: resizeNoteStart
 
 ; do the actual drag operation
 @drag_continue:
@@ -1246,6 +1394,7 @@ height = 2 * detail::event_edit_height
    .word doZoom
    .word components_common::dummy_subroutine ; box select, not implemented yet
    .word noteDrag
+   .word noteResize
 .endproc
 
 

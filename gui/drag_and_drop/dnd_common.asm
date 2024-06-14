@@ -13,6 +13,8 @@ ctrl_key_pressed:
     .byte 0
 shift_key_pressed:
     .byte 0
+alt_key_pressed:
+    .byte 0
 
 ; Vectors for processing events
 temp_events:
