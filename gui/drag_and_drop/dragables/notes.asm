@@ -1076,10 +1076,17 @@ height = 2 * detail::event_edit_height
 
    jsr item_selection::resetStreamSelectedOnly
 @event_loop_start:
-   jsr item_selection::streamGetNextEvent
-   bcc :+
+   jsr item_selection::streamGetNextEvent ; todo: use streamPeekNextSelectedEvent ?
+   bcc @process_next_event
+   ; Finishing.
+   ; decrement the minimum time stamp by 1 in order to prevent zero-length notes.
+   lda detail::selection_shortest_note_length
+   bne :+
+   dec detail::selection_shortest_note_length+1
+:  dec detail::selection_shortest_note_length
    rts
-:  ; save current event pointer
+@process_next_event:
+   ; save current event pointer
    pha
    phx
    phy
@@ -1112,9 +1119,10 @@ height = 2 * detail::event_edit_height
    sbc time_stamp_temp_h
    sta time_stamp_temp_h
    cmp detail::selection_shortest_note_length+1
-   bcs @event_loop_start ; current note is longer --> go to next
-   bne @save_note_length ; not bigger & not equal --> must be smaller
-   ; compare low bytes
+   beq @compare_low_bytes
+   bcs @event_loop_start ; not equal --> current note is longer --> go to next
+   bra @save_note_length ; not bigger & not equal --> must be smaller
+@compare_low_bytes:
    lda time_stamp_temp_l
    cmp detail::selection_shortest_note_length
    bcs @event_loop_start
@@ -1153,17 +1161,16 @@ height = 2 * detail::event_edit_height
    ; -------------------
    jsr item_selection::resetStreamSelectedOnly
 @next_event:
-   jsr item_selection::streamGetNextEvent
+   jsr item_selection::streamPeekNextSelectedEvent
    bcs @events_loop_end
-   pha
-   phx
-   phy
    jsr v40b::read_entry
 
-   ; shift the time of note-off events
    lda events::event_type
-   bne @end_time_update ; #events::event_type_note_off
-@do_time_update:
+   bne @no_note_off ; #events::event_type_note_off
+@note_off:
+   ; cut the event from the original vector (since the order of events may change)
+   jsr item_selection::streamDeleteNextSelectedEvent
+   ; move the time stamp
    lda events::event_time_stamp_l
    clc
    adc time_shift_l
@@ -1171,15 +1178,20 @@ height = 2 * detail::event_edit_height
    lda events::event_time_stamp_h
    adc time_shift_h
    sta events::event_time_stamp_h
-@end_time_update:
-
-   ply
-   plx
-   pla
-   jsr v40b::write_entry
-
+   ; add the note-off to the temporary vector
+   lda temp_events
+   ldx temp_events+1
+   jsr v40b::append_new_entry
+   bra @next_event
+@no_note_off:
+   ; actually advance to next event if it isn't a note-off
+   jsr item_selection::streamGetNextEvent
    bra @next_event
 @events_loop_end:
+
+   ; now merge the moved note-off events back into the selected_events_vector
+   SET_UNSELECTED_VECTOR temp_events
+   jsr item_selection::selectAllEvents
 
    inc gui_variables::request_components_redraw
    rts

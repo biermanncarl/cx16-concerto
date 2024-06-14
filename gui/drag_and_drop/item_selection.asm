@@ -78,6 +78,16 @@ back_buffer:
     sty next_selected_event+2
     rts
 .endproc
+
+.proc advanceNextSelectedEvent
+    ; Expects the current selected event in .A/.X/.Y
+    jsr v40b::get_next_entry
+    stz next_selected_event+2 ; mark next event as invalid preemptively (will override it if not invalid)
+    bcc :+
+    rts
+:   jsr detail::storeNextSelectedEvent
+    rts
+.endproc
 .endscope
 
 ; Given the pointer to a note-on event in .A/.X/.Y, finds the corresponding note-off event by linear search.
@@ -290,10 +300,7 @@ pitch:
     pha
     phx
     phy
-    jsr v40b::get_next_entry
-    stz next_selected_event+2 ; mark next event as invalid preemptively (will override it if not invalid)
-    bcs @return_pointer
-    jsr detail::storeNextSelectedEvent
+    jsr detail::advanceNextSelectedEvent
     bra @return_pointer
 @next_unselected:
     stz last_event_source
@@ -314,6 +321,47 @@ pitch:
     pla
     clc
     rts
+.endproc
+
+
+; If available, returns the pointer to the next selected event in .A/.X/.Y without advancing
+; the stream.
+; If available, carry will be clear; set otherwise.
+.proc streamPeekNextSelectedEvent
+    jsr detail::loadNextSelectedEvent
+    cpy #0
+    bne :+
+    sec
+    rts
+:   clc
+    rts
+.endproc
+
+; Deletes the next event from the selected events and advances the stream to the next selected event.
+; Expects that the next selected event actually exists (that is, before it gets deleted).
+; Meant for use in conjunction with streamPeekNextSelectedEvent.
+.proc streamDeleteNextSelectedEvent
+    jsr detail::loadNextSelectedEvent
+    jsr v40b::get_previous_entry
+    bcs @delete_first_event
+    pha
+    phx
+    phy
+    jsr v40b::get_next_entry ; lazy way of getting back the original event
+    jsr v40b::delete_entry
+    ply
+    plx
+    pla
+    jsr detail::advanceNextSelectedEvent
+    rts
+@delete_first_event:
+    ; If the first event gets deleted, we know for sure that afterwards,
+    ; the vector is either empty or the original event pointer is a valid one afterwards, too.
+    jsr detail::loadNextSelectedEvent
+    jsr v40b::delete_entry
+    bcc :+
+    stz next_selected_event+2 ; it was the only event, invalidate next selected event.
+:   rts
 .endproc
 
 
