@@ -1320,6 +1320,17 @@ height = 2 * detail::event_edit_height
    rts
 .endproc
 
+.proc potentiallyDeleteSelection
+   lda dnd::alt_key_pressed
+   bne @do_delete
+   rts
+@do_delete:
+   lda selected_events_vector
+   ldx selected_events_vector+1
+   jsr v40b::clear
+   rts
+.endproc
+
 
 
 .scope drag_action
@@ -1400,6 +1411,7 @@ height = 2 * detail::event_edit_height
          jsr dnd::dragables::item_selection::unSelectAllEvents
          ; now, swap selected with temp vector, as they have the correct contents already
          SWAP_VECTORS dnd::temp_events, selected_events_vector
+         jsr potentiallyDeleteSelection
          rts
       @already_selected:
          lda dnd::shift_key_pressed
@@ -1407,7 +1419,8 @@ height = 2 * detail::event_edit_height
          SET_SELECTED_VECTOR selected_events_vector
          jsr detail::getEntryFromHitboxObjectId
          jsr dnd::dragables::item_selection::unselectEvent
-      :  rts
+      :  jsr potentiallyDeleteSelection
+         rts
 @right_button:
    lda mouse_variables::curr_data_1
    beq @scroll ; only scroll when the mouse did not point at any note (?)
