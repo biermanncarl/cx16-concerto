@@ -7,13 +7,13 @@
 ; them in a separate, "selected" vector. When an event gets unselected, it is inserted
 ; back into the original vector.
 
-.ifndef DRAG_AND_DROP_ITEM_SELECTION_ASM
-DRAG_AND_DROP_ITEM_SELECTION_ASM = 1
+.ifndef SONG_DATA_EVENT_SELECTION_ASM
+SONG_DATA_EVENT_SELECTION_ASM = 1
 
-.include "../../common/x16.asm"
-.include "../../dynamic_memory/vector_40bit.asm"
+.include "../common/x16.asm"
+.include "../dynamic_memory/vector_40bit.asm"
 
-.scope item_selection
+.scope event_selection
 
 
 .pushseg
@@ -367,16 +367,16 @@ pitch:
 
 .macro SET_SELECTED_VECTOR vector_address
     lda vector_address
-    sta ::concerto_gui::components::dnd::dragables::item_selection::selected_events
+    sta song_engine::event_selection::selected_events
     lda vector_address+1
-    sta ::concerto_gui::components::dnd::dragables::item_selection::selected_events+1
+    sta song_engine::event_selection::selected_events+1
 .endmacro
 
 .macro SET_UNSELECTED_VECTOR vector_address
     lda vector_address
-    sta ::concerto_gui::components::dnd::dragables::item_selection::unselected_events
+    sta song_engine::event_selection::unselected_events
     lda vector_address+1
-    sta ::concerto_gui::components::dnd::dragables::item_selection::unselected_events+1
+    sta song_engine::event_selection::unselected_events+1
 .endmacro
 
 ; maybe move into v40b?
@@ -650,4 +650,4 @@ pitch:
 
 .endscope
 
-.endif ; .ifndef DRAG_AND_DROP_ITEM_SELECTION_ASM
+.endif ; .ifndef SONG_DATA_EVENT_SELECTION_ASM

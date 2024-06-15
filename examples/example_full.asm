@@ -14,6 +14,8 @@ concerto_use_timbres_from_file = 1
 ; include the synth engine
 .include "../synth_engine/concerto_synth.asm"
 
+.include "../song_engine/song_engine.asm"
+
 ; include the synth gui
 ::concerto_full_daw = 1
 .include "../gui/concerto_gui.asm"

@@ -7,9 +7,6 @@
 
 .include "../../../common/x16.asm"
 .include "../../../dynamic_memory/vector_40bit.asm"
-.include "../../../song_data/timing.asm"
-.include "../../../song_data/events.asm"
-.include "../item_selection.asm"
 .include "common.asm"
 
 .scope notes
@@ -115,7 +112,7 @@ selected_events_vector:
       clc
       adc window_pitch ; This exact addition is done every time, could be optimized.
       sec
-      sbc events::note_pitch
+      sbc song_engine::events::note_pitch
       tax
       ; check if note is on-screen
       cmp #0
@@ -134,16 +131,16 @@ selected_events_vector:
    ; Basically just copies the event pointer into the buffer.
    ; preserves .X and .Y
    .proc startNoteHitbox
-      lda item_selection::last_event_source
+      lda song_engine::event_selection::last_event_source
       sta note_is_selected, x
       bne @selected
    @unselected:
-      lda item_selection::last_unselected_id
-      ldy item_selection::last_unselected_id+1
+      lda song_engine::event_selection::last_unselected_id
+      ldy song_engine::event_selection::last_unselected_id+1
       bra @store_id
    @selected:
-      lda item_selection::last_selected_id
-      ldy item_selection::last_selected_id+1
+      lda song_engine::event_selection::last_selected_id
+      ldy song_engine::event_selection::last_selected_id+1
    @store_id:
       sta note_id_low, x
       tya
@@ -241,17 +238,17 @@ selected_events_vector:
       time_shift_l = detail::temp_variable_a
       time_shift_h = detail::temp_variable_b
       delta_x = detail::temp_variable_z
-      lda events::event_time_stamp_h
-      ldx events::event_time_stamp_l
-      sta timing::time_stamp_parameter+1
-      stx timing::time_stamp_parameter
+      lda song_engine::events::event_time_stamp_h
+      ldx song_engine::events::event_time_stamp_l
+      sta song_engine::timing::time_stamp_parameter+1
+      stx song_engine::timing::time_stamp_parameter
       ldx #0 ; no snap to grid -- could be changed e.g. with modifier key
       ldy temporal_zoom
       lda delta_x
-      jsr timing::move_along_grid
-      lda timing::time_stamp_parameter
+      jsr song_engine::timing::move_along_grid
+      lda song_engine::timing::time_stamp_parameter
       sta time_shift_l
-      lda timing::time_stamp_parameter+1
+      lda song_engine::timing::time_stamp_parameter+1
       sta time_shift_h
       bpl @finish_determine_time_delta
    @clamp_time_left:
@@ -292,7 +289,7 @@ selected_events_vector:
 
 
 
-change_song_tempo = timing::recalculate_rhythm_values ; TODO: actually recalculate ALL time stamps (lossy for sub-1/32 values)
+change_song_tempo = song_engine::timing::recalculate_rhythm_values ; TODO: actually recalculate ALL time stamps (lossy for sub-1/32 values)
 
 
 ; Sets up a clip with some notes for testing.
@@ -303,10 +300,10 @@ change_song_tempo = timing::recalculate_rhythm_values ; TODO: actually recalcula
    start_time_stamp = 8*test_quarter_ticks
    ; make sure all the ticks are properly populated
    lda #test_first_eighth_ticks
-   sta timing::first_eighth_ticks
+   sta song_engine::timing::first_eighth_ticks
    lda #test_second_eighth_ticks
-   sta timing::second_eighth_ticks
-   jsr timing::recalculate_rhythm_values
+   sta song_engine::timing::second_eighth_ticks
+   jsr song_engine::timing::recalculate_rhythm_values
    
    ; create unselected vector
    jsr v40b::new
@@ -314,79 +311,79 @@ change_song_tempo = timing::recalculate_rhythm_values ; TODO: actually recalcula
    stx unselected_events_vector+1
    ; note-on
    lda #<(start_time_stamp)
-   sta events::event_time_stamp_l
+   sta song_engine::events::event_time_stamp_l
    lda #>(start_time_stamp)
-   sta events::event_time_stamp_h
-   lda #events::event_type_note_on
-   sta events::event_type
+   sta song_engine::events::event_time_stamp_h
+   lda #song_engine::events::event_type_note_on
+   sta song_engine::events::event_type
    lda #50
-   sta events::note_pitch
-   stz events::event_data_2
+   sta song_engine::events::note_pitch
+   stz song_engine::events::event_data_2
    lda unselected_events_vector
    ldx unselected_events_vector+1
    jsr v40b::append_new_entry
    ; note-off
    lda #<(start_time_stamp+5)
-   sta events::event_time_stamp_l
+   sta song_engine::events::event_time_stamp_l
    lda #>(start_time_stamp+5)
-   sta events::event_time_stamp_h
-   lda #events::event_type_note_off
-   sta events::event_type
+   sta song_engine::events::event_time_stamp_h
+   lda #song_engine::events::event_type_note_off
+   sta song_engine::events::event_type
    lda #50
-   sta events::note_pitch
-   stz events::event_data_2
+   sta song_engine::events::note_pitch
+   stz song_engine::events::event_data_2
    lda unselected_events_vector
    ldx unselected_events_vector+1
    jsr v40b::append_new_entry
    ; note-on
    lda #<(start_time_stamp+test_first_eighth_ticks)
-   sta events::event_time_stamp_l
+   sta song_engine::events::event_time_stamp_l
    lda #>(start_time_stamp+test_first_eighth_ticks)
-   sta events::event_time_stamp_h
-   lda #events::event_type_note_on
-   sta events::event_type
+   sta song_engine::events::event_time_stamp_h
+   lda #song_engine::events::event_type_note_on
+   sta song_engine::events::event_type
    lda #50
-   sta events::note_pitch
-   stz events::event_data_2
+   sta song_engine::events::note_pitch
+   stz song_engine::events::event_data_2
    lda unselected_events_vector
    ldx unselected_events_vector+1
    jsr v40b::append_new_entry
    ; note-off
    lda #<(start_time_stamp+2*test_first_eighth_ticks)
-   sta events::event_time_stamp_l
+   sta song_engine::events::event_time_stamp_l
    lda #>(start_time_stamp+2*test_first_eighth_ticks)
-   sta events::event_time_stamp_h
-   lda #events::event_type_note_off
-   sta events::event_type
+   sta song_engine::events::event_time_stamp_h
+   lda #song_engine::events::event_type_note_off
+   sta song_engine::events::event_type
    lda #50
-   sta events::note_pitch
-   stz events::event_data_2
+   sta song_engine::events::note_pitch
+   stz song_engine::events::event_data_2
    lda unselected_events_vector
    ldx unselected_events_vector+1
    jsr v40b::append_new_entry
    ; note-on
    lda #<(start_time_stamp+test_quarter_ticks)
-   sta events::event_time_stamp_l
+   sta song_engine::events::event_time_stamp_l
    lda #>(start_time_stamp+test_quarter_ticks)
-   sta events::event_time_stamp_h
-   lda #events::event_type_note_on
-   sta events::event_type
+   sta song_engine::events::event_time_stamp_h
+   lda #song_engine::events::event_type_note_on
+   sta song_engine::events::event_type
    lda #52
-   sta events::note_pitch
-   stz events::event_data_2
+   sta song_engine::events::note_pitch
+   stz song_engine::events::event_data_2
    lda unselected_events_vector
    ldx unselected_events_vector+1
    jsr v40b::append_new_entry
    ; note-off
    lda #<(start_time_stamp+test_quarter_ticks+80)
-   sta events::event_time_stamp_l
+   sta song_engine::events::event_time_stamp_l
    lda #>(start_time_stamp+test_quarter_ticks+80)
-   sta events::event_time_stamp_h
-   lda #events::event_type_note_off
-   sta events::event_type
+   sta song_engine::events::event_time_stamp_h
+   lda #song_engine::events::event_type_note_off
+   sta song_engine::events::event_type
    lda #52
-   sta events::note_pitch
-   stz events::event_data_2
+   sta song_engine::events::note_pitch
+   stz song_engine::events::event_data_2
    lda unselected_events_vector
    ldx unselected_events_vector+1
    jsr v40b::append_new_entry
@@ -397,53 +394,53 @@ change_song_tempo = timing::recalculate_rhythm_values ; TODO: actually recalcula
    stx selected_events_vector+1
    ; note-on
    lda #<(start_time_stamp+test_quarter_ticks+test_first_eighth_ticks)
-   sta events::event_time_stamp_l
+   sta song_engine::events::event_time_stamp_l
    lda #>(start_time_stamp+test_quarter_ticks+test_first_eighth_ticks)
-   sta events::event_time_stamp_h
-   lda #events::event_type_note_on
-   sta events::event_type
+   sta song_engine::events::event_time_stamp_h
+   lda #song_engine::events::event_type_note_on
+   sta song_engine::events::event_type
    lda #55
-   sta events::note_pitch
-   stz events::event_data_2
+   sta song_engine::events::note_pitch
+   stz song_engine::events::event_data_2
    lda selected_events_vector
    ldx selected_events_vector+1
    jsr v40b::append_new_entry
    ; note-off
    lda #<(start_time_stamp+test_quarter_ticks+2*test_first_eighth_ticks)
-   sta events::event_time_stamp_l
+   sta song_engine::events::event_time_stamp_l
    lda #>(start_time_stamp+test_quarter_ticks+2*test_first_eighth_ticks)
-   sta events::event_time_stamp_h
-   lda #events::event_type_note_off
-   sta events::event_type
+   sta song_engine::events::event_time_stamp_h
+   lda #song_engine::events::event_type_note_off
+   sta song_engine::events::event_type
    lda #55
-   sta events::note_pitch
-   stz events::event_data_2
+   sta song_engine::events::note_pitch
+   stz song_engine::events::event_data_2
    lda selected_events_vector
    ldx selected_events_vector+1
    jsr v40b::append_new_entry
    ; note-on
    lda #<(start_time_stamp+2*test_quarter_ticks+1)
-   sta events::event_time_stamp_l
+   sta song_engine::events::event_time_stamp_l
    lda #>(start_time_stamp+2*test_quarter_ticks+1)
-   sta events::event_time_stamp_h
-   lda #events::event_type_note_on
-   sta events::event_type
+   sta song_engine::events::event_time_stamp_h
+   lda #song_engine::events::event_type_note_on
+   sta song_engine::events::event_type
    lda #48
-   sta events::note_pitch
-   stz events::event_data_2
+   sta song_engine::events::note_pitch
+   stz song_engine::events::event_data_2
    lda selected_events_vector
    ldx selected_events_vector+1
    jsr v40b::append_new_entry
    ; note-off
    lda #<(start_time_stamp+2*test_quarter_ticks+80)
-   sta events::event_time_stamp_l
+   sta song_engine::events::event_time_stamp_l
    lda #>(start_time_stamp+2*test_quarter_ticks+80)
-   sta events::event_time_stamp_h
-   lda #events::event_type_note_off
-   sta events::event_type
+   sta song_engine::events::event_time_stamp_h
+   lda #song_engine::events::event_type_note_off
+   sta song_engine::events::event_type
    lda #48
-   sta events::note_pitch
-   stz events::event_data_2
+   sta song_engine::events::note_pitch
+   stz song_engine::events::event_data_2
    lda selected_events_vector
    ldx selected_events_vector+1
    jsr v40b::append_new_entry
@@ -484,13 +481,13 @@ change_song_tempo = timing::recalculate_rhythm_values ; TODO: actually recalcula
    sta running_time_stamp_h
    ldx window_time_stamp
    stx running_time_stamp_l
-   jsr timing::disassemble_time_stamp
+   jsr song_engine::timing::disassemble_time_stamp
    stx thirtysecondth_count
    sty ticks_since_last_full_thirtysecondth
 
    ; column stride
    ldx temporal_zoom
-   jsr timing::get_note_duration_thirtysecondths
+   jsr song_engine::timing::get_note_duration_thirtysecondths
    sta thirtysecondth_stride
 
    ; clear the column buffer (don't need to clear the hitbox buffers because if the column_buffer is cleared, the others won't get read)
@@ -503,7 +500,7 @@ change_song_tempo = timing::recalculate_rhythm_values ; TODO: actually recalcula
    ; event sources: unselected and selected events
    SET_SELECTED_VECTOR selected_events_vector
    SET_UNSELECTED_VECTOR unselected_events_vector
-   jsr item_selection::resetStream
+   jsr song_engine::event_selection::resetStream
 
    ; initialize the hitbox list
    lda #dragables__ids__notes
@@ -524,7 +521,7 @@ change_song_tempo = timing::recalculate_rhythm_values ; TODO: actually recalcula
    stz end_of_data
 
    ; get first entry
-   jsr item_selection::streamGetNextEvent
+   jsr song_engine::event_selection::streamGetNextEvent
    bcs @pre_parsing_end_of_data
 @clip_is_not_empty:
    ; we have at least one event. get that event's time stamp
@@ -538,10 +535,10 @@ change_song_tempo = timing::recalculate_rhythm_values ; TODO: actually recalcula
    ; =============================================================================================================================
 @pre_parsing_loop:
    lda running_time_stamp_h ; running time stamp is kept at the left border's time stamp during pre-parsing
-   cmp events::event_time_stamp_h
+   cmp song_engine::events::event_time_stamp_h
    bcc @end_pre_parsing_loop ; if time stamp's high is bigger than reference, we must end
    bne @continue_pre_parsing_loop ; if they're not equal, (and implicitly not bigger), it must be smaller -> we can continue
-   lda events::event_time_stamp_l ; high bytes are equal --> need to check low byte
+   lda song_engine::events::event_time_stamp_l ; high bytes are equal --> need to check low byte
    cmp running_time_stamp_l
    bcs @end_pre_parsing_loop ; if time stamp's low byte is equal or higher than threshold, we end
 @continue_pre_parsing_loop:
@@ -551,9 +548,9 @@ change_song_tempo = timing::recalculate_rhythm_values ; TODO: actually recalcula
    jsr detail::calculateRowAndCheckBounds
    bcc @pre_parsing_next_event ; when outside the view vertically, continue to next event
    ; check event type
-   lda events::event_type
+   lda song_engine::events::event_type
    beq @pre_parsing_note_off
-   cmp #events::event_type_note_on
+   cmp #song_engine::events::event_type_note_on
    bne @pre_parsing_next_event
 @pre_parsing_note_on:
    jsr detail::startNoteHitbox
@@ -565,7 +562,7 @@ change_song_tempo = timing::recalculate_rhythm_values ; TODO: actually recalcula
    sta detail::column_buffer, x
 @pre_parsing_next_event:
    ; get next event
-   jsr item_selection::streamGetNextEvent
+   jsr song_engine::event_selection::streamGetNextEvent
    bcs @pre_parsing_end_of_data
    jsr v40b::read_entry
    bra @pre_parsing_loop
@@ -592,7 +589,7 @@ change_song_tempo = timing::recalculate_rhythm_values ; TODO: actually recalcula
    ldx temporal_zoom
    beq @decide_full_thirtysecondth
 @decide_resolution_times_four: ; if zoom level is at least 1, we simply look at the thirtysecondth count
-   jsr timing::get_note_duration_thirtysecondths
+   jsr song_engine::timing::get_note_duration_thirtysecondths
    ; grid resolution times 4 minus 1 --> bit mask to check for exact multiple of 4.
    asl
    asl
@@ -613,7 +610,7 @@ change_song_tempo = timing::recalculate_rhythm_values ; TODO: actually recalcula
    inc ticks_since_last_full_thirtysecondth
    lda #1
    ldx thirtysecondth_count
-   jsr timing::get_note_duration_ticks
+   jsr song_engine::timing::get_note_duration_ticks
    ; got length of thirtysecondth note in .A
    cmp ticks_since_last_full_thirtysecondth
    bne :+
@@ -638,7 +635,7 @@ change_song_tempo = timing::recalculate_rhythm_values ; TODO: actually recalcula
    sta thirtysecondth_count
    tax
    lda temporal_zoom ; zoom level
-   jsr timing::get_note_duration_ticks
+   jsr song_engine::timing::get_note_duration_ticks
    clc
    adc running_time_stamp_l
    sta running_time_stamp_l
@@ -655,18 +652,18 @@ change_song_tempo = timing::recalculate_rhythm_values ; TODO: actually recalcula
 @main_parse_events_loop:
    ; We assume the next event's data to be already loaded in the event_time_stamp_h etc. variables
    ; check if time stamp is within current column
-   lda events::event_time_stamp_h
+   lda song_engine::events::event_time_stamp_h
    cmp running_time_stamp_h
    bcc @time_stamp_within_column ; if carry is clear this means event time stamp is lower than column's border
    bne @end_parse_events ; if the time stamps aren't equal (and also event time stamp is not lower), the event time stamp is higher --> quit event parsing
-   lda events::event_time_stamp_l ; high time stamps are equal, need to check low time stamp
+   lda song_engine::events::event_time_stamp_l ; high time stamps are equal, need to check low time stamp
    cmp running_time_stamp_l
    bcs @end_parse_events ; if carry is clear this means event time stamp is lower than column's border
 @time_stamp_within_column:
    ; interpret event type
-   lda events::event_type
+   lda song_engine::events::event_type
    beq @handle_note_off
-   cmp #events::event_type_note_on
+   cmp #song_engine::events::event_type_note_on
    beq @handle_note_on
 
 @handle_note_on:
@@ -709,7 +706,7 @@ change_song_tempo = timing::recalculate_rhythm_values ; TODO: actually recalcula
    bra @parse_next_event
 
 @parse_next_event:
-   jsr item_selection::streamGetNextEvent
+   jsr song_engine::event_selection::streamGetNextEvent
    bcs :+ ; new data available?
    ; new data available.
    jsr v40b::read_entry
@@ -853,26 +850,26 @@ height = 2 * detail::event_edit_height
    pha ; store horizontal scroll distance to the stack
 
    lda window_time_stamp
-   sta timing::time_stamp_parameter
+   sta song_engine::timing::time_stamp_parameter
    lda window_time_stamp+1
-   sta timing::time_stamp_parameter+1
+   sta song_engine::timing::time_stamp_parameter+1
    ldy temporal_zoom
    ldx #1 ; snap to grid
    pla ; scroll distance
    eor #$ff
    inc
-   jsr timing::move_along_grid ; calculate the time stamp delta
+   jsr song_engine::timing::move_along_grid ; calculate the time stamp delta
    ; now add the delta to the time stamp
    lda window_time_stamp
    clc
-   adc timing::time_stamp_parameter
+   adc song_engine::timing::time_stamp_parameter
    sta window_time_stamp
    lda window_time_stamp+1
-   adc timing::time_stamp_parameter+1
+   adc song_engine::timing::time_stamp_parameter+1
    sta window_time_stamp+1
    ; check if we overshot over t=0
    bcs :+
-   lda timing::time_stamp_parameter+1
+   lda song_engine::timing::time_stamp_parameter+1
    bpl :+
    ; set back to t=0
    stz window_time_stamp
@@ -927,26 +924,26 @@ height = 2 * detail::event_edit_height
    sta detail::selection_min_pitch
 
    ; get time stamp of the first event
-   jsr item_selection::resetStreamSelectedOnly
-   jsr item_selection::streamGetNextEvent
+   jsr song_engine::event_selection::resetStreamSelectedOnly
+   jsr song_engine::event_selection::streamGetNextEvent
    bcc :+
    rts
 :  jsr v40b::read_entry
-   lda events::event_time_stamp_l
+   lda song_engine::events::event_time_stamp_l
    sta detail::selection_min_time_stamp
-   lda events::event_time_stamp_h
+   lda song_engine::events::event_time_stamp_h
    sta detail::selection_min_time_stamp+1
    ; get min & max note pitch
-   jsr item_selection::resetStreamSelectedOnly
+   jsr song_engine::event_selection::resetStreamSelectedOnly
 @next_event:
-   jsr item_selection::streamGetNextEvent
+   jsr song_engine::event_selection::streamGetNextEvent
    bcc :+
    rts
 :  jsr v40b::read_entry
-   lda events::event_type
-   cmp #events::event_type_note_on
+   lda song_engine::events::event_type
+   cmp #song_engine::events::event_type_note_on
    bne @next_event
-   lda events::note_pitch
+   lda song_engine::events::note_pitch
    cmp detail::selection_max_pitch
    bcc :+
    sta detail::selection_max_pitch
@@ -1021,9 +1018,9 @@ height = 2 * detail::event_edit_height
 
    ; iterate over events
    ; -------------------
-   jsr item_selection::resetStreamSelectedOnly
+   jsr song_engine::event_selection::resetStreamSelectedOnly
 @next_event:
-   jsr item_selection::streamGetNextEvent
+   jsr song_engine::event_selection::streamGetNextEvent
    bcs @events_loop_end
    pha
    phx
@@ -1031,24 +1028,24 @@ height = 2 * detail::event_edit_height
    jsr v40b::read_entry
 
    ; horizontal: shift the time
-   lda events::event_time_stamp_l
+   lda song_engine::events::event_time_stamp_l
    clc
    adc time_shift_l
-   sta events::event_time_stamp_l
-   lda events::event_time_stamp_h
+   sta song_engine::events::event_time_stamp_l
+   lda song_engine::events::event_time_stamp_h
    adc time_shift_h
-   sta events::event_time_stamp_h
+   sta song_engine::events::event_time_stamp_h
 
    ; pitch editing (vertical) -- only for note-on and note-off
-   lda events::event_type
-   beq @do_pitch_update ; comparing to events::event_type_note_off
-   cmp #events::event_type_note_on
+   lda song_engine::events::event_type
+   beq @do_pitch_update ; comparing to song_engine::events::event_type_note_off
+   cmp #song_engine::events::event_type_note_on
    bne @end_pitch_update ; if neither note-on nor note-off, skip
 @do_pitch_update:
-   lda events::note_pitch
+   lda song_engine::events::note_pitch
    clc
    adc delta_y
-   sta events::note_pitch
+   sta song_engine::events::note_pitch
 @end_pitch_update:
 
    ply
@@ -1074,9 +1071,9 @@ height = 2 * detail::event_edit_height
    sta detail::selection_shortest_note_length
    sta detail::selection_shortest_note_length+1
 
-   jsr item_selection::resetStreamSelectedOnly
+   jsr song_engine::event_selection::resetStreamSelectedOnly
 @event_loop_start:
-   jsr item_selection::streamGetNextEvent ; todo: use streamPeekNextSelectedEvent ?
+   jsr song_engine::event_selection::streamGetNextEvent ; todo: use streamPeekNextSelectedEvent ?
    bcc @process_next_event
    rts
 @process_next_event:
@@ -1088,28 +1085,28 @@ height = 2 * detail::event_edit_height
    ; recall part of event pointer (don't recall .A yet because we still work with it)
    ply
    plx
-   lda events::event_type
-   cmp #events::event_type_note_on
+   lda song_engine::events::event_type
+   cmp #song_engine::events::event_type_note_on
    beq @process_note_on
    ; no note-on, skip event
    pla ; tidy up stack
    bra @event_loop_start
 @process_note_on:
    ; store time stamp of note-on
-   lda events::event_time_stamp_l
+   lda song_engine::events::event_time_stamp_l
    sta time_stamp_temp_l
-   lda events::event_time_stamp_h
+   lda song_engine::events::event_time_stamp_h
    sta time_stamp_temp_h
    ; get note-off
    pla ; recall last byte of the note-on pointer
-   jsr item_selection::findNoteOff
+   jsr song_engine::event_selection::findNoteOff
    jsr v40b::read_entry
    ; get note length and compare with minimum
-   lda events::event_time_stamp_l
+   lda song_engine::events::event_time_stamp_l
    clc ; clc instead of sec is intentional here: we want to "shorten" the note by 1 tick in order to prevent zero-length notes
    sbc time_stamp_temp_l
    sta time_stamp_temp_l
-   lda events::event_time_stamp_h
+   lda song_engine::events::event_time_stamp_h
    sbc time_stamp_temp_h
    sta time_stamp_temp_h
    cmp detail::selection_shortest_note_length+1
@@ -1147,31 +1144,31 @@ height = 2 * detail::event_edit_height
    lda detail::pointed_at_event
    ldx detail::pointed_at_event+1
    ldy detail::pointed_at_event+2
-   jsr item_selection::findNoteOff
+   jsr song_engine::event_selection::findNoteOff
    jsr v40b::read_entry
    jsr detail::determineTimeShift
 
    ; iterate over events
    ; -------------------
-   jsr item_selection::resetStreamSelectedOnly
+   jsr song_engine::event_selection::resetStreamSelectedOnly
 @next_event:
-   jsr item_selection::streamPeekNextSelectedEvent
+   jsr song_engine::event_selection::streamPeekNextSelectedEvent
    bcs @events_loop_end
    jsr v40b::read_entry
 
-   lda events::event_type
-   bne @no_note_off ; #events::event_type_note_off
+   lda song_engine::events::event_type
+   bne @no_note_off ; #song_engine::events::event_type_note_off
 @note_off:
    ; cut the event from the original vector (since the order of events may change)
-   jsr item_selection::streamDeleteNextSelectedEvent
+   jsr song_engine::event_selection::streamDeleteNextSelectedEvent
    ; move the time stamp
-   lda events::event_time_stamp_l
+   lda song_engine::events::event_time_stamp_l
    clc
    adc time_shift_l
-   sta events::event_time_stamp_l
-   lda events::event_time_stamp_h
+   sta song_engine::events::event_time_stamp_l
+   lda song_engine::events::event_time_stamp_h
    adc time_shift_h
-   sta events::event_time_stamp_h
+   sta song_engine::events::event_time_stamp_h
    ; add the note-off to the temporary vector
    lda temp_events
    ldx temp_events+1
@@ -1179,13 +1176,13 @@ height = 2 * detail::event_edit_height
    bra @next_event
 @no_note_off:
    ; actually advance to next event if it isn't a note-off
-   jsr item_selection::streamGetNextEvent
+   jsr song_engine::event_selection::streamGetNextEvent
    bra @next_event
 @events_loop_end:
 
    ; now merge the moved note-off events back into the selected_events_vector
    SET_UNSELECTED_VECTOR temp_events
-   jsr item_selection::selectAllEvents
+   jsr song_engine::event_selection::selectAllEvents
 
    inc gui_variables::request_components_redraw
    rts
@@ -1278,9 +1275,9 @@ height = 2 * detail::event_edit_height
    jsr moveTimeWindow ; abusing the viewing window time stamp here
    ; copy time stamp
    lda window_time_stamp
-   sta events::event_time_stamp_l
+   sta song_engine::events::event_time_stamp_l
    lda window_time_stamp+1
-   sta events::event_time_stamp_h
+   sta song_engine::events::event_time_stamp_h
    ; get note pitch
    lda mouse_variables::curr_y_downscaled
    lsr
@@ -1289,10 +1286,10 @@ height = 2 * detail::event_edit_height
    adc #(detail::event_edit_pos_y + detail::event_edit_height)
    clc
    adc window_pitch
-   sta events::note_pitch
+   sta song_engine::events::note_pitch
    ; add note-on
-   lda #events::event_type_note_on
-   sta events::event_type
+   lda #song_engine::events::event_type_note_on
+   sta song_engine::events::event_type
    lda selected_events_vector
    ldx selected_events_vector+1
    jsr v40b::append_new_entry
@@ -1301,12 +1298,12 @@ height = 2 * detail::event_edit_height
    jsr moveTimeWindow
    ; copy time stamp
    lda window_time_stamp
-   sta events::event_time_stamp_l
+   sta song_engine::events::event_time_stamp_l
    lda window_time_stamp+1
-   sta events::event_time_stamp_h
+   sta song_engine::events::event_time_stamp_h
    ; add note-off
-   lda #events::event_type_note_off
-   sta events::event_type
+   lda #song_engine::events::event_type_note_off
+   sta song_engine::events::event_type
    lda selected_events_vector
    ldx selected_events_vector+1
    jsr v40b::append_new_entry
@@ -1347,7 +1344,7 @@ height = 2 * detail::event_edit_height
    bcc @duplicate_loop
 @end_duplicate:
    SET_SELECTED_VECTOR temp_events
-   jsr item_selection::unSelectAllEvents
+   jsr song_engine::event_selection::unSelectAllEvents
    lda #drag_action::drag
    sta drag_action_state
    rts
@@ -1393,7 +1390,7 @@ height = 2 * detail::event_edit_height
       ; no event clicked.
       lda dnd::ctrl_key_pressed
       beq :+ ; if CTRL is pressed, add a new note
-         jsr dnd::dragables::item_selection::unSelectAllEvents
+         jsr song_engine::event_selection::unSelectAllEvents
          jsr addNewNote
          lda #drag_action::resize
          sta dnd::drag_action_state
@@ -1401,7 +1398,7 @@ height = 2 * detail::event_edit_height
       :
       lda dnd::shift_key_pressed
       bne :+ ; if SHIFT is pressed, skip unselection of all
-         jsr dnd::dragables::item_selection::unSelectAllEvents
+         jsr song_engine::event_selection::unSelectAllEvents
       :
       lda #drag_action::box_select
       sta dnd::drag_action_state
@@ -1435,7 +1432,7 @@ height = 2 * detail::event_edit_height
          SET_SELECTED_VECTOR temp_events
          jsr selectWithHitboxId
          SET_SELECTED_VECTOR selected_events_vector
-         jsr dnd::dragables::item_selection::unSelectAllEvents
+         jsr song_engine::event_selection::unSelectAllEvents
          ; now, swap selected with temp vector, as they have the correct contents already
          SWAP_VECTORS temp_events, selected_events_vector
          jmp commonLeftClick
@@ -1444,7 +1441,7 @@ height = 2 * detail::event_edit_height
          beq :+
          SET_SELECTED_VECTOR selected_events_vector
          jsr detail::getEntryFromHitboxObjectId
-         jsr dnd::dragables::item_selection::unselectEvent
+         jsr song_engine::event_selection::unselectEvent
       :  jmp commonLeftClick
 @right_button:
    lda mouse_variables::curr_data_1
@@ -1465,7 +1462,7 @@ height = 2 * detail::event_edit_height
       sta detail::pointed_at_event
       stx detail::pointed_at_event+1
       sty detail::pointed_at_event+2
-      jsr dnd::dragables::item_selection::selectEvent
+      jsr song_engine::event_selection::selectEvent
       rts
    .endproc
 .endproc
