@@ -294,8 +294,8 @@ change_song_tempo = song_engine::timing::recalculate_rhythm_values ; TODO: actua
 
 ; Sets up a clip with some notes for testing.
 .proc setup_test_clip
-   test_first_eighth_ticks = 32
-   test_second_eighth_ticks = 32
+   test_first_eighth_ticks = 20
+   test_second_eighth_ticks = 15
    test_quarter_ticks = test_first_eighth_ticks + test_second_eighth_ticks
    start_time_stamp = 8*test_quarter_ticks
    ; make sure all the ticks are properly populated

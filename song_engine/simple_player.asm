@@ -18,7 +18,14 @@
     .proc getNextEventAndTimeStamp
         jsr event_selection::streamGetNextEvent
         bcc :+
-        stz detail::active ; for now, just deactivate the player when no more events available
+        ; loop back to beginning
+        stz time_stamp
+        stz time_stamp+1
+        jsr event_selection::resetStream
+        jsr event_selection::streamGetNextEvent
+        bcc :+
+        ; if we still don't get any new events, there are none. deactivate player
+        stz active
         rts
     :   sta next_event
         stx next_event+1
@@ -95,8 +102,6 @@
     sta detail::active
     stz detail::time_stamp
     stz detail::time_stamp+1
-    stz detail::next_time_stamp
-    stz detail::next_time_stamp+1
     jsr event_selection::resetStream ; TODO: set up proper vectors
     jsr detail::getNextEventAndTimeStamp
     rts
