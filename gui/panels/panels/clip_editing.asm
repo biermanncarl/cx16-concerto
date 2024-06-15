@@ -56,16 +56,16 @@
    @jmp_tbl:
       .word panel_common::dummy_subroutine ; drag and drop
       .word @zoom_level
-      .word @play
-      .word @stop
+      .word song_engine::simple_player::start_playback ; @play
+      .word song_engine::simple_player::stop_playback ; @stop
    @zoom_level:
       lda comps, y
       sta components::dnd::dragables::notes::temporal_zoom
       rts
-   @play:
-      rts
-   @stop:
-      rts
+   ; @play:
+   ;    rts
+   ; @stop:
+   ;    rts
    .endproc
 
 

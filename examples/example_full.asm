@@ -11,9 +11,7 @@
 concerto_use_timbres_from_file = 1
 .define CONCERTO_TIMBRES_PATH "FACTORY.COB"
 
-; include the synth engine
-.include "../synth_engine/concerto_synth.asm"
-
+; include the synth and song engines
 .include "../song_engine/song_engine.asm"
 
 ; include the synth gui
