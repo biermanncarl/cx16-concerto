@@ -172,6 +172,14 @@
         jsr v40b::new
         sta dnd::clipboard_events
         stx dnd::clipboard_events+1
+        ; create unselected vector
+        jsr v40b::new
+        sta dnd::dragables::notes::unselected_events_vector
+        stx dnd::dragables::notes::unselected_events_vector+1
+        ; create selected vector
+        jsr v40b::new
+        sta dnd::dragables::notes::selected_events_vector
+        stx dnd::dragables::notes::selected_events_vector+1
         ; just for testing
         jsr dnd::dragables::notes::setup_test_clip
         rts

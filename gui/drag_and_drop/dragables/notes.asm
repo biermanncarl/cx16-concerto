@@ -304,11 +304,10 @@ change_song_tempo = song_engine::timing::recalculate_rhythm_values ; TODO: actua
    lda #test_second_eighth_ticks
    sta song_engine::timing::second_eighth_ticks
    jsr song_engine::timing::recalculate_rhythm_values
+
+   rts
    
-   ; create unselected vector
-   jsr v40b::new
-   sta unselected_events_vector
-   stx unselected_events_vector+1
+
    ; note-on
    lda #<(start_time_stamp)
    sta song_engine::events::event_time_stamp_l
@@ -388,10 +387,7 @@ change_song_tempo = song_engine::timing::recalculate_rhythm_values ; TODO: actua
    ldx unselected_events_vector+1
    jsr v40b::append_new_entry
 
-   ; create selected vector
-   jsr v40b::new
-   sta selected_events_vector
-   stx selected_events_vector+1
+
    ; note-on
    lda #<(start_time_stamp+test_quarter_ticks+test_first_eighth_ticks)
    sta song_engine::events::event_time_stamp_l
