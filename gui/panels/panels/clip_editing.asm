@@ -56,14 +56,28 @@
    @jmp_tbl:
       .word panel_common::dummy_subroutine ; drag and drop
       .word @zoom_level
-      .word song_engine::simple_player::start_playback ; @play
+      .word @play
       .word song_engine::simple_player::stop_playback ; @stop
    @zoom_level:
       lda comps, y
       sta components::dnd::dragables::notes::temporal_zoom
       rts
-   ; @play:
-   ;    rts
+   @play:
+      ; start play routine
+      php
+      sei
+      lda #1
+      sta song_engine::simple_player::detail::active
+      stz song_engine::simple_player::detail::time_stamp
+      stz song_engine::simple_player::detail::time_stamp+1
+      jsr song_engine::event_selection::swapBackFrontStreams
+      SET_SELECTED_VECTOR components::dnd::dragables::notes::selected_events_vector
+      SET_UNSELECTED_VECTOR  components::dnd::dragables::notes::unselected_events_vector
+      jsr song_engine::event_selection::resetStream
+      jsr song_engine::simple_player::detail::getNextEventAndTimeStamp
+      jsr song_engine::event_selection::swapBackFrontStreams
+      plp
+      rts
    ; @stop:
    ;    rts
    .endproc

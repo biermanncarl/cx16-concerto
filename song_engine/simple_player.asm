@@ -5,6 +5,7 @@
 
 ; This player serves as a provisional way to play back note/event data.
 ; Whether it will later be expanded into a full, multi-track engine is not decided yet.
+; This code has nothing to do with the one under /simple_player/concerto_player.asm  --  sorry for the bad uncreative naming.
 
 .scope simple_player
 
@@ -48,6 +49,7 @@
     ; TODO: take care of ISR-stream-swap
     ; TODO: do live updates while editing
     ; TODO: polyphony
+    jsr event_selection::swapBackFrontStreams
 
 @process_events_loop:
     lda detail::next_time_stamp+1
@@ -94,16 +96,19 @@
     bne :+
     inc detail::time_stamp+1
 :
+    jsr event_selection::swapBackFrontStreams
     rts
 .endproc
 
 .proc start_playback
-    lda #1
-    sta detail::active
-    stz detail::time_stamp
-    stz detail::time_stamp+1
-    jsr event_selection::resetStream ; TODO: set up proper vectors
-    jsr detail::getNextEventAndTimeStamp
+    ; content moved to clip_editing start play button
+    ; reason: this module has no ownership of the necessary data vectors
+.endproc
+
+; This function must be called whenever the clip data that is being played back is changed.
+; (By the way, changing or even reading played back clip data in non-ISR code MUST be masked by SEI...)
+; 
+.proc update_playback
     rts
 .endproc
 

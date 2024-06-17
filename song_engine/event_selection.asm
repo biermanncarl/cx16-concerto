@@ -407,7 +407,7 @@ pitch:
 ; Swaps the stream in the active ZP buffer with the back buffer.
 ; This enables concurrent usage of two streams, which is most important for the ISR,
 ; which could interrupt the main program's stream usage.
-; TODO: check if we really need this. - maybe could be optimized away
+; Only call in Interrupt-flagged or ISR code!
 .proc swapBackFrontStreams
     ldx #0
 @swap_loop:
