@@ -107,8 +107,23 @@
 
 ; This function must be called whenever the clip data that is being played back is changed.
 ; (By the way, changing or even reading played back clip data in non-ISR code MUST be masked by SEI...)
-; 
-.proc update_playback
+; It basically rewinds the playback and fast-forwards to the current time stamp.
+.proc updatePlayback
+    ;jsr concerto_synth::panic
+    jsr event_selection::resetStream
+@fast_forward_loop:
+    jsr detail::getNextEventAndTimeStamp
+    bcs stop_playback ; basically sneaky jsr without return
+
+    lda detail::next_time_stamp+1
+    cmp detail::time_stamp+1
+    bcc @fast_forward_loop
+    bne @fast_forward_done
+    lda detail::next_time_stamp
+    cmp detail::time_stamp
+    bcc @fast_forward_loop
+
+@fast_forward_done:
     rts
 .endproc
 
