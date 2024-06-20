@@ -29,6 +29,9 @@ tick_is_running:
 
 ; this is the common part between the AFLOW and VIA1 solutions
 do_tick:
+   ; backup RAM bank
+   lda RAM_BANK
+   pha
    ; backup shared variables (shared means: both main program and ISR can use them)
    lda mzpba
    pha
@@ -66,7 +69,9 @@ do_tick:
    sta mzpbe
    pla
    sta mzpba
-
+   ; restora RAM bank
+   pla
+   sta RAM_BANK
    rts
 
 

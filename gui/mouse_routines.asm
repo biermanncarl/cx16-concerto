@@ -1,4 +1,4 @@
-; Copyright 2021 Carl Georg Biermann
+; Copyright 2021-2024 Carl Georg Biermann
 
 
 ; This file contains the mouse controller unit/routines.
@@ -55,10 +55,7 @@ mouse_tick:
 :  ; get mouse data
    mouse_data = gui_variables::mzpwa
    ldx #mouse_data
-   php
-   sei ; mouse query don't like no interrupt
    jsr MOUSE_GET
-   plp
    sta mouse_variables::curr_buttons
    lda mouse_data
    sta mouse_variables::curr_x
