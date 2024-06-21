@@ -4,6 +4,9 @@
 
    jmp start
 
+; binary assets
+.include "../assets/vram_assets.asm"
+
 ; communicate that we want to compile in timbre data from a file
 concerto_use_timbres_from_file = 1
 .define CONCERTO_TIMBRES_PATH "FACTORY.COB"

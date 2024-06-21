@@ -14,13 +14,15 @@ main_prg_name:
     .byte "concmain.prg"
 main_prg_name_end:
 
+vram_assets_name:
+    .byte "vramassets.bin"
+vram_assets_name_end:
+
 message_loading_assets:
     .byte "loading assets ...", $0D, 0
 
 message_loading_concerto:
     .byte "launching concerto ...", $0D, 0
-
-golden_ram = $0400 ; $0400 to $07FF
 
 
 ; TRAMPOLINE
@@ -36,7 +38,7 @@ main_trampoline:
     ldx #8 ; device: SD card
     ldy #1 ; secondary command: load at the address in the file header
     jsr SETLFS
-    lda #0
+    lda #0 ; load into system memory
     jsr LOAD
     jmp $0801 ; where the main program will be loaded
 main_trampoline_end:
@@ -61,8 +63,18 @@ start:
     jsr CHROUT ; clear screen
 
     PRINT_MESSAGE message_loading_assets
-    ; TODO load assets
 
+    lda #(vram_assets_name_end - vram_assets_name)
+    ldx #<vram_assets_name
+    ldy #>vram_assets_name
+    jsr SETNAM
+    lda #1 ; logical file number
+    ldx #8 ; device: SD card
+    ldy #1 ; secondary command: load address defined by header
+    jsr SETLFS
+    lda #2 ; load into first half of VRAM
+    jsr LOAD
+:   bra :-
 
     PRINT_MESSAGE message_loading_concerto
 
@@ -72,7 +84,7 @@ start:
     dex
     bmi @load_trampoline_end
     lda main_trampoline, x
-    sta golden_ram, x
+    sta GOLDEN_RAM_START, x
     bra @load_trampoline_loop
 @load_trampoline_end:
-    jmp golden_ram
+    jmp GOLDEN_RAM_START
