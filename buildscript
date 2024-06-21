@@ -1,3 +1,4 @@
+# out of date! use makefile instead
 mkdir -p build
 cl65 -t cx16 -o build/CONCERTO.PRG -C cx16-asm.cfg -u __EXEHDR__ -Ln build/CONCERTO.sym -g "main/concerto.asm"
 cl65 -t cx16 -o build/EXAMPLE01.PRG -C cx16-asm.cfg -u __EXEHDR__ "examples/example_01_hello_world_concerto.asm"

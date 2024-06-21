@@ -1,8 +1,5 @@
 ; Copyright 2021-2024 Carl Georg Biermann
 
-
-; Compile with: cl65 -t cx16 -o CONCERTO.PRG -C cx16-asm.cfg -u __EXEHDR__ "example_full.asm"
-
 .code
 
    jmp start
