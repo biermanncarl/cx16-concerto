@@ -7,8 +7,8 @@
 .include "../../../common/random.asm"
 heap_max_ram_bank = 10
 .include "../../../dynamic_memory/vector_40bit.asm"
-.include "../../../song_data/events.asm"
-.include "../item_selection.asm"
+.include "../../../song_engine/events.asm"
+.include "../../../song_engine/event_selection.asm"
 
 ; option to enforce a unique order of events (less generic test scenario)
 ; Uncomment to run generic test with partially ambivalent order.
@@ -118,13 +118,13 @@ start:
     ; setup the event vectors
     lda vec_a
     ldx vec_a+1
-    sta item_selection::selected_events
-    stx item_selection::selected_events+1
+    sta event_selection::selected_events
+    stx event_selection::selected_events+1
     lda vec_b
     ldx vec_b+1
-    sta item_selection::unselected_events
-    stx item_selection::unselected_events+1
-    jsr item_selection::reset_stream
+    sta event_selection::unselected_events
+    stx event_selection::unselected_events+1
+    jsr event_selection::resetStream
 
     stz previous_event_type
     stz loop_counter
@@ -135,13 +135,13 @@ start:
 
 @test_loop:
     ; get next event
-    jsr item_selection::stream_get_next_event
+    jsr event_selection::streamGetNextEvent
     bcc :+
     jmp @end_test_loop
 :   jsr v40b::read_entry
 
     ; check last_event_source in conjunction with ids
-    lda item_selection::last_event_source
+    lda event_selection::last_event_source
     bne @next_selected
 @next_unselected:
     lda last_unselected_id
