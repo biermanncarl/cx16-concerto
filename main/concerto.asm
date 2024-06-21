@@ -35,7 +35,7 @@ start:
 
    jsr concerto_synth::activate_synth
 
-.include "example_full_mainloop.asm"
+.include "concerto_mainloop.asm"
 
    jsr concerto_synth::deactivate_synth
    jsr concerto_gui::hide

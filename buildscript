@@ -1,5 +1,5 @@
 mkdir -p build
-cl65 -t cx16 -o build/CONCERTO.PRG -C cx16-asm.cfg -u __EXEHDR__ -Ln build/CONCERTO.sym -g "examples/example_full.asm"
+cl65 -t cx16 -o build/CONCERTO.PRG -C cx16-asm.cfg -u __EXEHDR__ -Ln build/CONCERTO.sym -g "main/concerto.asm"
 cl65 -t cx16 -o build/EXAMPLE01.PRG -C cx16-asm.cfg -u __EXEHDR__ "examples/example_01_hello_world_concerto.asm"
 cl65 -t cx16 -o build/EXAMPLE02.PRG -C cx16-asm.cfg -u __EXEHDR__ "examples/example_02_playback.asm"
 cl65 -t cx16 -o build/EXAMPLE03.PRG -C cx16-asm.cfg -u __EXEHDR__ "examples/example_03_pitchbend.asm"
