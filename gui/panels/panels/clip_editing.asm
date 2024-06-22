@@ -17,10 +17,10 @@
 
    zoom_level_indicator_x = components::dnd::dragables::notes::detail::event_edit_pos_x + components::dnd::dragables::notes::detail::event_edit_width - 6
    zoom_level_indicator_y = components::dnd::dragables::notes::detail::event_edit_pos_y - 1
-   help_box_x = 66
-   help_box_y = 15
+   help_box_x = 63
+   help_box_y = 24
    help_box_width = (80 - help_box_x - 1)
-   help_box_height = 20
+   help_box_height = 28
 
    comps:
    .scope comps

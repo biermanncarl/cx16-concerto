@@ -75,7 +75,7 @@ selected_events_vector:
    ; Editing area rectangle
    event_edit_width = 50
    event_edit_height = 45
-   event_edit_pos_x = (80-event_edit_width) / 2
+   event_edit_pos_x = (80-event_edit_width) / 2 - 3
    event_edit_pos_y = (60-event_edit_height) / 2
    event_edit_background_color = 15
    event_edit_note_color_unselected = 2

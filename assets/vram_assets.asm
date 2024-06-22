@@ -41,6 +41,7 @@ color_alg_operator = lightgreen+16*black
 .endmacro
 
 normal_text_color = lightgray+16*darkgray
+darker_text_color = midgray+16*darkgray
 
 .macro PADDED_TEXT length, color, str
     ; stolen from the STR_FORMAT macro
@@ -207,25 +208,62 @@ fm_algs:
     SPACES 6*5, darkgray
 
 help_text_note_edit:
-    @text_width = 9
-    PADDED_TEXT @text_width, normal_text_color, "navigate"
-    PADDED_TEXT @text_width, normal_text_color, " drag rmb"
+    @text_width = 12
+    PADDED_TEXT @text_width, normal_text_color, "navigate    "
+    PADDED_TEXT @text_width, darker_text_color, "    drag rmb"
     PADDED_TEXT @text_width, normal_text_color, ""
-    PADDED_TEXT @text_width, normal_text_color, "new note"
-    PADDED_TEXT @text_width, normal_text_color, " ctrl+lmb"
+    PADDED_TEXT @text_width, normal_text_color, "fast navig  "
+    PADDED_TEXT @text_width, darker_text_color, "    ctrl+rmb"
     PADDED_TEXT @text_width, normal_text_color, ""
-    PADDED_TEXT @text_width, normal_text_color, "zoom"
-    PADDED_TEXT @text_width, normal_text_color, " drag cmb"
+    PADDED_TEXT @text_width, normal_text_color, "new note    "
+    PADDED_TEXT @text_width, darker_text_color, "    ctrl+lmb"
     PADDED_TEXT @text_width, normal_text_color, ""
-    PADDED_TEXT @text_width, normal_text_color, "multisel."
-    PADDED_TEXT @text_width, normal_text_color, "shift+lmb"
+    PADDED_TEXT @text_width, normal_text_color, "delete note "
+    PADDED_TEXT @text_width, darker_text_color, "     alt+lmb"
     PADDED_TEXT @text_width, normal_text_color, ""
-    PADDED_TEXT @text_width, normal_text_color, "note leng"
-    PADDED_TEXT @text_width, normal_text_color, "right end"
-    PADDED_TEXT @text_width, normal_text_color, "  of note"
+    PADDED_TEXT @text_width, normal_text_color, "note length "
+    PADDED_TEXT @text_width, darker_text_color, "  drag right"
+    PADDED_TEXT @text_width, darker_text_color, " end of note"
     PADDED_TEXT @text_width, normal_text_color, ""
+    PADDED_TEXT @text_width, normal_text_color, "zoom        "
+    PADDED_TEXT @text_width, darker_text_color, "    drag cmb"
+    PADDED_TEXT @text_width, normal_text_color, ""
+    PADDED_TEXT @text_width, normal_text_color, "multiselect "
+    PADDED_TEXT @text_width, darker_text_color, "   shift+lmb"
+    PADDED_TEXT @text_width, normal_text_color, ""
+    PADDED_TEXT @text_width, normal_text_color, "duplicate   "
+    PADDED_TEXT @text_width, darker_text_color, "    ctrl+lmb"
 
-
+help_text_synth:
+    @text_width = 12
+    PADDED_TEXT @text_width, darker_text_color, ""
+    PADDED_TEXT @text_width, darker_text_color, ""
+    PADDED_TEXT @text_width, normal_text_color, "set values  "
+    PADDED_TEXT @text_width, darker_text_color, "    drag lmb"
+    PADDED_TEXT @text_width, darker_text_color, ""
+    PADDED_TEXT @text_width, normal_text_color, "fine adjust "
+    PADDED_TEXT @text_width, darker_text_color, "    drag rmb"
+    PADDED_TEXT @text_width, darker_text_color, " (edits with"
+    PADDED_TEXT @text_width, darker_text_color, "        dot)"
+    PADDED_TEXT @text_width, darker_text_color, ""
+    PADDED_TEXT @text_width, darker_text_color, ""
+    PADDED_TEXT @text_width, darker_text_color, ""
+    PADDED_TEXT @text_width, normal_text_color, "hints       "
+    PADDED_TEXT @text_width, darker_text_color, ""
+    PADDED_TEXT @text_width, darker_text_color, "envelope 1  "
+    PADDED_TEXT @text_width, darker_text_color, "defines note"
+    PADDED_TEXT @text_width, darker_text_color, "     length."
+    PADDED_TEXT @text_width, darker_text_color, ""
+    PADDED_TEXT @text_width, darker_text_color, "oscillators,"
+    PADDED_TEXT @text_width, darker_text_color, "envs and    "
+    PADDED_TEXT @text_width, darker_text_color, "lfo must be "
+    PADDED_TEXT @text_width, darker_text_color, "activated   "
+    PADDED_TEXT @text_width, darker_text_color, "under global"
+    PADDED_TEXT @text_width, darker_text_color, "settings if "
+    PADDED_TEXT @text_width, darker_text_color, "used."
+    PADDED_TEXT @text_width, darker_text_color, ""
+    PADDED_TEXT @text_width, darker_text_color, ""
+    PADDED_TEXT @text_width, darker_text_color, ""
 
 
 

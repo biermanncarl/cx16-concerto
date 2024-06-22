@@ -14,28 +14,13 @@
    hg = psg_oscillators::hg+envelopes::hg
    comps:
    .scope comps
+      COMPONENT_DEFINITION text_field, synth_help, px+2, py+2, wd-4, hg-4, A vram_assets::help_text_synth
       COMPONENT_LIST_END
    .endscope
    capts:
       .byte CCOLOR_CAPTION, px+6, py
       .word panel_common::lb_help
-      .byte CCOLOR_CAPTION, px+2, py+2
-      .word help_1_lb
-      .byte CCOLOR_CAPTION, px+2, py+4
-      .word help_2_lb
-      .byte CCOLOR_CAPTION, px+3, py+5
-      .word help_3_lb
-      .byte CCOLOR_CAPTION, px+2, py+7
-      .word help_4_lb
-      .byte CCOLOR_CAPTION, px+3, py+8
-      .word help_5_lb
       .byte 0
-   ; data specific to the synth info panel
-   help_1_lb: STR_FORMAT "controls:"
-   help_2_lb: STR_FORMAT "left drag:"
-   help_3_lb: STR_FORMAT "coarse edit"
-   help_4_lb: STR_FORMAT "right drag:"
-   help_5_lb: STR_FORMAT "fine edit"
 
    .proc draw
       lda #px
