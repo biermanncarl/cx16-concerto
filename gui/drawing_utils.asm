@@ -770,274 +770,74 @@ clear_lb_popup:
    rts
 
 
+; draws a box of text buffer
+; position of the box in draw_x (must be doubled), draw_y (not preserved)
+; width in draw_width, height in draw_height
+; VRAM address of the box (assumed to be in the low VRAM bank) in .X/.A (low,high)
+.proc draw_buffer_box
+   ; Here we do need SEI and CLI because we use the data port 1 of the Vera which isn't being backed up by the ISR (yet).
+   php
+   sei
+   ; setup the VRAM read pointer
+   ldy #1 ; select port 1
+   sty VERA_ctrl
+   stx VERA_addr_low
+   sta VERA_addr_mid
+   lda #$10 ; auto-increment 1, Bank 0
+   sta VERA_addr_high
+   plp
+
+   ldy #0
+@row_loop:
+   ; setup the VRAM write pointer
+   lda draw_x
+   ldx draw_y
+   jsr alternative_gotoxy ; also sets auto-increment to 1
+   ldx #0
+@column_loop:
+   lda VERA_data1
+   sta VERA_data0
+   inx
+   cpx draw_width
+   bne @column_loop
+
+   inc draw_y
+   iny
+   cpy draw_height
+   bne @row_loop
+
+   rts
+.endproc
+
 
 ; draw FM algorithm
 ; Alg number in draw_data1
 ; Position fixed by macros @alg_x, @alg_y
-draw_fm_alg:
+.proc draw_fm_alg
    @alg_x = 32
    @alg_y = 45
-   ; clear drawing area
    lda #@alg_x
    sta draw_x
    lda #@alg_y
    sta draw_y
-   lda #5
+   lda #2*5
    sta draw_width
    lda #8
    sta draw_height
-   jsr clear_lb_popup
-   lda #@alg_x
-   sta cur_x
-   lda #@alg_y
-   sta cur_y
-   ; do actual drawing
-   jsr set_cursor
-   ldx #CCOLOR_ALG_CONNECTION
-   ; operator 1, always the same
-   lda #112
-   sta VERA_data0
-   stx VERA_data0
-   lda #110
-   sta VERA_data0
-   stx VERA_data0
-   inc cur_y
-   jsr set_cursor
-   lda #109
-   sta VERA_data0
-   stx VERA_data0
-   lda #49
-   sta VERA_data0
-   ldx #CCOLOR_ALG_OP_NUMBERS
-   stx VERA_data0
-   ; all algs require this
-   inc cur_x
-   ; now switch depending on alg
+   ; calculate VRAM offset
    lda draw_data1
-   asl
+   lsr
+   tay
+   lda #0
+   ror
+   adc #<vram_assets::fm_algs
    tax
-   jmp (@jmp_table, x)
-@jmp_table:
-   .word @con_0
-   .word @con_1
-   .word @con_2
-   .word @con_3
-   .word @con_4
-   .word @con_5
-   .word @con_6
-   .word @con_7
-@con_0:
-   ; finish off numbers
-   ldx #CCOLOR_ALG_OP_NUMBERS
-   jsr move_cursor_down2
-   lda #50
-   sta VERA_data0
-   stx VERA_data0
-   jsr move_cursor_down2
-   lda #51
-   sta VERA_data0
-   stx VERA_data0
-   jsr move_cursor_down2
-   lda #52
-   sta VERA_data0
-   stx VERA_data0
-   ; draw connections
-   ldx #CCOLOR_ALG_CONNECTION
-   lda #@alg_y+2
-   sta cur_y
-   jsr set_cursor
-   lda #66
-   sta VERA_data0
-   stx VERA_data0
-   jsr move_cursor_down2
-   lda #66
-   sta VERA_data0
-   stx VERA_data0
-   jsr move_cursor_down2
-   lda #66
-   sta VERA_data0
-   stx VERA_data0
+   tya
+   adc #>vram_assets::fm_algs
+   jsr draw_buffer_box
    rts
-@con_1:
-   ; finish off numbers
-   ldx #CCOLOR_ALG_OP_NUMBERS
-   lda #50
-   sta VERA_data0
-   stx VERA_data0
-   jsr move_cursor_down2
-   lda #51
-   sta VERA_data0
-   stx VERA_data0
-   jsr move_cursor_down2
-   lda #52
-   sta VERA_data0
-   stx VERA_data0
-   ; draw connections
-   ldx #CCOLOR_ALG_CONNECTION
-   lda #@alg_y+2
-   sta cur_y
-   jsr set_cursor
-   lda #107
-   sta VERA_data0
-   stx VERA_data0
-   lda #125
-   sta VERA_data0
-   stx VERA_data0
-   jsr move_cursor_down2
-   lda #66
-   sta VERA_data0
-   stx VERA_data0
-   rts
-@con_2:
-   ; finish off numbers
-   ldx #CCOLOR_ALG_OP_NUMBERS
-   lda #50
-   sta VERA_data0
-   stx VERA_data0
-   inc cur_x
-   jsr move_cursor_down2
-   lda #51
-   sta VERA_data0
-   stx VERA_data0
-   dec cur_x
-   jsr move_cursor_down
-   lda #52
-   sta VERA_data0
-   stx VERA_data0
-   ; draw connections
-   ldx #CCOLOR_ALG_CONNECTION
-   lda #@alg_y+2
-   sta cur_y
-   jsr set_cursor
-   lda #66
-   sta VERA_data0
-   stx VERA_data0
-   sta VERA_data0
-   stx VERA_data0
-   jsr move_cursor_down
-   lda #107
-   sta VERA_data0
-   stx VERA_data0
-   rts
-@con_3:
-   ; finish off numbers
-   ldx #CCOLOR_ALG_OP_NUMBERS
-   lda #51
-   sta VERA_data0
-   stx VERA_data0
-   jsr move_cursor_down2
-   lda #50
-   sta VERA_data0
-   stx VERA_data0
-   inc cur_x
-   jsr move_cursor_down
-   lda #52
-   sta VERA_data0
-   stx VERA_data0
-   dec cur_x
-   ; draw connections
-   ldx #CCOLOR_ALG_CONNECTION
-   lda #@alg_y+2
-   sta cur_y
-   jsr set_cursor
-   lda #66
-   sta VERA_data0
-   stx VERA_data0
-   sta VERA_data0
-   stx VERA_data0
-   inc cur_x
-   jsr move_cursor_down
-   lda #115
-   sta VERA_data0
-   stx VERA_data0
-   rts
-@con_4:
-   ; finish off numbers
-   ldx #CCOLOR_ALG_OP_NUMBERS
-   lda #51
-   sta VERA_data0
-   stx VERA_data0
-   jsr move_cursor_down2
-   lda #50
-   sta VERA_data0
-   stx VERA_data0
-   lda #52
-   sta VERA_data0
-   stx VERA_data0
-   ; draw connections
-   ldx #CCOLOR_ALG_CONNECTION
-   lda #@alg_y+2
-   sta cur_y
-   jsr set_cursor
-   lda #66
-   sta VERA_data0
-   stx VERA_data0
-   sta VERA_data0
-   stx VERA_data0
-   rts
-@con_5:
-   ; finish off numbers
-   ldx #CCOLOR_ALG_OP_NUMBERS
-   jsr move_cursor_down2
-   lda #50
-   sta VERA_data0
-   stx VERA_data0
-   lda #51
-   sta VERA_data0
-   stx VERA_data0
-   lda #52
-   sta VERA_data0
-   stx VERA_data0
-   ; draw connections
-   ldx #CCOLOR_ALG_CONNECTION
-   lda #@alg_y+2
-   sta cur_y
-   jsr set_cursor
-   lda #107
-   sta VERA_data0
-   stx VERA_data0
-   lda #114
-   sta VERA_data0
-   stx VERA_data0
-   lda #110
-   sta VERA_data0
-   stx VERA_data0
-   rts
-@con_6:
-   ; finish off numbers
-   ldx #CCOLOR_ALG_OP_NUMBERS
-   jsr move_cursor_down2
-   lda #51
-   sta VERA_data0
-   stx VERA_data0
-   lda #50
-   sta VERA_data0
-   stx VERA_data0
-   lda #52
-   sta VERA_data0
-   stx VERA_data0
-   ; draw connections
-   ldx #CCOLOR_ALG_CONNECTION
-   lda #@alg_y+2
-   sta cur_y
-   jsr set_cursor
-   lda #66
-   sta VERA_data0
-   stx VERA_data0
-   rts
-@con_7:
-   ; finish off numbers
-   ldx #CCOLOR_ALG_OP_NUMBERS
-   lda #51
-   sta VERA_data0
-   stx VERA_data0
-   lda #50
-   sta VERA_data0
-   stx VERA_data0
-   lda #52
-   sta VERA_data0
-   stx VERA_data0
-   rts
+.endproc
+
 
 ; moves to screen position (.A|.X) (does not preserve .A)
 alternative_gotoxy:
