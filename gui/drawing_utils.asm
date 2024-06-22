@@ -1,14 +1,9 @@
-; Copyright 2021 Carl Georg Biermann
+; Copyright 2021-2024 Carl Georg Biermann
 
 
 ; Many utility functions for the GUI are found in this file.
 ; From more basic stuff like setting the VERA "screen cursor" to a specific location
 ; to displaying more complex stuff like frames, edits, checkboxes etc.
-
-; These routines are designed to be called from within the main program.
-; The VERA is used from within the ISR and from within the main program.
-; To avoid any disturbances of VERA writes by the ISR (which uses the VERA, too),
-; great care has to be taken to always put an SEI before any VERA actions.
 
 
 .scope guiutils
@@ -72,8 +67,6 @@ display_1s:         .byte 0
    dex
    stx concerto_gui::guiutils::display_1s
 
-   php
-   sei
    ; set VERA address
    stz VERA_ctrl
    lda #$10
@@ -98,7 +91,6 @@ display_1s:         .byte 0
    sta VERA_data0
    lda #$21    ; set color
    sta VERA_data0
-   plp
 .endmacro
 
 ; displays the 0-terminated message at position db_x and db_y
@@ -106,7 +98,6 @@ display_1s:         .byte 0
 .macro DISPLAY_LABEL msg_start, dm_x, dm_y
 .local @loop_msg
 .local @done_msg
-   sei
    ; set VERA address
    stz VERA_ctrl
    lda #$10
@@ -133,7 +124,6 @@ display_1s:         .byte 0
    iny
    bra @loop_msg
 @done_msg:
-   cli
 .endmacro
 
 
@@ -212,7 +202,6 @@ move_cursor_down2:
 ; message pointer is in str_pointer
 ; color as in variable color
 print:
-   sei
    ; set VERA address
    jsr set_cursor
 
@@ -227,7 +216,6 @@ print:
    iny
    bra @loop_msg
 @done_msg:
-   cli
    rts
 
 
@@ -330,7 +318,6 @@ draw_frame:
    sta cur_x
    lda draw_y
    sta cur_y
-   sei
    jsr set_cursor
    lda #85
    sta VERA_data0
@@ -348,7 +335,6 @@ draw_frame:
    lda #73
    sta VERA_data0
    stx VERA_data0
-   cli
    ; bottom of frame
    lda cur_y
    clc
@@ -366,8 +352,7 @@ draw_frame:
    sta cur_x
    dey
    dey
-:  sei
-   jsr set_cursor
+:  jsr set_cursor
    lda #74
    sta VERA_data0
    stx VERA_data0
@@ -380,7 +365,6 @@ draw_frame:
    lda #75
    sta VERA_data0
    stx VERA_data0
-   cli
    ; right side of frame
    lda draw_x
    clc
@@ -393,7 +377,6 @@ draw_frame:
    ldy draw_height
    dey
    dey
-   sei
 @loop_right:
    jsr set_cursor
    lda #66
@@ -402,7 +385,6 @@ draw_frame:
    inc cur_y
    dey
    bne @loop_right
-   cli
    ; left side of frame
    lda draw_x
    ldy draw_data1
@@ -416,7 +398,6 @@ draw_frame:
    ldy draw_height
    dey
    dey
-   sei
 @loop_left:
    jsr set_cursor
    lda #66
@@ -425,7 +406,6 @@ draw_frame:
    inc cur_y
    dey
    bne @loop_left
-   cli
 
    ; check for tabs
    ldy draw_data1
@@ -448,7 +428,6 @@ draw_tabs:
    sta cur_x
    lda draw_y
    sta cur_y
-   sei
    jsr set_cursor
    lda #114
    sta VERA_data0
@@ -462,7 +441,6 @@ draw_tabs:
    sta cur_y
    ldy #0
    ldx color
-   sei
 @loop_tabs:
    jsr set_cursor
    lda #66
@@ -497,7 +475,6 @@ draw_tabs:
    jsr set_cursor
    lda #74
    sta VERA_data0
-   cli
 
    ; draw active tab
    lda draw_data2
@@ -509,7 +486,6 @@ draw_tabs:
    lda draw_x
    sta cur_x
    ldx color
-   sei
    jsr set_cursor
    lda #85
    sta VERA_data0
@@ -542,7 +518,6 @@ draw_tabs:
    jsr set_cursor
    lda #32
    sta VERA_data0
-   cli 
    rts
 
 ; draw a button
@@ -557,7 +532,6 @@ draw_button:
    ; top of button
    ldx #(1+16*COLOR_BACKGROUND)
    ldy draw_width
-   sei
    jsr set_cursor
    lda #100
 @loop_top:
@@ -574,7 +548,6 @@ draw_button:
    ldy #0
    jsr set_cursor
    jsr print_with_padding
-   cli
    rts
 
 
@@ -586,7 +559,6 @@ draw_arrowed_edit:
    sta cur_x
    lda draw_y
    sta cur_y
-   sei
    jsr set_cursor
    ldx #(16*COLOR_ARROWED_EDIT_BG + COLOR_ARROWED_EDIT_ARROWS)
    lda #60 ; 62
@@ -602,7 +574,6 @@ draw_arrowed_edit:
    lda #62
    sta VERA_data0
    stx VERA_data0
-   cli
    rts
 
 
@@ -617,7 +588,6 @@ draw_drag_edit:
    lda draw_y
    sta cur_y
    ldx #(16*COLOR_ARROWED_EDIT_BG + COLOR_ARROWED_EDIT_FG)
-   sei
    jsr set_cursor
    lda draw_data2
    sta dde_bittest   
@@ -649,7 +619,6 @@ draw_drag_edit:
    lda #46
    sta VERA_data0
    stx VERA_data0
-   cli
    rts
 @fine:
    lda #46
@@ -657,12 +626,10 @@ draw_drag_edit:
    stx VERA_data0
    lda draw_data1
    jsr print_byte_simple
-   cli
    rts
 @no_coarse_fine:
    lda draw_data1
    jsr print_byte_simple
-   cli
    rts
 
 ; draws a checkbox
@@ -673,7 +640,6 @@ draw_checkbox:
    sta cur_x
    lda draw_y
    sta cur_y
-   sei
    jsr set_cursor
    lda draw_data1
    beq @notick
@@ -689,7 +655,6 @@ draw_checkbox:
    lda #CCOLOR_CHECKBOX_CLEAR
    sta VERA_data0
 @done:
-   cli
    rts
 
 
@@ -731,7 +696,6 @@ draw_listbox:
    sta cur_x
    lda draw_y
    sta cur_y
-   sei
    jsr set_cursor
    lda #90 ; listbox "bullet"
    sta VERA_data0
@@ -747,7 +711,6 @@ draw_listbox:
    lda #(COLOR_LISTBOX_BG*16+COLOR_LISTBOX_FG)
    sta color
    jsr print_with_padding
-   cli
    rts
 
 ; draws the listbox popup
@@ -765,7 +728,6 @@ draw_lb_popup:
    sta dlbp_line_counter
    lda #(16*COLOR_LISTBOX_POPUP_BG+COLOR_LISTBOX_POPUP_FG)
    sta color
-   sei
 @line_loop:
    jsr set_cursor
    ldx draw_width
@@ -778,7 +740,6 @@ draw_lb_popup:
    dec
    sta dlbp_line_counter
    bne @line_loop
-   cli
    rts
 
 ; clears the area on the screen where the listbox popup was before.
@@ -792,7 +753,6 @@ clear_lb_popup:
    ldy draw_height
    lda #(16*COLOR_BACKGROUND)
    sta color
-   sei
 @line_loop:
    jsr set_cursor
    ldx draw_width
@@ -807,7 +767,6 @@ clear_lb_popup:
    inc cur_y
    dey
    bne @line_loop
-   cli
    rts
 
 
@@ -833,7 +792,6 @@ draw_fm_alg:
    lda #@alg_y
    sta cur_y
    ; do actual drawing
-   sei
    jsr set_cursor
    ldx #CCOLOR_ALG_CONNECTION
    ; operator 1, always the same
@@ -858,7 +816,7 @@ draw_fm_alg:
    lda draw_data1
    asl
    tax
-   INDEXED_JSR @jmp_table, @return
+   jmp (@jmp_table, x)
 @jmp_table:
    .word @con_0
    .word @con_1
@@ -1080,9 +1038,7 @@ draw_fm_alg:
    sta VERA_data0
    stx VERA_data0
    rts
-@return:
-   cli
-   rts
+
 ; moves to screen position (.A|.X) (does not preserve .A)
 alternative_gotoxy:
    stz VERA_ctrl
@@ -1233,7 +1189,6 @@ vtui_input_str:
 	sty	@length		; Store maximum length
 
    ; move cursor to screen position
-   sei
    lda @pos_x
    ldx @pos_y
    jsr alternative_gotoxy
@@ -1256,8 +1211,6 @@ vtui_input_str:
 
 	ldy	#0
 @inputloop:
-   ; give ISR a moment to interrupt us
-   cli
 
 	phx
 	phy
@@ -1266,7 +1219,6 @@ vtui_input_str:
 	plx
 
    ; now take back control and move VERA cursor back to the position we need
-   sei
    pha
    phx
    tya
@@ -1328,7 +1280,6 @@ vtui_input_str:
 	stx	VERA_data0
    lda   #0
    sta   (@ptr),y ; trailing zero to finish string
-   cli
 	rts
 
 
