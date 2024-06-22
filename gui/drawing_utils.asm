@@ -824,7 +824,7 @@ clear_lb_popup:
    sta draw_width
    lda #8
    sta draw_height
-   ; calculate VRAM offset
+   ; calculate VRAM offset (in VRAM, the different layouts are 128 bytes apart for ease of calculating offset)
    lda draw_data1
    lsr
    tay

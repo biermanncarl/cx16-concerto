@@ -17,6 +17,10 @@
 
    zoom_level_indicator_x = components::dnd::dragables::notes::detail::event_edit_pos_x + components::dnd::dragables::notes::detail::event_edit_width - 6
    zoom_level_indicator_y = components::dnd::dragables::notes::detail::event_edit_pos_y - 1
+   help_box_x = 66
+   help_box_y = 15
+   help_box_width = (80 - help_box_x - 1)
+   help_box_height = 20
 
    comps:
    .scope comps
@@ -24,14 +28,17 @@
       COMPONENT_DEFINITION listbox, zoom_level_indicator, zoom_level_indicator_x, zoom_level_indicator_y, 6, 5, A zoom_select_lb, 0
       COMPONENT_DEFINITION button, play_start, 34, 57, 6, A play_caption
       COMPONENT_DEFINITION button, play_stop, 41, 57, 6, A stop_caption
+      COMPONENT_DEFINITION text_field, clip_help, help_box_x+2, help_box_y+2, help_box_width-4, help_box_height-4, A vram_assets::help_text_note_edit
       COMPONENT_LIST_END
    .endscope
 
    capts:
       .byte CCOLOR_CAPTION, zoom_level_indicator_x - 5, zoom_level_indicator_y
       .word zoom_caption
+      .byte CCOLOR_CAPTION, help_box_x+5, help_box_y
+      .word panel_common::lb_help
       .byte 0
-   
+
    zoom_select_lb:
       STR_FORMAT "1/32"
       STR_FORMAT "1/8"
@@ -44,6 +51,17 @@
    stop_caption: STR_FORMAT " stop"
 
    .proc draw
+      ; help frame
+      lda #help_box_x
+      sta guiutils::draw_x
+      lda #help_box_y
+      sta guiutils::draw_y
+      lda #help_box_width
+      sta guiutils::draw_width
+      lda #help_box_height
+      sta guiutils::draw_height
+      stz guiutils::draw_data1
+      jsr guiutils::draw_frame
       rts
    .endproc
 

@@ -40,6 +40,25 @@ color_alg_operator = lightgreen+16*black
     .endrepeat
 .endmacro
 
+normal_text_color = lightgray+16*darkgray
+
+.macro PADDED_TEXT length, color, str
+    ; stolen from the STR_FORMAT macro
+    .repeat .strlen(str), i
+        .if (.strat(str, i)=32)
+            .byte 32
+        .else
+            .if (.strat(str, i)>64) && (.strat(str, i)<91)
+                .byte .strat(str, i)-64
+            .else
+                .byte .strat(str, i)
+            .endif
+        .endif
+        .byte color
+    .endrepeat
+    SPACES (length - .strlen(str)), color>>4
+.endmacro
+
 .macro OPERATOR_1
     ; first line
     .byte 112, color_alg_connection
@@ -186,7 +205,30 @@ fm_algs:
     OPERATOR_3
     OPERATOR_4
     SPACES 6*5, darkgray
-    .res 48 ; padding
+
+help_text_note_edit:
+    @text_width = 9
+    PADDED_TEXT @text_width, normal_text_color, "navigate"
+    PADDED_TEXT @text_width, normal_text_color, " drag rmb"
+    PADDED_TEXT @text_width, normal_text_color, ""
+    PADDED_TEXT @text_width, normal_text_color, "new note"
+    PADDED_TEXT @text_width, normal_text_color, " ctrl+lmb"
+    PADDED_TEXT @text_width, normal_text_color, ""
+    PADDED_TEXT @text_width, normal_text_color, "zoom"
+    PADDED_TEXT @text_width, normal_text_color, " drag cmb"
+    PADDED_TEXT @text_width, normal_text_color, ""
+    PADDED_TEXT @text_width, normal_text_color, "multisel."
+    PADDED_TEXT @text_width, normal_text_color, "shift+lmb"
+    PADDED_TEXT @text_width, normal_text_color, ""
+    PADDED_TEXT @text_width, normal_text_color, "note leng"
+    PADDED_TEXT @text_width, normal_text_color, "right end"
+    PADDED_TEXT @text_width, normal_text_color, "  of note"
+    PADDED_TEXT @text_width, normal_text_color, ""
+
+
+
+
+
 
 .endscope
 

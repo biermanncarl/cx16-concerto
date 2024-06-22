@@ -18,7 +18,7 @@
    .endscope
    capts:
       .byte CCOLOR_CAPTION, px+6, py
-      .word cp
+      .word panel_common::lb_help
       .byte CCOLOR_CAPTION, px+2, py+2
       .word help_1_lb
       .byte CCOLOR_CAPTION, px+2, py+4
@@ -31,7 +31,6 @@
       .word help_5_lb
       .byte 0
    ; data specific to the synth info panel
-   cp: STR_FORMAT "help"
    help_1_lb: STR_FORMAT "controls:"
    help_2_lb: STR_FORMAT "left drag:"
    help_3_lb: STR_FORMAT "coarse edit"

@@ -12,6 +12,7 @@
 .include "components/tab_selector.asm"
 .include "components/dummy.asm"
 .include "components/drag_and_drop_area.asm"
+.include "components/text_field.asm"
 
 .linecont + ; switch on line continuation with "\"
 .define ALL_COMPONENT_SCOPES \
@@ -22,7 +23,8 @@
     listbox, \
     tab_selector, \
     dummy, \
-    drag_and_drop_area
+    drag_and_drop_area, \
+    text_field
 .linecont - ; switch off line continuation with "\" (default)
 
 .endif ; .ifndef ::GUI_COMPONENTS_CONFIGS_DEFAULT_ASM
