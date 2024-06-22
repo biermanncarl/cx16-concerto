@@ -9,6 +9,9 @@
 ; include the X16 header
 .include "../common/x16.asm"
 
+; include VRAM assets for symbols
+.include "../assets/vram_assets.asm"
+
 ; file names etc.
 main_prg_name:
     .byte "concmain.prg"
@@ -57,6 +60,60 @@ main_trampoline_end:
     print_loop_end:
 .endmacro
 
+; parameters for the SETUP_SPRITE macro
+sprt_width_8px = 0 * 16
+sprt_width_16px = 1 * 16
+sprt_width_32px = 2 * 16
+sprt_width_64px = 3 * 16
+sprt_height_8px = 0 * 64
+sprt_height_16px = 1 * 64
+sprt_height_32px = 2 * 64
+sprt_height_64px = 3 * 64
+sprt_mode_4bpp = 0
+sprt_mode_8bpp = 128
+sprt_vflip_on = 2
+sprt_vflip_off = 0
+sprt_hflip_on = 1
+sprt_hflip_off = 0
+
+; writes a bunch of VRAM registers so that the sprite can be used by just setting the Z-depth and X/Y position
+; currently only supports bitmap data in low VRAM bank
+.macro SETUP_SPRITE sprite_index, bitmap_address, width, height, bpp_mode, palette_offset, v_flip, h_flip
+    ; messing with a sprite
+    .local sprite_offset
+    .local sprite_data_address_l
+    .local sprite_data_address_h
+    sprite_offset = $FC00 + 8 * sprite_index
+    sprite_data_address_l = <((bitmap_address >> 5) & $ff)
+    sprite_data_address_h = <((bitmap_address & $ff00) >> 13)
+    stz VERA_ctrl ; select data0
+    lda #(1 + 16) ; high bank, increment by 1
+    sta VERA_addr_high
+    lda #>sprite_offset
+    sta VERA_addr_mid
+    lda #<sprite_offset
+    sta VERA_addr_low
+    ; write mouse sprite data
+    ; address 12:5
+    lda #sprite_data_address_l
+    sta VERA_data0
+    ; 4/8bpp mode & address 16:13
+    lda #sprite_data_address_h + bpp_mode
+    sta VERA_data0
+    ; x, y (4 bytes)
+    lda #32
+    sta VERA_data0
+    sta VERA_data0
+    sta VERA_data0
+    sta VERA_data0
+    ; collision mask, z-depth, V-flip, H-flip
+    lda #v_flip + h_flip ; + 3*4 ; uncomment activates for inspection
+    sta VERA_data0
+    ; sprite height, width, palette offset
+    lda #width + height + palette_offset
+    sta VERA_data0
+.endmacro
+
 
 start:
     lda #$93
@@ -74,7 +131,26 @@ start:
     jsr SETLFS
     lda #2 ; load into first half of VRAM
     jsr LOAD
-:   bra :-
+
+    ; need a non-transparent black for 4bpp sprites --> set palette index 33 to black
+    palette_offset = $FA00 ; in high VRAM bank
+    @color_offset = palette_offset + 2 * 33
+    stz VERA_ctrl ; select data0
+    lda #1 + 16 ; select high bank, increment by 1
+    sta VERA_addr_high
+    lda #>@color_offset
+    sta VERA_addr_mid
+    lda #<@color_offset
+    sta VERA_addr_low
+    lda #$00 ; black
+    sta VERA_data0
+    sta VERA_data0
+
+    ; setup sprites
+    SETUP_SPRITE 1, vram_assets::sprite_frame_top_left, sprt_width_32px, sprt_height_32px, sprt_mode_4bpp, 2, sprt_vflip_off, sprt_hflip_off
+    SETUP_SPRITE 2, vram_assets::sprite_frame_top_left, sprt_width_32px, sprt_height_32px, sprt_mode_4bpp, 2, sprt_vflip_on, sprt_hflip_on
+
+
 
     PRINT_MESSAGE message_loading_concerto
 

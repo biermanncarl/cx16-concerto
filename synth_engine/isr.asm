@@ -69,7 +69,7 @@ do_tick:
    sta mzpbe
    pla
    sta mzpba
-   ; restora RAM bank
+   ; restore RAM bank
    pla
    sta RAM_BANK
    rts
