@@ -237,7 +237,6 @@ help_text_note_edit:
 help_text_synth:
     @text_width = 12
     PADDED_TEXT @text_width, darker_text_color, ""
-    PADDED_TEXT @text_width, darker_text_color, ""
     PADDED_TEXT @text_width, normal_text_color, "set values  "
     PADDED_TEXT @text_width, darker_text_color, "    drag lmb"
     PADDED_TEXT @text_width, darker_text_color, ""
@@ -245,7 +244,6 @@ help_text_synth:
     PADDED_TEXT @text_width, darker_text_color, "    drag rmb"
     PADDED_TEXT @text_width, darker_text_color, " (edits with"
     PADDED_TEXT @text_width, darker_text_color, "        dot)"
-    PADDED_TEXT @text_width, darker_text_color, ""
     PADDED_TEXT @text_width, darker_text_color, ""
     PADDED_TEXT @text_width, darker_text_color, ""
     PADDED_TEXT @text_width, normal_text_color, "hints       "
@@ -262,8 +260,10 @@ help_text_synth:
     PADDED_TEXT @text_width, darker_text_color, "settings if "
     PADDED_TEXT @text_width, darker_text_color, "used."
     PADDED_TEXT @text_width, darker_text_color, ""
-    PADDED_TEXT @text_width, darker_text_color, ""
-    PADDED_TEXT @text_width, darker_text_color, ""
+    PADDED_TEXT @text_width, darker_text_color, "the fm voice"
+    PADDED_TEXT @text_width, darker_text_color, "is only used"
+    PADDED_TEXT @text_width, darker_text_color, "if min. 1 op"
+    PADDED_TEXT @text_width, darker_text_color, "is active."
 
 
 
