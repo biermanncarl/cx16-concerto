@@ -1,4 +1,4 @@
-; Copyright 2023 Carl Georg Biermann
+; Copyright 2023-2024 Carl Georg Biermann
 
 ; This file helps resolve circular dependencies by lifting certain symbols
 ; out of their scopes. This makes them accessible to code which lives in earlier scopes
@@ -13,6 +13,7 @@ hitboxes__object_id_l = hitboxes::object_id_l
 hitboxes__object_id_h = hitboxes::object_id_h
 hitboxes__clear_hitboxes = hitboxes::clear_hitboxes
 hitboxes__add_hitbox = hitboxes::add_hitbox
+hitboxes__load_hitbox_list = hitboxes::load_hitbox_list
 hitboxes__hitbox_handle__none = hitboxes::hitbox_handle::none
 hitboxes__hitbox_handle__bulk = hitboxes::hitbox_handle::bulk
 hitboxes__hitbox_handle__right_end = hitboxes::hitbox_handle::right_end

@@ -15,11 +15,12 @@
 .endscope
 
 ; variables to communicate hitboxes which are stored in the hitbox lists
-hitbox_pos_x = v40b::value_0 ; on-screen-position in multiples of 4 pixels
-hitbox_pos_y = v40b::value_1 ; on-screen-position in multiples of 4 pixels
-hitbox_width = v40b::value_2 ; on-screen width in multiples of 4 pixels (height is implied by dragables::active_type)
-object_id_l = v40b::value_3 ; identifier (low)
-object_id_h = v40b::value_4 ; identifier (high)
+object_id_l = v40b::value_0 ; identifier (low)
+object_id_h = v40b::value_1 ; identifier (high)  most significant bit is 1 if the event is in the vector of currently selected events
+hitbox_pos_x = v40b::value_2 ; on-screen-position in multiples of 4 pixels
+hitbox_pos_y = v40b::value_3 ; on-screen-position in multiples of 4 pixels
+hitbox_width = v40b::value_4 ; on-screen width in multiples of 4 pixels (height is implied by dragables::active_type)
+; note: having the object_id_l/h at values_0/1 is chosen because then the id coincides with the v40b API for index-based access.
 
 .scope detail
    ; addresses to vectors of hitboxes which can be dragged (B/H)

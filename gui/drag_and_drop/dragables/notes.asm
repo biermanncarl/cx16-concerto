@@ -284,6 +284,15 @@ selected_events_vector:
    @end_determine_time_delta:
       rts
    .endproc
+
+   .proc selectWithHitboxId
+      jsr detail::getEntryFromHitboxObjectId
+      sta detail::pointed_at_event
+      stx detail::pointed_at_event+1
+      sty detail::pointed_at_event+2
+      jsr song_engine::event_selection::selectEvent
+      rts
+   .endproc
 .endscope
 
 
@@ -1420,14 +1429,14 @@ height = 2 * detail::event_edit_height
          beq :+
          ; SHIFT was pressed --> allow multiple selection
          SET_SELECTED_VECTOR selected_events_vector
-         jsr selectWithHitboxId
+         jsr detail::selectWithHitboxId
          rts
       :
          ; event wasn't selected yet --> we want to unselect all, and select the clicked-at one
          ; This is difficult because the moment we unselect all events, the pointer to the clicked-at event becomes unusable.
          ; Therefore, we first need to select the clicked-at event into temp, before unselecting all others.
          SET_SELECTED_VECTOR temp_events
-         jsr selectWithHitboxId
+         jsr detail::selectWithHitboxId
          SET_SELECTED_VECTOR selected_events_vector
          jsr song_engine::event_selection::unSelectAllEvents
          ; now, swap selected with temp vector, as they have the correct contents already
@@ -1453,15 +1462,6 @@ height = 2 * detail::event_edit_height
    lda #drag_action::scroll
    sta dnd::drag_action_state
    rts
-
-   .proc selectWithHitboxId
-      jsr detail::getEntryFromHitboxObjectId
-      sta detail::pointed_at_event
-      stx detail::pointed_at_event+1
-      sty detail::pointed_at_event+2
-      jsr song_engine::event_selection::selectEvent
-      rts
-   .endproc
 .endproc
 
 
@@ -1505,7 +1505,115 @@ height = 2 * detail::event_edit_height
    cmp #drag_action::box_select
    beq :+
    rts
-:  jsr guiutils::hideBoxSelectFrame
+:
+   ; hide "box"
+   jsr guiutils::hideBoxSelectFrame
+
+   ; DO BOX SELECTION
+   ; ================
+
+   ; determine the box borders in multiples of 4 pixels
+   lda guiutils::box_select_left+1
+   lsr
+   ror guiutils::box_select_left
+   lsr
+   ror guiutils::box_select_left
+
+   lda guiutils::box_select_top+1
+   lsr
+   ror guiutils::box_select_top
+   lsr
+   ror guiutils::box_select_top
+
+   ; for the right and bottom sides, we "round up" while dividing by 4 to get inclusive box
+   clc
+   lda guiutils::box_select_right
+   adc #(4-1)
+   lsr guiutils::box_select_right+1
+   ror
+   lsr guiutils::box_select_right+1
+   ror
+   sta guiutils::box_select_right
+
+   clc
+   lda guiutils::box_select_bottom
+   adc #(4-1)
+   lsr guiutils::box_select_bottom+1
+   ror
+   lsr guiutils::box_select_bottom+1
+   ror
+   sta guiutils::box_select_bottom
+
+   ; now the box boundaries are contained in the low bytes of each variable, respectively
+
+   php
+   sei
+
+   ; We must be careful to not invalidate hitbox ids before we use them.
+   ; * First, put all events inside the box into the temp vector.
+   ; * Then, depending on whether shift has held or not, unselect all selected events.
+   ; * Merge all temp events into selected.
+
+   SET_UNSELECTED_VECTOR unselected_events_vector
+   SET_SELECTED_VECTOR temp_events
+
+   ; iterate hitboxes from the end to keep them intact
+   jsr hitboxes__load_hitbox_list
+   jsr v40b::get_last_entry
+   bcs @end_box_selection
+@hitbox_loop:
+   pha
+   phx
+   phy
+
+   jsr v40b::read_entry
+
+   ; check bounds.
+   ; TODO: check if inclusiveness is as expected! (if not, add offsets as needed, e.g. in "rounding" operation above)
+   ; check top
+   lda hitboxes__hitbox_pos_y
+   cmp guiutils::box_select_top
+   bcc @go_to_next_hitbox
+   ; check bottom
+   cmp guiutils::box_select_bottom
+   bcs @go_to_next_hitbox
+   ; check right
+   lda hitboxes__hitbox_pos_x
+   cmp guiutils::box_select_right
+   bcs @go_to_next_hitbox
+   ; check left
+   adc hitboxes__hitbox_width ; carry is clear as per previous jump condition
+   cmp guiutils::box_select_left
+   bcc @go_to_next_hitbox
+
+   ; we're in. select the event
+@select_hitbox:
+   ; TODO: this does not work properly
+   ; Reason: the hitbox ids don't necessarily correspond to the order of events in the events vector.
+   ; So removing the event that corresponds to one hitbox id can invalidate the event belonging to an earlier hitbox id.
+   ; As of now, I don't know a good solution yet.
+   jsr detail::selectWithHitboxId
+
+@go_to_next_hitbox:
+   ply
+   plx
+   pla
+   jsr v40b::get_previous_entry
+   bcc @hitbox_loop
+
+
+
+   SET_UNSELECTED_VECTOR unselected_events_vector
+   SET_SELECTED_VECTOR selected_events_vector
+   jsr song_engine::event_selection::unSelectAllEvents
+
+   SWAP_VECTORS selected_events_vector, temp_events
+
+   inc gui_variables::request_components_redraw
+
+@end_box_selection:
+   plp
+   
    rts
 .endproc
 
