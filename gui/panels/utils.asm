@@ -44,6 +44,9 @@
 .endmacro
 
 .macro LDY_COMPONENT_MEMBER type, name, member
+    ; comps is the absolute start address of the components string of a panel,
+    ; comps::name is the absolute start address of the component with the given name,
+    ; and the data_members::member is the offset of the requested data member within a component's data.
     ldy #(comps::name - comps + components::type::data_members::member)
 .endmacro
 

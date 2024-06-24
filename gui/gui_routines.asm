@@ -213,4 +213,23 @@
    jmp (components::jump_table_event_drag, x) ; the called routines will do the rts for us.
 .endproc
 
+
+; Currently, only the drag & drop components care about end-of-drag events.
+; Hence, we do not create a jump table covering every component, but rather
+; do the dispatching "by hand". If needed, we can do it "properly" later on.
+.proc drag_end_event
+   ; check if *the* drag&drop component is being dragged on
+   lda mouse_variables::prev_panel
+   cmp #panels::ids::clip_editing
+   beq :+
+   rts
+:  lda mouse_variables::prev_component_id
+   bmi :+ ; no component being dragged
+   lda mouse_variables::prev_component_ofs ; check if it's the note edit by the offset, as the ID isn't being auto-generated
+   cmp #(panels::clip_editing::comps::notes_edit - panels::clip_editing::comps)
+   bne :+
+   jsr components::drag_and_drop_area::end_drag_event
+:  rts
+.endproc
+
 .endscope

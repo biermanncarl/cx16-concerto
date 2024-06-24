@@ -141,10 +141,12 @@ do_hold_L:
    ; check for any buttons pressed
    lda mouse_variables::curr_buttons
    bne @button_pressed
-   ; no buttons pressed anymore --> left click
+   ; no buttons pressed anymore --> left click, end of drag operation
    ; reset mouse status
    lda #mouse_variables::ms_idle
    sta mouse_variables::status
+   ; end of drag operation:
+   jsr gui_routines::drag_end_event
    ; and do click operation:
    ; check if previous panel & component are the same. If yes, issue a click event.
    jsr panels::mouse_get_panel
@@ -182,6 +184,8 @@ do_hold_other:
    ; no buttons pressed anymore --> right click (unused)
    lda #mouse_variables::ms_idle
    sta mouse_variables::status
+   ; end of drag operation
+   jsr gui_routines::drag_end_event
    jmp end_mouse_tick
 :  ; a button is still being pressed. do fine dragging
    bra do_dragging

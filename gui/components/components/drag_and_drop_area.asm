@@ -169,6 +169,12 @@
         rts
     .endproc
 
+
+    .proc end_drag_event
+        .byte $db
+        rts
+    .endproc
+
     .proc initialize
         ; create vectors for temporary event storage
         jsr v40b::new
