@@ -93,7 +93,6 @@ sprt_hflip_off = 0
     sta VERA_addr_mid
     lda #<sprite_offset
     sta VERA_addr_low
-    ; write mouse sprite data
     ; address 12:5
     lda #sprite_data_address_l
     sta VERA_data0
@@ -147,8 +146,8 @@ start:
     sta VERA_data0
 
     ; setup sprites
-    SETUP_SPRITE 1, vram_assets::sprite_frame_top_left, sprt_width_32px, sprt_height_32px, sprt_mode_4bpp, 2, sprt_vflip_off, sprt_hflip_off
-    SETUP_SPRITE 2, vram_assets::sprite_frame_top_left, sprt_width_32px, sprt_height_32px, sprt_mode_4bpp, 2, sprt_vflip_on, sprt_hflip_on
+    SETUP_SPRITE vram_assets::sprite_index_box_selection_frame_top_left, vram_assets::sprite_data_box_selection_frame_top_left, sprt_width_32px, sprt_height_32px, sprt_mode_4bpp, 2, sprt_vflip_off, sprt_hflip_off
+    SETUP_SPRITE vram_assets::sprite_index_box_selection_frame_bottom_right, vram_assets::sprite_data_box_selection_frame_top_left, sprt_width_32px, sprt_height_32px, sprt_mode_4bpp, 2, sprt_vflip_on, sprt_hflip_on
 
 
 

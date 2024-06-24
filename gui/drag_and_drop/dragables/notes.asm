@@ -1398,6 +1398,7 @@ height = 2 * detail::event_edit_height
       :
       lda #drag_action::box_select
       sta dnd::drag_action_state
+      jsr guiutils::showBoxSelectFrame
       rts
    @lmb_event_clicked:
       ; after whatever we do here, it's either a drag or resize operation afterwards
@@ -1492,11 +1493,21 @@ height = 2 * detail::event_edit_height
    .word components_common::dummy_subroutine ; none
    .word doScroll
    .word doZoom
-   .word components_common::dummy_subroutine ; box select, not implemented yet
+   .word guiutils::updateBoxSelectFrame
    .word noteDrag
    .word noteResize
 .endproc
 
+
+; This routine is mainly needed for box selection
+.proc doDragEnd
+   lda dnd::drag_action_state
+   cmp #drag_action::box_select
+   beq :+
+   rts
+:  jsr guiutils::hideBoxSelectFrame
+   rts
+.endproc
 
 
 

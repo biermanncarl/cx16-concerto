@@ -171,8 +171,7 @@
 
 
     .proc end_drag_event
-        .byte $db
-        rts
+        jmp dnd::dragables::notes::doDragEnd
     .endproc
 
     .proc initialize

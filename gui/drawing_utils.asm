@@ -167,6 +167,7 @@ cur_y: .byte 0
 color: .byte 0
 ; string pointer
 str_pointer = gui_variables::mzpwe
+sprite_temp = gui_variables::mzpwe
 ; draw a component at position and with dimensions:
 draw_x: .byte 0
 draw_y: .byte 0
@@ -177,6 +178,16 @@ draw_height: .byte 0
 ; additional drawing parameters
 draw_data1: .byte 0  ; e.g. number of tabs
 draw_data2: .byte 0  ; e.g. index of active tab
+
+; box selection variables
+box_select_left:
+   .word 0
+box_select_top:
+   .word 0
+box_select_right:
+   .word 0
+box_select_bottom:
+   .word 0
 
 
 
@@ -1083,5 +1094,137 @@ vtui_input_str:
 	rts
 
 
+; Sets up VERA port 0 to access a sprite of given index. Will position the data pointer at the x position for convenience (not the bitmap address).
+; Expects the index of the sprite in .A
+; Expects the offset within the sprite data in .Y. Value must be from 0 to 7 (inclusive).
+.proc setupSpriteAccess
+   sprite_address_mid = sprite_temp
+   sprite_address_offset = sprite_temp+1
+   sty sprite_address_offset
+   stz sprite_address_mid
+   ; multiply sprite index by 8
+   asl
+   rol sprite_address_mid
+   asl
+   rol sprite_address_mid
+   asl
+   rol sprite_address_mid
+   ; carry is clear as we did initialize sprite_address_high with zero
+   adc sprite_address_offset ; Carry will also be clear after this operation, as well, because the lowest three bits are guaranteed zero prior to this.
+
+   stz VERA_ctrl ; select data0
+   sta VERA_addr_low
+   lda #(1 + 16) ; high bank, increment by 1
+   sta VERA_addr_high
+   lda sprite_address_mid
+   adc #$FC ; offset of sprite data, carry is zero as reasoned above
+   sta VERA_addr_mid
+   rts
+.endproc
+
+
+
+; todo: move these variables up to the others, so we have them all in one place
+
+
+.proc showBoxSelectFrame
+   lda #vram_assets::sprite_index_box_selection_frame_top_left
+   ldy #2 ; offset of x data
+   jsr setupSpriteAccess
+   lda mouse_variables::curr_x
+   sta box_select_left
+   sta VERA_data0
+   lda mouse_variables::curr_x+1
+   sta box_select_left+1
+   sta VERA_data0
+   lda mouse_variables::curr_y
+   sta box_select_top
+   sta VERA_data0
+   lda mouse_variables::curr_y+1
+   sta box_select_top+1
+   sta VERA_data0
+   lda #12
+   sta VERA_data0
+   ; fall through to updateBoxSelectFrame
+.endproc
+.proc updateBoxSelectFrame
+   lda #vram_assets::sprite_index_box_selection_frame_bottom_right
+   ldy #2 ; offset of x data
+   jsr setupSpriteAccess
+
+   ; determine x position
+   ; clamp x position towards box origin x
+   lda mouse_variables::curr_x+1
+   cmp box_select_left+1
+   bcc @use_origin_x ; if high byte is lower, clamp is needed
+   bne @use_mouse_x
+@check_low_x:
+   ; high bytes are equal, need to check low bytes
+   lda mouse_variables::curr_x
+   cmp box_select_left
+   bcs @use_mouse_x
+@use_origin_x:
+   lda box_select_left
+   ldx box_select_right+1
+   bra @set_sprite_x
+@use_mouse_x:
+   lda mouse_variables::curr_x
+   ldx mouse_variables::curr_x+1
+@set_sprite_x:
+   sta box_select_right
+   stx box_select_right+1
+   sec
+   sbc #(vram_assets::box_selection_frame_size-1)
+   sta VERA_data0
+   txa
+   sbc #0
+   sta VERA_data0
+
+   ; determine y position
+   ; clamp y position towards box origin y
+   lda mouse_variables::curr_y+1
+   cmp box_select_top+1
+   bcc @use_origin_y ; if high byte is lower, clamp is needed
+   bne @use_mouse_y
+@check_low_y:
+   ; high bytes are equal, need to check low bytes
+   lda mouse_variables::curr_y
+   cmp box_select_top
+   bcs @use_mouse_y
+@use_origin_y:
+   lda box_select_top
+   ldx box_select_top+1
+   bra @set_sprite_y
+@use_mouse_y:
+   lda mouse_variables::curr_y
+   ldx mouse_variables::curr_y+1
+@set_sprite_y:
+   sta box_select_bottom
+   stx box_select_bottom+1
+   sec
+   sbc #(vram_assets::box_selection_frame_size-1)
+   sta VERA_data0
+   txa
+   sbc #0
+   sta VERA_data0
+
+   ; activate sprite and set hflip/vflip
+   lda #15
+   sta VERA_data0
+   rts
+.endproc
+
+.proc hideBoxSelectFrame
+   lda #vram_assets::sprite_index_box_selection_frame_top_left
+   ldy #6 ; offset of sprite activation
+   jsr setupSpriteAccess
+   stz VERA_data0
+
+   lda #vram_assets::sprite_index_box_selection_frame_bottom_right
+   ldy #6 ; offset of sprite activation
+   jsr setupSpriteAccess
+   stz VERA_data0
+   rts
+.endproc
 
 .endscope ; guiutils

@@ -93,7 +93,9 @@ darker_text_color = midgray+16*darkgray
 ; sprite data for box-selection frame
 box_selection_frame_size = 32
 
-sprite_frame_top_left:
+sprite_index_box_selection_frame_top_left = 1
+sprite_index_box_selection_frame_bottom_right = 2
+sprite_data_box_selection_frame_top_left:
     @frame_top_left_color = 1
     @horizontal = @frame_top_left_color << 4 + @frame_top_left_color
     @vertical = @frame_top_left_color << 4
