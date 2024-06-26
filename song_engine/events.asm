@@ -1,4 +1,4 @@
-; Copyright 2023 Carl Georg Biermann
+; Copyright 2023-2024 Carl Georg Biermann
 
 .ifndef ::SONG_DATA_EVENTS_ASM
 ::SONG_DATA_EVENTS_ASM = 1
@@ -10,6 +10,7 @@
     event_type_note_off = 0
     event_type_hard_off = 2 ; stops all notes within the clip immediately
     event_type_note_on  = 4
+    event_type_invalid = 255 ; enables invalidating events without deleting just yet to retain addresses of subsequent events
     ; TODO: effects 8 and above
 
     ; Data member meaning of 40bit values in note data

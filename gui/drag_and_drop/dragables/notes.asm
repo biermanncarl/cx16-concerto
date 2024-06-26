@@ -128,7 +128,7 @@ selected_events_vector:
    .endproc
 
    ; Sets the note hitbox active on the row with index .X
-   ; Basically just copies the event pointer into the buffer.
+   ; Basically just copies the event index into the buffer.
    ; preserves .X and .Y
    .proc startNoteHitbox
       lda song_engine::event_selection::last_event_source
@@ -285,6 +285,7 @@ selected_events_vector:
       rts
    .endproc
 
+   ; * In select_action, expects the action to be done on the original event (one of selectEvent::action options).
    .proc selectWithHitboxId
       jsr detail::getEntryFromHitboxObjectId
       sta detail::pointed_at_event
@@ -670,7 +671,8 @@ change_song_tempo = song_engine::timing::recalculate_rhythm_values ; TODO: actua
    beq @handle_note_off
    cmp #song_engine::events::event_type_note_on
    beq @handle_note_on
-
+   ; neither note-on nor note-off
+   bra @parse_next_event
 @handle_note_on:
    jsr detail::calculateRowAndCheckBounds
    bcc @parse_next_event ; if outside our view (vertically), skip the event
@@ -1429,6 +1431,7 @@ height = 2 * detail::event_edit_height
          beq :+
          ; SHIFT was pressed --> allow multiple selection
          SET_SELECTED_VECTOR selected_events_vector
+         stz song_engine::event_selection::select_action ; #event_selection::selectEvent::action::delete_original
          jsr detail::selectWithHitboxId
          rts
       :
@@ -1436,6 +1439,7 @@ height = 2 * detail::event_edit_height
          ; This is difficult because the moment we unselect all events, the pointer to the clicked-at event becomes unusable.
          ; Therefore, we first need to select the clicked-at event into temp, before unselecting all others.
          SET_SELECTED_VECTOR temp_events
+         stz song_engine::event_selection::select_action ; #event_selection::selectEvent::action::delete_original
          jsr detail::selectWithHitboxId
          SET_SELECTED_VECTOR selected_events_vector
          jsr song_engine::event_selection::unSelectAllEvents
@@ -1447,6 +1451,7 @@ height = 2 * detail::event_edit_height
          beq :+
          SET_SELECTED_VECTOR selected_events_vector
          jsr detail::getEntryFromHitboxObjectId
+         stz song_engine::event_selection::select_action ; #event_selection::selectEvent::action::delete_original
          jsr song_engine::event_selection::unselectEvent
       :  jmp commonLeftClick
 @right_button:
@@ -1554,12 +1559,11 @@ height = 2 * detail::event_edit_height
    ; * Then, depending on whether shift has held or not, unselect all selected events.
    ; * Merge all temp events into selected.
 
-   SET_UNSELECTED_VECTOR unselected_events_vector
+   ; Don't need to set the unselected events vector as the selectEvent routine doesn't require the source vector to be set.
    SET_SELECTED_VECTOR temp_events
 
-   ; iterate hitboxes from the end to keep them intact
    jsr hitboxes__load_hitbox_list
-   jsr v40b::get_last_entry
+   jsr v40b::get_first_entry
    bcs @end_box_selection
 @hitbox_loop:
    pha
@@ -1588,21 +1592,22 @@ height = 2 * detail::event_edit_height
 
    ; we're in. select the event
 @select_hitbox:
-   ; TODO: this does not work properly
-   ; Reason: the hitbox ids don't necessarily correspond to the order of events in the events vector.
-   ; So removing the event that corresponds to one hitbox id can invalidate the event belonging to an earlier hitbox id.
-   ; As of now, I don't know a good solution yet.
+   ; here, we copy selected events to the selected events vector and then invalidate the originals.
+   ; This is in order to preserve the addresses of all events as long as we still need the ids
+   ; to stay unchanged. We will delete all invalidated events later on.
+   lda #song_engine::event_selection::selectEvent::action::invalidate_original
+   sta song_engine::event_selection::select_action
    jsr detail::selectWithHitboxId
 
 @go_to_next_hitbox:
    ply
    plx
    pla
-   jsr v40b::get_previous_entry
+   jsr v40b::get_next_entry
    bcc @hitbox_loop
 
 
-
+   ; TODO implement multiselect (SHIFT key) functionality
    SET_UNSELECTED_VECTOR unselected_events_vector
    SET_SELECTED_VECTOR selected_events_vector
    jsr song_engine::event_selection::unSelectAllEvents

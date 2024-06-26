@@ -11,6 +11,7 @@
 SONG_DATA_EVENT_SELECTION_ASM = 1
 
 .include "../common/x16.asm"
+.include "../common/utility_macros.asm"
 .include "../dynamic_memory/vector_40bit.asm"
 
 .scope event_selection
@@ -43,6 +44,9 @@ last_event_source:
 
 end_of_stream_variables:
 .popseg
+
+; reuse some variables for function calls
+select_action = last_event_source
 
 ; When the ISR uses this code, it might interrupt other routines using it,
 ; so it has to swap out the ZP variables.
@@ -431,48 +435,32 @@ pitch:
 ; and can be used fully independently from each other).
 
 
-; Moves an event from the unselected to the selected vector.
+; Moves an event from an event vector to the selected events vector.
 ; * In .A/.X/.Y, expects the pointer to the object to be selected,
+; * In select_action, expects the action to be done on the original event (one of selectEvent::action options).
 ; If the object is a note-on, the corresponding note-off is automatically selected, too.
 .proc selectEvent
-    ; Actually, this could/should be a generic function, usable in both directions.
-    ; Can it be partially recursive?
-    ; * if the event is a note-on, it finds the note-off, calls itself on the note-off and then proceeds with normal operation
-    ; * normal operation moves the pointed at event, regardless of its event type
-    ; How to move?
-    ; We need to find the target pointer/index.
-    ; * linear search?
-    ; * binary search in sorted list
-    ; * combined method: find chunk first, then do linear search within the chunk
-    ; * allow for a "hint" (index, pointer, chunk) before which the function doesn't need to search
-    ;   * this allows efficient integration of repeated calls of this function
-    ; Once target pointer is found:
-    ; * read the entry to be selected (into value_0 ... value_4)
-    ; * delete it
-    ; * insert it directly at target location
-
-    ; ====================================================================================================================
-    ; Do the most basic implementation now ... possible improvements/optimizations for speed can be done later if needed.
-    ; Remember the pointer to the event, so we can delete it later
+    .scope action
+        ID_GENERATOR 0, delete_original, invalidate_original, keep_original
+    .endscope
     jsr detail::storeNextUnselectedEvent
     lda selected_events
     ldx selected_events+1
     jsr v40b::get_first_entry
     bcc :+
-    ldy #0 ; set to NULL if doesn't exist
+    ldy #0 ; set .A/.X/.Y pointer to NULL if event doesn't exist
 :   jsr detail::storeNextSelectedEvent
     jsr insertInSelectedEvents
     beq @handle_note_off ; if it wasn't a note-on, we can go straight to deleting this event
     jsr detail::loadNextUnselectedEvent
-@delete_event:
-    jsr v40b::delete_entry
-    rts
+@handle_original:
+    jmp handleOriginal
 
 @handle_note_off:
     ; As the event was a note-on, need to also select note-off.
     ; save the position of the recently selected event
     jsr detail::storeNextSelectedEvent
-    ; first, save the currently selected element, so we can delete it later
+    ; first, save the currently selected element, so we can deal with it later (delete/invalidate/keep)
     jsr detail::loadNextUnselectedEvent
     pha
     phx
@@ -483,20 +471,50 @@ pitch:
     jsr insertInSelectedEvents
     ; delete note-off first because then we know for sure where the remaining note-on is (the other way round we wouldn't know for sure)
     jsr detail::loadNextUnselectedEvent
-    jsr v40b::delete_entry
-    ; restore note-on
+    jsr handleOriginal
+    ; deal with note-on
     ply
     plx
     pla
-    bra @delete_event
+    bra @handle_original
+
+    ; performs the selected action on the original selected event.
+    ; In .A/.X/.Y, expects the pointer to the original selected event.
+    .proc handleOriginal
+        pha
+        lda select_action
+        bne @check_keep
+        pla
+        jsr v40b::delete_entry
+        rts
+    @check_keep:
+        cmp #action::keep_original
+        bne @invalidate
+        pla
+        rts
+    @invalidate:
+        ; the only action remaining is invalidate
+        pla
+        pha
+        phx
+        phy
+        jsr v40b::read_entry
+        lda #events::event_type_invalid
+        sta events::event_type
+        ply
+        plx
+        pla
+        jsr v40b::write_entry
+        rts
+    .endproc
 
     ; sub routine which does the insertion of a single event in the "selected" events vector.
     ; Expects:
     ;   * in next_unselected_event, pointer event to be copied
-    ;   * in next_selected_event, pointer to any event known to (temporally) come before the given event
-    ;     in the "selected" vector, or the beginning of the vector if such an event is not contained
+    ;   * in next_selected_event, pointer to any event known to come before the given event (WRT time stamps)
+    ;     in the "selected" vector, or NULL if such an event is not contained
     ; Returns:
-    ;   * in zero flag, whether the event was a note-on (z=0 if yes, z=1 if not)
+    ;   * in zero flag, whether the event was a note-on (z=1 if yes, z=0 if not)
     ;   * in .A/.X/.Y, the position of the copied event where it has been inserted
     ;   * next_unselected_event is preserved
     .proc insertInSelectedEvents
@@ -543,6 +561,7 @@ pitch:
 
 ; Moves an event from the selected to the unselected vector.
 ; * In .A/.X/.Y, expects the pointer to the object to be unselected,
+; * In select_action, expects the action to be done on the original event (one of selectEvent::action options).
 ; If the object is a note-on, the corresponding note-off is automatically unselected, too.
 .proc unselectEvent
     jsr swapSelectedUnselectedVectors
