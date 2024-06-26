@@ -1564,7 +1564,8 @@ height = 2 * detail::event_edit_height
 
    jsr hitboxes__load_hitbox_list
    jsr v40b::get_first_entry
-   bcs @end_box_selection
+   bcc @hitbox_loop
+   jmp @end_box_selection
 @hitbox_loop:
    pha
    phx
@@ -1615,13 +1616,18 @@ height = 2 * detail::event_edit_height
    ldx selected_events_vector+1
    jsr song_engine::event_selection::deleteAllInvalidEvents
 
-   ; get rid of invalid hitboxes for safety
+   ; get rid of invalid hitboxes for safety (will be re-generated when redraw happens)
    jsr hitboxes__clear_hitboxes
 
-   ; TODO implement multiselect (SHIFT key) functionality
+   ; move all events which were previously selected.
+   ; Normally move them into the unselected events vector,
+   ; but if SHIFT is pressed, we move them into the temp vector, which will eventually become the new selected vector.
    SET_UNSELECTED_VECTOR unselected_events_vector
    SET_SELECTED_VECTOR selected_events_vector
-   jsr song_engine::event_selection::unSelectAllEvents
+   lda dnd::shift_key_pressed
+   beq :+
+   SET_UNSELECTED_VECTOR temp_events
+:  jsr song_engine::event_selection::unSelectAllEvents
 
    SWAP_VECTORS selected_events_vector, temp_events
 
