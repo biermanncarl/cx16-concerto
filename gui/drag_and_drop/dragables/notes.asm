@@ -1605,7 +1605,18 @@ height = 2 * detail::event_edit_height
    pla
    jsr v40b::get_next_entry
    bcc @hitbox_loop
+   ; end of loop
 
+   ; clean up invalidated events
+   lda unselected_events_vector
+   ldx unselected_events_vector+1
+   jsr song_engine::event_selection::deleteAllInvalidEvents
+   lda selected_events_vector
+   ldx selected_events_vector+1
+   jsr song_engine::event_selection::deleteAllInvalidEvents
+
+   ; get rid of invalid hitboxes for safety
+   jsr hitboxes__clear_hitboxes
 
    ; TODO implement multiselect (SHIFT key) functionality
    SET_UNSELECTED_VECTOR unselected_events_vector

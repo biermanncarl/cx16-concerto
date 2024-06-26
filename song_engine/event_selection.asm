@@ -631,6 +631,36 @@ pitch:
     rts
 .endproc
 
+; Deletes all invalid events from an event vector.
+; Expects the pointer to the vector in .A/.X
+.proc deleteAllInvalidEvents
+    ; iterate from last to first event for slight efficiency boost (need to move less data around)
+    jsr v40b::get_last_entry
+    bcc @events_loop
+    rts
+
+@events_loop:
+    jsr detail::storeNextUnselectedEvent ; save current event
+    jsr v40b::read_entry
+    lda events::event_type
+    cmp #events::event_type_invalid
+    php ; remember if it's an invalid event
+    jsr detail::loadNextUnselectedEvent ; recall current event to get previous
+    jsr v40b::get_previous_entry
+    bcc :+
+    ldy #0 ; set event pointer to NULL if no previous one exists
+:   jsr detail::storeNextSelectedEvent
+    plp ; recall if it's an invalid event
+    bne @continue
+@delete_event:
+    jsr detail::loadNextUnselectedEvent
+    jsr v40b::delete_entry
+@continue:
+    jsr detail::loadNextSelectedEvent
+    cpy #0 ; check if NULL
+    bne @events_loop
+    rts
+.endproc
 
 
 .if 0
