@@ -1575,19 +1575,21 @@ height = 2 * detail::event_edit_height
 
    ; check bounds.
    ; TODO: check if inclusiveness is as expected! (if not, add offsets as needed, e.g. in "rounding" operation above)
-   ; check top
-   lda hitboxes__hitbox_pos_y
-   cmp guiutils::box_select_top
-   bcc @go_to_next_hitbox
    ; check bottom
+   lda hitboxes__hitbox_pos_y
    cmp guiutils::box_select_bottom
    bcs @go_to_next_hitbox
+   ; check top
+   inc ; account for the fact that notes have height 2
+   cmp guiutils::box_select_top
+   bcc @go_to_next_hitbox
    ; check right
    lda hitboxes__hitbox_pos_x
    cmp guiutils::box_select_right
    bcs @go_to_next_hitbox
    ; check left
    adc hitboxes__hitbox_width ; carry is clear as per previous jump condition
+   dec
    cmp guiutils::box_select_left
    bcc @go_to_next_hitbox
 
