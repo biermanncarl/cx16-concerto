@@ -1551,9 +1551,6 @@ height = 2 * detail::event_edit_height
 
    ; now the box boundaries are contained in the low bytes of each variable, respectively
 
-   php
-   sei
-
    ; We must be careful to not invalidate hitbox ids before we use them.
    ; * First, put all events inside the box into the temp vector.
    ; * Then, depending on whether shift has held or not, unselect all selected events.
@@ -1565,7 +1562,7 @@ height = 2 * detail::event_edit_height
    jsr hitboxes__load_hitbox_list
    jsr v40b::get_first_entry
    bcc @hitbox_loop
-   jmp @end_box_selection
+   rts
 @hitbox_loop:
    pha
    phx
@@ -1634,10 +1631,6 @@ height = 2 * detail::event_edit_height
    SWAP_VECTORS selected_events_vector, temp_events
 
    inc gui_variables::request_components_redraw
-
-@end_box_selection:
-   plp
-   
    rts
 .endproc
 

@@ -145,6 +145,15 @@
         rts
     .endproc
 
+    .proc doPlayerUpdate
+        jsr song_engine::event_selection::swapBackFrontStreams
+        SET_SELECTED_VECTOR components::dnd::dragables::notes::selected_events_vector
+        SET_UNSELECTED_VECTOR  components::dnd::dragables::notes::unselected_events_vector
+        jsr song_engine::simple_player::updatePlayback
+        jsr song_engine::event_selection::swapBackFrontStreams
+        rts
+    .endproc
+
     .proc event_drag
         ; modifier keys status
         jsr KBDBUF_GET_MODIFIERS
@@ -160,18 +169,19 @@
         php
         sei
         jsr dnd::dragables::notes::doDrag
-        jsr song_engine::event_selection::swapBackFrontStreams
-        SET_SELECTED_VECTOR components::dnd::dragables::notes::selected_events_vector
-        SET_UNSELECTED_VECTOR  components::dnd::dragables::notes::unselected_events_vector
-        jsr song_engine::simple_player::updatePlayback
-        jsr song_engine::event_selection::swapBackFrontStreams
+        jsr doPlayerUpdate
         plp
         rts
     .endproc
 
 
     .proc end_drag_event
-        jmp dnd::dragables::notes::doDragEnd
+        php
+        sei
+        jsr dnd::dragables::notes::doDragEnd
+        jsr doPlayerUpdate
+        plp
+        rts
     .endproc
 
     .proc initialize

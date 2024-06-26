@@ -109,7 +109,7 @@
 ; (By the way, changing or even reading played back clip data in non-ISR code MUST be masked by SEI...)
 ; It basically rewinds the playback and fast-forwards to the current time stamp.
 .proc updatePlayback
-    ;jsr concerto_synth::panic
+    jsr concerto_synth::panic
     jsr event_selection::resetStream
 @fast_forward_loop:
     jsr detail::getNextEventAndTimeStamp
