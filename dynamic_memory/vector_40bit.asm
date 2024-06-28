@@ -1,4 +1,4 @@
-; Copyright 2023 Carl Georg Biermann
+; Copyright 2023-2024 Carl Georg Biermann
 
 ; This file implements a dynamic vector containing 40-bit values (5 bytes) based on doubly linked lists.
 ; These vectors are mainly intended to contain musical event data, but might serve other purposes,
@@ -134,21 +134,7 @@ destroy = dll::destroy_list
 ; Clears all entries from a vector. (Untested!)
 ; expects pointer to vector in .A/.X
 .proc clear
-   ; get rid of excess chunks
-   pha
-   phx
-   jsr dll::get_next_element
-   jsr dll::destroy_list ; !! we depend on destroy_list only deleting list elements to the right and the one passed in, not any ones to the left
-   plx
-   pla
-   ; set pointer to next list element to 0
-   sta RAM_BANK
-   stx zp_pointer+1
-   stz zp_pointer
-   lda #0
-   sta (zp_pointer)
-   ldy #1
-   sta (zp_pointer),y
+   jsr dll::clear_list ; we rely on this routine setting zp_pointer to the first element
    ; set count of elements to zero
    ldy #4
    sta (zp_pointer),y

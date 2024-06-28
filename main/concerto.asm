@@ -21,6 +21,8 @@ concerto_use_timbres_from_file = 1
 ; include the X16 header
 .include "../common/x16.asm"
 
+.include "../gui/file_browsing.asm"
+
 ; keyboard variables
 Octave:
    .byte 60
@@ -30,6 +32,11 @@ Note:
 
 
 start:
+   jsr file_browsing::initialize
+   jsr file_browsing::getFiles
+   jsr file_browsing::printFiles
+   rts
+
    jsr concerto_synth::initialize
    jsr concerto_gui::initialize
 

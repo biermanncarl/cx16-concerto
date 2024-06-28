@@ -94,7 +94,7 @@ temp_variable_a:
 
 
 ; Destroys a list.
-; Expects pointer (B/H) to an element in .A/.X
+; Expects pointer (B/H) to an element in .A/.X. May be NULL.
 ; Responsibility of setting any remaining pointers to the first element to NULL is upon the user.
 .proc destroy_list
 @loop:
@@ -115,6 +115,28 @@ temp_variable_a:
    ldx zp_pointer_2+1
    bra @loop
 @end:
+   rts
+.endproc
+
+
+; Reduces the length of the list to 1 element, preserving the original pointer to the list.
+; Expects pointer (B/H) to an element in .A/.X
+.proc clear_list
+   ; get rid of excess chunks
+   pha
+   phx
+   jsr dll::get_next_element
+   jsr dll::destroy_list ; !! we depend on destroy_list only deleting list elements to the right and the one passed in, not any ones to the left
+   plx
+   pla
+   ; set pointer to next list element to 0
+   sta RAM_BANK
+   stx zp_pointer+1
+   stz zp_pointer
+   lda #0
+   sta (zp_pointer)
+   ldy #1
+   sta (zp_pointer),y
    rts
 .endproc
 
@@ -331,7 +353,7 @@ temp_variable_a:
 .endproc
 
 
-; Deletes any element from a list. (Untested!)
+; Deletes any element from a list.
 ; Expects pointer to an element in .A/.X
 ; If the given element is the only element in the list, carry will be set and the element will not be deleted
 ; in order to not invalidate pointers to the list.
