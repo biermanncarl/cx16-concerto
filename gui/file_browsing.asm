@@ -30,12 +30,15 @@ files:
 .endproc
 
 ; Populates the files vector with files from the current directory and given file type.
-; In .A, expects one of the ids in the file_type scope (instrument, bank or song)
+; In .X, expects one of the ids in the file_type scope (instrument, bank or song)
 ; so the directory listing is filtered for that type (.COP, .COB and .COS extension, respectively)
 .proc getFiles
-    ; TODO: filter by file extension
     reading_file_name = detail::temp_variable_a
     character = detail::temp_variable_b
+
+    ; replace last character of file extension to be filtered for
+    lda last_letters, x
+    sta extension+3
 
     lda files
     ldx files+1
@@ -75,28 +78,43 @@ files:
     ; setup line read
     stz reading_file_name
     ldy #0
-@read_line_loop:
-    phy
-    jsr CHRIN
-    ply
-    sta character
-    cmp #0 ; end of line
-    beq @read_line_loop_end
-    cmp #34 ; quotation mark "
-    bne :+
-    inc reading_file_name
-    bra @read_line_loop
-:   lda reading_file_name
-    and #1
-    beq :+
-    lda character
-    sta (v32b::entrypointer), y
-    iny
-:   bra @read_line_loop
-@read_line_loop_end:
+    @read_line_loop:
+        phy
+        jsr CHRIN
+        ply
+        sta character
+        cmp #0 ; end of line
+        beq @read_line_loop_end
+        cmp #34 ; quotation mark "
+        bne @no_quotation_mark
+        @quotation_mark:
+            inc reading_file_name
+            bra @read_line_loop
+        @no_quotation_mark:
+            lda reading_file_name
+            and #1
+            beq :+
+            lda character    
+            sta (v32b::entrypointer), y
+            iny
+        :   bra @read_line_loop
+    @read_line_loop_end:
     ; finish up line with zero byte
     lda #0
     sta (v32b::entrypointer), y
+    ; check if file name has the extension we are looking for
+    ldx #3 ; length of extension minus one (4 characters including ".")
+@check_extension_loop:
+    dey
+    bmi @delete_current_file_name
+    lda (v32b::entrypointer), y
+    cmp extension, x
+    bne @delete_current_file_name
+    dex
+    bmi @keep_current_file_name
+    bra @check_extension_loop
+@delete_current_file_name = @read_files_loop ; no action required, we simply overwrite the file name with the next one
+@keep_current_file_name:
     ; create new file name buffer
     lda files
     ldx files+1
@@ -112,22 +130,17 @@ files:
     ; clean up the non-files
     lda files
     ldx files+1
-    pha
-    phx
     jsr v32b::get_last_entry
     jsr v32b::delete_entry ; the last empty buffer added
-    plx
-    pla
-    pha
-    phx
-    jsr v32b::get_last_entry
-    jsr v32b::delete_entry ; the "blocks free" message
-    plx
-    pla
-    jsr v32b::delete_entry ; the current directory
     rts
 command:
     .byte "$"
+extension:
+    ; concerto-x
+    .byte ".cox"
+last_letters:
+    ; preset (instrument), bank, song
+    .byte "pbs"
 .endproc
 
 

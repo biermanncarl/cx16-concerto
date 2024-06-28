@@ -32,7 +32,9 @@ Note:
 
 
 start:
+   ; testing the directory functions
    jsr file_browsing::initialize
+   ldx #file_browsing::file_type::instrument
    jsr file_browsing::getFiles
    jsr file_browsing::printFiles
    rts
