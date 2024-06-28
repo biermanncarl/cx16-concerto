@@ -21,6 +21,7 @@ play_volume:
 .include "mouse_variables.asm"
 ; submodules
 .include "drawing_utils.asm"
+.include "file_browsing.asm"
 .include "components/components.asm"
 .include "panels/panels.asm"
 ; higher level routines
@@ -39,6 +40,8 @@ initialize:
    sta guiutils::original_map_base
    jsr gui_routines::load_synth_gui
    jsr mouse::mouse_init
+   jsr file_browsing::initialize
+   jsr panels::file_browser_popup::initialize
 .ifdef ::concerto_full_daw
    jsr components::dnd::hitboxes::initialize
    jsr components::drag_and_drop_area::initialize

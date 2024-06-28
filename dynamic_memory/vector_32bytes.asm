@@ -17,6 +17,10 @@
 ; can be considered (e.g. a clone of v40b for the infrastructure with modifications to the data access).
 ; #optimize-for-memory-usage
 
+; IMPORTANT
+; The current implementation does not allow for an empty vector. Each valid vector contains at least one entry.
+; Users must figure out how to deal with that.
+
 
 .ifndef ::DYNAMIC_MEMORY_VECTOR_32BYTES_ASM
 ::DYNAMIC_MEMORY_VECTOR_32BYTES_ASM = 1

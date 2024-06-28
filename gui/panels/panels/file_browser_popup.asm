@@ -5,6 +5,7 @@
 ::GUI_PANELS_PANELS_FILE_BROWSER_POPUP_ASM = 1
 
 .include "common.asm"
+.include "../../file_browsing.asm"
 
 .scope file_browser_popup
    ; popup blocks the whole screen, therefore this panel is "fullscreen" (for click detection)
@@ -19,15 +20,42 @@
    box_y = (60 - box_height) / 2
    comps:
    .scope comps
+      COMPONENT_DEFINITION listbox, file_select, box_x+2, box_y + 2, box_width-4, box_height-6, A 0, 0, 255
       COMPONENT_DEFINITION button, ok, 37, box_y + box_height - 3, 6, A lb_ok
       COMPONENT_LIST_END
    .endscope
    capts:
+      .byte CCOLOR_CAPTION, 40-4, box_y
+      .word lb_file_name
       .byte 0
    ; data specific to the combobox-popup panel
    lb_ok: STR_FORMAT "  ok"
+   lb_file_name: STR_FORMAT "file name"
+
+   .proc initialize
+      lda file_browsing::files
+      sta comps::file_select + components::listbox::data_members::string_pointer
+      lda file_browsing::files+1
+      sta comps::file_select + components::listbox::data_members::string_pointer+1
+      rts
+   .endproc
 
    .proc clearArea
+      lda #box_x-1
+      sta guiutils::draw_x
+      lda #box_y-1
+      sta guiutils::draw_y
+      lda #box_width+2
+      sta guiutils::draw_width
+      lda #box_height+2
+      sta guiutils::draw_height
+      jsr guiutils::clear_rectangle
+      rts
+   .endproc
+
+   .proc draw
+      jsr clearArea
+      ; clearArea already populates draw_x, draw_y, draw_width, draw_height, but we want different values unfortunately
       lda #box_x
       sta guiutils::draw_x
       lda #box_y
@@ -36,13 +64,11 @@
       sta guiutils::draw_width
       lda #box_height
       sta guiutils::draw_height
-      jsr guiutils::clear_rectangle
-      rts
-   .endproc
-
-   .proc draw
-      jsr clearArea
-      ; TODO draw frame
+      stz guiutils::draw_data1
+      jsr guiutils::draw_frame
+      ; prepare file listing
+      ldx #file_browsing::file_type::instrument
+      jsr file_browsing::getFiles
       rts
    .endproc
 

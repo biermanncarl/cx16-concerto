@@ -2,6 +2,9 @@
 
 ; Routines needed by the Concerto file browser.
 
+.ifndef ::GUI_FILE_BROWSING_ASM
+::GUI_FILE_BROWSING_ASM = 1
+
 .include "../dynamic_memory/vector_32bytes.asm"
 .include "../common/utility_macros.asm"
 .include "../common/x16.asm"
@@ -94,7 +97,8 @@ files:
             lda reading_file_name
             and #1
             beq :+
-            lda character    
+            lda character
+            jsr guiutils::petsciiToScreencode
             sta (v32b::entrypointer), y
             iny
         :   bra @read_line_loop
@@ -137,10 +141,10 @@ command:
     .byte "$"
 extension:
     ; concerto-x
-    .byte ".cox"
+    PETSCII_TO_SCREEN ".cox"
 last_letters:
     ; preset (instrument), bank, song
-    .byte "pbs"
+    PETSCII_TO_SCREEN "pbs"
 .endproc
 
 
@@ -170,3 +174,4 @@ last_letters:
 
 .endscope
 
+.endif ; .ifndef ::GUI_FILE_BROWSING_ASM

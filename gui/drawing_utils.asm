@@ -674,6 +674,7 @@ draw_checkbox:
 ; (str_pointer), y   is where printing continues, incrementing Y along the way
 ; color according to the variable color
 ; X: overall width plus 1
+; Y: start of string relative to (str_pointer)
 print_with_padding:
 @loop1: ; printing loop. assumes that the string length is less or equal than the combobox/button width minus 2 (really 2 or just 1?)
    lda (str_pointer), y
@@ -859,6 +860,15 @@ alternative_gotoxy:
    sta VERA_addr_high
    stx VERA_addr_mid
    rts
+
+
+; Operates on .A value
+.proc petsciiToScreencode
+	cmp #$40
+   bcc :+
+	sbc #$40
+:  rts
+.endproc
 
 
 ; expects selected tab in draw_data1

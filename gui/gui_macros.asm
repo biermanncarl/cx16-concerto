@@ -38,22 +38,25 @@
 .define CCOLOR_ALG_OP_NUMBERS 16*0+13
 .define CCOLOR_ALG_CONNECTION 16*COLOR_BACKGROUND+COLOR_ALG_CONNECTION
 
+.macro PETSCII_TO_SCREEN str_arg
+   .repeat  .strlen(str_arg), i
+   .if (.strat(str_arg, i)=32)
+      .byte 32
+   .else
+      .if (.strat(str_arg, i)>64) && (.strat(str_arg, i)<91)
+         .byte .strat(str_arg, i)-64
+      .else
+         .byte .strat(str_arg, i)
+      .endif
+   .endif
+   .endrepeat
+.endmacro
 
 ; compile time macro: converts an ascii string to a zero-terminated string that can be displayed directly on the VERA
 ; currently supports characters, spaces, digits, and maybe more but untested.
 ; obviously cannot support "@", because that's character 0 on the VERA
 .macro STR_FORMAT stf_arg
-   .repeat  .strlen(stf_arg), i
-   .if (.strat(stf_arg, i)=32)
-      .byte 32
-   .else
-      .if (.strat(stf_arg, i)>64) && (.strat(stf_arg, i)<91)
-         .byte .strat(stf_arg, i)-64
-      .else
-         .byte .strat(stf_arg, i)
-      .endif
-   .endif
-   .endrepeat
+   PETSCII_TO_SCREEN stf_arg
    .byte 0
 .endmacro
 
