@@ -753,10 +753,10 @@ draw_lb_popup:
    bne @line_loop
    rts
 
-; clears the area on the screen where the combobox popup was before.
+; clears an area on the screen with the background color
 ; x, y position in draw_x and draw_y
 ; width in draw_width, height in draw_height
-clear_lb_popup:
+clear_rectangle:
    lda draw_x
    sta cur_x
    lda draw_y

@@ -19,6 +19,7 @@ panels__combobox_popup__draw = panels::combobox_popup::draw
 panels__panels_stack = panels::panels_stack
 panels__panels_stack_pointer = panels::panels_stack_pointer
 panels__ids__combobox_popup = panels::ids::combobox_popup
+panels__ids__file_browser_popup = panels::ids::file_browser_popup
 panels__px = panels::px
 panels__py = panels::py
 gui_routines__refresh_gui = gui_routines::refresh_gui

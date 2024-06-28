@@ -97,7 +97,7 @@
       sta guiutils::draw_width
       lda box_height
       sta guiutils::draw_height
-      jsr guiutils::clear_lb_popup
+      jsr guiutils::clear_rectangle
       ; call writing function of panel
       lda lb_ofs
       sta mouse_variables::curr_component_ofs
