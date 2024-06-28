@@ -12,7 +12,7 @@
 .include "panels/fm_operators.asm"
 .include "panels/global_navigation.asm"
 .include "panels/lfo.asm"
-.include "panels/listbox_popup.asm"
+.include "panels/combobox_popup.asm"
 .include "panels/synth_info.asm"
 .include "panels/synth_navigation.asm"
 
@@ -23,7 +23,7 @@
     psg_oscillators, \
     envelopes, \
     synth_navigation, \
-    listbox_popup, \
+    combobox_popup, \
     lfo, \
     synth_info, \
     fm_general, \

@@ -27,18 +27,18 @@
    comps:
    .scope comps
       COMPONENT_DEFINITION tab_selector, tab_select, px, py, MAX_OSCS_PER_VOICE, 0
-      COMPONENT_DEFINITION listbox, waveform, wfsecx, wfsecy+2, 8, 4, A waveforms_lb, 0
+      COMPONENT_DEFINITION combobox, waveform, wfsecx, wfsecy+2, 8, 4, A waveforms_lb, 0
       COMPONENT_DEFINITION drag_edit, pulse_width, pwsecx, pwsecy+2, %00000000, 0, 63, 0, 0
-      COMPONENT_DEFINITION listbox, amp_env, ampsecx, ampsecy+1, 8, N_TOT_MODSOURCES, A panel_common::modsources_lb, 0
+      COMPONENT_DEFINITION combobox, amp_env, ampsecx, ampsecy+1, 8, N_TOT_MODSOURCES, A panel_common::modsources_lb, 0
       COMPONENT_DEFINITION drag_edit, volume, ampsecx, ampsecy+4, %00000000, 0, 64, 0, 0
-      COMPONENT_DEFINITION listbox, lr_select, ampsecx+4, ampsecy+4, 5, 4, A panel_common::channel_select_lb, 0
+      COMPONENT_DEFINITION combobox, lr_select, ampsecx+4, ampsecy+4, 5, 4, A panel_common::channel_select_lb, 0
       COMPONENT_DEFINITION drag_edit, semitones, pitsecx+3, pitsecy+2, %00000100, 128, 127, 0, 0
       COMPONENT_DEFINITION drag_edit, fine_tune, pitsecx+3, pitsecy+4, %00000100, 128, 127, 0, 0
       COMPONENT_DEFINITION checkbox, key_track, pitsecx+8, pitsecy+2, 7, 0
-      COMPONENT_DEFINITION listbox, pitch1_modsource, modsecx+7, modsecy+2, 8, N_TOT_MODSOURCES+1, A panel_common::modsources_none_option_lb, 0
-      COMPONENT_DEFINITION listbox, pitch2_modsource, modsecx+7, modsecy+3, 8, N_TOT_MODSOURCES+1, A panel_common::modsources_none_option_lb, 0
-      COMPONENT_DEFINITION listbox, pw_modsource, modsecx+7, modsecy+4, 8, N_TOT_MODSOURCES+1, A panel_common::modsources_none_option_lb, 0
-      COMPONENT_DEFINITION listbox, volume_modsource, modsecx+7, modsecy+5, 8, N_TOT_MODSOURCES+1, A panel_common::modsources_none_option_lb, 0
+      COMPONENT_DEFINITION combobox, pitch1_modsource, modsecx+7, modsecy+2, 8, N_TOT_MODSOURCES+1, A panel_common::modsources_none_option_lb, 0
+      COMPONENT_DEFINITION combobox, pitch2_modsource, modsecx+7, modsecy+3, 8, N_TOT_MODSOURCES+1, A panel_common::modsources_none_option_lb, 0
+      COMPONENT_DEFINITION combobox, pw_modsource, modsecx+7, modsecy+4, 8, N_TOT_MODSOURCES+1, A panel_common::modsources_none_option_lb, 0
+      COMPONENT_DEFINITION combobox, volume_modsource, modsecx+7, modsecy+5, 8, N_TOT_MODSOURCES+1, A panel_common::modsources_none_option_lb, 0
       COMPONENT_DEFINITION drag_edit, pitch1_moddepth, modsecx+15, modsecy+2, %10000100, 256-76, 76, 0, 0
       COMPONENT_DEFINITION drag_edit, pitch2_moddepth, modsecx+15, modsecy+3, %10000100, 256-76, 76, 0, 0
       COMPONENT_DEFINITION drag_edit, pw_moddepth, modsecx+15, modsecy+4, %00000100, 256-127, 127, 0, 0
@@ -83,7 +83,7 @@
    pulsewidth_lb: STR_FORMAT "pulse width"
    pw_lb: STR_FORMAT "pw"
    modulation_lb: STR_FORMAT "modulation"
-   ; stringlist for modsource listboxes
+   ; stringlist for modsource comboboxes
    waveforms_lb:
       STR_FORMAT "pulse"
       STR_FORMAT "saw"
@@ -137,7 +137,7 @@
       .word @tab_slector
       .word @waveform
       .word @pulsewidth ; pulse width
-      .word @ampsel ; amp listbox
+      .word @ampsel ; amp combobox
       .word @volume ; oscillator volume
       .word @channelsel ; L/R select
       .word @semitones
@@ -306,7 +306,7 @@
       rol
       rol
       rol
-      LDY_COMPONENT_MEMBER listbox, waveform, selected_entry
+      LDY_COMPONENT_MEMBER combobox, waveform, selected_entry
       sta comps, y
       ; pulse width
       lda concerto_synth::timbres::Timbre::osc::pulse, x
@@ -314,7 +314,7 @@
       sta comps, y
       ; amplifier select
       lda concerto_synth::timbres::Timbre::osc::amp_sel, x
-      LDY_COMPONENT_MEMBER listbox, amp_env, selected_entry
+      LDY_COMPONENT_MEMBER combobox, amp_env, selected_entry
       sta comps, y
       ; volume
       lda concerto_synth::timbres::Timbre::osc::volume, x
@@ -326,7 +326,7 @@
       rol
       rol
       rol
-      LDY_COMPONENT_MEMBER listbox, lr_select, selected_entry
+      LDY_COMPONENT_MEMBER combobox, lr_select, selected_entry
       sta comps, y
       ; semitones
       ; we need to check fine tune to get correct semi tones.
@@ -350,22 +350,22 @@
       ; pitch mod select 1
       lda concerto_synth::timbres::Timbre::osc::pitch_mod_sel1, x
       jsr panel_common::map_modsource_to_gui
-      LDY_COMPONENT_MEMBER listbox, pitch1_modsource, selected_entry
+      LDY_COMPONENT_MEMBER combobox, pitch1_modsource, selected_entry
       sta comps, y
       ; pitch mod select 2
       lda concerto_synth::timbres::Timbre::osc::pitch_mod_sel2, x
       jsr panel_common::map_modsource_to_gui
-      LDY_COMPONENT_MEMBER listbox, pitch2_modsource, selected_entry
+      LDY_COMPONENT_MEMBER combobox, pitch2_modsource, selected_entry
       sta comps, y
       ; pwm select
       lda concerto_synth::timbres::Timbre::osc::pwm_sel, x
       jsr panel_common::map_modsource_to_gui
-      LDY_COMPONENT_MEMBER listbox, pw_modsource, selected_entry
+      LDY_COMPONENT_MEMBER combobox, pw_modsource, selected_entry
       sta comps, y
       ; vol mod select
       lda concerto_synth::timbres::Timbre::osc::vol_mod_sel, x
       jsr panel_common::map_modsource_to_gui
-      LDY_COMPONENT_MEMBER listbox, volume_modsource, selected_entry
+      LDY_COMPONENT_MEMBER combobox, volume_modsource, selected_entry
       sta comps, y
       ; pitch mod depth 1
       lda concerto_synth::timbres::Timbre::osc::pitch_mod_dep1, x

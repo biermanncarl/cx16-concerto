@@ -8,7 +8,7 @@
 .include "components/checkbox.asm"
 .include "components/arrowed_edit.asm"
 .include "components/drag_edit.asm"
-.include "components/listbox.asm"
+.include "components/combobox.asm"
 .include "components/tab_selector.asm"
 .include "components/dummy.asm"
 
@@ -18,7 +18,7 @@
     checkbox, \
     arrowed_edit, \
     drag_edit, \
-    listbox, \
+    combobox, \
     tab_selector, \
     dummy
 .linecont - ; switch off line continuation with "\" (default)

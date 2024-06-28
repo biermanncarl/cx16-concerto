@@ -1,5 +1,5 @@
 Panels are rectangular areas on the screen that contain basic GUI elements
-like listboxes, checkboxes etc.
+like comboboxes, checkboxes etc.
 They behave a bit like windows.
 The look and behavior of all panels are hard coded.
 However, panels can be made visible/invisible individually, and also their order can be changed.
@@ -8,7 +8,7 @@ This is used to be able to dynamically swap out parts of the GUI, or do things l
 The tool for that is a "panel stack" that defines which panels are shown in which order.
 
 Each panel has multiple byte strings hard coded. Those byte strings define elements shown on the GUI.
-  * one string that defines all interactive GUI components, such as checkboxes, listboxes etc.
+  * one string that defines all interactive GUI components, such as checkboxes, comboboxes etc.
     It is often called "comps", "component string" or something similar.
     In many subroutines, this component string is given as a zero page pointer together with an offset.
     Those component strings can inherently only be 256 bytes or shorter.

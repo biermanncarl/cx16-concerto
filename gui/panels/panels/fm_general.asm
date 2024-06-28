@@ -20,11 +20,11 @@
       COMPONENT_DEFINITION checkbox, op2_active, px+18, py+2, 2, 0
       COMPONENT_DEFINITION checkbox, op3_active, px+21, py+2, 2, 0
       COMPONENT_DEFINITION checkbox, op4_active, px+24, py+2, 2, 0
-      COMPONENT_DEFINITION listbox, lr_select, px+13, py+8, 5, 4, A panel_common::channel_select_lb, 0
+      COMPONENT_DEFINITION combobox, lr_select, px+13, py+8, 5, 4, A panel_common::channel_select_lb, 0
       COMPONENT_DEFINITION drag_edit, semitones, px+5, py+13, %00000100, 128, 127, 0, 0
       COMPONENT_DEFINITION drag_edit, fine_tune, px+5, py+14, %00000100, 128, 127, 0, 0
       COMPONENT_DEFINITION checkbox, key_track, px+13, py+11, 7, 0
-      COMPONENT_DEFINITION listbox, pitchmod_sel, px+13, py+13, 8, N_TOT_MODSOURCES+1, A panel_common::modsources_none_option_lb, 0
+      COMPONENT_DEFINITION combobox, pitchmod_sel, px+13, py+13, 8, N_TOT_MODSOURCES+1, A panel_common::modsources_none_option_lb, 0
       COMPONENT_DEFINITION drag_edit, pitchmod_dep, px+21, py+13, %10000100, 256-76, 76, 0, 0
       COMPONENT_LIST_END
    .endscope
@@ -270,7 +270,7 @@
       rol
       rol
       rol
-      LDY_COMPONENT_MEMBER listbox, lr_select, selected_entry
+      LDY_COMPONENT_MEMBER combobox, lr_select, selected_entry
       sta comps, y
       ; semitones
       ; we need to check fine tune to get correct semi tones.
@@ -294,7 +294,7 @@
       ; pitch mod select
       lda concerto_synth::timbres::Timbre::fm_general::pitch_mod_sel, x
       jsr panel_common::map_modsource_to_gui
-      LDY_COMPONENT_MEMBER listbox, pitchmod_sel, selected_entry
+      LDY_COMPONENT_MEMBER combobox, pitchmod_sel, selected_entry
       sta comps, y
       ; pitch mod depth
       lda concerto_synth::timbres::Timbre::fm_general::pitch_mod_dep, x

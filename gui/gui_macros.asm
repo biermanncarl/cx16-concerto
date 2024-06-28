@@ -11,13 +11,13 @@
    .define COLOR_FRAME 15
    .define COLOR_ARROWED_EDIT_BG 0
    .define COLOR_ARROWED_EDIT_FG 3
-   .define COLOR_LISTBOX_BG 0
+   .define COLOR_COMBOBOX_BG 0
 .else
    .define COLOR_BACKGROUND 0
    .define COLOR_FRAME 1
    .define COLOR_ARROWED_EDIT_BG 6
    .define COLOR_ARROWED_EDIT_FG 5
-   .define COLOR_LISTBOX_BG 6
+   .define COLOR_COMBOBOX_BG 6
 .endif
 
 .define COLOR_CAPTION 15
@@ -25,10 +25,10 @@
 .define COLOR_TABS 1
 .define COLOR_ARROWED_EDIT_ARROWS 1
 .define COLOR_CHECKBOX 1
-.define COLOR_LISTBOX_FG 15
-.define COLOR_LISTBOX_ARROW 1
-.define COLOR_LISTBOX_POPUP_BG 0
-.define COLOR_LISTBOX_POPUP_FG 7 ; or better 3?
+.define COLOR_COMBOBOX_FG 15
+.define COLOR_COMBOBOX_ARROW 1
+.define COLOR_COMBOBOX_POPUP_BG 0
+.define COLOR_COMBOBOX_POPUP_FG 7 ; or better 3?
 .define COLOR_ALG_CONNECTION 15
 ; combined colors (foreground & background)
 .define CCOLOR_CAPTION 16*COLOR_BACKGROUND+COLOR_CAPTION

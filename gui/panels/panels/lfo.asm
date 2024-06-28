@@ -14,7 +14,7 @@
    hg = envelopes::hg
    comps:
    .scope comps
-      COMPONENT_DEFINITION listbox, waveform, px+2, py+3, 8, 5, A lfo_waveform_lb, 0
+      COMPONENT_DEFINITION combobox, waveform, px+2, py+3, 8, 5, A lfo_waveform_lb, 0
       COMPONENT_DEFINITION checkbox, retrigger, px+12, py+2, 8, 0
       COMPONENT_DEFINITION drag_edit, rate, px+7 , py+5, %00000001, 0, 128, 10, 0
       COMPONENT_DEFINITION drag_edit, phase, px+14 , py+5, %00000000, 0, 255, 0, 0
@@ -106,7 +106,7 @@
       ldx gui_variables::current_synth_timbre
       ; LFO waveform
       lda concerto_synth::timbres::Timbre::lfo::wave, x
-      LDY_COMPONENT_MEMBER listbox, waveform, selected_entry
+      LDY_COMPONENT_MEMBER combobox, waveform, selected_entry
       sta comps, y
       ; LFO retrigger
       lda concerto_synth::timbres::Timbre::lfo::retrig, x

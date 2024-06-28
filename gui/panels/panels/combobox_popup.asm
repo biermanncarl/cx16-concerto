@@ -1,13 +1,13 @@
 ; Copyright 2021, 2023 Carl Georg Biermann
 
-.ifndef ::GUI_PANELS_PANELS_LISTBOX_POPUP_ASM
+.ifndef ::GUI_PANELS_PANELS_COMBOBOX_POPUP_ASM
 
-::GUI_PANELS_PANELS_LISTBOX_POPUP_ASM = 1
+::GUI_PANELS_PANELS_COMBOBOX_POPUP_ASM = 1
 
 .include "common.asm"
 
-; listbox popup. shows up when a listbox was clicked.
-.scope listbox_popup
+; combobox popup. shows up when a combobox was clicked.
+.scope combobox_popup
    ; popup blocks the whole screen, therefore this panel is "fullscreen" (for click detection)
    px = 0
    py = 0
@@ -20,15 +20,15 @@
    .endscope
    capts:
       .byte 0
-   ; data specific to the listbox-popup panel
+   ; data specific to the combobox-popup panel
    strlist: .word 0
    ; this is the position where the popup is actually drawn
    box_x: .byte 0
    box_y: .byte 0
    box_width: .byte 0
    box_height: .byte 0
-   lb_panel: .byte 0 ; panel index of the listbox, so the popup knows which writing-function to call when done.
-   lb_addr: .word 0 ; address and offset of the listbox that was causing the popup
+   lb_panel: .byte 0 ; panel index of the combobox, so the popup knows which writing-function to call when done.
+   lb_addr: .word 0 ; address and offset of the combobox that was causing the popup
    lb_ofs: .byte 0
    lb_id: .byte 0
 
@@ -71,7 +71,7 @@
       cmp box_height
       bcs @close_popup
       ; we're inside!
-      ; now the accumulator holds the new selection index. Put it back into the listbox.
+      ; now the accumulator holds the new selection index. Put it back into the combobox.
       pha
       lda lb_addr
       sta clbp_pointer
@@ -79,7 +79,7 @@
       sta clbp_pointer+1
       lda lb_ofs
       clc
-      adc #components::listbox::data_members::selected_entry
+      adc #components::combobox::data_members::selected_entry
       tay
       pla
       sta (clbp_pointer), y
@@ -117,4 +117,4 @@
    refresh = panel_common::dummy_subroutine
 .endscope
 
-.endif ; .ifndef ::GUI_PANELS_PANELS_LISTBOX_POPUP_ASM
+.endif ; .ifndef ::GUI_PANELS_PANELS_COMBOBOX_POPUP_ASM

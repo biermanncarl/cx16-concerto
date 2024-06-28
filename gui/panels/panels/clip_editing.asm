@@ -25,7 +25,7 @@
    comps:
    .scope comps
       COMPONENT_DEFINITION drag_and_drop_area, notes_edit, components::dnd::dragables::ids::notes
-      COMPONENT_DEFINITION listbox, zoom_level_indicator, zoom_level_indicator_x, zoom_level_indicator_y, 6, 5, A zoom_select_lb, 0
+      COMPONENT_DEFINITION combobox, zoom_level_indicator, zoom_level_indicator_x, zoom_level_indicator_y, 6, 5, A zoom_select_lb, 0
       COMPONENT_DEFINITION button, play_start, 34, 57, 6, A play_caption
       COMPONENT_DEFINITION button, play_stop, 41, 57, 6, A stop_caption
       COMPONENT_DEFINITION text_field, clip_help, help_box_x+2, help_box_y+2, help_box_width-4, help_box_height-4, A vram_assets::help_text_note_edit
@@ -66,7 +66,7 @@
    .endproc
 
    .proc write
-      LDY_COMPONENT_MEMBER listbox, zoom_level_indicator, selected_entry
+      LDY_COMPONENT_MEMBER combobox, zoom_level_indicator, selected_entry
       lda mouse_variables::curr_component_id
       asl
       tax
@@ -103,7 +103,7 @@
 
    .proc refresh
       lda components::dnd::dragables::notes::temporal_zoom
-      LDY_COMPONENT_MEMBER listbox, zoom_level_indicator, selected_entry
+      LDY_COMPONENT_MEMBER combobox, zoom_level_indicator, selected_entry
       sta comps, y
       rts
    .endproc

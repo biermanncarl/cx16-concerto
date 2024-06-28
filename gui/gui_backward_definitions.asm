@@ -6,19 +6,19 @@
 ; This works because symbols can be accessed before they are defined,
 ; but scopes cannot.
 
-panels__listbox_popup__box_x = panels::listbox_popup::box_x
-panels__listbox_popup__box_y = panels::listbox_popup::box_y
-panels__listbox_popup__box_width = panels::listbox_popup::box_width
-panels__listbox_popup__box_height = panels::listbox_popup::box_height
-panels__listbox_popup__strlist = panels::listbox_popup::strlist
-panels__listbox_popup__lb_ofs = panels::listbox_popup::lb_ofs
-panels__listbox_popup__lb_addr = panels::listbox_popup::lb_addr
-panels__listbox_popup__lb_id = panels::listbox_popup::lb_id
-panels__listbox_popup__lb_panel = panels::listbox_popup::lb_panel
-panels__listbox_popup__draw = panels::listbox_popup::draw
+panels__combobox_popup__box_x = panels::combobox_popup::box_x
+panels__combobox_popup__box_y = panels::combobox_popup::box_y
+panels__combobox_popup__box_width = panels::combobox_popup::box_width
+panels__combobox_popup__box_height = panels::combobox_popup::box_height
+panels__combobox_popup__strlist = panels::combobox_popup::strlist
+panels__combobox_popup__lb_ofs = panels::combobox_popup::lb_ofs
+panels__combobox_popup__lb_addr = panels::combobox_popup::lb_addr
+panels__combobox_popup__lb_id = panels::combobox_popup::lb_id
+panels__combobox_popup__lb_panel = panels::combobox_popup::lb_panel
+panels__combobox_popup__draw = panels::combobox_popup::draw
 panels__panels_stack = panels::panels_stack
 panels__panels_stack_pointer = panels::panels_stack_pointer
-panels__ids__listbox_popup = panels::ids::listbox_popup
+panels__ids__combobox_popup = panels::ids::combobox_popup
 panels__px = panels::px
 panels__py = panels::py
 gui_routines__refresh_gui = gui_routines::refresh_gui

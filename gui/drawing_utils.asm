@@ -669,13 +669,13 @@ draw_checkbox:
    rts
 
 
-; prints a string with padding up to specified width -- quite specific, it is used in listbox & button drawing
+; prints a string with padding up to specified width -- quite specific, it is used in combobox & button drawing
 ; assumes that the VERA address is already set accordingly
 ; (str_pointer), y   is where printing continues, incrementing Y along the way
 ; color according to the variable color
 ; X: overall width plus 1
 print_with_padding:
-@loop1: ; printing loop. assumes that the string length is less or equal than the listbox/button width minus 2 (really 2 or just 1?)
+@loop1: ; printing loop. assumes that the string length is less or equal than the combobox/button width minus 2 (really 2 or just 1?)
    lda (str_pointer), y
    beq @end_loop1
    sta VERA_data0
@@ -685,7 +685,7 @@ print_with_padding:
    iny
    bra @loop1
 @end_loop1:
-   ; do padding at the end of the listbox/button if necessary
+   ; do padding at the end of the combobox/button if necessary
 @loop2:
    dex
    beq @end_loop2
@@ -698,19 +698,19 @@ print_with_padding:
    rts
 
 
-; draws a listbox
+; draws a combobox
 ; x, y position in draw_x and draw_y
 ; width in draw_width
 ; label pointer in str_pointer
-draw_listbox:
+draw_combobox:
    lda draw_x
    sta cur_x
    lda draw_y
    sta cur_y
    jsr set_cursor
-   lda #90 ; listbox "bullet"
+   lda #90 ; combobox "bullet"
    sta VERA_data0
-   ldx #(COLOR_LISTBOX_BG*16+COLOR_LISTBOX_ARROW)
+   ldx #(COLOR_COMBOBOX_BG*16+COLOR_COMBOBOX_ARROW)
    stx VERA_data0
    lda #32
    sta VERA_data0
@@ -718,13 +718,13 @@ draw_listbox:
    ldy #0
    ; prepare width counter
    ldx draw_width
-   dex ; (for extra characters on the left hand side of the listbox, but just one because of the way we determine the length of the padding)
-   lda #(COLOR_LISTBOX_BG*16+COLOR_LISTBOX_FG)
+   dex ; (for extra characters on the left hand side of the combobox, but just one because of the way we determine the length of the padding)
+   lda #(COLOR_COMBOBOX_BG*16+COLOR_COMBOBOX_FG)
    sta color
    jsr print_with_padding
    rts
 
-; draws the listbox popup
+; draws the combobox popup
 ; x, y position in draw_x and draw_y
 ; width in draw_width, height in draw_height (also marks number of strings)
 ; pointer to stringlist in str_pointer
@@ -737,7 +737,7 @@ draw_lb_popup:
    ldy #0
    lda draw_height
    sta dlbp_line_counter
-   lda #(16*COLOR_LISTBOX_POPUP_BG+COLOR_LISTBOX_POPUP_FG)
+   lda #(16*COLOR_COMBOBOX_POPUP_BG+COLOR_COMBOBOX_POPUP_FG)
    sta color
 @line_loop:
    jsr set_cursor
@@ -753,7 +753,7 @@ draw_lb_popup:
    bne @line_loop
    rts
 
-; clears the area on the screen where the listbox popup was before.
+; clears the area on the screen where the combobox popup was before.
 ; x, y position in draw_x and draw_y
 ; width in draw_width, height in draw_height
 clear_lb_popup:
