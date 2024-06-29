@@ -16,6 +16,7 @@
         string_pointer .word ; pointer to a v32b vector of zero-terminated strings
         scroll_offset .byte ; MUST BE SMALLER THAN NUMBER OF STRINGS. Not sure if byte suffices here --- for now let's go with it.
         selected_entry .byte ; 255=none
+        valid_entries .byte ; gets calculated during draw routine, but gets truncated at the last item visible (not a problem so far)
     .endstruct
 
     .proc draw
@@ -55,6 +56,7 @@
         lda (components_common::data_pointer),y
         inc ; small trick to utilize zero flag (see print line loop)
         sta selected
+        stz valid_entries
         plx ; recall offset
         phy
     @scroll_offset_loop: ; maybe make this a v32b subroutine?
@@ -62,6 +64,7 @@
         phx
         jsr v32b::accessNextEntry
         plx
+        inc valid_entries
         dec selected
         dex
         bra @scroll_offset_loop
@@ -86,7 +89,12 @@
         ldx width
         inx
         ldy #0
-        jsr guiutils::print_with_padding
+        ; check if valid
+        lda (v32b::entrypointer), y
+        beq :+
+        inc valid_entries
+        ; print line
+    :   jsr guiutils::print_with_padding
         jsr v32b::accessNextEntry
         bcs @padding
         inc pos_y
@@ -99,8 +107,13 @@
     @end:
         ply
         iny
+        lda valid_entries
+        sta (components_common::data_pointer),y
+        iny
         rts
     selected:
+        .res 1
+    valid_entries:
         .res 1
     .endproc
 
@@ -155,12 +168,15 @@
     .endproc
 
     .proc event_click
-        ; TODO
         lda mouse_variables::curr_component_ofs
         clc
-        adc #data_members::selected_entry
+        adc #data_members::valid_entries
         tay
         lda mouse_variables::curr_data_1
+        cmp (components_common::data_pointer), y
+        bcc :+
+        lda #255 ; none selected
+    :   dey
         sta (components_common::data_pointer), y
         ldy mouse_variables::curr_component_ofs
         jsr draw

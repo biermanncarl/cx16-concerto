@@ -14,13 +14,13 @@
    wd = 80
    hg = 60
    ; where the actual popup appears
-   box_width = 20
-   box_height = 30
+   box_width = 26
+   box_height = 15
    box_x = (80 - box_width) / 2
    box_y = (60 - box_height) / 2
    comps:
    .scope comps
-      COMPONENT_DEFINITION listbox, file_select, box_x+2, box_y + 2, 16, box_height-6, A 0, 0, 255
+      COMPONENT_DEFINITION listbox, file_select, box_x+2, box_y + 2, box_width-4, box_height-6, A 0, 0, 255, 0
       COMPONENT_DEFINITION button, ok, 41, box_y + box_height - 3, 6, A lb_ok
       COMPONENT_DEFINITION button, cancel, 33, box_y + box_height - 3, 6, A lb_cancel
       COMPONENT_LIST_END
@@ -71,7 +71,9 @@
       ; prepare file listing
       ldx #file_browsing::file_type::instrument
       jsr file_browsing::getFiles
-      stz comps::file_select + components::listbox::data_members::selected_entry
+      lda #255 ; none selected
+      sta comps::file_select + components::listbox::data_members::selected_entry
+      stz comps::file_select + components::listbox::data_members::scroll_offset
       rts
    .endproc
 
