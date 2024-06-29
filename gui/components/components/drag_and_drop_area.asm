@@ -155,17 +155,6 @@
     .endproc
 
     .proc event_drag
-        ; modifier keys status
-        jsr KBDBUF_GET_MODIFIERS
-        tax
-        and #KBD_MODIFIER_CTRL
-        sta dnd::ctrl_key_pressed
-        txa
-        and #KBD_MODIFIER_SHIFT
-        sta dnd::shift_key_pressed
-        txa
-        and #KBD_MODIFIER_ALT
-        sta dnd::alt_key_pressed
         php
         sei
         jsr dnd::dragables::notes::doDrag

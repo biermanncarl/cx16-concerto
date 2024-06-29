@@ -825,7 +825,7 @@ height = 2 * detail::event_edit_height
 
 
 .proc noteDrag
-   jsr dnd::getMouseChargridMotion
+   jsr mouse__getMouseChargridMotion
    ; check if we actually do anything (could be moved into getMouseChargridMotion and returned in carry flag)
    cmp #0
    bne @do_drag
@@ -997,7 +997,7 @@ height = 2 * detail::event_edit_height
 
 
 .proc noteResize
-   jsr dnd::getMouseChargridMotion
+   jsr mouse__getMouseChargridMotion
    ; check if we actually do anything (could be moved into getMouseChargridMotion and returned in carry flag)
    cmp #0
    bne @do_resize
@@ -1061,7 +1061,7 @@ height = 2 * detail::event_edit_height
 
 
 .proc doScroll
-   jsr dnd::getMouseChargridMotion
+   jsr mouse__getMouseChargridMotion
    ; check if we actually do anything
    cmp #0
    bne @do_scroll
@@ -1070,7 +1070,7 @@ height = 2 * detail::event_edit_height
    rts
 @do_scroll:
    ; check for fast scroll
-   ldy dnd::ctrl_key_pressed
+   ldy mouse_variables::ctrl_key_pressed
    beq :+
    ; multiply relative distance by 4
    asl
@@ -1087,7 +1087,7 @@ height = 2 * detail::event_edit_height
 .endproc
 
 .proc doZoom
-   jsr dnd::getMouseChargridMotion
+   jsr mouse__getMouseChargridMotion
    ; check Y coordinate
    txa
    bne @do_zoom
@@ -1194,7 +1194,7 @@ height = 2 * detail::event_edit_height
 
 .proc commonLeftClick
    ; duplicate?
-   lda dnd::ctrl_key_pressed
+   lda mouse_variables::ctrl_key_pressed
    beq @check_delete
    lda selected_events_vector
    ldx selected_events_vector+1
@@ -1221,7 +1221,7 @@ height = 2 * detail::event_edit_height
 
 @check_delete:
    ; delete?
-   lda dnd::alt_key_pressed
+   lda mouse_variables::alt_key_pressed
    bne @do_delete
    rts
 @do_delete:
@@ -1234,10 +1234,6 @@ height = 2 * detail::event_edit_height
 ; This routine does all the stuff necessary at the start of a drag operation.
 ; It has to distinguish between all the different things one can do with the mouse in the notes DnD area.
 .proc dragStart
-   ; reset the accumulated mouse motion
-   lda #4
-   sta dnd::accumulated_x
-   sta dnd::accumulated_y
    ; start of a dragging operation. figure out what we're actually doing
    lda mouse_variables::curr_buttons
    and #1 ; check for left button
@@ -1258,7 +1254,7 @@ height = 2 * detail::event_edit_height
    lda mouse_variables::curr_data_1
    bne @lmb_event_clicked
       ; no event clicked.
-      lda dnd::ctrl_key_pressed
+      lda mouse_variables::ctrl_key_pressed
       beq :+ ; if CTRL is pressed, add a new note
          jsr song_engine::event_selection::unSelectAllEvents
          jsr addNewNote
@@ -1266,7 +1262,7 @@ height = 2 * detail::event_edit_height
          sta dnd::drag_action_state
          rts
       :
-      lda dnd::shift_key_pressed
+      lda mouse_variables::shift_key_pressed
       bne :+ ; if SHIFT is pressed, skip unselection of all
          jsr song_engine::event_selection::unSelectAllEvents
       :
@@ -1290,7 +1286,7 @@ height = 2 * detail::event_edit_height
       sta v40b::value_1
       bmi @already_selected
       @not_yet_selected:
-         lda dnd::shift_key_pressed
+         lda mouse_variables::shift_key_pressed
          beq :+
          ; SHIFT was pressed --> allow multiple selection
          SET_SELECTED_VECTOR selected_events_vector
@@ -1310,7 +1306,7 @@ height = 2 * detail::event_edit_height
          SWAP_VECTORS temp_events, selected_events_vector
          jmp commonLeftClick
       @already_selected:
-         lda dnd::shift_key_pressed
+         lda mouse_variables::shift_key_pressed
          beq :+
          SET_SELECTED_VECTOR selected_events_vector
          jsr detail::getEntryFromHitboxObjectId
@@ -1485,7 +1481,7 @@ height = 2 * detail::event_edit_height
    ; but if SHIFT is pressed, we move them into the temp vector, which will eventually become the new selected vector.
    SET_UNSELECTED_VECTOR unselected_events_vector
    SET_SELECTED_VECTOR selected_events_vector
-   lda dnd::shift_key_pressed
+   lda mouse_variables::shift_key_pressed
    beq :+
    SET_UNSELECTED_VECTOR temp_events
 :  jsr song_engine::event_selection::unSelectAllEvents

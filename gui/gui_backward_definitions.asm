@@ -27,3 +27,4 @@ gui_routines__draw_gui = gui_routines::draw_gui
 gui_routines__load_clip_gui = gui_routines::load_clip_gui
 gui_routines__load_arrangement_gui = gui_routines::load_arrangement_gui
 gui_routines__load_synth_gui = gui_routines::load_synth_gui
+mouse__getMouseChargridMotion = mouse::getMouseChargridMotion

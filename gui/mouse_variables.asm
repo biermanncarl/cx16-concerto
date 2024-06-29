@@ -44,6 +44,23 @@
         curr_x_downscaled: .byte 0
         curr_y_downscaled: .byte 0
     .popseg
+
+
+    ; Variables which are populated on-demand
+    ; Keyboard modifiers
+    ctrl_key_pressed:
+        .byte 0
+    shift_key_pressed:
+        .byte 0
+    alt_key_pressed:
+        .byte 0
+
+    ; State of getMouseChargridMotion
+    ; By putting these variables in here (globally), we assume there can only be one scrolling operation going on at any one time
+    accumulated_x:
+        .byte 0
+    accumulated_y:
+        .byte 0
 .endscope
 
 .endif ; .ifndef ::GUI_mouse_variables_ASM

@@ -65,6 +65,17 @@ mouse_tick:
    sta mouse_variables::curr_y
    lda mouse_data+3
    sta mouse_variables::curr_y+1
+   ; modifier keys statuses
+   jsr KBDBUF_GET_MODIFIERS
+   tax
+   and #KBD_MODIFIER_CTRL
+   sta mouse_variables::ctrl_key_pressed
+   txa
+   and #KBD_MODIFIER_SHIFT
+   sta mouse_variables::shift_key_pressed
+   txa
+   and #KBD_MODIFIER_ALT
+   sta mouse_variables::alt_key_pressed
    ; update downsampled mouse coordinates
    temp = gui_variables::mzpwa
    ; determine mouse position in multiples of 4 pixels (divide by 4)
@@ -110,7 +121,7 @@ do_idle:
    ; left button held down
    lda #mouse_variables::ms_hold_L
    sta mouse_variables::status
-   jmp @mouse_down_checks
+   bra @mouse_down_checks
 :  ; check other buttons
    lda mouse_variables::curr_buttons
    beq :+
@@ -120,6 +131,11 @@ do_idle:
    bra @mouse_down_checks
 :  bra end_mouse_tick
 @mouse_down_checks:
+   ; reset the accumulated mouse motion
+   lda #4
+   sta mouse_variables::accumulated_x
+   sta mouse_variables::accumulated_y
+   ; mouse panels/components stuff
    jsr panels::mouse_get_panel
    lda mouse_variables::curr_panel
    bmi :+
@@ -167,11 +183,11 @@ do_hold_L:
    ; still the same as on mouse-down?
    cmp mouse_variables::prev_component_id
    beq :+
-   bra end_mouse_tick ; not the same, but a different one
+   jmp end_mouse_tick ; not the same, but a different one
 :  ; yes, the same component as when the mouse button was pressed down.
    ; NOW, issue a click event.
    jsr gui_routines::click_event
-   bra end_mouse_tick
+   jmp end_mouse_tick
 @button_pressed:  ; a button is pressed.  do dragging
    bra do_dragging
    jmp end_mouse_tick ; unreachable code ... optimize away?
@@ -215,5 +231,45 @@ do_dragging:
    jsr gui_routines::drag_event
    stz mouse_variables::drag_start
 :  jmp end_mouse_tick
+
+
+; Returns the mouse's relative motion in terms of whole characters (i.e. multiples of 8 pixels).
+; Accumulation of sub-character motion is done internally.
+; Returns delta x in .A
+; Returns delta y in .X
+.proc getMouseChargridMotion
+    ; y coordinate
+    lda mouse_variables::delta_y
+    clc
+    adc mouse_variables::accumulated_y
+    jsr signedDivMod8
+    sty mouse_variables::accumulated_y
+    tax
+    ; x coordinate
+    lda mouse_variables::delta_x
+    clc
+    adc mouse_variables::accumulated_x
+    jsr signedDivMod8
+    sty mouse_variables::accumulated_x
+    rts
+
+    ; Do a signed division by 8 and modulo 8 operation on the argument in .A.
+    ; Returns the quotient in .A and the remainder in .Y.
+    ; Preserves .X
+    .proc signedDivMod8
+        pha
+        and #7
+        tay
+        pla
+        clc
+        adc #128
+        lsr
+        lsr
+        lsr
+        sec
+        sbc #128/8
+        rts
+    .endproc
+.endproc
 
 .endscope
