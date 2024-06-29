@@ -156,6 +156,14 @@
 
     .proc event_click
         ; TODO
+        lda mouse_variables::curr_component_ofs
+        clc
+        adc #data_members::selected_entry
+        tay
+        lda mouse_variables::curr_data_1
+        sta (components_common::data_pointer), y
+        ldy mouse_variables::curr_component_ofs
+        jsr draw
         rts
     .endproc
 

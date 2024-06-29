@@ -15,21 +15,23 @@
    hg = 60
    ; where the actual popup appears
    box_width = 20
-   box_height = 20
+   box_height = 30
    box_x = (80 - box_width) / 2
    box_y = (60 - box_height) / 2
    comps:
    .scope comps
-      COMPONENT_DEFINITION listbox, file_select, box_x+2, box_y + 2, box_width-4, box_height-6, A 0, 0, 255
-      COMPONENT_DEFINITION button, ok, 37, box_y + box_height - 3, 6, A lb_ok
+      COMPONENT_DEFINITION listbox, file_select, box_x+2, box_y + 2, 16, box_height-6, A 0, 0, 255
+      COMPONENT_DEFINITION button, ok, 41, box_y + box_height - 3, 6, A lb_ok
+      COMPONENT_DEFINITION button, cancel, 33, box_y + box_height - 3, 6, A lb_cancel
       COMPONENT_LIST_END
    .endscope
    capts:
-      .byte CCOLOR_CAPTION, 40-4, box_y
+      .byte 16*COLOR_BACKGROUND+1, 40-5, box_y
       .word lb_file_name
       .byte 0
    ; data specific to the combobox-popup panel
    lb_ok: STR_FORMAT "  ok"
+   lb_cancel: STR_FORMAT "cancel"
    lb_file_name: STR_FORMAT "file name"
 
    .proc initialize
@@ -69,12 +71,14 @@
       ; prepare file listing
       ldx #file_browsing::file_type::instrument
       jsr file_browsing::getFiles
+      stz comps::file_select + components::listbox::data_members::selected_entry
       rts
    .endproc
 
    .proc write
       jsr clearArea
       ; close popup
+      ; TODO
       dec panels_stack_pointer
       jsr gui_routines__draw_gui
       rts

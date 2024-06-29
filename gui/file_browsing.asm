@@ -82,6 +82,7 @@ files:
     stz reading_file_name
     ldy #0
     @read_line_loop:
+        ; TODO: detect folders and treat them separately
         phy
         jsr CHRIN
         ply
@@ -119,6 +120,9 @@ files:
     bra @check_extension_loop
 @delete_current_file_name = @read_files_loop ; no action required, we simply overwrite the file name with the next one
 @keep_current_file_name:
+    ; chop off the extension
+    lda #0
+    sta (v32b::entrypointer), y
     ; create new file name buffer
     lda files
     ldx files+1
