@@ -96,14 +96,25 @@
         ; print line
     :   jsr guiutils::print_with_padding
         jsr v32b::accessNextEntry
-        bcs @padding
         inc pos_y
         dec height
+        bcs @padding ; carry is return value from accessNextEntry
         beq @end
         bra @lines_loop
 
     @padding:
-        ; TODO
+        lda pos_x
+        sta guiutils::draw_x
+        lda pos_y
+        sta guiutils::draw_y
+        lda width
+        sta guiutils::draw_width
+        lda height
+        beq @end ; skip if padding height is 0
+        sta guiutils::draw_height
+        lda #(16*COLOR_COMBOBOX_POPUP_BG)
+        sta guiutils::color
+        jsr guiutils::clear_rectangle
     @end:
         ply
         iny
@@ -183,7 +194,28 @@
         rts
     .endproc
 
-    event_drag = components_common::dummy_subroutine ; TODO: scrolling
+    .proc event_drag
+        ; This routine is kinda crude. It is safe but disallows a lot of operations which could be clamped instead.
+        lda mouse_variables::prev_component_ofs
+        clc
+        adc #data_members::scroll_offset
+        pha ; store offset
+        jsr mouse__getMouseChargridMotion
+        txa
+        ply ; recall offset
+        clc
+        adc (components_common::data_pointer),y
+        iny
+        iny
+        cmp (components_common::data_pointer),y ; compare with number of valid entries
+        bcs :+
+        dey
+        dey    
+        sta (components_common::data_pointer),y ; store new scroll offset
+        ldy mouse_variables::curr_component_ofs
+        jsr draw
+    :   rts
+    .endproc
 .endscope
 
 .endif ; .ifndef ::GUI_COMPONENTS_COMPONENTS_LISTBOX_ASM

@@ -51,6 +51,8 @@
       sta guiutils::draw_width
       lda #box_height+2
       sta guiutils::draw_height
+      lda #(16*COLOR_BACKGROUND)
+      sta guiutils::color
       jsr guiutils::clear_rectangle
       rts
    .endproc

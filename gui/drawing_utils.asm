@@ -757,14 +757,13 @@ draw_lb_popup:
 ; clears an area on the screen with the background color
 ; x, y position in draw_x and draw_y
 ; width in draw_width, height in draw_height
+; color in color
 clear_rectangle:
    lda draw_x
    sta cur_x
    lda draw_y
    sta cur_y
    ldy draw_height
-   lda #(16*COLOR_BACKGROUND)
-   sta color
 @line_loop:
    jsr set_cursor
    ldx draw_width

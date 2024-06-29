@@ -97,6 +97,8 @@
       sta guiutils::draw_width
       lda box_height
       sta guiutils::draw_height
+      lda #(16*COLOR_BACKGROUND)
+      sta guiutils::color
       jsr guiutils::clear_rectangle
       ; call writing function of panel
       lda lb_ofs
