@@ -15,6 +15,7 @@
    comps:
    .scope comps
       COMPONENT_DEFINITION dummy, click_catcher
+      COMPONENT_DEFINITION text_field, concerto_banner, 1, 1, 19, 6, A vram_assets::concerto_banner
       COMPONENT_LIST_END
    .endscope
    capts:

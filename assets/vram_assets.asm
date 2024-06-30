@@ -60,6 +60,38 @@ darker_text_color = midgray+16*darkgray
     SPACES (length - .strlen(str)), color>>4
 .endmacro
 
+.macro VERTICAL_LINE color
+    .byte 66, color
+.endmacro
+
+.macro HORIZONTAL_LINE color
+    .byte 64, color
+.endmacro
+
+.macro CURVE_UP_LEFT color
+    .byte $4B, color
+.endmacro
+
+.macro CURVE_UP_RIGHT color
+    .byte $4A, color
+.endmacro
+
+.macro CURVE_DOWN_LEFT color
+    .byte $49, color
+.endmacro
+
+.macro CURVE_DOWN_RIGHT color
+    .byte $55, color
+.endmacro
+
+.macro CORNER_DOWN_RIGHT color
+    .byte $70, color
+.endmacro
+
+.macro CORNER_UP_LEFT color
+    .byte $7D, color
+.endmacro 
+
 .macro OPERATOR_1
     ; first line
     .byte 112, color_alg_connection
@@ -80,10 +112,6 @@ darker_text_color = midgray+16*darkgray
 
 .macro OPERATOR_4
     .byte 52, color_alg_operator
-.endmacro
-
-.macro VERTICAL_LINE
-    .byte 66, color_alg_connection
 .endmacro
 
 
@@ -114,15 +142,15 @@ fm_algs:
 @alg_0:
     OPERATOR_1
     SPACES 4, darkgray
-    VERTICAL_LINE
+    VERTICAL_LINE color_alg_connection
     SPACES 4, darkgray
     OPERATOR_2
     SPACES 4, darkgray
-    VERTICAL_LINE
+    VERTICAL_LINE color_alg_connection
     SPACES 4, darkgray
     OPERATOR_3
     SPACES 4, darkgray
-    VERTICAL_LINE
+    VERTICAL_LINE color_alg_connection
     SPACES 4, darkgray
     OPERATOR_4
     SPACES 3, darkgray
@@ -138,7 +166,7 @@ fm_algs:
     SPACES 3, darkgray
     OPERATOR_3
     SPACES 4, darkgray
-    VERTICAL_LINE
+    VERTICAL_LINE color_alg_connection
     SPACES 4, darkgray
     OPERATOR_4
     SPACES 13, darkgray
@@ -147,8 +175,8 @@ fm_algs:
     OPERATOR_1
     OPERATOR_2
     SPACES 3, darkgray
-    VERTICAL_LINE
-    VERTICAL_LINE
+    VERTICAL_LINE color_alg_connection
+    VERTICAL_LINE color_alg_connection
     SPACES 3, darkgray
     .byte 107, color_alg_connection
     OPERATOR_3
@@ -160,8 +188,8 @@ fm_algs:
     OPERATOR_1
     OPERATOR_3
     SPACES 3, darkgray
-    VERTICAL_LINE
-    VERTICAL_LINE
+    VERTICAL_LINE color_alg_connection
+    VERTICAL_LINE color_alg_connection
     SPACES 3, darkgray
     OPERATOR_2
     .byte 115, color_alg_connection
@@ -173,8 +201,8 @@ fm_algs:
     OPERATOR_1
     OPERATOR_3
     SPACES 3, darkgray
-    VERTICAL_LINE
-    VERTICAL_LINE
+    VERTICAL_LINE color_alg_connection
+    VERTICAL_LINE color_alg_connection
     SPACES 3, darkgray
     OPERATOR_2
     OPERATOR_4
@@ -195,7 +223,7 @@ fm_algs:
 @alg_6:
     OPERATOR_1
     SPACES 4, darkgray
-    VERTICAL_LINE
+    VERTICAL_LINE color_alg_connection
     SPACES 4, darkgray
     OPERATOR_2
     OPERATOR_3
@@ -208,6 +236,98 @@ fm_algs:
     OPERATOR_3
     OPERATOR_4
     SPACES 6*5, darkgray
+
+
+concerto_banner:
+    @background = darkgray
+    @foreground = white
+    @banner_color = 16*@background + @foreground
+    ; size: 19 by 6 characters
+    ; first line
+    CURVE_DOWN_RIGHT @banner_color
+    HORIZONTAL_LINE @banner_color
+    HORIZONTAL_LINE @banner_color
+    SPACES 12, @background
+    VERTICAL_LINE @banner_color
+    SPACES 3, @background
+    ; second line
+    VERTICAL_LINE @banner_color
+    SPACES 2, @background
+    CURVE_DOWN_RIGHT @banner_color
+    HORIZONTAL_LINE @banner_color
+    CURVE_DOWN_LEFT @banner_color
+    CORNER_DOWN_RIGHT @banner_color
+    CURVE_DOWN_LEFT @banner_color
+    CURVE_DOWN_RIGHT @banner_color
+    HORIZONTAL_LINE @banner_color
+    CURVE_DOWN_RIGHT @banner_color
+    HORIZONTAL_LINE @banner_color
+    CURVE_DOWN_LEFT @banner_color
+    CURVE_DOWN_RIGHT @banner_color
+    HORIZONTAL_LINE @banner_color
+    .byte $6B, @banner_color
+    CURVE_DOWN_RIGHT @banner_color
+    HORIZONTAL_LINE @banner_color
+    CURVE_DOWN_LEFT @banner_color
+    ; third line
+    VERTICAL_LINE @banner_color
+    SPACES 2, @background
+    VERTICAL_LINE @banner_color
+    SPACES 1, @background
+    VERTICAL_LINE @banner_color
+    VERTICAL_LINE @banner_color
+    VERTICAL_LINE @banner_color
+    VERTICAL_LINE @banner_color
+    SPACES 1, @background
+    .byte $6B, @banner_color
+    HORIZONTAL_LINE @banner_color
+    CORNER_UP_LEFT @banner_color
+    VERTICAL_LINE @banner_color
+    SPACES 1, @background
+    VERTICAL_LINE @banner_color
+    VERTICAL_LINE @banner_color
+    SPACES 1, @background
+    VERTICAL_LINE @banner_color
+    ; fourth line
+    CURVE_UP_RIGHT @banner_color
+    HORIZONTAL_LINE @banner_color
+    HORIZONTAL_LINE @banner_color
+    CURVE_UP_RIGHT @banner_color
+    HORIZONTAL_LINE @banner_color
+    CURVE_UP_LEFT @banner_color
+    VERTICAL_LINE @banner_color
+    CURVE_UP_RIGHT @banner_color
+    CURVE_UP_RIGHT @banner_color
+    HORIZONTAL_LINE @banner_color
+    CURVE_UP_RIGHT @banner_color
+    HORIZONTAL_LINE @banner_color
+    SPACES 1, @background
+    VERTICAL_LINE @banner_color
+    SPACES 1, @background
+    CURVE_UP_RIGHT @banner_color
+    CURVE_UP_RIGHT @banner_color
+    HORIZONTAL_LINE @banner_color
+    CURVE_UP_LEFT @banner_color
+    ; fifth line
+    SPACES 6, @background
+    VERTICAL_LINE @banner_color
+    SPACES 6, @background
+    .byte 22, normal_text_color
+    .byte 48, normal_text_color
+    .byte 46, normal_text_color
+    .byte 54, normal_text_color
+    .byte 46, normal_text_color
+    .byte 48, normal_text_color
+    ; sixth line
+    SPACES 5, @background
+    .byte $A0, @banner_color
+    .byte $7E, @banner_color
+    SPACES 12, @background
+
+
+
+
+
 
 help_text_note_edit:
     @text_width = 12
