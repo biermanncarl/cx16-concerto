@@ -232,4 +232,22 @@
 :  rts
 .endproc
 
+
+; As long as kbd_variables::current_key is non-zero, panels from the panel stack get a chance to inspect the value,
+; and if deciding to react to it, set it to zero (thus "using" it).
+.proc keypress_event
+   ldx panels::panels_stack_pointer
+@panels_loop:
+   lda kbd_variables::current_key
+   beq @panels_loop_end ; finish as early as possible if no key press
+   dex
+   bmi @panels_loop_end
+   lda panels::panels_stack, x
+   asl
+   tax
+   INDEXED_JSR panels::jump_table_keypress, @panels_loop
+@panels_loop_end:
+   rts
+.endproc
+
 .endscope

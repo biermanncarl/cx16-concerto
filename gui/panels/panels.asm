@@ -48,6 +48,7 @@
    jump_table_draw: SCOPE_MEMBER_WORD_FIELD draw, ALL_PANEL_SCOPES
    jump_table_write: SCOPE_MEMBER_WORD_FIELD write, ALL_PANEL_SCOPES
    jump_table_refresh: SCOPE_MEMBER_WORD_FIELD refresh, ALL_PANEL_SCOPES
+   jump_table_keypress: SCOPE_MEMBER_WORD_FIELD keypress, ALL_PANEL_SCOPES
 
 
 
@@ -123,7 +124,7 @@
    ; Returns the index of the panel the mouse is currently over in mouse_variables::curr_panel.
    ; Bit 7 set means the mouse isn't over any panel.
    .proc mouse_get_panel
-      ; grab those zero page variables for this routine
+      ; use zero page variables in this routine
       characters_x = gui_variables::mzpwa
       characters_y = gui_variables::mzpwa+1
       ; determine position in characters (mouse position divided by 8)
@@ -134,8 +135,7 @@
       lsr
       sta characters_y
       ; now check panels from top to bottom
-      lda panels_stack_pointer
-      tax
+      ldx panels_stack_pointer
    @loop:
       dex
       bmi @end_loop

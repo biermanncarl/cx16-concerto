@@ -64,6 +64,15 @@
       rts
    .endproc
 
+   ; This method handles key presses. The return value of the most recently called GETIN value
+   ; is in kbd_variables::current_key.
+   ; Each panel gets the chance to react to a key press, in the order they appear in the GUI stack.
+   ; If this panel does not react to (i.e., "use") the key press, no action is required.
+   ; If the key press is used, the above mentioned variable should be set to zero so that other panels
+   ; do not react to the same key press.
+   .proc keypress
+      rts
+   .endproc
 .endscope
 
 .endif ; .ifndef ::GUI_PANELS_PANELS_EXAMPLE_ASM

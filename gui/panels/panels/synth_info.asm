@@ -41,6 +41,7 @@
 
    refresh = panel_common::dummy_subroutine
 
+   keypress = panel_common::dummy_subroutine
 .endscope
 
 .endif ; .ifndef ::GUI_PANELS_PANELS_SYNTH_INFO_ASM

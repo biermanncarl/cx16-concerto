@@ -7,14 +7,11 @@ mainloop:
    ; GUI update
    jsr concerto_gui::gui_tick
 
-   ; print out help messages
-   ;DISPLAY_LABEL lb_play_notes,     29, 54
-   ;DISPLAY_LABEL lb_toggle_octaves, 29, 56
-   ;DISPLAY_LABEL lb_release_note,   29, 58
 
    ; keyboard polling
 
-   jsr GETIN      ; get charakter from keyboard
+   lda concerto_gui::kbd_variables::current_key
+   stz concerto_gui::kbd_variables::current_key
    cmp #65        ; check if pressed "A"
    bne @skip_a
    jmp @keyboard_a
@@ -182,10 +179,6 @@ end_mainloop:
 
    jmp mainloop
 
-; data
-lb_play_notes:     STR_FORMAT "a, w, s, ... play notes"
-lb_toggle_octaves: STR_FORMAT "z, x         toggle octaves"
-lb_release_note:   STR_FORMAT "space        release note"
 
 
 exit:

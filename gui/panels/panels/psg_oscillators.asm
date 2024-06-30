@@ -390,6 +390,7 @@
       rts
    .endproc
 
+   keypress = panel_common::dummy_subroutine
 .endscope
 
 .endif ; .ifndef ::GUI_PANELS_PANELS_PSG_OSCILLATORS_ASM

@@ -89,6 +89,8 @@
    .endproc
 
    refresh = panel_common::dummy_subroutine
+
+   keypress = panel_common::dummy_subroutine
 .endscope
 
 .endif ; .ifndef ::GUI_PANELS_PANELS_FILE_BROWSER_POPUP_ASM

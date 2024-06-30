@@ -10,8 +10,6 @@
 .scope keyboard
 
 .proc tick
-    ; jsr GETIN ; uncomment once main loop doesn't do this anymore
-    sta kbd_variables::current_key
     ; modifier keys statuses
     jsr KBDBUF_GET_MODIFIERS
     tax
@@ -23,6 +21,11 @@
     txa
     and #KBD_MODIFIER_ALT
     sta kbd_variables::alt_key_pressed
+    ; key presses
+    jsr GETIN
+    sta kbd_variables::current_key
+    tax
+    ; TODO call panel
     rts
 .endproc
 
