@@ -244,8 +244,12 @@
    bmi @panels_loop_end
    lda panels::panels_stack, x
    asl
+   phx
    tax
-   INDEXED_JSR panels::jump_table_keypress, @panels_loop
+   INDEXED_JSR panels::jump_table_keypress, @return
+@return:
+   plx
+   bra @panels_loop
 @panels_loop_end:
    rts
 .endproc

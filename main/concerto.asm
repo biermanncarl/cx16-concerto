@@ -21,13 +21,6 @@ concerto_use_timbres_from_file = 1
 ; include the X16 header
 .include "../common/x16.asm"
 
-; keyboard variables
-Octave:
-   .byte 60
-Note:
-   .byte 0
-
-
 
 start:
    jsr concerto_synth::initialize
@@ -35,8 +28,12 @@ start:
 
    jsr concerto_synth::activate_synth
 
-.include "concerto_mainloop.asm"
+mainloop:
+   jsr concerto_gui::gui_tick
+   lda concerto_gui::gui_variables::request_program_exit
+   beq mainloop
 
+exit:
    jsr concerto_synth::deactivate_synth
    jsr concerto_gui::hide
 

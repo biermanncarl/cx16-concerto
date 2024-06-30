@@ -24,9 +24,7 @@
     ; key presses
     jsr GETIN
     sta kbd_variables::current_key
-    tax
-    ; TODO call panel
-    rts
+    jmp gui_routines::keypress_event
 .endproc
 
 .endscope

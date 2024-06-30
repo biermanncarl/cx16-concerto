@@ -38,6 +38,7 @@ play_volume:
 ; PARAMETERS: none
 ; AFFECTS: A, X, Y
 initialize:
+   stz gui_variables::request_program_exit
    lda VERA_L1_mapbase
    sta guiutils::original_map_base
    jsr gui_routines::load_synth_gui
