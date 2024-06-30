@@ -1,4 +1,4 @@
-; Copyright 2021, 2023 Carl Georg Biermann
+; Copyright 2021-2024 Carl Georg Biermann
 
 ; mouse variables
 ; These variables need to be visible to all GUI code (partly for reading, and upon request for writing).
@@ -45,17 +45,7 @@
         curr_y_downscaled: .byte 0
     .popseg
 
-
-    ; Variables which are populated on-demand
-    ; Keyboard modifiers
-    ctrl_key_pressed:
-        .byte 0
-    shift_key_pressed:
-        .byte 0
-    alt_key_pressed:
-        .byte 0
-
-    ; State of getMouseChargridMotion
+    ; State of getMouseChargridMotion, updated on-demand by calling getMouseChargridMotion in the respective drag routine
     ; By putting these variables in here (globally), we assume there can only be one scrolling operation going on at any one time
     accumulated_x:
         .byte 0

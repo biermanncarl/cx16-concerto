@@ -18,6 +18,7 @@ play_volume:
 .include "gui_macros.asm"
 ; variable definitions
 .include "gui_variables.asm"
+.include "keyboard_variables.asm"
 .include "mouse_variables.asm"
 ; submodules
 .include "drawing_utils.asm"
@@ -26,6 +27,7 @@ play_volume:
 .include "panels/panels.asm"
 ; higher level routines
 .include "gui_routines.asm"
+.include "keyboard_routines.asm"
 .include "mouse_routines.asm"
 ; backward definitions
 .include "gui_backward_definitions.asm"
@@ -64,7 +66,10 @@ hide:
 ; You can safely stop calling this regularly at any time, no special shutdown of the GUI is needed.
 ; PARAMETERS: none
 ; AFFECTS: A, X, Y
-gui_tick = mouse::mouse_tick
+.proc gui_tick
+   jsr keyboard::tick
+   jmp mouse::mouse_tick
+.endproc
 
 
 .endscope

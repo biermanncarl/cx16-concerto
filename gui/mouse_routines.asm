@@ -65,17 +65,6 @@ mouse_tick:
    sta mouse_variables::curr_y
    lda mouse_data+3
    sta mouse_variables::curr_y+1
-   ; modifier keys statuses
-   jsr KBDBUF_GET_MODIFIERS
-   tax
-   and #KBD_MODIFIER_CTRL
-   sta mouse_variables::ctrl_key_pressed
-   txa
-   and #KBD_MODIFIER_SHIFT
-   sta mouse_variables::shift_key_pressed
-   txa
-   and #KBD_MODIFIER_ALT
-   sta mouse_variables::alt_key_pressed
    ; update downsampled mouse coordinates
    temp = gui_variables::mzpwa
    ; determine mouse position in multiples of 4 pixels (divide by 4)
