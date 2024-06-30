@@ -256,7 +256,7 @@ concerto_banner:
     CURVE_DOWN_RIGHT @banner_color
     HORIZONTAL_LINE @banner_color
     CURVE_DOWN_LEFT @banner_color
-    CORNER_DOWN_RIGHT @banner_color
+    CURVE_UP_RIGHT @banner_color
     CURVE_DOWN_LEFT @banner_color
     CURVE_DOWN_RIGHT @banner_color
     HORIZONTAL_LINE @banner_color
