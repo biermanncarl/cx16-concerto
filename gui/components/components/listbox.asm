@@ -20,10 +20,12 @@
     .endstruct
 
     .proc draw
-        pos_x = gui_variables::mzpbd
+        pos_x = gui_variables::mzpbh
         pos_y = gui_variables::mzpbf ; mzpbe can't be used here
         width = gui_variables::mzpwd
         height = gui_variables::mzpwd+1
+        php
+        sei
         ; get x and y position
         lda (components_common::data_pointer),y
         sta pos_x
@@ -121,6 +123,7 @@
         lda valid_entries
         sta (components_common::data_pointer),y
         iny
+        plp
         rts
     selected:
         .res 1

@@ -33,7 +33,7 @@
     .endproc
 
     .proc draw
-        pos_x = gui_variables::mzpbd
+        pos_x = gui_variables::mzpbh
         pos_y = gui_variables::mzpbf
 
         phy

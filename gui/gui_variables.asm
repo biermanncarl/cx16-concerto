@@ -40,10 +40,10 @@
       mzpwa:   .word 0
       mzpwd:   .word 0
       mzpwe:   .word 0   ; this is used mainly as a pointer for string and sprite operations
+      mzpbh:   .byte 0
 
       ; The user interface also uses the "shared" zero page variables from the synth,
       ; which are safe to use in the main program
-      mzpbd = concerto_synth::mzpbd
       mzpbe = concerto_synth::mzpbe
       mzpbf = concerto_synth::mzpbf
    .popseg

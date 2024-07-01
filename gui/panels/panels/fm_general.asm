@@ -227,7 +227,7 @@
 
 
    .proc refresh
-      @rfm_bits = gui_variables::mzpbd
+      @rfm_bits = gui_variables::mzpbh
       ldx gui_variables::current_synth_timbre
       ; connection scheme
       lda concerto_synth::timbres::Timbre::fm_general::con, x
