@@ -6,5 +6,6 @@ DEFAULT.SK
 *.sym
 *.SYM
 *.bin
+*.BIN
 *.COP
 build/*

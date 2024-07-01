@@ -20,7 +20,7 @@ CONCERTO.PRG: CONCMAIN.PRG unspecified_dependencies
 	cl65 -t cx16 -o build/CONCERTO.PRG -C cx16-asm-concerto.cfg -u __EXEHDR__ -Ln build/CONCERTO.sym -g "main/concerto_launcher.asm"
 
 CONCMAIN.PRG: build_folder unspecified_dependencies
-	cl65 -t cx16 -o build/CONCMAIN.PRG -C cx16-asm-concerto.cfg -Ln build/CONCMAIN.sym -g "main/concerto.asm"
+	cl65 -t cx16 -o build/CONCMAIN.BIN -C cx16-asm-concerto.cfg -Ln build/CONCMAIN.sym -g "main/concerto.asm"
 
 .PHONY: examples
 examples: example_01 example_02 example_03 example_04 example_05 example_06 example_07

@@ -14,7 +14,7 @@
 
 ; file names etc.
 main_prg_name:
-    .byte "concmain.prg"
+    .byte "concmain.bin"
 main_prg_name_end:
 
 vram_assets_name:
