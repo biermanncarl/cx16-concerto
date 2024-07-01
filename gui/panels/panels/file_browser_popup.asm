@@ -128,11 +128,24 @@
       dec panels_stack_pointer
       jsr gui_routines__draw_gui
       rts
+   button_ok = @button_ok
    .endproc
 
    refresh = panel_common::dummy_subroutine
 
-   keypress = panel_common::dummy_subroutine
+   .proc keypress
+      lda kbd_variables::current_key
+      cmp #13 ; enter
+      beq write::button_ok
+      LDY_COMPONENT_MEMBER text_edit, file_name_edit, pos_x ; start offset of text edit
+      lda #<comps
+      sta components::components_common::data_pointer
+      lda #>comps
+      sta components::components_common::data_pointer+1
+      jsr components::text_edit::keyboard_edit
+      stz kbd_variables::current_key
+      rts
+   .endproc
 .endscope
 
 .endif ; .ifndef ::GUI_PANELS_PANELS_FILE_BROWSER_POPUP_ASM

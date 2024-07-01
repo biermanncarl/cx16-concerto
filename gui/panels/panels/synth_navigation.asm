@@ -109,26 +109,7 @@
       sta panels__panels_stack, x
       inc panels__panels_stack_pointer
       jsr gui_routines__draw_gui
-      rts
-
-      ; clear string
-      ;ldy #MAX_FILENAME_LENGTH
-      ;lda #' '
-   ; :  sta concerto_synth::timbres::file_name,y
-      ;dey
-      ;bpl :-
-      ; do input string
-      lda #ti_x
-      sta r2L
-      lda #ti_y
-      sta r2H
-      lda #<concerto_synth::timbres::file_name
-      sta r0L
-      lda #>concerto_synth::timbres::file_name
-      sta r0H
-      ldx #CCOLOR_CAPTION
-      ldy #MAX_FILENAME_LENGTH
-      jsr guiutils::vtui_input_str
+      ; TODO interface with concerto_synth::timbres::file_name if required
       rts
    @set_play_volume:
       iny
