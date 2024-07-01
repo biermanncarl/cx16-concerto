@@ -5,7 +5,7 @@
 
 .include "../../testing/testing.asm"
 .include "../../common/x16.asm"
-.include "../vector_40bit.asm"
+.include "../vector_5bytes.asm"
 
 vec_a:
    .res 2
@@ -32,7 +32,7 @@ start:
    bne @fill_loop_1
 
    ; create a new vector
-   jsr v40b::new
+   jsr v5b::new
    sta vec_a
    stx vec_a+1
 
@@ -41,13 +41,13 @@ start:
    stz counter+1
 @fill_loop:
    lda counter
-   sta v40b::value_0
+   sta v5b::value_0
    lda counter+1
-   sta v40b::value_1
+   sta v5b::value_1
 
    lda vec_a
    ldx vec_a+1
-   jsr v40b::append_new_entry
+   jsr v5b::append_new_entry
 
    inc counter
    bne :+
@@ -66,15 +66,15 @@ start:
 @delete_loop:
    lda vec_a
    ldx vec_a+1
-   jsr v40b::is_empty
+   jsr v5b::is_empty
    EXPECT_CARRY_CLEAR
-   jsr v40b::get_first_entry
+   jsr v5b::get_first_entry
    pha
    phx
    phy
-   jsr v40b::read_entry
-   lda v40b::value_0
-   ldx v40b::value_1
+   jsr v5b::read_entry
+   lda v5b::value_0
+   ldx v5b::value_1
    EXPECT_EQ_MEM_16 counter
 
    inc counter
@@ -84,7 +84,7 @@ start:
    ply
    plx
    pla
-   jsr v40b::delete_entry
+   jsr v5b::delete_entry
    bcc @delete_loop
 
 

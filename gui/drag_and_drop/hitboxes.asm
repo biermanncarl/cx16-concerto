@@ -15,12 +15,12 @@
 .endscope
 
 ; variables to communicate hitboxes which are stored in the hitbox lists
-object_id_l = v40b::value_0 ; identifier (low)
-object_id_h = v40b::value_1 ; identifier (high)  most significant bit is 1 if the event is in the vector of currently selected events
-hitbox_pos_x = v40b::value_2 ; on-screen-position in multiples of 4 pixels
-hitbox_pos_y = v40b::value_3 ; on-screen-position in multiples of 4 pixels
-hitbox_width = v40b::value_4 ; on-screen width in multiples of 4 pixels (height is implied by dragables::active_type)
-; note: having the object_id_l/h at values_0/1 is chosen because then the id coincides with the v40b API for index-based access.
+object_id_l = v5b::value_0 ; identifier (low)
+object_id_h = v5b::value_1 ; identifier (high)  most significant bit is 1 if the event is in the vector of currently selected events
+hitbox_pos_x = v5b::value_2 ; on-screen-position in multiples of 4 pixels
+hitbox_pos_y = v5b::value_3 ; on-screen-position in multiples of 4 pixels
+hitbox_width = v5b::value_4 ; on-screen width in multiples of 4 pixels (height is implied by dragables::active_type)
+; note: having the object_id_l/h at values_0/1 is chosen because then the id coincides with the v5b API for index-based access.
 
 .scope detail
    ; addresses to vectors of hitboxes which can be dragged (B/H)
@@ -43,7 +43,7 @@ hitbox_width = v40b::value_4 ; on-screen width in multiples of 4 pixels (height 
 @init_loop:
    phy
    ; create hitbox vectors
-   jsr v40b::new
+   jsr v5b::new
    ply
    sta detail::hitbox_vector_b, y
    txa
@@ -68,7 +68,7 @@ hitbox_width = v40b::value_4 ; on-screen width in multiples of 4 pixels (height 
 ; Remove all hitboxes from a hitbox list (TODO: clear all hitbox lists to preserve memory)
 .proc clear_hitboxes
    jsr load_hitbox_list
-   jsr v40b::clear
+   jsr v5b::clear
    rts
 .endproc
 
@@ -78,7 +78,7 @@ hitbox_width = v40b::value_4 ; on-screen width in multiples of 4 pixels (height 
 ; If successful, carry is clear. Carry is set when the operation failed due to full heap.
 .proc add_hitbox
    jsr load_hitbox_list
-   jsr v40b::append_new_entry
+   jsr v5b::append_new_entry
    rts
 .endproc
 

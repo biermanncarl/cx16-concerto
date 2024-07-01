@@ -31,7 +31,7 @@
     :   sta next_event
         stx next_event+1
         sty next_event+2
-        jsr v40b::read_entry
+        jsr v5b::read_entry
         lda events::event_time_stamp_l
         sta next_time_stamp
         lda events::event_time_stamp_h
@@ -63,7 +63,7 @@
     lda detail::next_event
     ldx detail::next_event+1
     ldy detail::next_event+2
-    jsr v40b::read_entry
+    jsr v5b::read_entry
 
     lda events::event_type
     beq @note_off ; #events::event_type_note_off

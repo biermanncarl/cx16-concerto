@@ -12,7 +12,7 @@ SONG_DATA_EVENT_SELECTION_ASM = 1
 
 .include "../common/x16.asm"
 .include "../common/utility_macros.asm"
-.include "../dynamic_memory/vector_40bit.asm"
+.include "../dynamic_memory/vector_5bytes.asm"
 
 .scope event_selection
 
@@ -85,7 +85,7 @@ back_buffer:
 
 .proc advanceNextSelectedEvent
     ; Expects the current selected event in .A/.X/.Y
-    jsr v40b::get_next_entry
+    jsr v5b::get_next_entry
     stz next_selected_event+2 ; mark next event as invalid preemptively (will override it if not invalid)
     bcc :+
     rts
@@ -98,23 +98,23 @@ back_buffer:
 ; If no matching note-off is found, carry will be set, otherwise clear.
 .proc findNoteOff
     ; This function could become a bottleneck!
-    ; TODO: to make it faster, read only the data we truly need, instead of using v40b::read_entry, to optimize for speed
+    ; TODO: to make it faster, read only the data we truly need, instead of using v5b::read_entry, to optimize for speed
     pha
     phx
     phy
-    jsr v40b::read_entry
+    jsr v5b::read_entry
     lda events::note_pitch
     sta pitch
     ply
     plx
     pla
 @loop:
-    jsr v40b::get_next_entry
+    jsr v5b::get_next_entry
     bcs @end ; search failed, end reached before the note-off was found
     pha
     phx
     phy
-    jsr v40b::read_entry
+    jsr v5b::read_entry
     lda events::event_type
     cmp #events::event_type_note_off
     bne @continue_loop
@@ -161,7 +161,7 @@ pitch:
     ; reset the event pointers to the beginning
     lda selected_events
     ldx selected_events+1
-    jsr v40b::get_first_entry
+    jsr v5b::get_first_entry
     bcs @selected_is_empty
 @selected_is_populated:
     jsr detail::storeNextSelectedEvent
@@ -171,7 +171,7 @@ pitch:
 @continue_to_unselected:
     lda unselected_events
     ldx unselected_events+1
-    jsr v40b::get_first_entry
+    jsr v5b::get_first_entry
     bcs @unselected_is_empty
 @unselected_is_populated:
     jsr detail::storeNextUnselectedEvent
@@ -192,7 +192,7 @@ pitch:
     ; reset the selected event pointer to the beginning
     lda selected_events
     ldx selected_events+1
-    jsr v40b::get_first_entry
+    jsr v5b::get_first_entry
     bcs @selected_is_empty
 @selected_is_populated:
     jsr detail::storeNextSelectedEvent
@@ -212,44 +212,44 @@ pitch:
     ; abusing variables in this function which "belong" to other functions which we don't use
     ; set up zeropage pointers to both entries
     lda next_selected_event+1
-    sta v40b::zp_pointer+1
-    stz v40b::zp_pointer
+    sta v5b::zp_pointer+1
+    stz v5b::zp_pointer
     lda next_unselected_event+1
-    sta v40b::zp_pointer_2+1
-    stz v40b::zp_pointer_2
+    sta v5b::zp_pointer_2+1
+    stz v5b::zp_pointer_2
     ; compute offsets inside the chunk
     lda next_selected_event
     asl
     asl
     adc next_selected_event
-    adc #v40b::payload_offset
-    sta v40b::value_0 ; selected offset
+    adc #v5b::payload_offset
+    sta v5b::value_0 ; selected offset
     lda next_unselected_event
     asl
     asl
     adc next_unselected_event
-    adc #v40b::payload_offset
-    sta v40b::value_1 ; unselected offset
+    adc #v5b::payload_offset
+    sta v5b::value_1 ; unselected offset
 @compare_high_time_stamp:
     tay
     iny
     ldx next_unselected_event+2
     stx RAM_BANK
-    lda (v40b::zp_pointer_2), y ; look up unselected
+    lda (v5b::zp_pointer_2), y ; look up unselected
     ldx next_selected_event+2
     stx RAM_BANK
-    ldy v40b::value_0
+    ldy v5b::value_0
     iny
-    cmp (v40b::zp_pointer), y ; compare to selected
+    cmp (v5b::zp_pointer), y ; compare to selected
     beq @compare_low_time_stamp
     rts
 @compare_low_time_stamp:
     dey
-    lda (v40b::zp_pointer), y ; look up selected
+    lda (v5b::zp_pointer), y ; look up selected
     ldx next_unselected_event+2
     stx RAM_BANK
-    ldy v40b::value_1
-    cmp (v40b::zp_pointer_2), y ; compare with unselected
+    ldy v5b::value_1
+    cmp (v5b::zp_pointer_2), y ; compare with unselected
     beq @compare_event_types
     ; invert the carry flag before returning
     rol
@@ -259,13 +259,13 @@ pitch:
 @compare_event_types:
     iny
     iny
-    lda (v40b::zp_pointer_2), y ; look up unselected
+    lda (v5b::zp_pointer_2), y ; look up unselected
     ldx next_selected_event+2
     stx RAM_BANK
-    ldy v40b::value_0
+    ldy v5b::value_0
     iny
     iny
-    cmp (v40b::zp_pointer), y ; compare with selected
+    cmp (v5b::zp_pointer), y ; compare with selected
     rts
 .endproc
 
@@ -315,7 +315,7 @@ pitch:
     pha
     phx
     phy
-    jsr v40b::get_next_entry
+    jsr v5b::get_next_entry
     stz next_unselected_event+2 ; mark next event as invalid preemptively (will override it if not invalid)
     bcs @return_pointer
     jsr detail::storeNextUnselectedEvent
@@ -346,13 +346,13 @@ pitch:
 ; Meant for use in conjunction with streamPeekNextSelectedEvent.
 .proc streamDeleteNextSelectedEvent
     jsr detail::loadNextSelectedEvent
-    jsr v40b::get_previous_entry
+    jsr v5b::get_previous_entry
     bcs @delete_first_event
     pha
     phx
     phy
-    jsr v40b::get_next_entry ; lazy way of getting back the original event
-    jsr v40b::delete_entry
+    jsr v5b::get_next_entry ; lazy way of getting back the original event
+    jsr v5b::delete_entry
     ply
     plx
     pla
@@ -362,7 +362,7 @@ pitch:
     ; If the first event gets deleted, we know for sure that afterwards,
     ; the vector is either empty or the original event pointer is a valid one afterwards, too.
     jsr detail::loadNextSelectedEvent
-    jsr v40b::delete_entry
+    jsr v5b::delete_entry
     bcc :+
     stz next_selected_event+2 ; it was the only event, invalidate next selected event.
 :   rts
@@ -383,7 +383,7 @@ pitch:
     sta song_engine::event_selection::unselected_events+1
 .endmacro
 
-; maybe move into v40b?
+; maybe move into v5b?
 .macro SWAP_VECTORS vector_a, vector_b
     pha
     phy
@@ -446,7 +446,7 @@ pitch:
     jsr detail::storeNextUnselectedEvent
     lda selected_events
     ldx selected_events+1
-    jsr v40b::get_first_entry
+    jsr v5b::get_first_entry
     bcc :+
     ldy #0 ; set .A/.X/.Y pointer to NULL if event doesn't exist
 :   jsr detail::storeNextSelectedEvent
@@ -485,7 +485,7 @@ pitch:
         lda select_action
         bne @check_keep
         pla
-        jsr v40b::delete_entry
+        jsr v5b::delete_entry
         rts
     @check_keep:
         cmp #action::keep_original
@@ -498,13 +498,13 @@ pitch:
         pha
         phx
         phy
-        jsr v40b::read_entry
+        jsr v5b::read_entry
         lda #events::event_type_invalid
         sta events::event_type
         ply
         plx
         pla
-        jsr v40b::write_entry
+        jsr v5b::write_entry
         rts
     .endproc
 
@@ -524,7 +524,7 @@ pitch:
         jsr compareEvents
         bcc @insert_position_found
         jsr detail::loadNextSelectedEvent
-        jsr v40b::get_next_entry
+        jsr v5b::get_next_entry
         bcs @append
         jsr detail::storeNextSelectedEvent
         bra @search_loop
@@ -534,23 +534,23 @@ pitch:
         php
         lda selected_events ; alternatively, we could use the values in next_selected_event and thus make it independent from selected_events being set correctly.
         ldx selected_events+1 ; This could allow for efficient "selection" into varying vectors.
-        jsr v40b::append_new_entry
+        jsr v5b::append_new_entry
         lda selected_events
         ldx selected_events+1
-        jsr v40b::get_last_entry
+        jsr v5b::get_last_entry
         plp
         rts
     @insert_position_found:
         jsr readEventAndCheckNoteOn
         php
         jsr detail::loadNextSelectedEvent
-        jsr v40b::insert_entry
+        jsr v5b::insert_entry
         plp
         rts
 
         .proc readEventAndCheckNoteOn
             jsr detail::loadNextUnselectedEvent
-            jsr v40b::read_entry
+            jsr v5b::read_entry
             lda events::event_type
             cmp #events::event_type_note_on
             rts
@@ -593,16 +593,16 @@ pitch:
 @insert_event:
     ; insert event into selected events vector
     pla
-    jsr v40b::read_entry
+    jsr v5b::read_entry
 
     ldy next_selected_event+2
     beq @append_event ; are we already at the end of the selected events vector?
     ; selected events vector isn't empty: insert before next_selected_event
     lda next_selected_event
     ldx next_selected_event+1
-    jsr v40b::insert_entry
-    ; Use the fact that v40b::insert_entry returns the new position of the inserted entry:
-    jsr v40b::get_next_entry
+    jsr v5b::insert_entry
+    ; Use the fact that v5b::insert_entry returns the new position of the inserted entry:
+    jsr v5b::get_next_entry
     bcc :+
     ldy #0 ; set to nullptr if next selected event doesn't exist
 :   jsr detail::storeNextSelectedEvent
@@ -610,7 +610,7 @@ pitch:
 @append_event:
     lda selected_events
     ldx selected_events+1
-    jsr v40b::append_new_entry
+    jsr v5b::append_new_entry
     ; don't need to deal with next_selected_event, since it is already nullptr, which is what we want in this case
     bra @merge_loop
 
@@ -618,7 +618,7 @@ pitch:
     ; remove all events from unselected vector
     lda unselected_events
     ldx unselected_events+1
-    jsr v40b::clear
+    jsr v5b::clear
     rts
 .endproc
 
@@ -635,18 +635,18 @@ pitch:
 ; Expects the pointer to the vector in .A/.X
 .proc deleteAllInvalidEvents
     ; iterate from last to first event for slight efficiency boost (need to move less data around)
-    jsr v40b::get_last_entry
+    jsr v5b::get_last_entry
     bcc @events_loop
     rts
 
 @events_loop:
     jsr detail::storeNextUnselectedEvent ; save current event
-    jsr v40b::read_entry
+    jsr v5b::read_entry
     lda events::event_type
     cmp #events::event_type_invalid
     php ; remember if it's an invalid event
     jsr detail::loadNextUnselectedEvent ; recall current event to get previous
-    jsr v40b::get_previous_entry
+    jsr v5b::get_previous_entry
     bcc :+
     ldy #0 ; set event pointer to NULL if no previous one exists
 :   jsr detail::storeNextSelectedEvent
@@ -654,7 +654,7 @@ pitch:
     bne @continue
 @delete_event:
     jsr detail::loadNextUnselectedEvent
-    jsr v40b::delete_entry
+    jsr v5b::delete_entry
 @continue:
     jsr detail::loadNextSelectedEvent
     cpy #0 ; check if NULL
@@ -678,13 +678,13 @@ pitch:
         ; Initialization
         lda selected_events
         ldx selected_events+1
-        jsr v40b::get_first_entry
+        jsr v5b::get_first_entry
         jsr detail::storeNextSelectedEvent
         ; we basically grab the first event over and over again (as they get deleted one by one)
     @merge_loop:
         lda unselected_events
         ldx unselected_events+1
-        jsr v40b::get_first_entry
+        jsr v5b::get_first_entry
         bcs @end_merge_loop
 
         

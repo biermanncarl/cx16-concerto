@@ -6,7 +6,7 @@
 .include "../../testing/testing.asm"
 .include "../../common/x16.asm"
 heap_max_ram_bank = 2 ; limit to two pages of memory -> maximum 64 chunks
-.include "../vector_40bit.asm"
+.include "../vector_5bytes.asm"
 
 loop_variable:
    .res 1
@@ -19,27 +19,27 @@ chunk_a:
 chunk_b:
    .res 2
 
-num_entries = v40b::max_entries_per_chunk+1
+num_entries = v5b::max_entries_per_chunk+1
 
 .macro EXPECT_ENTRY_EQUAL_TO v0, v1, v2, v3, v4
    pha
    phx
    phy
-   stz v40b::value_0
-   stz v40b::value_1
-   stz v40b::value_2
-   stz v40b::value_3
-   stz v40b::value_4
-   jsr v40b::read_entry
-   lda v40b::value_0
+   stz v5b::value_0
+   stz v5b::value_1
+   stz v5b::value_2
+   stz v5b::value_3
+   stz v5b::value_4
+   jsr v5b::read_entry
+   lda v5b::value_0
    EXPECT_EQ v0
-   lda v40b::value_1
+   lda v5b::value_1
    EXPECT_EQ v1
-   lda v40b::value_2
+   lda v5b::value_2
    EXPECT_EQ v2
-   lda v40b::value_3
+   lda v5b::value_3
    EXPECT_EQ v3
-   lda v40b::value_4
+   lda v5b::value_4
    EXPECT_EQ v4
    ply
    plx
@@ -82,48 +82,48 @@ start:
 
 
    ; create a new vector
-   jsr v40b::new
+   jsr v5b::new
    EXPECT_CARRY_CLEAR
    sta vec_a
    stx vec_a+1
 
    ; append the first entry
    lda #$42
-   sta v40b::value_0
+   sta v5b::value_0
    lda #$45
-   sta v40b::value_1
+   sta v5b::value_1
    lda #$49
-   sta v40b::value_2
+   sta v5b::value_2
    lda #$4B
-   sta v40b::value_3
+   sta v5b::value_3
    lda #$4E
-   sta v40b::value_4
+   sta v5b::value_4
    lda vec_a
    ldx vec_a+1
-   jsr v40b::append_new_entry
+   jsr v5b::append_new_entry
 
    lda #(num_entries-1)
    sta loop_variable
 @insert_loop:
    lda loop_variable
    ; generate unique(ish) values to fill into the vector
-   sta v40b::value_0
+   sta v5b::value_0
    asl
-   sta v40b::value_1
+   sta v5b::value_1
    asl
-   sta v40b::value_2
-   asl
-   clc
-   adc loop_variable
-   sta v40b::value_3
+   sta v5b::value_2
    asl
    clc
    adc loop_variable
-   sta v40b::value_4
+   sta v5b::value_3
+   asl
+   clc
+   adc loop_variable
+   sta v5b::value_4
    lda vec_a
    ldx vec_a+1
-   jsr v40b::get_first_entry
-   jsr v40b::insert_entry
+   jsr v5b::get_first_entry
+   jsr v5b::insert_entry
    EXPECT_CARRY_CLEAR
    dec loop_variable
    bne @insert_loop
@@ -133,16 +133,16 @@ start:
    lda vec_a
    ldx vec_a+1
    ; check first entry
-   jsr v40b::get_first_entry
-   jsr v40b::is_first_entry
+   jsr v5b::get_first_entry
+   jsr v5b::is_first_entry
    EXPECT_CARRY_SET
-   jsr v40b::is_last_entry
+   jsr v5b::is_last_entry
    EXPECT_CARRY_CLEAR
-   jsr v40b::get_next_entry
+   jsr v5b::get_next_entry
    pha
    phx
    phy
-   jsr v40b::get_previous_entry
+   jsr v5b::get_previous_entry
    EXPECT_ENTRY_EQUAL_TO 1, 2, 4, 9, 19
    lda #2
    sta loop_variable
@@ -153,34 +153,34 @@ start:
    plx
    pla
    ; check basic properties of entry
-   jsr v40b::is_last_entry
+   jsr v5b::is_last_entry
    EXPECT_CARRY_CLEAR
-   jsr v40b::is_first_entry
+   jsr v5b::is_first_entry
    EXPECT_CARRY_CLEAR
    ; push pointer to the next entry to the stack
-   jsr v40b::get_next_entry
+   jsr v5b::get_next_entry
    EXPECT_CARRY_CLEAR
    pha
    phx
    phy
    ; now go back to the current entry and investigate further
-   jsr v40b::get_previous_entry
+   jsr v5b::get_previous_entry
    EXPECT_CARRY_CLEAR
-   jsr v40b::read_entry
+   jsr v5b::read_entry
    lda loop_variable
-   EXPECT_EQ_MEM v40b::value_0
+   EXPECT_EQ_MEM v5b::value_0
    asl
-   EXPECT_EQ_MEM v40b::value_1
+   EXPECT_EQ_MEM v5b::value_1
    asl
-   EXPECT_EQ_MEM v40b::value_2
-   asl
-   clc
-   adc loop_variable
-   EXPECT_EQ_MEM v40b::value_3
+   EXPECT_EQ_MEM v5b::value_2
    asl
    clc
    adc loop_variable
-   EXPECT_EQ_MEM v40b::value_4
+   EXPECT_EQ_MEM v5b::value_3
+   asl
+   clc
+   adc loop_variable
+   EXPECT_EQ_MEM v5b::value_4
 
    lda loop_variable
    inc
@@ -194,9 +194,9 @@ start:
    pla
    ; check last entry
    EXPECT_ENTRY_EQUAL_TO $42, $45, $49, $4B, $4E
-   jsr v40b::is_first_entry
+   jsr v5b::is_first_entry
    EXPECT_CARRY_CLEAR
-   jsr v40b::is_last_entry
+   jsr v5b::is_last_entry
    EXPECT_CARRY_SET
 
 

@@ -75,13 +75,13 @@
 
         ; Doing hitbox detection ...
         jsr dnd::hitboxes::load_hitbox_list
-        jsr v40b::get_first_entry
+        jsr v5b::get_first_entry
         bcs @no_hit
     @loop:
         pha
         phx
         phy
-        jsr v40b::read_entry
+        jsr v5b::read_entry
         ; Check Y coordinate
         ; calculate relative position of the mouse to the hitbox
         ldy dnd::dragables::active_type
@@ -104,7 +104,7 @@
         ply
         plx
         pla
-        jsr v40b::get_next_entry
+        jsr v5b::get_next_entry
         bcc @loop
     @no_hit:
         stz mouse_variables::curr_data_1 ; dnd::hitboxes::hitbox_handle::none
@@ -175,18 +175,18 @@
 
     .proc initialize
         ; create vectors for temporary event storage
-        jsr v40b::new
+        jsr v5b::new
         sta dnd::temp_events
         stx dnd::temp_events+1
-        jsr v40b::new
+        jsr v5b::new
         sta dnd::clipboard_events
         stx dnd::clipboard_events+1
         ; create unselected vector
-        jsr v40b::new
+        jsr v5b::new
         sta dnd::dragables::notes::unselected_events_vector
         stx dnd::dragables::notes::unselected_events_vector+1
         ; create selected vector
-        jsr v40b::new
+        jsr v5b::new
         sta dnd::dragables::notes::selected_events_vector
         stx dnd::dragables::notes::selected_events_vector+1
         ; just for testing

@@ -91,7 +91,7 @@
 .ifndef ::GUI_DRAG_AND_DROP_DRAG_AND_DROP_ASM
 ::GUI_DRAG_AND_DROP_DRAG_AND_DROP_ASM = 1
 
-.include "../dynamic_memory/vector_40bit.asm"
+.include "../dynamic_memory/vector_5bytes.asm"
 
 .scope dnd ; drag'n'drop
 

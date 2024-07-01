@@ -3,7 +3,7 @@
 .ifndef ::SONG_DATA_EVENTS_ASM
 ::SONG_DATA_EVENTS_ASM = 1
 
-.include "../dynamic_memory/vector_40bit.asm"
+.include "../dynamic_memory/vector_5bytes.asm"
 
 .scope events
     ; define the event types
@@ -14,11 +14,11 @@
     ; TODO: effects 8 and above
 
     ; Data member meaning of 40bit values in note data
-    event_time_stamp_l = v40b::value_0
-    event_time_stamp_h = v40b::value_1
-    event_type = v40b::value_2
-    event_data_1 = v40b::value_3
-    event_data_2 = v40b::value_4
+    event_time_stamp_l = v5b::value_0
+    event_time_stamp_h = v5b::value_1
+    event_type = v5b::value_2
+    event_data_1 = v5b::value_3
+    event_data_2 = v5b::value_4
 
     ; aliases for specific event types
     note_pitch = event_data_1 ; for note-on and note-off events

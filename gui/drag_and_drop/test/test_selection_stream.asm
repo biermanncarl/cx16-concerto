@@ -6,7 +6,7 @@
 .include "../../../testing/testing.asm"
 .include "../../../common/random.asm"
 heap_max_ram_bank = 10
-.include "../../../dynamic_memory/vector_40bit.asm"
+.include "../../../dynamic_memory/vector_5bytes.asm"
 .include "../../../song_engine/events.asm"
 .include "../../../song_engine/event_selection.asm"
 
@@ -42,10 +42,10 @@ start:
 
     ; create two random streams
     ; =========================
-    jsr v40b::new
+    jsr v5b::new
     sta vec_a
     stx vec_a+1
-    jsr v40b::new
+    jsr v5b::new
     sta vec_b
     stx vec_b+1
 
@@ -95,7 +95,7 @@ start:
     bra :++
 :   lda vec_b
     ldx vec_b+1
-:   jsr v40b::append_new_entry
+:   jsr v5b::append_new_entry
     EXPECT_CARRY_CLEAR
 
     ; advance the loop
@@ -138,7 +138,7 @@ start:
     jsr event_selection::streamGetNextEvent
     bcc :+
     jmp @end_test_loop
-:   jsr v40b::read_entry
+:   jsr v5b::read_entry
 
     ; check last_event_source in conjunction with ids
     lda event_selection::last_event_source

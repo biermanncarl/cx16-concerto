@@ -42,31 +42,31 @@
 ; * It's more complicated and less obvious, possibly less maintainable?
 ; * Not clear yet whether "get_next_entry" is really called more often than "get_previous_entry".
 
-.ifndef ::DYNAMIC_MEMORY_VECTOR_40BIT_ASM
-::DYNAMIC_MEMORY_VECTOR_40BIT_ASM = 1
+.ifndef ::DYNAMIC_MEMORY_VECTOR_5BYTES_ASM
+::DYNAMIC_MEMORY_VECTOR_5BYTES_ASM = 1
 
-.ifndef ::v40b_zp_pointer
+.ifndef ::v5b_zp_pointer
    .pushseg
    .zeropage
-::v40b_zp_pointer:
+::v5b_zp_pointer:
    .res 2
    .popseg
 .endif
 
-.ifndef ::v40b_zp_pointer_2
+.ifndef ::v5b_zp_pointer_2
    .pushseg
    .zeropage
-::v40b_zp_pointer_2:
+::v5b_zp_pointer_2:
    .res 2
    .popseg
 .endif
 
 ; share our zp pointers with dll
-::dll_zp_pointer = ::v40b_zp_pointer
-::dll_zp_pointer_2 = ::v40b_zp_pointer_2
+::dll_zp_pointer = ::v5b_zp_pointer
+::dll_zp_pointer_2 = ::v5b_zp_pointer_2
 .include "doubly_linked_list.asm"
 
-.scope v40b
+.scope v5b
 
 .pushseg
 .code
@@ -86,14 +86,14 @@ max_entries_per_chunk = 50
 
 .feature addrsize
 
-zp_pointer = ::v40b_zp_pointer
+zp_pointer = ::v5b_zp_pointer
 .if (.addrsize(zp_pointer) = 2) .or (.addrsize(zp_pointer) = 0)
-   .error "v40b_zp_pointer isn't a zeropage variable!"
+   .error "v5b_zp_pointer isn't a zeropage variable!"
 .endif
 
-zp_pointer_2 = ::v40b_zp_pointer_2
+zp_pointer_2 = ::v5b_zp_pointer_2
 .if (.addrsize(zp_pointer_2) = 2) .or (.addrsize(zp_pointer_2) = 0)
-   .error "v40b_zp_pointer_2 isn't a zeropage variable!"
+   .error "v5b_zp_pointer_2 isn't a zeropage variable!"
 .endif
 
 .scope detail
@@ -764,4 +764,4 @@ destroy = dll::destroy_list
 .popseg
 .endscope
 
-.endif ; .ifndef ::DYNAMIC_MEMORY_VECTOR_40BIT_ASM
+.endif ; .ifndef ::DYNAMIC_MEMORY_VECTOR_5BYTES_ASM

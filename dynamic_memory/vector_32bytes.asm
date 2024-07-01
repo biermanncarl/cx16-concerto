@@ -14,7 +14,7 @@
 ; Therefore, an implementation is chosen which takes up as little as possible low memory,
 ; while providing good speed, while being wasteful of banked memory.
 ; If in the future, banked memory becomes more valuable, a more sophisticated implementation
-; can be considered (e.g. a clone of v40b for the infrastructure with modifications to the data access).
+; can be considered (e.g. a clone of v5b for the infrastructure with modifications to the data access).
 ; #optimize-for-memory-usage
 
 ; IMPORTANT

@@ -47,9 +47,9 @@ do_tick:
    pha
    lda VERA_addr_high
    pha
-   ; The variables used by v40b are NOT backed up and instead, in the main program, v40b usage is constrained to self-contained blocks masked with SEI.
-   ; Self-contained means that at the end of the SEI-masked block, whatever state is in the v40b API variables can safely be discarded and overwritten by the ISR.
-   ; As for non-API v40b variables, these must not be changed by the ISR. The ISR must not modify the content of any dynamic memory storage.
+   ; The variables used by v5b are NOT backed up and instead, in the main program, v5b usage is constrained to self-contained blocks masked with SEI.
+   ; Self-contained means that at the end of the SEI-masked block, whatever state is in the v5b API variables can safely be discarded and overwritten by the ISR.
+   ; As for non-API v5b variables, these must not be changed by the ISR. The ISR must not modify the content of any dynamic memory storage.
    ; call playback routine
    jsr concerto_playback_routine
    ; do synth tick updates

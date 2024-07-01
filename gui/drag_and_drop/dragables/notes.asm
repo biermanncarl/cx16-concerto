@@ -6,7 +6,7 @@
 ::GUI_DRAG_AND_DROP_NOTES_ASM = 1
 
 .include "../../../common/x16.asm"
-.include "../../../dynamic_memory/vector_40bit.asm"
+.include "../../../dynamic_memory/vector_5bytes.asm"
 .include "common.asm"
 
 .scope notes
@@ -192,10 +192,10 @@ selected_events_vector:
    .endproc
 
    ; Given a hitbox' object id (inclusive the selected bit in the high byte), return the pointer to the respective entry
-   ; Expects the hitbox id in v40b::value_0/v40b::value_1 (low/high) (not preserved!)
+   ; Expects the hitbox id in v5b::value_0/v5b::value_1 (low/high) (not preserved!)
    ; Returns the entry pointer in .A/.X/.Y
    .proc getEntryFromHitboxObjectId
-      lda v40b::value_1
+      lda v5b::value_1
       bmi @load_selected
    @load_unselected:
       ldy unselected_events_vector
@@ -206,9 +206,9 @@ selected_events_vector:
       ldx selected_events_vector+1
       and #$7F ; remove the selected bit
    @continue:
-      sta v40b::value_1
+      sta v5b::value_1
       tya
-      jsr v40b::convert_vector_and_index_to_direct_pointer
+      jsr v5b::convert_vector_and_index_to_direct_pointer
       rts
    .endproc
 
@@ -394,7 +394,7 @@ change_song_tempo = song_engine::timing::recalculate_rhythm_values ; TODO: actua
    bcs @pre_parsing_end_of_data
 @clip_is_not_empty:
    ; we have at least one event. get that event's time stamp
-   jsr v40b::read_entry
+   jsr v5b::read_entry
 
 
    ; PARSING EVENTS BEFORE THE DISPLAYED TIME WINDOW
@@ -433,7 +433,7 @@ change_song_tempo = song_engine::timing::recalculate_rhythm_values ; TODO: actua
    ; get next event
    jsr song_engine::event_selection::streamGetNextEvent
    bcs @pre_parsing_end_of_data
-   jsr v40b::read_entry
+   jsr v5b::read_entry
    bra @pre_parsing_loop
 
 @pre_parsing_end_of_data:
@@ -579,7 +579,7 @@ change_song_tempo = song_engine::timing::recalculate_rhythm_values ; TODO: actua
    jsr song_engine::event_selection::streamGetNextEvent
    bcs :+ ; new data available?
    ; new data available.
-   jsr v40b::read_entry
+   jsr v5b::read_entry
    jmp @main_parse_events_loop
 :  inc end_of_data
 @end_parse_events:
@@ -798,7 +798,7 @@ height = 2 * detail::event_edit_height
    jsr song_engine::event_selection::streamGetNextEvent
    bcc :+
    rts
-:  jsr v40b::read_entry
+:  jsr v5b::read_entry
    lda song_engine::events::event_time_stamp_l
    sta detail::selection_min_time_stamp
    lda song_engine::events::event_time_stamp_h
@@ -809,7 +809,7 @@ height = 2 * detail::event_edit_height
    jsr song_engine::event_selection::streamGetNextEvent
    bcc :+
    rts
-:  jsr v40b::read_entry
+:  jsr v5b::read_entry
    lda song_engine::events::event_type
    cmp #song_engine::events::event_type_note_on
    bne @next_event
@@ -881,7 +881,7 @@ height = 2 * detail::event_edit_height
    lda detail::pointed_at_event
    ldx detail::pointed_at_event+1
    ldy detail::pointed_at_event+2
-   jsr v40b::read_entry
+   jsr v5b::read_entry
    jsr detail::determineTimeShift
 @end_determine_time_delta:
 
@@ -895,7 +895,7 @@ height = 2 * detail::event_edit_height
    pha
    phx
    phy
-   jsr v40b::read_entry
+   jsr v5b::read_entry
 
    ; horizontal: shift the time
    lda song_engine::events::event_time_stamp_l
@@ -921,7 +921,7 @@ height = 2 * detail::event_edit_height
    ply
    plx
    pla
-   jsr v40b::write_entry
+   jsr v5b::write_entry
 
    bra @next_event
 @events_loop_end:
@@ -951,7 +951,7 @@ height = 2 * detail::event_edit_height
    pha
    phx
    phy
-   jsr v40b::read_entry
+   jsr v5b::read_entry
    ; recall part of event pointer (don't recall .A yet because we still work with it)
    ply
    plx
@@ -970,7 +970,7 @@ height = 2 * detail::event_edit_height
    ; get note-off
    pla ; recall last byte of the note-on pointer
    jsr song_engine::event_selection::findNoteOff
-   jsr v40b::read_entry
+   jsr v5b::read_entry
    ; get note length and compare with minimum
    lda song_engine::events::event_time_stamp_l
    clc ; clc instead of sec is intentional here: we want to "shorten" the note by 1 tick in order to prevent zero-length notes
@@ -1015,7 +1015,7 @@ height = 2 * detail::event_edit_height
    ldx detail::pointed_at_event+1
    ldy detail::pointed_at_event+2
    jsr song_engine::event_selection::findNoteOff
-   jsr v40b::read_entry
+   jsr v5b::read_entry
    jsr detail::determineTimeShift
 
    ; iterate over events
@@ -1024,7 +1024,7 @@ height = 2 * detail::event_edit_height
 @next_event:
    jsr song_engine::event_selection::streamPeekNextSelectedEvent
    bcs @events_loop_end
-   jsr v40b::read_entry
+   jsr v5b::read_entry
 
    lda song_engine::events::event_type
    bne @no_note_off ; #song_engine::events::event_type_note_off
@@ -1042,7 +1042,7 @@ height = 2 * detail::event_edit_height
    ; add the note-off to the temporary vector
    lda temp_events
    ldx temp_events+1
-   jsr v40b::append_new_entry
+   jsr v5b::append_new_entry
    bra @next_event
 @no_note_off:
    ; actually advance to next event if it isn't a note-off
@@ -1162,7 +1162,7 @@ height = 2 * detail::event_edit_height
    sta song_engine::events::event_type
    lda selected_events_vector
    ldx selected_events_vector+1
-   jsr v40b::append_new_entry
+   jsr v5b::append_new_entry
    ; move time stamp over by one chargrid position
    lda #$ff
    jsr moveTimeWindow
@@ -1176,7 +1176,7 @@ height = 2 * detail::event_edit_height
    sta song_engine::events::event_type
    lda selected_events_vector
    ldx selected_events_vector+1
-   jsr v40b::append_new_entry
+   jsr v5b::append_new_entry
    ; restore viewing window
    pla
    dec
@@ -1198,19 +1198,19 @@ height = 2 * detail::event_edit_height
    beq @check_delete
    lda selected_events_vector
    ldx selected_events_vector+1
-   jsr v40b::get_first_entry ; since we just selected an event, I don't deal with the case that there's nothing in this vector
+   jsr v5b::get_first_entry ; since we just selected an event, I don't deal with the case that there's nothing in this vector
 @duplicate_loop:
    pha
    phx
    phy
-   jsr v40b::read_entry
+   jsr v5b::read_entry
    lda temp_events
    ldx temp_events+1
-   jsr v40b::append_new_entry
+   jsr v5b::append_new_entry
    ply
    plx
    pla
-   jsr v40b::get_next_entry
+   jsr v5b::get_next_entry
    bcc @duplicate_loop
 @end_duplicate:
    SET_SELECTED_VECTOR temp_events
@@ -1227,7 +1227,7 @@ height = 2 * detail::event_edit_height
 @do_delete:
    lda selected_events_vector
    ldx selected_events_vector+1
-   jsr v40b::clear
+   jsr v5b::clear
    rts
 .endproc
 
@@ -1281,9 +1281,9 @@ height = 2 * detail::event_edit_height
 
       ; selection logic
       lda mouse_variables::curr_data_2
-      sta v40b::value_0
+      sta v5b::value_0
       lda mouse_variables::curr_data_3
-      sta v40b::value_1
+      sta v5b::value_1
       bmi @already_selected
       @not_yet_selected:
          lda kbd_variables::shift_key_pressed
@@ -1419,7 +1419,7 @@ height = 2 * detail::event_edit_height
    SET_SELECTED_VECTOR temp_events
 
    jsr hitboxes__load_hitbox_list
-   jsr v40b::get_first_entry
+   jsr v5b::get_first_entry
    bcc @hitbox_loop
    rts
 @hitbox_loop:
@@ -1427,7 +1427,7 @@ height = 2 * detail::event_edit_height
    phx
    phy
 
-   jsr v40b::read_entry
+   jsr v5b::read_entry
 
    ; check bounds.
    ; check bottom
@@ -1461,7 +1461,7 @@ height = 2 * detail::event_edit_height
    ply
    plx
    pla
-   jsr v40b::get_next_entry
+   jsr v5b::get_next_entry
    bcc @hitbox_loop
    ; end of loop
 

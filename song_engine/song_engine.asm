@@ -3,7 +3,7 @@
 .ifndef ::SONG_ENGINE_SONG_ENGINE_ASM
 ::SONG_ENGINE_SONG_ENGINE_ASM = 1
 
-.include "../dynamic_memory/vector_40bit.asm"
+.include "../dynamic_memory/vector_5bytes.asm"
 .include "../common/x16.asm"
 
 concerto_playback_routine = song_engine__simple_player__player_tick
