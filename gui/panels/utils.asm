@@ -50,4 +50,20 @@
     ldy #(comps::name - comps + components::type::data_members::member)
 .endmacro
 
+.macro STA_COMPONENT_MEMBER_ADDRESS type, name, member
+    sta comps::name + components::type::data_members::member
+.endmacro
+
+.macro STZ_COMPONENT_MEMBER_ADDRESS type, name, member
+    stz comps::name + components::type::data_members::member
+.endmacro
+
+.macro LDA_COMPONENT_MEMBER_ADDRESS type, name, member
+    lda comps::name + components::type::data_members::member
+.endmacro
+
+.macro SBC_COMPONENT_MEMBER_ADDRESS type, name, member
+    sbc comps::name + components::type::data_members::member
+.endmacro
+
 .endif ; .ifndef ::GUI_PANELS_UTILS_ASM

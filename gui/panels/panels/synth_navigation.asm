@@ -52,11 +52,6 @@
    draw = panel_common::dummy_subroutine
 
    .proc write
-      ; prepare component string offset
-      lda mouse_variables::curr_component_ofs
-      clc
-      adc #4 ; currently, we're reading only arrowed edits and drag edits
-      tay
       ; prepare jump
       lda mouse_variables::curr_component_id
       asl
@@ -74,7 +69,7 @@
       .word @save_bank
    @timbre_selector:
       ; read data from component string and write it to the Timbre setting
-      lda comps, y
+      LDA_COMPONENT_MEMBER_ADDRESS arrowed_edit, timbre_select, value
       sta gui_variables::current_synth_timbre
       jsr gui_routines__refresh_gui
       rts
@@ -112,8 +107,7 @@
       ; TODO interface with concerto_synth::timbres::file_name if required
       rts
    @set_play_volume:
-      iny
-      lda comps, y
+      LDA_COMPONENT_MEMBER_ADDRESS drag_edit, keyboard_volume, coarse_value
       sta play_volume
       rts
    @load_bank:

@@ -49,8 +49,8 @@
       jsr file_browsing::getFiles
       lda #255 ; none selected
       ; #optimize-for-size by putting stuff above in common function (load and save popup)
-      sta comps::file_select + components::listbox::data_members::selected_entry
-      stz comps::file_select + components::listbox::data_members::scroll_offset
+      STA_COMPONENT_MEMBER_ADDRESS listbox, file_select, selected_entry
+      STZ_COMPONENT_MEMBER_ADDRESS listbox, file_select, scroll_offset
       rts
    .endproc
 

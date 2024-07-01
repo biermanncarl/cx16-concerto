@@ -58,10 +58,6 @@
 
    .proc write
       ldx gui_variables::current_synth_timbre
-      lda mouse_variables::curr_component_ofs
-      clc
-      adc #5
-      tay ; there's no component type where the data is before this index
       ; now determine which component has been dragged
       phx
       lda mouse_variables::curr_component_id
@@ -75,28 +71,24 @@
       .word @offs
    @wave:
       plx
-      iny
-      lda comps, y
+      LDA_COMPONENT_MEMBER_ADDRESS combobox, waveform, selected_entry
       sta concerto_synth::timbres::Timbre::lfo::wave, x
       rts
    @retr:
       plx
-      dey
-      dey
-      lda comps, y
+      LDA_COMPONENT_MEMBER_ADDRESS checkbox, retrigger, checked
       sta concerto_synth::timbres::Timbre::lfo::retrig, x
       rts
    @rate:
       plx
-      lda comps, y
+      LDA_COMPONENT_MEMBER_ADDRESS drag_edit, rate, coarse_value
       sta concerto_synth::timbres::Timbre::lfo::rateH, x
-      iny
-      lda comps, y
+      LDA_COMPONENT_MEMBER_ADDRESS drag_edit, rate, fine_value
       sta concerto_synth::timbres::Timbre::lfo::rateL, x
       rts
    @offs:
       plx
-      lda comps, y
+      LDA_COMPONENT_MEMBER_ADDRESS drag_edit, phase, coarse_value
       sta concerto_synth::timbres::Timbre::lfo::offs, x
       rts
    .endproc
@@ -106,23 +98,18 @@
       ldx gui_variables::current_synth_timbre
       ; LFO waveform
       lda concerto_synth::timbres::Timbre::lfo::wave, x
-      LDY_COMPONENT_MEMBER combobox, waveform, selected_entry
-      sta comps, y
+      STA_COMPONENT_MEMBER_ADDRESS combobox, waveform, selected_entry
       ; LFO retrigger
       lda concerto_synth::timbres::Timbre::lfo::retrig, x
-      LDY_COMPONENT_MEMBER checkbox, retrigger, checked
-      sta comps, y
+      STA_COMPONENT_MEMBER_ADDRESS checkbox, retrigger, checked
       ; LFO rate
       lda concerto_synth::timbres::Timbre::lfo::rateH, x
-      LDY_COMPONENT_MEMBER drag_edit, rate, coarse_value
-      sta comps, y
-      iny
+      STA_COMPONENT_MEMBER_ADDRESS drag_edit, rate, coarse_value
       lda concerto_synth::timbres::Timbre::lfo::rateL, x
-      sta comps, y
+      STA_COMPONENT_MEMBER_ADDRESS drag_edit, rate, fine_value
       ; phase offset
       lda concerto_synth::timbres::Timbre::lfo::offs, x
-      LDY_COMPONENT_MEMBER drag_edit, phase, coarse_value
-      sta comps, y
+      STA_COMPONENT_MEMBER_ADDRESS drag_edit, phase, coarse_value
       rts
    .endproc
 

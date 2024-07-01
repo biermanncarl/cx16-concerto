@@ -122,11 +122,6 @@
       bra @loop
    @end_loop:
       tax ; oscillator index is in x
-      ; prepare component readout
-      lda mouse_variables::curr_component_ofs
-      clc
-      adc #5
-      tay ; there's no component type where the data is before this index
       ; now determine which component has been changed
       phx
       lda mouse_variables::curr_component_id
@@ -160,8 +155,7 @@
       rts
    @waveform:
       plx
-      iny
-      lda comps, y
+      LDA_COMPONENT_MEMBER_ADDRESS combobox, waveform, selected_entry
       clc
       ror
       ror
@@ -170,24 +164,22 @@
       rts
    @pulsewidth:
       plx
-      lda comps, y
+      LDA_COMPONENT_MEMBER_ADDRESS drag_edit, pulse_width, coarse_value
       sta concerto_synth::timbres::Timbre::osc::pulse, x
       rts
    @ampsel:
       plx
-      iny
-      lda comps, y
+      LDA_COMPONENT_MEMBER_ADDRESS combobox, amp_env, selected_entry
       sta concerto_synth::timbres::Timbre::osc::amp_sel, x
       rts
    @volume:
       plx
-      lda comps, y
+      LDA_COMPONENT_MEMBER_ADDRESS drag_edit, volume, coarse_value
       sta concerto_synth::timbres::Timbre::osc::volume, x
       rts
    @channelsel:
       plx
-      iny
-      lda comps, y
+      LDA_COMPONENT_MEMBER_ADDRESS combobox, lr_select, selected_entry
       clc
       ror
       ror
@@ -198,12 +190,13 @@
       plx
       ; decide if we need to tune down to compensate for fine tuning (because fine tuning internally only goes up)
       lda concerto_synth::timbres::Timbre::osc::fine, x
+      php
+      LDA_COMPONENT_MEMBER_ADDRESS drag_edit, semitones, coarse_value
+      plp
       bmi :+
-      lda comps, y
       sta concerto_synth::timbres::Timbre::osc::pitch, x
       rts
-   :  lda comps, y
-      dec
+   :  dec
       sta concerto_synth::timbres::Timbre::osc::pitch, x
       rts
    @finetune:
@@ -213,12 +206,12 @@
       lda concerto_synth::timbres::Timbre::osc::fine, x
       bmi @fine_negative
    @fine_positive:
-      lda comps, y
+      LDA_COMPONENT_MEMBER_ADDRESS drag_edit, fine_tune, coarse_value
       bpl @fine_normal
       dec concerto_synth::timbres::Timbre::osc::pitch, x
       bra @fine_normal
    @fine_negative:
-      lda comps, y
+      LDA_COMPONENT_MEMBER_ADDRESS drag_edit, fine_tune, coarse_value
       bmi @fine_normal
       inc concerto_synth::timbres::Timbre::osc::pitch, x
    @fine_normal:
@@ -226,60 +219,54 @@
       rts
    @keytrack:
       plx
-      dey
-      dey
-      lda comps, y
+      LDA_COMPONENT_MEMBER_ADDRESS checkbox, key_track, checked
       sta concerto_synth::timbres::Timbre::osc::track, x
       rts
    @pmsel1:
       plx
-      iny
-      lda comps, y
+      LDA_COMPONENT_MEMBER_ADDRESS combobox, pitch1_modsource, selected_entry
       jsr panel_common::map_modsource_from_gui
       sta concerto_synth::timbres::Timbre::osc::pitch_mod_sel1, x
       rts
    @pmsel2:
       plx
-      iny
-      lda comps, y
+      LDA_COMPONENT_MEMBER_ADDRESS combobox, pitch2_modsource, selected_entry
       jsr panel_common::map_modsource_from_gui
       sta concerto_synth::timbres::Timbre::osc::pitch_mod_sel2, x
       rts
    @pwmsel:
       plx
-      iny
-      lda comps, y
+      LDA_COMPONENT_MEMBER_ADDRESS combobox, pw_modsource, selected_entry
       jsr panel_common::map_modsource_from_gui
       sta concerto_synth::timbres::Timbre::osc::pwm_sel, x
       rts
    @volmsel:
       plx
-      iny
-      lda comps, y
+      LDA_COMPONENT_MEMBER_ADDRESS combobox, volume_modsource, selected_entry
       jsr panel_common::map_modsource_from_gui
       sta concerto_synth::timbres::Timbre::osc::vol_mod_sel, x
       rts
    @pitchmoddep1:
       plx
-      lda comps, y
+      LDA_COMPONENT_MEMBER_ADDRESS drag_edit, pitch1_moddepth, coarse_value
       jsr concerto_synth::map_twos_complement_to_scale5
       sta concerto_synth::timbres::Timbre::osc::pitch_mod_dep1, x
       rts
    @pitchmoddep2:
       plx
-      lda comps, y
+      LDA_COMPONENT_MEMBER_ADDRESS drag_edit, pitch2_moddepth, coarse_value
       jsr concerto_synth::map_twos_complement_to_scale5
       sta concerto_synth::timbres::Timbre::osc::pitch_mod_dep2, x
       rts
    @pwmdep:
       plx
-      lda comps, y
+      LDA_COMPONENT_MEMBER_ADDRESS drag_edit, pw_moddepth, coarse_value
       jsr panel_common::map_twos_complement_to_signed_7bit
       sta concerto_synth::timbres::Timbre::osc::pwm_dep, x
       rts
    @vmdep:
       plx
-      lda comps, y
+      LDA_COMPONENT_MEMBER_ADDRESS drag_edit, volume_moddepth, coarse_value
       jsr panel_common::map_twos_complement_to_signed_7bit
       sta concerto_synth::timbres::Timbre::osc::vol_mod_dep, x
       rts
@@ -306,28 +293,23 @@
       rol
       rol
       rol
-      LDY_COMPONENT_MEMBER combobox, waveform, selected_entry
-      sta comps, y
+      STA_COMPONENT_MEMBER_ADDRESS combobox, waveform, selected_entry
       ; pulse width
       lda concerto_synth::timbres::Timbre::osc::pulse, x
-      LDY_COMPONENT_MEMBER drag_edit, pulse_width, coarse_value
-      sta comps, y
+      STA_COMPONENT_MEMBER_ADDRESS drag_edit, pulse_width, coarse_value
       ; amplifier select
       lda concerto_synth::timbres::Timbre::osc::amp_sel, x
-      LDY_COMPONENT_MEMBER combobox, amp_env, selected_entry
-      sta comps, y
+      STA_COMPONENT_MEMBER_ADDRESS combobox, amp_env, selected_entry
       ; volume
       lda concerto_synth::timbres::Timbre::osc::volume, x
-      LDY_COMPONENT_MEMBER drag_edit, volume, coarse_value
-      sta comps, y
+      STA_COMPONENT_MEMBER_ADDRESS drag_edit, volume, coarse_value
       ; L/R
       lda concerto_synth::timbres::Timbre::osc::lrmid, x
       clc
       rol
       rol
       rol
-      LDY_COMPONENT_MEMBER combobox, lr_select, selected_entry
-      sta comps, y
+      STA_COMPONENT_MEMBER_ADDRESS combobox, lr_select, selected_entry
       ; semitones
       ; we need to check fine tune to get correct semi tones.
       ; if fine tune is negative, we need to increment one to the semitone value to be displayed on the GUI
@@ -337,56 +319,45 @@
       bra :++
    :  lda concerto_synth::timbres::Timbre::osc::pitch, x
       inc
-   :  LDY_COMPONENT_MEMBER drag_edit, semitones, coarse_value
-      sta comps, y
+   :  STA_COMPONENT_MEMBER_ADDRESS drag_edit, semitones, coarse_value
       ; fine tune
       lda concerto_synth::timbres::Timbre::osc::fine, x
-      LDY_COMPONENT_MEMBER drag_edit, fine_tune, coarse_value
-      sta comps, y
+      STA_COMPONENT_MEMBER_ADDRESS drag_edit, fine_tune, coarse_value
       ; key track
       lda concerto_synth::timbres::Timbre::osc::track, x
-      LDY_COMPONENT_MEMBER checkbox, key_track, checked
-      sta comps, y
+      STA_COMPONENT_MEMBER_ADDRESS checkbox, key_track, checked
       ; pitch mod select 1
       lda concerto_synth::timbres::Timbre::osc::pitch_mod_sel1, x
       jsr panel_common::map_modsource_to_gui
-      LDY_COMPONENT_MEMBER combobox, pitch1_modsource, selected_entry
-      sta comps, y
+      STA_COMPONENT_MEMBER_ADDRESS combobox, pitch1_modsource, selected_entry
       ; pitch mod select 2
       lda concerto_synth::timbres::Timbre::osc::pitch_mod_sel2, x
       jsr panel_common::map_modsource_to_gui
-      LDY_COMPONENT_MEMBER combobox, pitch2_modsource, selected_entry
-      sta comps, y
+      STA_COMPONENT_MEMBER_ADDRESS combobox, pitch2_modsource, selected_entry
       ; pwm select
       lda concerto_synth::timbres::Timbre::osc::pwm_sel, x
       jsr panel_common::map_modsource_to_gui
-      LDY_COMPONENT_MEMBER combobox, pw_modsource, selected_entry
-      sta comps, y
+      STA_COMPONENT_MEMBER_ADDRESS combobox, pw_modsource, selected_entry
       ; vol mod select
       lda concerto_synth::timbres::Timbre::osc::vol_mod_sel, x
       jsr panel_common::map_modsource_to_gui
-      LDY_COMPONENT_MEMBER combobox, volume_modsource, selected_entry
-      sta comps, y
+      STA_COMPONENT_MEMBER_ADDRESS combobox, volume_modsource, selected_entry
       ; pitch mod depth 1
       lda concerto_synth::timbres::Timbre::osc::pitch_mod_dep1, x
       jsr concerto_synth::map_scale5_to_twos_complement
-      LDY_COMPONENT_MEMBER drag_edit, pitch1_moddepth, coarse_value
-      sta comps, y
+      STA_COMPONENT_MEMBER_ADDRESS drag_edit, pitch1_moddepth, coarse_value
       ; pitch mod depth 2
       lda concerto_synth::timbres::Timbre::osc::pitch_mod_dep2, x
       jsr concerto_synth::map_scale5_to_twos_complement
-      LDY_COMPONENT_MEMBER drag_edit, pitch2_moddepth, coarse_value
-      sta comps, y
+      STA_COMPONENT_MEMBER_ADDRESS drag_edit, pitch2_moddepth, coarse_value
       ; pwm depth
       lda concerto_synth::timbres::Timbre::osc::pwm_dep, x
       jsr panel_common::map_signed_7bit_to_twos_complement
-      LDY_COMPONENT_MEMBER drag_edit, pw_moddepth, coarse_value
-      sta comps, y
+      STA_COMPONENT_MEMBER_ADDRESS drag_edit, pw_moddepth, coarse_value
       ; volume mod depth
       lda concerto_synth::timbres::Timbre::osc::vol_mod_dep, x
       jsr panel_common::map_signed_7bit_to_twos_complement
-      LDY_COMPONENT_MEMBER drag_edit, volume_moddepth, coarse_value
-      sta comps, y
+      STA_COMPONENT_MEMBER_ADDRESS drag_edit, volume_moddepth, coarse_value
       rts
    .endproc
 

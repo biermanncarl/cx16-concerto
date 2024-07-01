@@ -92,10 +92,6 @@
       jsr concerto_synth::voices::invalidate_fm_timbres
       ; do the usual stuff
       ldx gui_variables::current_synth_timbre
-      lda mouse_variables::curr_component_ofs
-      clc
-      adc #5
-      tay ; there's no component type where the data is before this index
       ; now determine which component has been dragged
       phx
       lda mouse_variables::curr_component_id
@@ -116,17 +112,16 @@
       .word @pmsel ; pitch mod select
       .word @pitchmoddep ; pitch mod depth
    @connection:
+      LDA_COMPONENT_MEMBER_ADDRESS arrowed_edit, connection, value
       plx
-      dey
-      lda comps, y
       sta concerto_synth::timbres::Timbre::fm_general::con, x
       ; redraw FM algorithm
       sta guiutils::draw_data1
       jsr guiutils::draw_fm_alg
       rts
    @feedback:
+      LDA_COMPONENT_MEMBER_ADDRESS drag_edit, feedback, coarse_value
       plx
-      lda comps, y
       sta concerto_synth::timbres::Timbre::fm_general::fl, x
       rts
    @op1_active:
@@ -147,10 +142,9 @@
       bra @op_active_common
    @op_active_common: ; DON'T put this label into jump table ...
       plx
+      ldy mouse_variables::curr_component_ofs
       ; get checkbox value
-      dey
-      dey
-      lda comps, y
+      lda comps + components::checkbox::data_members::checked, y
       ; push into carry flag
       lsr
       lda wfm_bits
@@ -165,8 +159,7 @@
       rts
    @lr_select:
       plx
-      iny
-      lda comps, y
+      LDA_COMPONENT_MEMBER_ADDRESS combobox, lr_select, selected_entry
       clc
       ror
       ror
@@ -178,10 +171,10 @@
       ; decide if we need to tune down to compensate for fine tuning (because fine tuning internally only goes up)
       lda concerto_synth::timbres::Timbre::fm_general::fine, x
       bmi :+
-      lda comps, y
+      LDA_COMPONENT_MEMBER_ADDRESS drag_edit, semitones, coarse_value
       sta concerto_synth::timbres::Timbre::fm_general::pitch, x
       rts
-   :  lda comps, y
+   :  LDA_COMPONENT_MEMBER_ADDRESS drag_edit, semitones, coarse_value
       dec
       sta concerto_synth::timbres::Timbre::fm_general::pitch, x
       rts
@@ -189,15 +182,17 @@
       plx
       ; if fine tune is now negative, but was non-negative beforehand, we need to decrement semitones
       ; and the other way round: if fine tune was negative, but now is non-negative, we need to increment semitones
+      LDA_COMPONENT_MEMBER_ADDRESS drag_edit, fine_tune, coarse_value
+      pha
       lda concerto_synth::timbres::Timbre::fm_general::fine, x
       bmi @fine_negative
    @fine_positive:
-      lda comps, y
+      pla
       bpl @fine_normal
       dec concerto_synth::timbres::Timbre::fm_general::pitch, x
       bra @fine_normal
    @fine_negative:
-      lda comps, y
+      pla
       bmi @fine_normal
       inc concerto_synth::timbres::Timbre::fm_general::pitch, x
    @fine_normal:
@@ -205,21 +200,18 @@
       rts
    @keytrack:
       plx
-      dey
-      dey
-      lda comps, y
+      LDA_COMPONENT_MEMBER_ADDRESS checkbox, key_track, checked
       sta concerto_synth::timbres::Timbre::fm_general::track, x
       rts
    @pmsel:
       plx
-      iny
-      lda comps, y
+      LDA_COMPONENT_MEMBER_ADDRESS combobox, pitchmod_sel, selected_entry
       jsr panel_common::map_modsource_from_gui
       sta concerto_synth::timbres::Timbre::fm_general::pitch_mod_sel, x
       rts
    @pitchmoddep:
       plx
-      lda comps, y
+      LDA_COMPONENT_MEMBER_ADDRESS drag_edit, pitchmod_dep, coarse_value
       jsr concerto_synth::map_twos_complement_to_scale5
       sta concerto_synth::timbres::Timbre::fm_general::pitch_mod_dep, x
       rts
@@ -231,12 +223,10 @@
       ldx gui_variables::current_synth_timbre
       ; connection scheme
       lda concerto_synth::timbres::Timbre::fm_general::con, x
-      LDY_COMPONENT_MEMBER arrowed_edit, connection, value
-      sta comps, y
+      STA_COMPONENT_MEMBER_ADDRESS arrowed_edit, connection, value
       ; feedback level
       lda concerto_synth::timbres::Timbre::fm_general::fl, x
-      LDY_COMPONENT_MEMBER drag_edit, feedback, coarse_value
-      sta comps, y
+      STA_COMPONENT_MEMBER_ADDRESS drag_edit, feedback, coarse_value
       ; operators enable
       lda concerto_synth::timbres::Timbre::fm_general::op_en, x
       sta @rfm_bits
@@ -244,34 +234,29 @@
       lda #0
       bbr0 @rfm_bits, :+
       lda #1
-   :  LDY_COMPONENT_MEMBER checkbox, op1_active, checked
-      sta comps, y
+   :  STA_COMPONENT_MEMBER_ADDRESS checkbox, op1_active, checked
       ; operator 2 enable
       lda #0
       bbr1 @rfm_bits, :+
       lda #1
-   :  LDY_COMPONENT_MEMBER checkbox, op2_active, checked
-      sta comps, y
+   :  STA_COMPONENT_MEMBER_ADDRESS checkbox, op2_active, checked
       ; operator 3 enable
       lda #0
       bbr2 @rfm_bits, :+
       lda #1
-   :  LDY_COMPONENT_MEMBER checkbox, op3_active, checked
-      sta comps, y
+   :  STA_COMPONENT_MEMBER_ADDRESS checkbox, op3_active, checked
       ; operator 4 enable
       lda #0
       bbr3 @rfm_bits, :+
       lda #1
-   :  LDY_COMPONENT_MEMBER checkbox, op4_active, checked
-      sta comps, y
+   :  STA_COMPONENT_MEMBER_ADDRESS checkbox, op4_active, checked
       ; LR channel select
       lda concerto_synth::timbres::Timbre::fm_general::lr, x
       clc
       rol
       rol
       rol
-      LDY_COMPONENT_MEMBER combobox, lr_select, selected_entry
-      sta comps, y
+      STA_COMPONENT_MEMBER_ADDRESS combobox, lr_select, selected_entry
       ; semitones
       ; we need to check fine tune to get correct semi tones.
       ; if fine tune is negative, we need to increment one to the semitone value to be displayed on the GUI
@@ -281,26 +266,21 @@
       bra :++
    :  lda concerto_synth::timbres::Timbre::fm_general::pitch, x
       inc
-   :  LDY_COMPONENT_MEMBER drag_edit, semitones, coarse_value
-      sta comps, y
+   :  STA_COMPONENT_MEMBER_ADDRESS drag_edit, semitones, coarse_value
       ; fine tune
       lda concerto_synth::timbres::Timbre::fm_general::fine, x
-      LDY_COMPONENT_MEMBER drag_edit, fine_tune, coarse_value
-      sta comps, y
+      STA_COMPONENT_MEMBER_ADDRESS drag_edit, fine_tune, coarse_value
       ; key track
       lda concerto_synth::timbres::Timbre::fm_general::track, x
-      LDY_COMPONENT_MEMBER checkbox, key_track, checked
-      sta comps, y
+      STA_COMPONENT_MEMBER_ADDRESS checkbox, key_track, checked
       ; pitch mod select
       lda concerto_synth::timbres::Timbre::fm_general::pitch_mod_sel, x
       jsr panel_common::map_modsource_to_gui
-      LDY_COMPONENT_MEMBER combobox, pitchmod_sel, selected_entry
-      sta comps, y
+      STA_COMPONENT_MEMBER_ADDRESS combobox, pitchmod_sel, selected_entry
       ; pitch mod depth
       lda concerto_synth::timbres::Timbre::fm_general::pitch_mod_dep, x
       jsr concerto_synth::map_scale5_to_twos_complement
-      LDY_COMPONENT_MEMBER drag_edit, pitchmod_dep, coarse_value
-      sta comps, y
+      STA_COMPONENT_MEMBER_ADDRESS drag_edit, pitchmod_dep, coarse_value
       rts
    .endproc
 

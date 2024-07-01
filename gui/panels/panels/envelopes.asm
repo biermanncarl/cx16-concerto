@@ -144,30 +144,23 @@
       tax ; envelope index is in x
       ; read ADSR data from Timbre and load it into edits
       ; attack edit
-      LDY_COMPONENT_MEMBER drag_edit, attack, coarse_value
       lda concerto_synth::timbres::Timbre::env::attackH, x
-      sta comps, y
-      iny
+      STA_COMPONENT_MEMBER_ADDRESS drag_edit, attack, coarse_value
       lda concerto_synth::timbres::Timbre::env::attackL, x
-      sta comps, y
+      STA_COMPONENT_MEMBER_ADDRESS drag_edit, attack, fine_value
       ; decay edit
-      LDY_COMPONENT_MEMBER drag_edit, decay, coarse_value
       lda concerto_synth::timbres::Timbre::env::decayH, x
-      sta comps, y
-      iny
+      STA_COMPONENT_MEMBER_ADDRESS drag_edit, decay, coarse_value
       lda concerto_synth::timbres::Timbre::env::decayL, x
-      sta comps, y
+      STA_COMPONENT_MEMBER_ADDRESS drag_edit, decay, fine_value
       ; sustain edit
-      LDY_COMPONENT_MEMBER drag_edit, sustain, coarse_value
       lda concerto_synth::timbres::Timbre::env::sustain, x
-      sta comps, y
+      STA_COMPONENT_MEMBER_ADDRESS drag_edit, sustain, coarse_value
       ; release edit
-      LDY_COMPONENT_MEMBER drag_edit, release, coarse_value
       lda concerto_synth::timbres::Timbre::env::releaseH, x
-      sta comps, y
-      iny
+      STA_COMPONENT_MEMBER_ADDRESS drag_edit, release, coarse_value
       lda concerto_synth::timbres::Timbre::env::releaseL, x
-      sta comps, y
+      STA_COMPONENT_MEMBER_ADDRESS drag_edit, release, fine_value
       rts
    .endproc
 

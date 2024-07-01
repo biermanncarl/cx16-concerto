@@ -60,9 +60,9 @@
       ldx #file_browsing::file_type::instrument
       jsr file_browsing::getFiles
       lda #255 ; none selected
-      sta comps::file_select + components::listbox::data_members::selected_entry
-      stz comps::file_select + components::listbox::data_members::scroll_offset
-      stz comps::file_name_edit + components::text_edit::data_members::cursor_position
+      STA_COMPONENT_MEMBER_ADDRESS listbox, file_select, selected_entry
+      STZ_COMPONENT_MEMBER_ADDRESS listbox, file_select, scroll_offset
+      STZ_COMPONENT_MEMBER_ADDRESS text_edit, file_name_edit, cursor_position
       rts
    .endproc
 
