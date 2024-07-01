@@ -84,6 +84,7 @@ temp_variable_a:
    ; Expects (zp_pointer_2) and .X (the ram bank) to be set up for accessing the SOURCE block.
    ; Preserves .X, RAM_BANK and the zero page pointers
    .proc copyElementInternal
+      ; Comments are originally from delete_element
       ldy #4 ; start with payload
    @copy_loop:
       lda RAM_BANK ; remember V.B

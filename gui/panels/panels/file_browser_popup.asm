@@ -93,10 +93,38 @@
    .endproc
 
    .proc write
-      ; Why does this not called when clicking at the list box ??
-      jsr clearArea
+      lda mouse_variables::curr_component_id
+      asl
+      tax
+      jmp (@jmp_tbl, x)
+   @jmp_tbl:
+      .word @file_select
+      .word @file_name_edit
+      .word @button_ok
+      .word @button_cancel
+   @file_select:
+      ; copy selected file string into text edit
+      ldy comps::file_select + components::listbox::data_members::selected_entry
+      cpy #255 ; skip if no valid file name was selected
+      bne :+
+      rts
+   :  lda comps::file_select + components::listbox::data_members::string_pointer
+      ldx comps::file_select + components::listbox::data_members::string_pointer+1
+      jsr dll::getElementByIndex ; source entry in .A/.X
+      ldy save_file_name
+      sty dll::zp_pointer
+      ldy save_file_name+1
+      sty dll::zp_pointer+1
+      jsr dll::copyElement
+      inc gui_variables::request_components_redraw
+      rts
+   @file_name_edit:
+      rts
+   @button_ok:
+      ; fall through to button_cancel, which closes the popup
+   @button_cancel:
       ; close popup
-      ; TODO
+      jsr clearArea
       dec panels_stack_pointer
       jsr gui_routines__draw_gui
       rts
