@@ -64,8 +64,45 @@ zp_pointer_2 = ::dll_zp_pointer_2
 .scope detail
 temp_variable_a:
    .res 2
+
+   ; Expects the source element in .A/.X
+   ; expects the target element in (zp_pointer) (B/H)
+   .proc copyElement
+      ; setup source
+      stx zp_pointer_2+1
+      stz zp_pointer_2
+      tax
+      ; setup target
+      lda zp_pointer
+      sta RAM_BANK
+      stz zp_pointer
+      ; fall through to copyElementInternal
+   .endproc
+
+   ; ^^ needs to sit right below copyElement
+   ; Expects (zp_pointer) and RAM_BANK to be set up for accessing the TARGET block.
+   ; Expects (zp_pointer_2) and .X (the ram bank) to be set up for accessing the SOURCE block.
+   ; Preserves .X, RAM_BANK and the zero page pointers
+   .proc copyElementInternal
+      ldy #4 ; start with payload
+   @copy_loop:
+      lda RAM_BANK ; remember V.B
+      stx RAM_BANK ; set up W.B
+      tax ; remember V.B
+      lda (zp_pointer_2), y ; load byte from Element W
+      pha
+      lda RAM_BANK ; remember W.B
+      stx RAM_BANK ; set up V.B
+      tax ; remember W.B
+      pla
+      sta (zp_pointer), y ; write byte to Element V
+      iny
+      bne @copy_loop
+      rts
+   .endproc
 .endscope
 
+copyElement = detail::copyElement
 
 ; Creates the first element of a new list.
 ; Returns the pointer (B/H) to the first and only element in .A/.X
@@ -447,20 +484,7 @@ temp_variable_a:
 @not_last_element:
    ; copy content of Element W to Element V
    stz zp_pointer_2
-   ldy #4 ; start with payload
-@copy_loop:
-   lda RAM_BANK ; remember V.B
-   stx RAM_BANK ; set up W.B
-   tax ; remember V.B
-   lda (zp_pointer_2), y ; load byte from Element W
-   pha
-   lda RAM_BANK ; remember W.B
-   stx RAM_BANK ; set up V.B
-   tax ; remember W.B
-   pla
-   sta (zp_pointer), y ; write byte to Element V
-   iny
-   bne @copy_loop
+   jsr detail::copyElementInternal
 
    ; Now that we copied the content of Element W to Element V, we can delete Element W.
    txa ; recall W.B

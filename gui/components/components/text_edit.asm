@@ -43,7 +43,7 @@
         sta guiutils::str_pointer
         lda v32b::entrypointer+1
         sta guiutils::str_pointer+1
-        lda #(16*COLOR_COMBOBOX_POPUP_BG+COLOR_COMBOBOX_POPUP_FG)
+        lda #(16*0+1)
         sta guiutils::color
 
         lda (components_common::data_pointer), y
@@ -77,7 +77,7 @@
         ldx pos_y
         jsr guiutils::alternative_gotoxy
         ldx VERA_data0 ; advance the data0 pointer without modifying the character
-        lda #(16*COLOR_COMBOBOX_POPUP_FG+COLOR_COMBOBOX_POPUP_BG) ; inverse color
+        lda #(16*1+0) ; inverse color
 
         sta VERA_data0
 
