@@ -1,39 +1,39 @@
 ; Copyright 2024 Carl Georg Biermann
 
-.ifndef ::GUI_PANELS_PANELS_FILE_BROWSER_POPUP_ASM
+.ifndef ::GUI_PANELS_PANELS_FILE_SAVE_POPUP_ASM
 
-::GUI_PANELS_PANELS_FILE_BROWSER_POPUP_ASM = 1
+::GUI_PANELS_PANELS_FILE_SAVE_POPUP_ASM = 1
 
 .include "common.asm"
 .include "../../file_browsing.asm"
+.include "file_popups_common.asm"
 
-.scope file_browser_popup
+.scope file_save_popup
    ; popup blocks the whole screen, therefore this panel is "fullscreen" (for click detection)
    px = 0
    py = 0
    wd = 80
    hg = 60
    ; where the actual popup appears
-   box_width = 26
-   box_height = 15
-   box_x = (80 - box_width) / 2
-   box_y = (60 - box_height) / 2
+   box_width = file_popups_common::box_width
+   box_height = file_popups_common::box_height
+   box_x = file_popups_common::box_x
+   box_y = file_popups_common::box_y
    comps:
    .scope comps
       COMPONENT_DEFINITION listbox, file_select, box_x+2, box_y + 2, box_width-4, box_height-7, A 0, 0, 255, 0
       COMPONENT_DEFINITION text_edit, file_name_edit, box_x+2, box_y + box_height-4, box_width-4, A 0, 0, 0
-      COMPONENT_DEFINITION button, ok, 41, box_y + box_height - 3, 6, A lb_ok
-      COMPONENT_DEFINITION button, cancel, 33, box_y + box_height - 3, 6, A lb_cancel
+      COMPONENT_DEFINITION button, ok, 41, box_y + box_height - 3, 6, A lb_save
+      COMPONENT_DEFINITION button, cancel, 33, box_y + box_height - 3, 6, A file_popups_common::lb_cancel
       COMPONENT_LIST_END
    .endscope
    capts:
       .byte 16*COLOR_BACKGROUND+1, 40-5, box_y
-      .word lb_file_name
+      .word lb_caption
       .byte 0
    ; data specific to the combobox-popup panel
-   lb_ok: STR_FORMAT "  ok"
-   lb_cancel: STR_FORMAT "cancel"
-   lb_file_name: STR_FORMAT "file name"
+   lb_save: STR_FORMAT " save"
+   lb_caption: STR_FORMAT "save file"
 
    ; The file name the user wants
    save_file_name = comps::file_name_edit + components::text_edit::data_members::string_pointer
@@ -54,34 +54,8 @@
       rts
    .endproc
 
-   .proc clearArea
-      lda #box_x-1
-      sta guiutils::draw_x
-      lda #box_y-1
-      sta guiutils::draw_y
-      lda #box_width+2
-      sta guiutils::draw_width
-      lda #box_height+2
-      sta guiutils::draw_height
-      lda #(16*COLOR_BACKGROUND)
-      sta guiutils::color
-      jsr guiutils::clear_rectangle
-      rts
-   .endproc
-
    .proc draw
-      jsr clearArea
-      ; clearArea already populates draw_x, draw_y, draw_width, draw_height, but we want different values unfortunately
-      lda #box_x
-      sta guiutils::draw_x
-      lda #box_y
-      sta guiutils::draw_y
-      lda #box_width
-      sta guiutils::draw_width
-      lda #box_height
-      sta guiutils::draw_height
-      stz guiutils::draw_data1
-      jsr guiutils::draw_frame
+      jsr file_popups_common::clearAndDrawFrame
       ; prepare file listing
       ldx #file_browsing::file_type::instrument
       jsr file_browsing::getFiles
@@ -99,7 +73,7 @@
       jmp (@jmp_tbl, x)
    @jmp_tbl:
       .word @file_select
-      .word @file_name_edit
+      .word panel_common::dummy_subroutine ; file_name_edit
       .word @button_ok
       .word @button_cancel
    @file_select:
@@ -118,13 +92,11 @@
       jsr dll::copyElement
       inc gui_variables::request_components_redraw
       rts
-   @file_name_edit:
-      rts
    @button_ok:
       ; fall through to button_cancel, which closes the popup
    @button_cancel:
       ; close popup
-      jsr clearArea
+      jsr file_popups_common::clearArea
       dec panels_stack_pointer
       jsr gui_routines__draw_gui
       rts
@@ -148,4 +120,4 @@
    .endproc
 .endscope
 
-.endif ; .ifndef ::GUI_PANELS_PANELS_FILE_BROWSER_POPUP_ASM
+.endif ; .ifndef ::GUI_PANELS_PANELS_FILE_SAVE_POPUP_ASM

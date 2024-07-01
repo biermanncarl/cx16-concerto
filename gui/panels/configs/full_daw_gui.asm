@@ -13,7 +13,8 @@
 .include "panels/global_navigation.asm"
 .include "panels/lfo.asm"
 .include "panels/combobox_popup.asm"
-.include "panels/file_browser_popup.asm"
+.include "panels/file_save_popup.asm"
+.include "panels/file_load_popup.asm"
 .include "panels/synth_info.asm"
 .include "panels/synth_navigation.asm"
 
@@ -25,7 +26,8 @@
     envelopes, \
     synth_navigation, \
     combobox_popup, \
-    file_browser_popup, \
+    file_save_popup, \
+    file_load_popup, \
     lfo, \
     synth_info, \
     fm_general, \

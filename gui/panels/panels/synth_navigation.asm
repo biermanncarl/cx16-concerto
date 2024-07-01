@@ -105,7 +105,7 @@
    @change_file_name:
       ; open the file browser popup on the GUI stack
       ldx panels__panels_stack_pointer
-      lda #panels__ids__file_browser_popup
+      lda #panels__ids__file_save_popup
       sta panels__panels_stack, x
       inc panels__panels_stack_pointer
       jsr gui_routines__draw_gui
