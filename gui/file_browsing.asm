@@ -99,7 +99,6 @@ files:
             and #1
             beq :+
             lda character
-            jsr guiutils::petsciiToScreencode
             sta (v32b::entrypointer), y
             iny
         :   bra @read_line_loop
@@ -145,10 +144,10 @@ command:
     .byte "$"
 extension:
     ; concerto-x
-    PETSCII_TO_SCREEN ".cox"
+    .byte ".cox"
 last_letters:
     ; preset (instrument), bank, song
-    PETSCII_TO_SCREEN "pbs"
+    .byte "pbs"
 .endproc
 
 

@@ -91,7 +91,9 @@
         beq :+
         inc valid_entries
         ; print line
-    :   jsr guiutils::print_with_padding
+    :   lda #1
+        sta guiutils::draw_data1
+        jsr guiutils::print_with_padding
         jsr v32b::accessNextEntry
         inc pos_y
         dec height

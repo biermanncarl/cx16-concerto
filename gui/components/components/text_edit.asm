@@ -61,6 +61,8 @@
 
         phy
         ldy #0
+        lda #1
+        sta guiutils::draw_data1
         jsr guiutils::print_with_padding
         tya ; string length
         ply

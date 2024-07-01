@@ -558,6 +558,7 @@ draw_button:
    inx ; this is required by print_with_padding
    ldy #0
    jsr set_cursor
+   stz draw_data1
    jsr print_with_padding
    rts
 
@@ -675,10 +676,16 @@ draw_checkbox:
 ; color according to the variable color
 ; X: overall width plus 1
 ; Y: start of string relative to (str_pointer). In the end contains offset of zero-byte.
+; draw_data1: non-zero if conversion from petscii to screencode shall be applied while printing
 print_with_padding:
 @loop1: ; printing loop. assumes that the string length is less or equal than the combobox/button width minus 2 (really 2 or just 1?)
    lda (str_pointer), y
    beq @end_loop1
+   phy
+   ldy draw_data1
+   beq :+
+   jsr petsciiToScreencode
+:  ply
    sta VERA_data0
    lda color
    sta VERA_data0
@@ -722,6 +729,7 @@ draw_combobox:
    dex ; (for extra characters on the left hand side of the combobox, but just one because of the way we determine the length of the padding)
    lda #(COLOR_COMBOBOX_BG*16+COLOR_COMBOBOX_FG)
    sta color
+   stz draw_data1
    jsr print_with_padding
    rts
 
@@ -744,6 +752,7 @@ draw_lb_popup:
    jsr set_cursor
    ldx draw_width
    inx
+   stz draw_data1
    jsr print_with_padding
    ; advance indices
    inc cur_y
