@@ -24,53 +24,48 @@
         pos_y = gui_variables::mzpbf ; mzpbe can't be used here
         width = gui_variables::mzpwd
         height = gui_variables::mzpwd+1
-        php
-        sei
         ; get x and y position
         lda (components_common::data_pointer),y
+        iny
         sta pos_x
-        iny
         lda (components_common::data_pointer),y
-        sta pos_y
         iny
+        sta pos_y
 
         ; get width and height
         lda (components_common::data_pointer),y
+        iny
         sta width
-        iny
         lda (components_common::data_pointer),y
-        sta height
         iny
+        sta height
         ; setup access to string list
         lda (components_common::data_pointer),y
-        pha
         iny
+        sta temp
         lda (components_common::data_pointer),y
+        iny
         tax
-        pla
+        ; pointer to string list in temp/.X
+        lda (components_common::data_pointer),y ; read scroll offset
         iny
-        jsr v32b::accessFirstEntry
-        ; advance string list to scroll offset
+        phy ; remember data offset
         ; Here we need the assumption that the scroll offset must be smaller than the number of strings.
+        ; advance string list to scroll offset
+        sta valid_entries ; use scroll offset as starting point here
+        tay
+        lda temp
+        jsr dll::getElementByIndex ; we assume it succeeds ...
+        jsr v32b::accessFirstEntry ; actually not the first entry here
+
+        ; calculate position of selected entry relative to first visible line
+        ply
         lda (components_common::data_pointer),y
-        pha ; store offset
-        iny
-        lda (components_common::data_pointer),y
-        inc ; small trick to utilize zero flag (see print line loop)
-        sta selected
-        stz valid_entries
-        plx ; recall offset
         phy
-    @scroll_offset_loop: ; maybe make this a v32b subroutine?
-        beq @scroll_offset_loop_end
-        phx
-        jsr v32b::accessNextEntry
-        plx
-        inc valid_entries
-        dec selected
-        dex
-        bra @scroll_offset_loop
-    @scroll_offset_loop_end:
+        inc ; trick to better utilize zero-flag in the print loop
+        sec
+        sbc valid_entries
+        sta selected
 
         ; print lines to screen
         ; v32b vectors cannot be empty, hence we don't need to check for that.
@@ -123,8 +118,8 @@
         lda valid_entries
         sta (components_common::data_pointer),y
         iny
-        plp
         rts
+    temp:
     selected:
         .res 1
     valid_entries:
@@ -193,6 +188,7 @@
     :   dey
         sta (components_common::data_pointer), y
         ldy mouse_variables::curr_component_ofs
+        inc gui_variables::request_component_write
         jmp draw
     .endproc
 

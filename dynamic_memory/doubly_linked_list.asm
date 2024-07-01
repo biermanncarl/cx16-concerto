@@ -219,6 +219,26 @@ copyElement = detail::copyElement
    rts
 .endproc
 
+; Expects (non-NULL) pointer to the first element of a list in .A/.X.  (Not unit tested!)
+; Expects the zero-based index in .Y.
+; Returns the pointer to the indexed element in .A/.X.
+; If index is out of range, carry will be set upon return; clear otherwise.
+.proc getElementByIndex
+@loop:
+   cpy #0
+   beq @success
+   phy
+   jsr get_next_element
+   ply
+   cmp #0 ; check if NULL
+   beq @unsuccessful ; carry will be set if we take this branch
+   dey
+   bra @loop
+@success:
+   clc
+@unsuccessful:
+   rts
+.endproc
 
 
 ; Expects (non-NULL) pointer (B/H) to an element in .A/.X
