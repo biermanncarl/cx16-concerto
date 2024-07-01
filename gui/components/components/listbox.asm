@@ -190,8 +190,7 @@
     :   dey
         sta (components_common::data_pointer), y
         ldy mouse_variables::curr_component_ofs
-        jsr draw
-        rts
+        jmp draw
     .endproc
 
     .proc event_drag

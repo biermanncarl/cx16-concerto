@@ -10,6 +10,7 @@
 .include "components/drag_edit.asm"
 .include "components/combobox.asm"
 .include "components/listbox.asm"
+.include "components/text_edit.asm"
 .include "components/tab_selector.asm"
 .include "components/dummy.asm"
 .include "components/drag_and_drop_area.asm"
@@ -23,6 +24,7 @@
     drag_edit, \
     combobox, \
     listbox, \
+    text_edit, \
     tab_selector, \
     dummy, \
     drag_and_drop_area, \

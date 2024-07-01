@@ -4,7 +4,8 @@
 
 ::GUI_COMPONENTS_COMPONENTS_TEXT_FIELD_ASM = 1
 
-
+; This component fills a rectangular area on the text screen with
+; data from the VRAM. It is non-interactive.
 .include "common.asm"
 
 .scope text_field

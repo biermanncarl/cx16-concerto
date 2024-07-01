@@ -674,7 +674,7 @@ draw_checkbox:
 ; (str_pointer), y   is where printing continues, incrementing Y along the way
 ; color according to the variable color
 ; X: overall width plus 1
-; Y: start of string relative to (str_pointer)
+; Y: start of string relative to (str_pointer). In the end contains offset of zero-byte.
 print_with_padding:
 @loop1: ; printing loop. assumes that the string length is less or equal than the combobox/button width minus 2 (really 2 or just 1?)
    lda (str_pointer), y

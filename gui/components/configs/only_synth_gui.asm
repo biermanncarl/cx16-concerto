@@ -10,6 +10,7 @@
 .include "components/drag_edit.asm"
 .include "components/combobox.asm"
 .include "components/listbox.asm"
+.include "components/text_edit.asm"
 .include "components/tab_selector.asm"
 .include "components/dummy.asm"
 
@@ -21,6 +22,7 @@
     drag_edit, \
     combobox, \
     listbox, \
+    text_edit, \
     tab_selector, \
     dummy
 .linecont - ; switch off line continuation with "\" (default)

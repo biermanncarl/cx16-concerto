@@ -20,7 +20,8 @@
    box_y = (60 - box_height) / 2
    comps:
    .scope comps
-      COMPONENT_DEFINITION listbox, file_select, box_x+2, box_y + 2, box_width-4, box_height-6, A 0, 0, 255, 0
+      COMPONENT_DEFINITION listbox, file_select, box_x+2, box_y + 2, box_width-4, box_height-7, A 0, 0, 255, 0
+      COMPONENT_DEFINITION text_edit, file_name_edit, box_x+2, box_y + box_height-4, box_width-4, A 0, 0, 0
       COMPONENT_DEFINITION button, ok, 41, box_y + box_height - 3, 6, A lb_ok
       COMPONENT_DEFINITION button, cancel, 33, box_y + box_height - 3, 6, A lb_cancel
       COMPONENT_LIST_END
@@ -34,11 +35,22 @@
    lb_cancel: STR_FORMAT "cancel"
    lb_file_name: STR_FORMAT "file name"
 
+   ; The file name the user wants
+   save_file_name = comps::file_name_edit + components::text_edit::data_members::string_pointer
+
    .proc initialize
       lda file_browsing::files
       sta comps::file_select + components::listbox::data_members::string_pointer
       lda file_browsing::files+1
       sta comps::file_select + components::listbox::data_members::string_pointer+1
+      ; initialize the text edit
+      jsr v32b::new
+      sta save_file_name
+      stx save_file_name+1
+      jsr v32b::accessFirstEntry
+      lda #0
+      tay
+      sta (v32b::entrypointer), y
       rts
    .endproc
 
@@ -76,10 +88,12 @@
       lda #255 ; none selected
       sta comps::file_select + components::listbox::data_members::selected_entry
       stz comps::file_select + components::listbox::data_members::scroll_offset
+      stz comps::file_name_edit + components::text_edit::data_members::cursor_position
       rts
    .endproc
 
    .proc write
+      ; Why does this not called when clicking at the list box ??
       jsr clearArea
       ; close popup
       ; TODO
