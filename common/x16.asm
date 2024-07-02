@@ -1,4 +1,4 @@
-; Copyright 2020, 2021 Matt Heffernan, Carl Georg Biermann
+; Copyright 2020-2024 Matt Heffernan, Carl Georg Biermann
 
 
 ; This file contains various definitions of Commander X16 addresses and values.
@@ -197,6 +197,13 @@ UDTIM                         := $FFEA
 SCREEN                        := $FFED
 PLOT                          := $FFF0
 IOBASE                        := $FFF3
+LISTEN                        := $FFB1
+SECOND                        := $FF93
+CIOUT                         := $FFA8
+UNLSN                         := $FFAE
+TALK                          := $FFB4
+ACPTR                         := $FFA5
+UNTLK                         := $FFAB
 
 ; BASIC Vectors
 BASIC_PANIC       := $C000

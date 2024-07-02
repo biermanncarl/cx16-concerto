@@ -54,7 +54,6 @@ start:
    lda pointers_bank, y
    jsr heap::release_chunk
 
-   ;.byte $db
    ldy #1
    lda pointers_high, y
    tax

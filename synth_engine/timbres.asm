@@ -220,300 +220,64 @@ timbre_data_count = timbre_data_size / N_TIMBRES ; 184 currently
 .endscope
 
 
-file_name: ; caution, this string is in screen code!
-; "@0:filename01.cop,s,<r/w>" --> 21 bytes
-   .byte 32
-   .res MAX_FILENAME_LENGTH, 0
-   ;.byte 0
-   ;.byte 0
-   ;.byte 0
-   ;.byte 0
-   ;.byte 0
-   ;.byte 0
-   ;.byte 0
-   ;.byte 0
 
-concerto_preset_char = 'p'
-concerto_bank_char = 'b'
+.scope detail
+   copying:
+      .byte 128 ; which timbre to copy. negative is none
+   pasting:
+      .byte 0   ; where to paste
 
-command_preamble: ; the command string is in petscii
-   .byte 64,"0:" ; these characters never change
-command_string:
-   ;.byte 64,"0:preset.cop,s,w"
-   .res MAX_FILENAME_LENGTH+8, 0
-copying:
-   .byte 128 ; which timbre to copy. negative is none
-pasting:
-   .byte 0   ; where to paste
+   ; advances the timbre_pointer by N_TIMBRES, i.e. from one parameter to the next
+   .proc advance_timbre_pointer
+      lda timbre_pointer
+      clc
+      adc #N_TIMBRES
+      sta timbre_pointer
+      bcc :+
+      inc timbre_pointer+1
+   :  rts
+   .endproc
 
-; converts the value in .A from screen code to petscii
-screen2petscii:
-   cmp #$20
-   bcs :+   ; set if we're above $20. then we don't need to do anything
-   adc #$40 ; we're below $20. need to add $40
-:  rts
+   ; Sets up the loop over single instrument data
+   .proc prepareSingleInstrumentTransfer
+      clc
+      adc #(<timbre_data_start)
+      sta timbre_pointer
+      lda #(>timbre_data_start)
+      adc #0
+      sta timbre_pointer+1
+      ldy #timbre_data_count
+      rts
+   .endproc
+.endscope
 
 
-
-; takes screen code string as file name and makes a read/write file command from it
-; .X: contains 'p' for single preset, contains 'b' for entire bank
-assemble_command_string:
-   ldy #0
-:  lda file_name, y
-   beq @end_loop
-   jsr screen2petscii
-   sta command_string, y
-   iny
-   bra :-
-@end_loop:
-   ; now append ".cop,s," and let the calling routine handle the last "w" or "r"
-   lda #'.'
-   sta command_string, y
-   iny
-   lda #'c'
-   sta command_string, y
-   iny
-   lda #'o'
-   sta command_string, y
-   iny
-   txa ; 'p' or 'b' for preset or bank
-   sta command_string, y
-   iny
-   lda #','
-   sta command_string, y
-   iny
-   lda #'s'
-   sta command_string, y
-   iny
-   lda #','
-   sta command_string, y
-   iny
-   rts
-
-
-; more info about the Commodore DOS
-; https://en.wikipedia.org/wiki/Commodore_DOS
-
-; https://www.pagetable.com/c64ref/kernal/
-
-; opens the file "PRESET.COP" and saves a timbre in it (overwrites existing preset)
-; WARNING: No proper error handling (yet)!
-; .X:           timbre number
-; file_name:    name of the file to store the timbre in (in screen code, without extension)
-save_timbre:
-   phx
-   ldx #'p'
-   jsr assemble_command_string ; assemble command
-   ; put "w" as last character of the command string
-   lda #'w'
-   sta command_string, y
-   tya
-   ; compute command length
-   clc
-   adc #4 ; including the preamble
-   ; set file name (command)
-   ldx #(<command_preamble)
-   ldy #(>command_preamble)
-   jsr SETNAM
-   ; setlfs - set logical file number
-   lda #1 ; logical file number
-   ldx #8 ; device number. 8 is disk drive
-   ldy #2 ; secondary command address, I really don't understand this.
-   jsr SETLFS
-   bcs @close_file
-   ; open - open the logical file
-   lda #1
-   jsr OPEN
-   bcs @close_file
-   ; chkout - open a logical file for output
-   ldx #1 ; logical file to be used
-   jsr CHKOUT
-   ; write magic sequence (aka identifier), last byte is version number
-   lda #'c'
-   jsr CHROUT
-   lda #'o'
-   jsr CHROUT
-   lda #'p'
-   jsr CHROUT
-   lda #FILE_VERSION  ; version
-   jsr CHROUT
-   ; write patch data
-   plx
-   txa
-   clc
-   adc #(<timbre_data_start)
-   sta timbre_pointer
-   lda #(>timbre_data_start)
-   adc #0
-   sta timbre_pointer+1
-   ldy #timbre_data_count
+; Emits instrument data for a single instrument via CHROUT to the currently active file/stream.
+; .A: instrument number
+.proc saveInstrument
+   jsr detail::prepareSingleInstrumentTransfer
 @loop:
    lda (timbre_pointer)
    jsr CHROUT
-   lda timbre_pointer
-   clc
-   adc #N_TIMBRES
-   sta timbre_pointer
-   lda timbre_pointer+1
-   adc #0
-   sta timbre_pointer+1
+   jsr detail::advance_timbre_pointer
    dey
    bne @loop
-   phx ; this phx is just here to cancel the plx after @close_file
-   ; close file
-@close_file:
-   plx
-   lda #1
-   jsr CLOSE
-   jsr CLRCHN
    rts
+.endproc
 
 
-; opens the file "PRESET.COP" and loads a timbre from it (overwrites existing preset)
-; WARNING: No proper error handling (yet)!
-; .X:           timbre number
-; file_name:    name of the file to load the timbre from (in screen code, without extension)
-load_timbre:
-   phx
-   ldx #'p'
-   jsr assemble_command_string ; assemble command
-   ; put "r" as last character of the command string
-   lda #'r'
-   sta command_string, y
-   tya
-   ; compute command length
-   clc
-   adc #4 ; including the preamble
-   ; set file name (command)
-   ldx #(<command_preamble)
-   ldy #(>command_preamble)
-   jsr SETNAM
-   ; setlfs - set logical file number
-   lda #1 ; logical file number
-   ldx #8 ; device number. 8 is disk drive
-   ldy #2 ; secondary command address, I really don't understand this.
-   jsr SETLFS
-   bcs @close_file
-   ; open - open the logical file
-   lda #1
-   jsr OPEN
-   bcs @close_file
-   ; chkin - open a logical file for input
-   ldx #1 ; logical file to be used
-   jsr CHKIN
-   ; read and compare magic sequence (aka identifier), last byte is version number
-   jsr CHRIN
-   cmp #'c'
-   bne @close_file
-   jsr CHRIN
-   cmp #'o'
-   bne @close_file
-   jsr CHRIN
-   cmp #'p'
-   bne @close_file
-   jsr CHRIN
-   cmp #FILE_VERSION  ; version
-   bne @close_file
-   ; read patch data
-   plx
-   txa
-   clc
-   adc #(<timbre_data_start)
-   sta timbre_pointer
-   lda #(>timbre_data_start)
-   adc #0
-   sta timbre_pointer+1
-   ldy #timbre_data_count
+; Consumes instrument data for a single instrument via CHRIN from the currently active file/stream.
+; .A: instrument number
+.proc loadInstrument
+   jsr detail::prepareSingleInstrumentTransfer
 @loop:
    jsr CHRIN
    sta (timbre_pointer)
-   jsr advance_timbre_pointer
+   jsr detail::advance_timbre_pointer
    dey
    bne @loop
-   phx ; this phx is just here to cancel the plx after @close_file
-@close_file:
-   plx
-   ; close file
-   lda #1
-   jsr CLOSE
-   jsr CLRCHN
    rts
-
-
-; file_name:    name of the file to load the timbre from (in screen code, without extension)
-save_bank:
-   ldx #'b'
-   jsr assemble_command_string ; assemble command
-   ; put "w" as last character of the command string
-   lda #'w'
-   sta command_string, y
-   tya
-   ; compute command length
-   clc
-   adc #4 ; including the preamble
-   ; set file name (command)
-   ldx #(<command_preamble)
-   ldy #(>command_preamble)
-   jsr SETNAM
-   ; setlfs - set logical file number
-   lda #1 ; logical file number
-   ldx #8 ; device number. 8 is disk drive
-   ldy #2 ; secondary command address, I really don't understand this.
-   jsr SETLFS
-   bcs @close_file
-   ; open - open the logical file
-   lda #1
-   jsr OPEN
-   bcs @close_file
-   ; chkout - open a logical file for output
-   ldx #1 ; logical file to be used
-   jsr CHKOUT
-   ; write timbre data
-   jsr dump_to_chrout
-   ; close file
-@close_file:
-   lda #1
-   jsr CLOSE
-   jsr CLRCHN
-   rts
-
-
-
-; file_name:    name of the file to load the timbre from (in screen code, without extension)
-load_bank:
-   ldx #'b'
-   jsr assemble_command_string ; assemble command
-   ; put "r" as last character of the command string
-   lda #'r'
-   sta command_string, y
-   tya
-   ; compute command length
-   clc
-   adc #4 ; including the preamble
-   ; set file name (command)
-   ldx #(<command_preamble)
-   ldy #(>command_preamble)
-   jsr SETNAM
-   ; setlfs - set logical file number
-   lda #1 ; logical file number
-   ldx #8 ; device number. 8 is disk drive
-   ldy #2 ; secondary command address, I really don't understand this.
-   jsr SETLFS
-   bcs @close_file
-   ; open - open the logical file
-   lda #1
-   jsr OPEN
-   bcs @close_file
-   ; chkin - open a logical file for input
-   ldx #1 ; logical file to be used
-   jsr CHKIN
-   ; read timbre data
-   jsr restore_from_chrin
-@close_file:
-   ; close file
-   jsr CLOSE
-   jsr CLRCHN
-   rts
+.endproc
 
 
 
@@ -522,7 +286,7 @@ load_bank:
 ; X: timbre number, is preserved.
 ; does not preserve A, Y
 load_default_timbre:
-   stx pasting
+   stx detail::pasting
    ; do all "direct" values first
    lda #1
    sta Timbre::n_oscs, x
@@ -577,7 +341,7 @@ load_default_timbre:
    dey
    bne @loop_envs
    ; oscillators
-   ldx pasting
+   ldx detail::pasting
    ldy #MAX_OSCS_PER_VOICE
 @loop_oscs:
    stz Timbre::osc::pitch, x
@@ -611,7 +375,7 @@ load_default_timbre:
    dey
    bne @loop_oscs
    ; FM operators
-   ldx pasting
+   ldx detail::pasting
    ldy #N_OPERATORS
 @loop_operators:
    stz Timbre::operators::mul, x
@@ -637,7 +401,7 @@ load_default_timbre:
    tax
    dey
    bne @loop_operators
-   ldx pasting
+   ldx detail::pasting
    rts
 
 
@@ -659,32 +423,22 @@ initialize_timbre_pointer:
    sta timbre_pointer+1
    rts
 
-; advances the timbre_pointer by N_TIMBRES, i.e. from one parameter to the next
-advance_timbre_pointer:
-   clc
-   lda timbre_pointer
-   adc #N_TIMBRES
-   sta timbre_pointer
-   bcc :+
-   inc timbre_pointer+1
-:  rts
-
 ; copy_paste. copies the timbre stored in variable "copying" to the one given in Y
 ; if the value of "copying" is negative, nothing is done.
 ; copy timbre "copying" to timbre "Y"
 copy_paste:
-   lda copying
+   lda detail::copying
    bpl :+
    rts    ; exit if no preset is being copied
-:  stx pasting
+:  stx detail::pasting
    ldx #timbre_data_count
    jsr initialize_timbre_pointer
 @loop:
-   ldy copying
+   ldy detail::copying
    lda (timbre_pointer), y
-   ldy pasting
+   ldy detail::pasting
    sta (timbre_pointer), y
-   jsr advance_timbre_pointer
+   jsr detail::advance_timbre_pointer
    dex
    bne @loop
    rts
@@ -713,7 +467,7 @@ dump_to_chrout:
    beq @goto_next_parameter
    bra @loop_timbres
 @goto_next_parameter:
-   jsr advance_timbre_pointer
+   jsr detail::advance_timbre_pointer
    dex
    bne @loop_parameters
    rts
@@ -749,7 +503,7 @@ restore_from_chrin:
    beq @goto_next_parameter
    bra @loop_timbres
 @goto_next_parameter:
-   jsr advance_timbre_pointer
+   jsr detail::advance_timbre_pointer
    dex
    bne @loop_parameters
    lda #1 ; success

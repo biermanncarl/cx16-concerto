@@ -179,7 +179,6 @@
 
         ; interpret key stroke
         lda kbd_variables::current_key
-        ; .byte $db
 
         cmp #29 ; cursor right
         beq @cursor_right
@@ -292,7 +291,6 @@
             bne @insert_loop
         ; insert new character
         lda kbd_variables::current_key
-        jsr guiutils::petsciiToScreencode
         sta (v32b::entrypointer), y
         ; update cursor position
         tya

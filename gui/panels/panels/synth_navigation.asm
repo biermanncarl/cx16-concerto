@@ -12,10 +12,6 @@
    py = 0
    wd = 70
    hg = 60
-   ; text input position
-   ti_x = 66
-   ti_y = 5
-   ti_l = 8 ; maximum length
    comps:
    .scope comps
       COMPONENT_DEFINITION arrowed_edit, timbre_select, 41, 1, 0, N_TIMBRES-1, 0
@@ -23,7 +19,6 @@
       COMPONENT_DEFINITION button, save_preset, 52, 0, 13, A save_preset_lb
       COMPONENT_DEFINITION button, copy_preset, 34, 2, 6, A copy_preset_lb
       COMPONENT_DEFINITION button, paste_preset, 41, 2, 7, A paste_preset_lb
-      COMPONENT_DEFINITION button, set_filename, 52, 4, 13, A file_lb
       COMPONENT_DEFINITION drag_edit, keyboard_volume, 43, 5, %00000000, 0, 63, 63, 0
       COMPONENT_DEFINITION button, load_bank, 66, 2, 13, A load_bank_lb
       COMPONENT_DEFINITION button, save_bank, 52, 2, 13, A save_bank_lb
@@ -32,8 +27,6 @@
    capts:
       .byte CCOLOR_CAPTION, 34, 1
       .word timbre_lb
-      .byte CCOLOR_CAPTION, ti_x, ti_y
-      .word concerto_synth::timbres::file_name
       .byte CCOLOR_CAPTION, 34, 5
       .word velocity_lb
       .byte 0
@@ -45,7 +38,6 @@
    save_bank_lb: STR_FORMAT "  save bank"
    copy_preset_lb: STR_FORMAT " copy"
    paste_preset_lb: STR_FORMAT " paste"
-   file_lb: STR_FORMAT "  file name"
    velocity_lb: STR_FORMAT "velocity"
 
    ; No special action required (yet)
@@ -63,7 +55,6 @@
       .word @save_preset
       .word @copy_preset
       .word @paste_preset
-      .word @change_file_name
       .word @set_play_volume
       .word @load_bank
       .word @save_bank
@@ -74,20 +65,39 @@
       jsr gui_routines__refresh_gui
       rts
    @load_preset:
-      sei
-      jsr concerto_synth::voices::panic
-      ldx gui_variables::current_synth_timbre
-      jsr concerto_synth::timbres::load_timbre
-      jsr gui_routines__refresh_gui
-      cli
+      ; open the file browser popup on the GUI stack
+      lda #file_browsing::file_type::instrument
+      sta file_browsing::current_file_type
+      ; TODO: factor out the GUI stack operation
+      ldx panels__panels_stack_pointer
+      lda #panels__ids__file_load_popup
+      sta panels__panels_stack, x
+      inc panels__panels_stack_pointer
+      jsr gui_routines__draw_gui
       rts
+
+      ; sei
+      ; jsr concerto_synth::voices::panic
+      ; ldx gui_variables::current_synth_timbre
+      ; jsr concerto_synth::timbres::load_timbre
+      ; jsr gui_routines__refresh_gui
+      ; cli
+      ; rts
    @save_preset:
-      ldx gui_variables::current_synth_timbre
-      jsr concerto_synth::timbres::save_timbre
+      ; open the file browser popup on the GUI stack
+      lda #file_browsing::file_type::instrument
+      sta file_browsing::current_file_type
+      ; TODO: factor out the GUI stack operation
+      ldx panels__panels_stack_pointer
+      lda #panels__ids__file_save_popup
+      sta panels__panels_stack, x
+      inc panels__panels_stack_pointer
+      jsr gui_routines__draw_gui
       rts
+
    @copy_preset:
       lda gui_variables::current_synth_timbre
-      sta concerto_synth::timbres::copying
+      sta concerto_synth::timbres::detail::copying
       rts
    @paste_preset:
       sei
@@ -97,28 +107,19 @@
       jsr gui_routines__refresh_gui
       cli
       rts
-   @change_file_name:
-      ; open the file browser popup on the GUI stack
-      ldx panels__panels_stack_pointer
-      lda #panels__ids__file_save_popup
-      sta panels__panels_stack, x
-      inc panels__panels_stack_pointer
-      jsr gui_routines__draw_gui
-      ; TODO interface with concerto_synth::timbres::file_name if required
-      rts
    @set_play_volume:
       LDA_COMPONENT_MEMBER_ADDRESS drag_edit, keyboard_volume, coarse_value
       sta play_volume
       rts
    @load_bank:
-      sei
-      jsr concerto_synth::voices::panic
-      jsr concerto_synth::timbres::load_bank
-      jsr gui_routines__refresh_gui
-      cli
+      ; sei
+      ; jsr concerto_synth::voices::panic
+      ; jsr concerto_synth::timbres::load_bank
+      ; jsr gui_routines__refresh_gui
+      ; cli
       rts
    @save_bank:
-      jsr concerto_synth::timbres::save_bank
+      ; jsr concerto_synth::timbres::save_bank
       rts
    .endproc
 

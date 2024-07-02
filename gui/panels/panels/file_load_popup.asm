@@ -64,7 +64,21 @@
       .word @button_ok
       .word @button_cancel
    @button_ok:
-      ; fall through to button_cancel, which closes the popup
+      ; get reference to file name
+      lda file_browsing::files
+      ldx file_browsing::files+1
+      LDY_COMPONENT_MEMBER_ADDRESS listbox, file_select, selected_entry
+      cpy #255
+      beq :+ ; don't open invalid file
+      jsr dll::getElementByIndex
+      ; open file
+      ldy #0 ; open for writing
+      jsr file_browsing::openFile
+      bcs :+
+      lda gui_variables::current_synth_timbre
+      jsr concerto_synth::timbres::loadInstrument
+      jsr file_browsing::closeFile
+   :  ; fall through to button_cancel, which closes the popup
    @button_cancel:
       ; close popup
       jsr file_popups_common::clearArea

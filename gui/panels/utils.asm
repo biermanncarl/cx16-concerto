@@ -62,6 +62,10 @@
     lda comps::name + components::type::data_members::member
 .endmacro
 
+.macro LDY_COMPONENT_MEMBER_ADDRESS type, name, member
+    ldy comps::name + components::type::data_members::member
+.endmacro
+
 .macro SBC_COMPONENT_MEMBER_ADDRESS type, name, member
     sbc comps::name + components::type::data_members::member
 .endmacro

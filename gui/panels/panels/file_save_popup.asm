@@ -93,7 +93,15 @@
       inc gui_variables::request_components_redraw
       rts
    @button_ok:
-      ; fall through to button_cancel, which closes the popup
+      lda save_file_name
+      ldx save_file_name+1
+      ldy #1 ; open for writing
+      jsr file_browsing::openFile
+      bcs :+
+      lda gui_variables::current_synth_timbre
+      jsr concerto_synth::timbres::saveInstrument
+      jsr file_browsing::closeFile
+   :  ; fall through to button_cancel, which closes the popup
    @button_cancel:
       ; close popup
       jsr file_popups_common::clearArea
