@@ -76,7 +76,11 @@
       jsr file_browsing::openFile
       bcs :+
       lda gui_variables::current_synth_timbre
+      php
+      sei
+      jsr concerto_synth::voices::panic
       jsr concerto_synth::timbres::loadInstrument
+      plp
       jsr file_browsing::closeFile
    :  ; fall through to button_cancel, which closes the popup
    @button_cancel:

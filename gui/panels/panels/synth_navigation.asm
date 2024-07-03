@@ -76,13 +76,6 @@
       jsr gui_routines__draw_gui
       rts
 
-      ; sei
-      ; jsr concerto_synth::voices::panic
-      ; ldx gui_variables::current_synth_timbre
-      ; jsr concerto_synth::timbres::load_timbre
-      ; jsr gui_routines__refresh_gui
-      ; cli
-      ; rts
    @save_preset:
       ; open the file browser popup on the GUI stack
       lda #file_browsing::file_type::instrument
