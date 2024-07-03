@@ -15,6 +15,7 @@
 .include "panels/combobox_popup.asm"
 .include "panels/file_save_popup.asm"
 .include "panels/file_load_popup.asm"
+.include "panels/ok_cancel_popup.asm"
 .include "panels/synth_info.asm"
 .include "panels/synth_navigation.asm"
 
@@ -28,6 +29,7 @@
     combobox_popup, \
     file_save_popup, \
     file_load_popup, \
+    ok_cancel_popup, \
     lfo, \
     synth_info, \
     fm_general, \

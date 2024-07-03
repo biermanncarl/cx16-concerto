@@ -24,7 +24,7 @@
       COMPONENT_DEFINITION listbox, file_select, box_x+2, box_y + 2, box_width-4, box_height-7, A 0, 0, 255, 0
       COMPONENT_DEFINITION text_edit, file_name_edit, box_x+2, box_y + box_height-4, box_width-4, A 0, 0, 0
       COMPONENT_DEFINITION button, ok, 41, box_y + box_height - 3, 6, A lb_save
-      COMPONENT_DEFINITION button, cancel, 33, box_y + box_height - 3, 6, A file_popups_common::lb_cancel
+      COMPONENT_DEFINITION button, cancel, 33, box_y + box_height - 3, 6, A panel_common::lb_cancel
       COMPONENT_LIST_END
    .endscope
    capts:
@@ -72,11 +72,11 @@
       tax
       jmp (@jmp_tbl, x)
    @jmp_tbl:
-      .word @file_select
+      .word file_select
       .word panel_common::dummy_subroutine ; file_name_edit
-      .word @button_ok
-      .word @button_cancel
-   @file_select:
+      .word button_ok
+      .word button_cancel
+   file_select:
       ; copy selected file string into text edit
       ldy comps::file_select + components::listbox::data_members::selected_entry
       cpy #255 ; skip if no valid file name was selected
@@ -92,23 +92,31 @@
       jsr dll::copyElement
       inc gui_variables::request_components_redraw
       rts
-   @button_ok:
+   button_ok:
       lda save_file_name
       ldx save_file_name+1
       ldy #1 ; open for writing
       jsr file_browsing::openFile
-      bcs :+
+      bcs file_exists
       lda gui_variables::current_synth_timbre
       jsr concerto_synth::timbres::saveInstrument
       jsr file_browsing::closeFile
-   :  ; fall through to button_cancel, which closes the popup
-   @button_cancel:
+      ; fall through to button_cancel, which closes the popup
+   button_cancel:
       ; close popup
       jsr file_popups_common::clearArea
       dec panels_stack_pointer
       jsr gui_routines__draw_gui
       rts
-   button_ok = @button_ok
+   file_exists:
+      ; TODO: factor out the GUI stack operation
+      ; Here, we replace the current popup with the ok_cancel one
+      jsr file_popups_common::clearArea
+      ldx panels__panels_stack_pointer
+      lda #panels__ids__ok_cancel_popup
+      sta panels__panels_stack-1, x
+      jsr gui_routines__draw_gui
+      rts
    .endproc
 
    refresh = panel_common::dummy_subroutine
@@ -117,6 +125,8 @@
       lda kbd_variables::current_key
       cmp #13 ; enter
       beq write::button_ok
+      cmp #$1B ; escape
+      beq write::button_cancel
       LDY_COMPONENT_MEMBER text_edit, file_name_edit, pos_x ; start offset of text edit
       lda #<comps
       sta components::components_common::data_pointer

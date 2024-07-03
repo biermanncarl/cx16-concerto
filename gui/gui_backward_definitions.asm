@@ -22,6 +22,7 @@ panels__panels_stack_pointer = panels::panels_stack_pointer
 panels__ids__combobox_popup = panels::ids::combobox_popup
 panels__ids__file_save_popup = panels::ids::file_save_popup
 panels__ids__file_load_popup = panels::ids::file_load_popup
+panels__ids__ok_cancel_popup = panels::ids::ok_cancel_popup
 panels__px = panels::px
 panels__py = panels::py
 gui_routines__refresh_gui = gui_routines::refresh_gui

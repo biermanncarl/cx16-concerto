@@ -23,7 +23,7 @@
    .scope comps
       COMPONENT_DEFINITION listbox, file_select, box_x+2, box_y + 2, box_width-4, box_height-5, A 0, 0, 255, 0
       COMPONENT_DEFINITION button, ok, 41, box_y + box_height - 3, 6, A lb_load
-      COMPONENT_DEFINITION button, cancel, 33, box_y + box_height - 3, 6, A file_popups_common::lb_cancel
+      COMPONENT_DEFINITION button, cancel, 33, box_y + box_height - 3, 6, A panel_common::lb_cancel
       COMPONENT_LIST_END
    .endscope
    capts:
@@ -61,9 +61,9 @@
       jmp (@jmp_tbl, x)
    @jmp_tbl:
       .word panel_common::dummy_subroutine ; file_select
-      .word @button_ok
-      .word @button_cancel
-   @button_ok:
+      .word button_ok
+      .word button_cancel
+   button_ok:
       ; get reference to file name
       lda file_browsing::files
       ldx file_browsing::files+1
@@ -83,21 +83,23 @@
       plp
       jsr file_browsing::closeFile
    :  ; fall through to button_cancel, which closes the popup
-   @button_cancel:
+   button_cancel:
       ; close popup
       jsr file_popups_common::clearArea
       dec panels_stack_pointer
       jsr gui_routines__draw_gui
       rts
-   button_ok = @button_ok
    .endproc
 
    refresh = panel_common::dummy_subroutine
 
    .proc keypress
       lda kbd_variables::current_key
+      stz kbd_variables::current_key
       cmp #13 ; enter
       beq write::button_ok
+      cmp #$1B ; escape
+      beq write::button_cancel
       rts
    .endproc
 .endscope

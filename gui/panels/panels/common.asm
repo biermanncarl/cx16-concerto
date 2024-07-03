@@ -21,6 +21,7 @@
    lb_attack: STR_FORMAT "att"
    lb_release: STR_FORMAT "rel"
    lb_help: STR_FORMAT "help"
+   lb_cancel: STR_FORMAT "cancel"
    channel_lb: .byte 12, 47, 18, 0 ; L/R
 
    modsources_none_option_lb:

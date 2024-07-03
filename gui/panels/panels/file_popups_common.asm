@@ -14,8 +14,6 @@
     box_x = (80 - box_width) / 2
     box_y = (60 - box_height) / 2
 
-    lb_cancel: STR_FORMAT "cancel"
-
     .proc clearArea
         lda #box_x-1
         sta guiutils::draw_x
