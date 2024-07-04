@@ -75,10 +75,10 @@
       ldy #0 ; open for writing
       jsr file_browsing::openFile
       bcs :+
-      lda gui_variables::current_synth_timbre
       php
       sei
       jsr concerto_synth::voices::panic
+      lda gui_variables::current_synth_timbre
       jsr concerto_synth::timbres::loadInstrument
       plp
       jsr file_browsing::closeFile
