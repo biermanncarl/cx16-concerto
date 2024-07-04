@@ -293,7 +293,11 @@ delete_me:
     ; create new file name buffer
     lda files
     ldx files+1
+    lda RAM_BANK
+    pha
     jsr v32b::append_new_entry
+    pla
+    sta RAM_BANK
     jsr v32b::accessNextEntry
     bra @read_files_loop
 

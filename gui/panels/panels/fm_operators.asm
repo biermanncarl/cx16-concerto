@@ -183,7 +183,7 @@
       rts
    @key_scaling:
       plx
-      SBC_COMPONENT_MEMBER_ADDRESS drag_edit, key_scaling, coarse_value
+      LDA_COMPONENT_MEMBER_ADDRESS drag_edit, key_scaling, coarse_value
       sta concerto_synth::timbres::Timbre::operators::ks, x
       rts
    @vol_sens:

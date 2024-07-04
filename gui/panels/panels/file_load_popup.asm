@@ -82,7 +82,8 @@
       jsr concerto_synth::timbres::loadInstrument
       plp
       jsr file_browsing::closeFile
-   :  ; fall through to button_cancel, which closes the popup
+   :  jsr gui_routines__refresh_gui
+      ; fall through to button_cancel, which closes the popup
    button_cancel:
       ; close popup
       jsr file_popups_common::clearArea
