@@ -273,30 +273,18 @@
         cmp (components_common::data_pointer), y
         bcc :+
         rts
-    :   ; make room for new character
-        iny
-        iny
-        iny
-        lda (components_common::data_pointer), y ; string length (and index of null-byte)
-        phy
-        tay
-        iny
-        @insert_loop:
-            dey
-            lda (v32b::entrypointer), y
-            iny
-            sta (v32b::entrypointer), y
-            dey
-            cpy cursor_pos
-            bne @insert_loop
-        ; insert new character
+    :   phy
+        ldy cursor_pos
         lda kbd_variables::current_key
-        sta (v32b::entrypointer), y
+        jsr v32b::insertCharacter
         ; update cursor position
-        tya
-        inc
         ply
         iny
+        iny
+        iny
+        iny
+        lda cursor_pos
+        inc
         sta (components_common::data_pointer), y
         bra @done
     .endproc

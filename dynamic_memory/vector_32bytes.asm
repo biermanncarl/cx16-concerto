@@ -128,6 +128,38 @@ delete_entry = dll::delete_element
     rts
 .endproc
 
+; This function interprets the content of the v32b as a zero-terminated string and inserts a character
+; at a given position.
+; accessFirstEntry or similar have to be called first.
+; .A : the character to be inserted
+; .Y : the position inside the string where to insert.
+.proc insertCharacter
+    sty @target_position+1 ; self-modifying code
+    pha
+
+    ; find end of string
+    dey
+@find_end_loop:
+    iny
+    lda (entrypointer),y
+    bne @find_end_loop
+
+@insert_loop:
+    lda (entrypointer),y
+    iny
+    sta (entrypointer),y
+    dey
+@target_position:
+    cpy #0 ; the actual character position is put in place of the #0 by self-modifying code
+    beq @insert_loop_end
+    dey
+    bra @insert_loop
+@insert_loop_end:
+    pla
+    sta (entrypointer),y
+    rts
+.endproc
+
 .popseg
 .endscope
 
