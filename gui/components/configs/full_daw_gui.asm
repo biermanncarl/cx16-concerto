@@ -14,6 +14,7 @@
 .include "components/tab_selector.asm"
 .include "components/dummy.asm"
 .include "components/drag_and_drop_area.asm"
+.include "components/dynamic_label.asm"
 .include "components/text_field.asm"
 
 .linecont + ; switch on line continuation with "\"
@@ -28,6 +29,7 @@
     tab_selector, \
     dummy, \
     drag_and_drop_area, \
+    dynamic_label, \
     text_field
 .linecont - ; switch off line continuation with "\" (default)
 

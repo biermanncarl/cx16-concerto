@@ -109,7 +109,16 @@
       jsr gui_routines__draw_gui
       rts
    file_exists:
-      ; TODO: factor out the GUI stack operation
+      ; Set dynamic label to file name
+      lda save_file_name
+      ldx save_file_name+1
+      jsr v32b::accessFirstEntry
+      lda v32b::entrypointer
+      sta panels__ok_cancel_popup__string_address
+      lda v32b::entrypointer+1
+      sta panels__ok_cancel_popup__string_address+1
+      lda RAM_BANK
+      sta panels__ok_cancel_popup__string_bank
       ; Here, we replace the current popup with the ok_cancel one
       jsr file_popups_common::clearArea
       ldx panels__panels_stack_pointer

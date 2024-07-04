@@ -23,23 +23,26 @@
     .scope comps
         COMPONENT_DEFINITION button, ok, 41, box_y + box_height - 3, 6, A lb_ok
         COMPONENT_DEFINITION button, cancel, 33, box_y + box_height - 3, 6, A panel_common::lb_cancel
+        COMPONENT_DEFINITION dynamic_label, filename_msg, box_x+2, box_y+2, CCOLOR_CAPTION, box_width-4, 0, A 0
         COMPONENT_LIST_END
     .endscope
     capts:
-        ; If we have more use-cases for this panel, we may need to convert the caption into a flex-label
+        ; If we have more use-cases for this panel, we may need to convert the caption into a dynamic label
         .byte 16*COLOR_BACKGROUND+1, 40-8, box_y
         .word lb_overwrite
         .byte 0
-    ; data specific to the combobox-popup panel
+    ; data specific to the panel
     lb_ok: STR_FORMAT "  ok"
     lb_overwrite: STR_FORMAT "overwrite file?"
+    string_bank = comps::filename_msg + components::dynamic_label::data_members::ram_bank
+    string_address = comps::filename_msg + components::dynamic_label::data_members::label_address
 
-    ; This popup panel may be used for a number of different things
-    .scope ok_cancel_type
-        ID_GENERATOR 0, overwrite
-    .endscope
-    ok_cancel_type:
-        .byte 0
+    ; This popup panel might be used for a number of different things in the future
+    ; .scope ok_cancel_type
+        ; ID_GENERATOR 0, overwrite
+    ; .endscope
+    ; ok_cancel_type:
+        ; .byte 0
 
     .proc clearArea
         lda #box_x-1
@@ -81,7 +84,6 @@
         .word button_ok
         .word button_cancel
     button_ok:
-        lda ok_cancel_type
         ; TODO
 
         ; ; get reference to file name

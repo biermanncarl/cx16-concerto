@@ -12,6 +12,7 @@
 .include "components/listbox.asm"
 .include "components/text_edit.asm"
 .include "components/tab_selector.asm"
+.include "components/dynamic_label.asm"
 .include "components/dummy.asm"
 
 .linecont + ; switch on line continuation with "\"
@@ -24,6 +25,7 @@
     listbox, \
     text_edit, \
     tab_selector, \
+    dynamic_label, \
     dummy
 .linecont - ; switch off line continuation with "\" (default)
 
