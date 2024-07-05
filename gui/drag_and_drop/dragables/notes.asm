@@ -1495,6 +1495,7 @@ height = 2 * detail::event_edit_height
    SWAP_VECTORS selected_events_vector, temp_events
 
    inc gui_variables::request_components_redraw
+   stz dnd::drag_action_state ; #drag_action::none
    rts
 .endproc
 

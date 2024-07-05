@@ -146,11 +146,18 @@
     .endproc
 
     .proc doPlayerUpdate
+        ; skip certain actions that don't require player updates
+        lda dnd::drag_action_state
+        cmp #dnd::dragables::notes::drag_action::scroll
+        beq @end
+        cmp #dnd::dragables::notes::drag_action::zoom
+        beq @end
         jsr song_engine::event_selection::swapBackFrontStreams
         SET_SELECTED_VECTOR components::dnd::dragables::notes::selected_events_vector
         SET_UNSELECTED_VECTOR  components::dnd::dragables::notes::unselected_events_vector
         jsr song_engine::simple_player::updatePlayback
         jsr song_engine::event_selection::swapBackFrontStreams
+    @end:
         rts
     .endproc
 
