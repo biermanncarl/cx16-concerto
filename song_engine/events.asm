@@ -22,6 +22,7 @@
 
     ; aliases for specific event types
     note_pitch = event_data_1 ; for note-on and note-off events
+    note_velocity = event_data_2 ; for note-on
 .endscope
 
 .endif ; .ifndef ::SONG_DATA_EVENTS_ASM

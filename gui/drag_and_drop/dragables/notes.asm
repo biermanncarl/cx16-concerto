@@ -71,6 +71,10 @@ selected_events_vector:
       .res 1
    temp_variable_v:
       .res 1
+   temp_variable_u:
+      .res 1
+   temp_variable_t:
+      .res 1
 
    ; Editing area rectangle
    event_edit_width = 50
@@ -332,6 +336,8 @@ change_song_tempo = song_engine::timing::recalculate_rhythm_values ; TODO: actua
    column_index = detail::temp_variable_x
    ticks_since_last_full_thirtysecondth = detail::temp_variable_w ; only relevant at zoom level 0
    piano_roll_offset = detail::temp_variable_v
+   velocity = detail::temp_variable_u
+   velocity_status = detail::temp_variable_t
 
    ; column data format
    ; The high bit of the row's byte indicates whether the note is selected or not.
@@ -447,6 +453,7 @@ change_song_tempo = song_engine::timing::recalculate_rhythm_values ; TODO: actua
    ; =======================
    lda #detail::event_edit_pos_x
    sta column_index
+   stz velocity_status
 @columns_loop:
    ; 1. decide whether to draw a temporal grid line
    ; 2. calculate the time stamp up to which events are registered in this column
@@ -538,6 +545,19 @@ change_song_tempo = song_engine::timing::recalculate_rhythm_values ; TODO: actua
    ; neither note-on nor note-off
    bra @parse_next_event
 @handle_note_on:
+   ; register velocity, regardless of whether it's on-screen or off-screen
+   ; check if there's already a velocity registered in the column
+   lda velocity_status
+   beq @do_register_velocity ; if no velocity registered yet in this column, no further checks needed
+   bmi @register_velocity_end ; prior selected events have precedence
+   @do_register_velocity:
+      lda song_engine::events::note_velocity
+      sta velocity
+      lda song_engine::event_selection::last_event_source
+      inc ; make it guaranteed non-zero
+      sta velocity_status
+   @register_velocity_end:
+   ; check if note is on-screen
    jsr detail::calculateRowAndCheckBounds
    bcc @parse_next_event ; if outside our view (vertically), skip the event
    jsr detail::startNoteHitbox
@@ -669,7 +689,52 @@ change_song_tempo = song_engine::timing::recalculate_rhythm_values ; TODO: actua
    cpx #detail::event_edit_height
    beq :+
    jmp @rows_loop
-:
+:  ; End of Row Loop
+
+   ; Draw Velocity
+   ldx #(detail::event_edit_pos_y + detail::event_edit_height + 1)
+   lda column_index
+   jsr guiutils::alternative_gotoxy
+   ldy #(16*detail::event_edit_note_color_unselected+1)
+   lda velocity_status
+   beq @draw_space_velocity
+   bpl :+
+   ldy #(16*detail::event_edit_note_color_selected)
+:  
+   ; high or low nibble
+   lda velocity_status
+   and #3
+   cmp #1
+   beq @high_nibble
+@low_nibble:
+   stz velocity_status ; clear status
+   lda velocity
+   and #$0f
+   bra @draw_velocity
+@high_nibble:
+   inc velocity_status ; next column draw low nibble
+   lda velocity
+   lsr
+   lsr
+   lsr
+   lsr
+@draw_velocity:
+   cmp #10
+   bcs @letter
+   @digit:
+      ; carry is clear per jump condition
+      adc #$30
+      bra @finish_draw_velocity
+   @letter:
+      ; carry is set per jump condition
+      sbc #9
+      bra @finish_draw_velocity
+@draw_space_velocity:
+   lda #$20
+   ldy #$10
+@finish_draw_velocity:
+   sta VERA_data0
+   sty VERA_data0
 
    inc column_index
    lda column_index
@@ -678,6 +743,9 @@ change_song_tempo = song_engine::timing::recalculate_rhythm_values ; TODO: actua
    jmp @columns_loop
 @end_column_loop:
 
+
+   ; FINAL CLEAN UPS
+   ; ===============
    ; finish off unfinished notes by creating their hitboxes
    ldx #0
 @finish_hitboxes_loop:
@@ -1156,6 +1224,9 @@ height = 2 * detail::event_edit_height
    clc
    adc window_pitch
    sta song_engine::events::note_pitch
+   ; note velocity
+   lda concerto_gui::play_volume
+   sta song_engine::events::note_velocity
    ; add note-on
    lda #song_engine::events::event_type_note_on
    sta song_engine::events::event_type
