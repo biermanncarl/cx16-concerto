@@ -439,6 +439,7 @@ pitch:
 ; * In .A/.X/.Y, expects the pointer to the object to be selected,
 ; * In select_action, expects the action to be done on the original event (one of selectEvent::action options).
 ; If the object is a note-on, the corresponding note-off is automatically selected, too.
+; Returns in .A/.X/.Y the address of the newly selected event.
 .proc selectEvent
     .scope action
         ID_GENERATOR 0, delete_original, invalidate_original, keep_original
@@ -451,10 +452,18 @@ pitch:
     ldy #0 ; set .A/.X/.Y pointer to NULL if event doesn't exist
 :   jsr detail::storeNextSelectedEvent
     jsr insertInSelectedEvents
+    pha ; remember address of the newly selected event
+    phx
+    phy
     beq @handle_note_off ; if it wasn't a note-on, we can go straight to deleting this event
     jsr detail::loadNextUnselectedEvent
 @handle_original:
-    jmp handleOriginal
+    jsr handleOriginal
+    ; pull the address of the newly selected event from the stack
+    ply
+    plx
+    pla
+    rts
 
 @handle_note_off:
     ; As the event was a note-on, need to also select note-off.

@@ -238,6 +238,7 @@ selected_events_vector:
       time_shift_l = detail::temp_variable_a
       time_shift_h = detail::temp_variable_b
       delta_x = detail::temp_variable_z
+      jsr v5b::read_entry
       lda song_engine::events::event_time_stamp_h
       ldx song_engine::events::event_time_stamp_l
       sta song_engine::timing::time_stamp_parameter+1
@@ -288,10 +289,10 @@ selected_events_vector:
    ; * In select_action, expects the action to be done on the original event (one of selectEvent::action options).
    .proc selectWithHitboxId
       jsr detail::getEntryFromHitboxObjectId
+      jsr song_engine::event_selection::selectEvent
       sta detail::pointed_at_event
       stx detail::pointed_at_event+1
       sty detail::pointed_at_event+2
-      jsr song_engine::event_selection::selectEvent
       rts
    .endproc
 .endscope
@@ -881,7 +882,6 @@ height = 2 * detail::event_edit_height
    lda detail::pointed_at_event
    ldx detail::pointed_at_event+1
    ldy detail::pointed_at_event+2
-   jsr v5b::read_entry
    jsr detail::determineTimeShift
 @end_determine_time_delta:
 
@@ -1015,7 +1015,6 @@ height = 2 * detail::event_edit_height
    ldx detail::pointed_at_event+1
    ldy detail::pointed_at_event+2
    jsr song_engine::event_selection::findNoteOff
-   jsr v5b::read_entry
    jsr detail::determineTimeShift
 
    ; iterate over events
