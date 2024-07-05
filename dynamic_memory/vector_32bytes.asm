@@ -27,6 +27,8 @@
 
 .include "doubly_linked_list.asm"
 
+; If we limit this to 31 bytes instead of 32, we could have 8 entries inside one page, which would be nice.
+; Right now, we only have one entry per page anyway...
 .scope v32b
 .pushseg
 .code
