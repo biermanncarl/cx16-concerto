@@ -71,17 +71,17 @@
       beq :+ ; don't open invalid file
       jsr dll::getElementByIndex
       ; open file
-      ldy #0 ; open for writing
-      jsr file_browsing::openFile
-      bcs :+
+      ldy #0 ; open for reading
       php
       sei
+      jsr file_browsing::openFile
+      bcs :+
       jsr concerto_synth::voices::panic
       lda gui_variables::current_synth_timbre
       jsr concerto_synth::timbres::loadInstrument
-      plp
       jsr file_browsing::closeFile
    :  jsr gui_routines__refresh_gui
+      plp
       ; fall through to button_cancel, which closes the popup
    button_cancel:
       ; close popup

@@ -99,10 +99,13 @@
         lda panels__file_save_popup__save_file_name
         ldx panels__file_save_popup__save_file_name+1
         ldy #1 ; open for writing
+        php
+        sei
         jsr file_browsing::openFile
         lda gui_variables::current_synth_timbre
         jsr concerto_synth::timbres::saveInstrument
         jsr file_browsing::closeFile
+        plp
         ; empty string
         lda panels__file_save_popup__save_file_name
         ldx panels__file_save_popup__save_file_name+1
