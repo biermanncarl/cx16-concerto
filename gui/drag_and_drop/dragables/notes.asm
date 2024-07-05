@@ -1312,11 +1312,15 @@ height = 2 * detail::event_edit_height
          SWAP_VECTORS temp_events, selected_events_vector
          jmp commonLeftClick
       @already_selected:
+         jsr detail::getEntryFromHitboxObjectId
+         sta detail::pointed_at_event
+         stx detail::pointed_at_event+1
+         sty detail::pointed_at_event+2
          lda kbd_variables::shift_key_pressed
          beq :+
          SET_SELECTED_VECTOR selected_events_vector
-         jsr detail::getEntryFromHitboxObjectId
          stz song_engine::event_selection::select_action ; #event_selection::selectEvent::action::delete_original
+         lda detail::pointed_at_event
          jsr song_engine::event_selection::unselectEvent
       :  jmp commonLeftClick
 @right_button:
