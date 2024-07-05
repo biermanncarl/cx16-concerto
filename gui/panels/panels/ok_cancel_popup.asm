@@ -103,6 +103,13 @@
         lda gui_variables::current_synth_timbre
         jsr concerto_synth::timbres::saveInstrument
         jsr file_browsing::closeFile
+        ; empty string
+        lda panels__file_save_popup__save_file_name
+        ldx panels__file_save_popup__save_file_name+1
+        jsr v32b::accessFirstEntry
+        lda #0
+        tay
+        sta (v32b::entrypointer), y
 
         ; fall through to button_cancel, which closes the popup
     button_cancel:

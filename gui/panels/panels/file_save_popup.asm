@@ -61,7 +61,6 @@
       jsr file_browsing::getFiles
       lda #255 ; none selected
       STA_COMPONENT_MEMBER_ADDRESS listbox, file_select, selected_entry
-      STZ_COMPONENT_MEMBER_ADDRESS listbox, file_select, scroll_offset
       STZ_COMPONENT_MEMBER_ADDRESS text_edit, file_name_edit, cursor_position
       rts
    .endproc

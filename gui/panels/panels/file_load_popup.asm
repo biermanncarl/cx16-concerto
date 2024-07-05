@@ -50,7 +50,6 @@
       lda #255 ; none selected
       ; #optimize-for-size by putting stuff above in common function (load and save popup)
       STA_COMPONENT_MEMBER_ADDRESS listbox, file_select, selected_entry
-      STZ_COMPONENT_MEMBER_ADDRESS listbox, file_select, scroll_offset
       rts
    .endproc
 
