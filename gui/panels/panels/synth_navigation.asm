@@ -14,14 +14,14 @@
    hg = 60
    comps:
    .scope comps
-      COMPONENT_DEFINITION arrowed_edit, timbre_select, 41, 1, 0, N_TIMBRES-1, 0
+      COMPONENT_DEFINITION arrowed_edit, timbre_select, 45, 1, 0, N_TIMBRES-1, 0
       COMPONENT_DEFINITION button, load_preset, 66, 0, 13, A load_preset_lb
       COMPONENT_DEFINITION button, save_preset, 52, 0, 13, A save_preset_lb
-      COMPONENT_DEFINITION button, copy_preset, 34, 2, 6, A copy_preset_lb
-      COMPONENT_DEFINITION button, paste_preset, 41, 2, 7, A paste_preset_lb
+      COMPONENT_DEFINITION button, copy_preset, 37, 2, 6, A copy_preset_lb
+      COMPONENT_DEFINITION button, paste_preset, 44, 2, 7, A paste_preset_lb
       COMPONENT_DEFINITION drag_edit, keyboard_volume, 43, 5, %00000000, 0, 63, 63, 0
-      COMPONENT_DEFINITION button, load_bank, 66, 2, 13, A load_bank_lb
-      COMPONENT_DEFINITION button, save_bank, 52, 2, 13, A save_bank_lb
+      COMPONENT_DEFINITION button, load_song, 66, 2, 13, A load_song_lb
+      COMPONENT_DEFINITION button, save_song, 52, 2, 13, A save_song_lb
       COMPONENT_LIST_END
    .endscope
    capts:
@@ -31,11 +31,11 @@
       .word velocity_lb
       .byte 0
    ; data specific to the synth-navigation panel
-   timbre_lb: STR_FORMAT "timbre"
+   timbre_lb: STR_FORMAT "instrument"
    load_preset_lb: STR_FORMAT " load preset"
    save_preset_lb: STR_FORMAT " save preset"
-   load_bank_lb: STR_FORMAT "  load bank"
-   save_bank_lb: STR_FORMAT "  save bank"
+   load_song_lb: STR_FORMAT "  load song"
+   save_song_lb: STR_FORMAT "  save song"
    copy_preset_lb: STR_FORMAT " copy"
    paste_preset_lb: STR_FORMAT " paste"
    velocity_lb: STR_FORMAT "velocity"
@@ -56,8 +56,8 @@
       .word @copy_preset
       .word @paste_preset
       .word @set_play_volume
-      .word @load_bank
-      .word @save_bank
+      .word @load_song
+      .word @save_song
    @timbre_selector:
       ; read data from component string and write it to the Timbre setting
       LDA_COMPONENT_MEMBER_ADDRESS arrowed_edit, timbre_select, value
@@ -104,15 +104,11 @@
       LDA_COMPONENT_MEMBER_ADDRESS drag_edit, keyboard_volume, coarse_value
       sta play_volume
       rts
-   @load_bank:
-      ; sei
-      ; jsr concerto_synth::voices::panic
-      ; jsr concerto_synth::timbres::load_bank
-      ; jsr gui_routines__refresh_gui
-      ; cli
+   @load_song:
+      ; TODO
       rts
-   @save_bank:
-      ; jsr concerto_synth::timbres::save_bank
+   @save_song:
+      ; TODO
       rts
    .endproc
 

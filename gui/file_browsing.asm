@@ -12,7 +12,7 @@
 .scope file_browsing
 
 .scope file_type
-    ID_GENERATOR 0, instrument, instrument_bank, song
+    ID_GENERATOR 0, instrument, song
 .endscope
 
 files:
@@ -31,8 +31,8 @@ current_file_type:
         ; concerto-x
         .byte ".cox", FILE_VERSION ; the FILE_VERSION byte is used by the file_header
     last_letters:
-        ; replacement letters for "x" in .cox : preset (instrument), instrument bank, song
-        .byte "pbs"
+        ; replacement letters for "x" in .cox : preset (instrument), song
+        .byte "ps"
     file_header = extension+1
 
     .proc updateExtension

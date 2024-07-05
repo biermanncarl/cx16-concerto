@@ -445,15 +445,6 @@ copy_paste:
 
 ; dumps all timbre data to CHROUT. can be used to write to an already opened file
 dump_to_chrout:
-   ; write magic sequence (aka identifier), last byte is version number
-   lda #'c'
-   jsr CHROUT
-   lda #'o'
-   jsr CHROUT
-   lda #'b'
-   jsr CHROUT
-   lda #FILE_VERSION  ; version
-   jsr CHROUT
    ; write timbre data
    jsr initialize_timbre_pointer
    ldx #timbre_data_count
@@ -475,19 +466,6 @@ dump_to_chrout:
 ; restores all timbres from a data stream from CHRIN (which was previously dumped via dump_to_chrout)
 ; can be used to read from an already opened file
 restore_from_chrin:
-   ; read and compare magic sequence (aka identifier), last byte is version number
-   jsr CHRIN
-   cmp #'c'
-   bne @abort
-   jsr CHRIN
-   cmp #'o'
-   bne @abort
-   jsr CHRIN
-   cmp #'b'
-   bne @abort
-   jsr CHRIN
-   cmp #FILE_VERSION  ; version
-   bne @abort
    ; read timbre data
    jsr initialize_timbre_pointer
    ldx #timbre_data_count
