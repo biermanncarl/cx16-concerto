@@ -1162,6 +1162,13 @@ height = 2 * detail::event_edit_height
    lda selected_events_vector
    ldx selected_events_vector+1
    jsr v5b::append_new_entry
+   ; mark new note as the pointed-at event (so that resizing is relative to the correct note-off)
+   lda selected_events_vector
+   ldx selected_events_vector+1
+   jsr v5b::get_first_entry ; new note-on *should* be the first entry
+   sta detail::pointed_at_event
+   stx detail::pointed_at_event+1
+   sty detail::pointed_at_event+2
    ; move time stamp over by one chargrid position
    lda #$ff
    jsr moveTimeWindow
