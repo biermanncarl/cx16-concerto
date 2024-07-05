@@ -303,7 +303,7 @@ selected_events_vector:
 change_song_tempo = song_engine::timing::recalculate_rhythm_values ; TODO: actually recalculate ALL time stamps (lossy for sub-1/32 values)
 
 
-; Sets up a clip with some notes for testing.
+; Sets up a clip for testing.
 .proc setup_test_clip
    test_first_eighth_ticks = 20
    test_second_eighth_ticks = 15
@@ -500,10 +500,10 @@ change_song_tempo = song_engine::timing::recalculate_rhythm_values ; TODO: actua
    ; add it to the running time stamp (TODO: keep copy of it, but use a time stamp that was only advanced by half the column duration to achieve "nearest neighbor rounding")
 
    lda thirtysecondth_count
+   tax ; save the current thirtysecondth count for use in get_note_duration_ticks, then update the variable
    clc
    adc thirtysecondth_stride ; At zoom level 0, this has no effect -- the correct advancement of thirtysecondth_count is done by the temporal grid code, instead.
    sta thirtysecondth_count
-   tax
    lda temporal_zoom ; zoom level
    jsr song_engine::timing::get_note_duration_ticks
    clc
