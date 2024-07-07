@@ -146,9 +146,9 @@ concerto_player_tick:
    ; which accounts for this very tick we are in right here.
    jmp @increment_address
 @play_note:
-   ; get channel number
-   jsr read_channel
-   sta concerto_synth::note_channel
+   ; get voice number
+   jsr read_voice
+   sta concerto_synth::note_voice
    iny
    lda (zp_pointer), y
    sta concerto_synth::note_timbre
@@ -161,19 +161,19 @@ concerto_player_tick:
    lda #4
    jmp @increment_address
 @release_note:
-   jsr read_channel
-   sta concerto_synth::note_channel
+   jsr read_voice
+   sta concerto_synth::note_voice
    jsr concerto_synth::release_note
    lda #1
    jmp @increment_address
 @stop_note:
-   jsr read_channel
-   sta concerto_synth::note_channel
+   jsr read_voice
+   sta concerto_synth::note_voice
    jsr concerto_synth::stop_note
    lda #1
    jmp @increment_address
 @pitchbend_position:
-   jsr read_channel
+   jsr read_voice
    tax
    iny
    lda (zp_pointer), y ; fine position
@@ -185,7 +185,7 @@ concerto_player_tick:
    lda #3
    jmp @increment_address
 @pitchbend_rate:
-   jsr read_channel
+   jsr read_voice
    tax
    iny
    lda (zp_pointer), y
@@ -202,7 +202,7 @@ concerto_player_tick:
    lda #4
    jmp @increment_address
 @volume:
-   jsr read_channel
+   jsr read_voice
    tax
    iny
    lda (zp_pointer), y ; volume
@@ -210,7 +210,7 @@ concerto_player_tick:
    lda #2
    jmp @increment_address
 @volume_ramp:
-   jsr read_channel
+   jsr read_voice
    tax
    iny
    lda (zp_pointer), y
@@ -223,7 +223,7 @@ concerto_player_tick:
    lda #3
    jmp @increment_address
 @vibrato_amount:
-   jsr read_channel
+   jsr read_voice
    tax
    iny
    lda (zp_pointer), y
@@ -231,7 +231,7 @@ concerto_player_tick:
    lda #2
    jmp @increment_address
 @vibrato_ramp:
-   jsr read_channel
+   jsr read_voice
    tax
    iny
    lda (zp_pointer), y
@@ -282,8 +282,8 @@ concerto_player_tick:
    jmp concerto_player_tick
 
 
-; reads the number of the channel being addressed from the current song position
-read_channel:
+; reads the number of the voice being addressed from the current song position
+read_voice:
    lda (zp_pointer), y
    and #%00001111
    rts

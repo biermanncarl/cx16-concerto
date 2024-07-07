@@ -50,7 +50,7 @@ play_note_1:
    lda #60
    sta concerto_synth::note_pitch
    lda #0
-   sta concerto_synth::note_channel
+   sta concerto_synth::note_voice
    lda #0
    sta concerto_synth::note_timbre
    lda #63 ; note volume
@@ -58,7 +58,7 @@ play_note_1:
    rts
 
 set_pitchslide_upwards:
-   ldx #0 ; channel
+   ldx #0 ; voice
    ldy #0  ; coarse rate
    lda #20 ; fine rate
    stz concerto_synth::pitchslide_mode
@@ -66,7 +66,7 @@ set_pitchslide_upwards:
    rts
 
 set_pitchslide_downwards:
-   ldx #0 ; channel
+   ldx #0 ; voice
    ; because fine values are always positive, we have to add a negative "coarse" value to achieve a slow downwards slope
    ; E.g. we want the negative slope -0.1
    ; We achieve this by -0.1 = -1 + 0.9
@@ -77,7 +77,7 @@ set_pitchslide_downwards:
    rts
 
 set_slide_position:
-   ldx #0 ; channel
+   ldx #0 ; voice
    lda #80 ; coarse position
    ldy #0 ; fine position
    jsr concerto_synth::set_pitchslide_position

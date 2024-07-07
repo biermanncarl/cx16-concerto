@@ -188,7 +188,7 @@
       jmp play_note
    @keyboard_space:
       ldx #0
-      stx concerto_synth::note_channel
+      stx concerto_synth::note_voice
       jsr concerto_synth::release_note
       rts
    @keyboard_z:
@@ -222,7 +222,7 @@
       lda gui_variables::current_synth_timbre
       sta concerto_synth::note_timbre
       lda #0
-      sta concerto_synth::note_channel
+      sta concerto_synth::note_voice
       lda concerto_gui::play_volume
       jsr concerto_synth::play_note
 

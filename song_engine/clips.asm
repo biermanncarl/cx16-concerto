@@ -26,7 +26,7 @@
 ; * note-off
 ; * effects
 
-; As the voices are dynamically allocated, events don't target any channel.
+; As the notes are dynamically allocated, events don't target any particular voice number.
 ; Note-on and note-off events target a certain pitch as in MIDI, and all other
 ; events are global to the clip.
 
@@ -72,8 +72,8 @@
 ; That way, the first step can simply process events until a non-note-off event is encountered.
 ;
 ; The maximum possible polyphony is 16, the hard limit placed by the Concerto engine.
-; For each Concerto channel, we store which clip player is using it. That way, when a note-off event is received,
-; it needs to search for channels with the same player id, and among those for channels that have the correct pitch set.
+; For each Concerto voice, we store which clip player is using it. That way, when a note-off event is received,
+; it needs to search for voices with the same player id, and among those for voices that have the correct pitch set.
 ; --> this is tedious for finding notes! (imagine hard note-offs or effects that need to be applied to all notes in a clip!)
 ;
 ; New idea how to handle polyphony efficiently (if linear search is too slow)
@@ -261,7 +261,7 @@
 ; * we should leave room for possible new event types implemented in the future (especially effects)
 ; * proposal:
 ;   * Soft note-off: 0 (pitch 8 bits)
-;   * Hard note-off (affects all channels): 2 (no data)
+;   * Hard note-off (affects all voices): 2 (no data)
 ;   * Note-on: 4 (pitch 8 bits, velocity 6 bits)
 ;   * Effects: 8 upwards
 ;     * Set pitchbend-pos: 16

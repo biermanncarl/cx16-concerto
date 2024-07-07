@@ -75,7 +75,7 @@ invalidate_fm_timbres:
 
 ; Load an FM timbre onto the YM2151.
 ; Expects voice index in A
-; Expects note_timbre and note_channel to be set accordingly.
+; Expects note_timbre and note_voice to be set accordingly.
 load_fm_timbre:
    lfmt_operator_counter = mzpbd
    lfmt_op_en = mzpbc
@@ -226,15 +226,15 @@ load_fm_timbre:
 ; Sets the volume of an FM voice
 ; Only the operators that are marked as velocity-sensitive will be affected by
 ; a change of volume.
-; Expects note_timbre and note_channel to be set accordingly.
-; The volume is read from the respective channel.
+; Expects note_timbre and note_voice to be set accordingly.
+; The volume is read from the respective voice.
 ; This function is called when a new note is being triggered, or upon volume updates
 ; during a note.
 set_fm_voice_volume:
    sfmv_operator_counter = mzpbd
    sfmv_op_en = mzpbc
    ; (re)trigger FM voice (TBD later if it's done here)
-   ldx note_channel
+   ldx note_voice
 
    ; set operator volumes
    ; *********************
@@ -265,7 +265,7 @@ set_fm_voice_volume:
    beq @no_volume_sensitivity
    clc
    adc #64 ; when note volume is minimal, this is how much the level gets reduced
-   ldy note_channel
+   ldy note_voice
    sec
    sbc voices::Voice::vol::volume, y ; note volume, range 1 to 64
    bpl @no_volume_sensitivity

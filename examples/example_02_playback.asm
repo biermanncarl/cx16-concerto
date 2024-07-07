@@ -33,18 +33,18 @@ my_custom_playback_routine:
    lda playback_note
    sta concerto_synth::note_pitch
    lda #0
-   sta concerto_synth::note_channel
+   sta concerto_synth::note_voice
    lda #0
    sta concerto_synth::note_timbre
    lda #63 ; note volume
    jsr concerto_synth::play_note
-   ; and play another note at another channel
+   ; and play another note at another voice
    lda playback_note
    clc
    adc #3
    sta concerto_synth::note_pitch
    lda #1
-   sta concerto_synth::note_channel
+   sta concerto_synth::note_voice
    lda #63 ; note volume
    jsr concerto_synth::play_note
    ; increase pitch

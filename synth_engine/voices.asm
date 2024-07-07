@@ -19,7 +19,7 @@
 
 
 
-; These data fields correspond to the monophonic voices of all the 16 channels.
+; These data fields correspond to the 16 monophonic voices.
 ; Each voice can be active or inactive.
 ; Active voices can be overridden by new play events.
 .scope Voice
@@ -173,24 +173,24 @@ init_voices:
 
 
 
-; Plays a note. needs info for channel, timbre, pitch and volume.
+; Plays a note. needs info for voice number, timbre, pitch and volume.
 ; Can be called from within the ISR and the main program.
 ; In this subroutine, register X usually contains the index of the voice.
 ; What exactly does this routine do?
-; If no note is currently active on the channel, it plays a new note with retriggering envelopes,
+; If no note is currently active on the voice, it plays a new note with retriggering envelopes,
 ; and retriggering LFOs as specified in the timbre settings, provided there are enough oscillators
 ; available.
-; If a note is currently active on the channel, the action depends on whether it is the same timbre or not.
+; If a note is currently active on the voice, the action depends on whether it is the same timbre or not.
 ; If it's the same timbre, retrigger and portamento are applied as specified in the timbre settings.
 ; If it's a different timbre, the old note is replaced entirely (just as if there was no note played previously).
 play_note:
    php
    sei
-   ldx note_channel
+   ldx note_voice
    ldy note_timbre
    inc ; compensate for max volume being 63, but the synth engine can handle 64. Consequently, volume 0 won't be silent.
    sta Voice::vol::volume, x
-   ; check if there is an active note on the channel
+   ; check if there is an active note on the voice
    lda Voice::active, x
    beq @new_note
 @existing_note:
@@ -200,7 +200,7 @@ play_note:
    beq @same_timbre
 @different_timbre:
    jsr stop_note
-   ldx note_channel
+   ldx note_voice
    ldy note_timbre
    bra @new_note
 @same_timbre:
@@ -210,12 +210,12 @@ play_note:
    jsr start_note
    ; check if starting note was successful (unsuccessful if there weren't enough oscillators available)
    beq @skip_play
-   ldx note_channel
+   ldx note_voice
    ldy note_timbre
    jsr retrigger_note
 @common_stuff:
    ; the stuff that is always done.
-   ldx note_channel
+   ldx note_voice
    lda note_pitch
    sta Voice::pitch, x
    lda note_timbre
@@ -229,8 +229,8 @@ play_note:
    rts
 
 ; This subroutine is used in play_note in the case that a note with the same timbre as played is
-; still active on the channel. It does all the stuff specific to that case.
-; expects channel index in X, timbre index in Y (additionally to the note_ variables)
+; still active on the voice. It does all the stuff specific to that case.
+; expects voice index in X, timbre index in Y (additionally to the note_ variables)
 ; doesn't preserve X and Y
 continue_note:
    cn_slide_distance = mzpbe
@@ -280,7 +280,7 @@ cn_check_retrigger:
 
 
 ; retriggers note (envelopes and LFOs). This subroutine is called in play_note.
-; expects channel index in X and timbre index in Y
+; expects voice index in X and timbre index in Y
 ; doesn't preserve X and Y
 retrigger_note:
    ; initialize envelopes
@@ -353,7 +353,7 @@ retrigger_note:
    lda timbres::Timbre::fm_general::op_en, y
    beq @skip_fm  ; no voice is needed.
    jsr set_fm_voice_volume
-   ldx note_channel
+   ldx note_voice
    lda #1
    sta Voice::fm::trigger_loaded, x
 @skip_fm:
@@ -364,7 +364,7 @@ retrigger_note:
 ; checks if there are enough VERA oscillators and FM voices available
 ; and, in that case, reserves them for the new voice.
 ; Also resets portamento and vibrato.
-; expects channel index in X, timbre index in Y
+; expects voice index in X, timbre index in Y
 ; returns A=1 if successful, A=0 otherwise (zero flag set accordingly)
 ; doesn't preserve X and Y
 ; This function is used within play_note.
@@ -481,7 +481,7 @@ start_note:
 
 @claim_fm_voice:
    ; the number of the free FM voice is expected in A
-   ldx note_channel
+   ldx note_voice
    sta Voice::fm_voice_map, x
    dec FMmap::nfv
    ADVANCE_FVL_POINTER FMmap::ffv
@@ -495,14 +495,14 @@ start_note:
 
 
 
-; This subroutine deactivates the voice on a given channel and
+; This subroutine deactivates the voice on a given voice and
 ; releases the oscillators occupied by it, so that they can be used by other notes.
 ; (and also mutes the PSG and FM voices)
 ; This subroutine can be called from within the ISR, or from the main program.
-; Expects note channel in note_channel
+; Expects note voice in note_voice
 ; doesn't preserve X and Y
 stop_note:
-   ldx note_channel
+   ldx note_voice
    ; check if note is active. If not, return.
    lda Voice::active, x
    bne :+
@@ -539,7 +539,7 @@ stop_note:
    
    ; do FM stuff
    ; check if FM was used
-   ldx note_channel
+   ldx note_voice
    ldy Voice::timbre, x
    lda timbres::Timbre::fm_general::op_en, y
    bne :+
@@ -551,7 +551,7 @@ stop_note:
    ldy Voice::fm_voice_map, x
    jsr write_ym2151
    ; immediately mute voice by setting to minimal volume
-   ldx note_channel
+   ldx note_voice
    lda Voice::fm_voice_map, x
    clc
    adc #YM_TL
@@ -585,13 +585,13 @@ stop_note:
 
 ; Puts a note into its release phase.
 ; Basically just puts every envelope into the release phase.
-; expects channel of note in note_channel
+; expects voice of note in note_voice
 ; doesn't preserve X and Y
 release_note:
    rln_env_counter = mzpbe
    php
    sei
-   ldx note_channel
+   ldx note_voice
    ; load timbre number
    ldy Voice::timbre, x
    ; number of active envelopes
@@ -613,7 +613,7 @@ release_note:
    bne :+
    plp
    rts
-:  ldx note_channel
+:  ldx note_voice
    lda #YM_KON
    ldy Voice::fm_voice_map, x
    jsr write_ym2151
@@ -632,7 +632,7 @@ panic:
    lda Voice::active, x
    beq :+
    phx
-   stx note_channel
+   stx note_voice
    jsr stop_note
    plx
 :  dex
@@ -653,7 +653,7 @@ panic:
 ; if slide was inactive beforehand, it is activated and its rate set to 0
 ; if position is set to 255, it will automatically set the slide position to
 ; the note that was originally played.
-; Expects channel in .X, coarse position in .A, fine position in .Y
+; Expects voice in .X, coarse position in .A, fine position in .Y
 set_pitchslide_position:
    cmp #255
    bne :+
@@ -681,7 +681,7 @@ set_pitchslide_position:
 ; parameters according to labels in concerto_synth.asm
 ; if slide has been inactive, activate and set slide position to the original note
 ; The slide stops when it reaches the originally played note.
-; Expects channel in .X, coarse position in .Y, fine position in .A, mode in pitchslide_mode
+; Expects voice in .X, coarse position in .Y, fine position in .A, mode in pitchslide_mode
 set_pitchslide_rate:
    sta Voice::pitch_slide::rateL, x
    tya
@@ -713,7 +713,7 @@ set_pitchslide_rate:
 
 ; set vibrato amount
 ; If vibrato was inactive before, it gets activated by this subroutine.
-; Expects channel in .X, amount in .A
+; Expects voice in .X, amount in .A
 set_vibrato_amount:
    cmp #0
    bne @activate
@@ -731,7 +731,7 @@ set_vibrato_amount:
 
 ; set vibrato slope
 ; If vibrato was inactive before, it gets activated by this subroutine
-; note channel: .X
+; note voice: .X
 ; slope: .A
 ; max level: .Y
 set_vibrato_ramp:
@@ -748,7 +748,7 @@ set_vibrato_ramp:
 
 
 ; set note volume
-; channel: .X
+; voice: .X
 ; volume: .A
 ; affects: .A, .X, .Y
 set_volume:
@@ -758,18 +758,18 @@ set_volume:
    sta Voice::vol::volume, x
    stz Voice::vol::volume_low, x
    lda Voice::active, x
-   beq :+ ; skip FM part if channel is inactive
+   beq :+ ; skip FM part if voice is inactive
    ldy Voice::timbre, x
    lda timbres::Timbre::fm_general::op_en, y
    beq :+ ; skip FM part if FM part is inactive
-   stx note_channel
+   stx note_voice
    jsr voices::set_fm_voice_volume
 :  plp
    rts
 
 
 ; set volume ramp (lasts until the threshold is hit, or until the next retrigger event)
-; channel: .X
+; voice: .X
 ; slope: .A
 ; threshold: .Y
 set_volume_ramp:

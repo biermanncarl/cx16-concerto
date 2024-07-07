@@ -3,14 +3,14 @@ Concerto Player Specification
 
 The Concerto Player reads data located in RAM and interprets it as a stream of
 commands that it sends to the Concerto synth engine. Each command begins with
-one byte that contains the command number and the Concerto channel number. It
+one byte that contains the command number and the Concerto voice number. It
 is followed by 0 to 3 data bytes. That means, some commands are just 1 byte
 in length, and others up to 4 bytes.
 
 The first byte contains a number from 0 to 15 in the most significant four
 bits which designate the command, and another number from 0 to 15 in the least
-significant four bits, which designate the Concerto channel to which the
-command is addressed. If the command does not address a specific channel
+significant four bits, which designate the Concerto voice to which the
+command is addressed. If the command does not address a specific voice
 (like commands 0, 14 and 15), the lower "nibble" is ignored.
 
 | Command number | Description | Data Byte 1 | Data Byte 2 | Data Byte 3 |
@@ -29,7 +29,7 @@ command is addressed. If the command does not address a specific channel
 |             11 | unused | | | |
 |             12 | unused | | | |
 |             13 | User callback: Trigger a user-defined event during the song | user data (.A) | --- | --- |
-|             14 | Stop all channels | --- | --- | --- |
+|             14 | Stop all voices | --- | --- | --- |
 |             15 | End of song | --- | --- | --- |
 
 
@@ -38,7 +38,7 @@ command is addressed. If the command does not address a specific channel
 5: Set pitchbend rate
 ----------------------
 
-This command activates the pitch slide on a channel. If the pitch slide was
+This command activates the pitch slide on a voice. If the pitch slide was
 inactive previously, the slide position is set to the current note being
 played.
 
@@ -73,7 +73,7 @@ timbre, it gets overridden temporarily. The effect will last until one of the
 three conditions is fulfilled:
 * the vibrato is set to 0,
 * a hard note-off,
-* the channel is inactive for at least one tick,
+* the voice is inactive for at least one tick,
 * the timbre is changed.
 Value 0 deactivates vibrato, the values 1 to 27 correspond to a pitch
 modulation of 28 to 54. This shift of values and the limited vibrato range is
@@ -105,10 +105,10 @@ concerto_player::callback_vector to the starting address of your callback
 function.
 
 
-14: Stop all channels (aka Panic)
+14: Stop all voices (aka Panic)
 ---------------------------------
 
-This command deactivates all voices on all channels immediately.
+This command deactivates all voices immediately.
 
 
 15: End song

@@ -105,7 +105,7 @@ creg1 = mzpbf
 creg2 = mzpbg
 
 ; Interface parameters
-note_channel = creg0
+note_voice = creg0
 note_timbre  = creg1
 note_pitch   = creg2
 pitchslide_mode = creg1
@@ -146,10 +146,10 @@ deactivate_synth:
    rts
 
 ; concerto_synth::play_note
-; Plays a note on the given channel. Replaces any other note being played previously on that channel.
+; Plays a note on the given voice. Replaces any other note being played previously on that voice.
 ; The new note does not get played if there aren't enough voices available at the VERA or the YM2151.
 ; PARAMETERS: 
-;              channel number: note_channel
+;              voice number: note_voice
 ;              note timbre:    note_timbre
 ;              note pitch:     note_pitch
 ;              note volume:    .A
@@ -157,40 +157,40 @@ deactivate_synth:
 play_note = voices::play_note
 
 ; concerto_synth::release_note
-; Triggers the release phase of the note on a given channel. Even does it if the channel is inactive, but that shouldn't have an effect.
-; PARAMETERS:  channel number: note_channel
+; Triggers the release phase of the note on a given voice. Even does it if the voice is inactive, but that shouldn't have an effect.
+; PARAMETERS:  voice number: note_voice
 ; AFFECTS: .A, .X, .Y
 release_note = voices::release_note
 
 ; concerto_synth::stop_note
-; Immediately turns off the given channel.
-; PARAMETERS:  channel number: note_channel
+; Immediately turns off the given voice.
+; PARAMETERS:  voice number: note_voice
 ; AFFECTS: .A, .X, .Y
 stop_note = voices::stop_note
 
 ; concerto_synth::panic
-; Immediately turns off all channels, all VERA PSG voices and FM voices.
+; Immediately turns off all voices, all VERA PSG voices and FM voices.
 ; PARAMETERS:  none
 ; AFFECTS: .A, .X, .Y
 panic = voices::panic
 
 ; concerto_synth::set_pitchslide_position
-; Sets the current pitch for the pitch slide on a given channel.
+; Sets the current pitch for the pitch slide on a given voice.
 ; If pitch slide had been inactive previously, it gets activated and the slide rate is set to zero.
 ; If coarse position is set to 255, the pitch of the played note is assumed, instead (such as to easily reset the pitch to the note played).
 ; PARAMETERS:  
-;              channel number:  .X
+;              voice number:  .X
 ;              position coarse: .A
 ;              position fine:   .Y
 ; AFFECTS: .A
 set_pitchslide_position = voices::set_pitchslide_position
 
 ; concerto_synth::set_pitchslide_rate
-; Sets the rate for the pitch slide on a given channel.
+; Sets the rate for the pitch slide on a given voice.
 ; If the pitch slide had been inactive previously, it gets activated and is started at the note's current pitch.
 ; mode = 0 yields a free slide, mode = 1 yields a slide that stops at the original note.
 ; PARAMETERS:  
-;              channel number: .X
+;              voice number: .X
 ;              rate coarse:    .Y
 ;              rate fine:      .A
 ;              mode:           pitchslide_mode
@@ -198,10 +198,10 @@ set_pitchslide_position = voices::set_pitchslide_position
 set_pitchslide_rate = voices::set_pitchslide_rate
 
 ; concerto_synth::set_volume
-; Sets the volume of the note playing at a channel.
+; Sets the volume of the note playing at a voice.
 ; The effect lasts until the next note is played, which overwrites the volume set previously.
 ; PARAMETERS:
-;              channel number: .X
+;              voice number: .X
 ;              volume:         .A  (0 to 63)
 ; AFFECTS: .A, .X, .Y
 set_volume = voices::set_volume
@@ -211,7 +211,7 @@ set_volume = voices::set_volume
 ; threshold, or until the next note trigger.
 ; The slope may be positive or negative.
 ; PARAMETERS:
-;              channel number: .X
+;              voice number: .X
 ;              slope:          .A  (-127 to 128)
 ;              threshold:      .Y  (0 to 63)
 ; AFFECTS: .A
@@ -224,10 +224,10 @@ set_volume_ramp = voices::set_volume_ramp
 ; Calling this function temporarily overwrites the "vibrato" setting of the
 ; timbre.
 ; The original setting is restored by passing 0 as the modulation amount,
-; after channel inactivity or upon timbre change on the channel.
+; after voice inactivity or upon timbre change on the voice.
 ; The LFO must be activated in the timbre for vibrato!
 ; PARAMETERS:
-;              channel number: .X
+;              voice number: .X
 ;              vibrato amount: .A (values 0 to 27)
 ; AFFECTS: .A
 set_vibrato_amount = voices::set_vibrato_amount
@@ -236,7 +236,7 @@ set_vibrato_amount = voices::set_vibrato_amount
 ; The vibrato amount can be set to increase over time. This command sets the
 ; increase rate and the maximum vibrato level that shall be reached.
 ; PARAMETERS:
-;              channel number:   .X
+;              voice number:   .X
 ;              slope:            .A
 ;              threshold level:  .Y (values 1 to 27 on positive slope, 0 to 26 on negative slope)
 ; AFFECTS: .A

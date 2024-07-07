@@ -20,7 +20,7 @@ start:
    lda #60
    sta concerto_synth::note_pitch
    lda #0
-   sta concerto_synth::note_channel
+   sta concerto_synth::note_voice
    lda #0
    sta concerto_synth::note_timbre
    lda #63 ; note volume

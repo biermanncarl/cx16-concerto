@@ -244,7 +244,7 @@ env_finish:
    ; therefore, the voice data offset in X can be safely discarded, as it is no longer needed
    ; deactivate voice
    ldx voice_index
-   stx note_channel
+   stx note_voice
    jsr voices::stop_note
    ldx voice_index
    jmp next_voice
@@ -636,7 +636,7 @@ end_env: ; jump here when done with all envelopes
    ; bra @store_new_volume
 @store_new_volume:
    sta voices::Voice::vol::volume, x
-   stx note_channel
+   stx note_voice
    ldy voices::Voice::timbre, x
    lda timbres::Timbre::fm_general::op_en, y
    jsr voices::set_fm_voice_volume
@@ -703,11 +703,11 @@ end_env: ; jump here when done with all envelopes
    stz voi_fine
 
 @do_vibrato:
-   ; check if channel vibrato is active
+   ; check if voice vibrato is active
    lda voices::Voice::vibrato::current_level, x
    bmi @timbre_vibrato
-@channel_vibrato: ; sorry for the spaghetti code in this section (lasts until @timbre_vibrato)
-   ; channel vibrato, with possible vibrato ramp being active.
+@voice_vibrato: ; sorry for the spaghetti code in this section (lasts until @timbre_vibrato)
+   ; voice vibrato, with possible vibrato ramp being active.
    ; The idea here is that we want to get a linear increase / decrease of modulation depth over time.
    ; This is challenging, since Scale5 is an exponential format, and it is non-trivial to figure out how long
    ; to wait in between individual Scale5 modulation depth levels.
@@ -758,7 +758,7 @@ end_env: ; jump here when done with all envelopes
    lda threshold_level
    sta voices::Voice::vibrato::current_level, x
    stz voices::Voice::vibrato::slope, x
-   bra @load_channel_vibrato_amount
+   bra @load_voice_vibrato_amount
 @ticks_positive_again_slup:
    sta voices::Voice::vibrato::ticks, x
    iny ; do the final level increase
@@ -769,7 +769,7 @@ end_env: ; jump here when done with all envelopes
 @update_vibrato_slope_ticks:
    sta voices::Voice::vibrato::ticks, x
    ldy voices::Voice::vibrato::current_level, x
-@load_channel_vibrato_amount:
+@load_voice_vibrato_amount:
    ; load vibrato amount
    lda vibrato_scale5_lut, y
    bra @vibrato_multiplication ; scale5 vibrato amount is in A
@@ -991,7 +991,7 @@ next_osc:
    lda #0
 :
 
-   ; do channel selection
+   ; do L/R channel selection
 @do_channel_selection:
    clc
    adc timbres::Timbre::osc::lrmid, y

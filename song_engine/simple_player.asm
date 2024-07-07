@@ -75,14 +75,14 @@
     lda #0  ; concerto_gui::gui_variables::current_synth_timbre
     sta concerto_synth::note_timbre
     lda #0 ; TODO: polyphony
-    sta concerto_synth::note_channel
+    sta concerto_synth::note_voice
     lda events::note_velocity
     jsr concerto_synth::play_note
     bra @continue_next_event
 @note_off:
     ; TODO: pitch sensitivity for polyphony
     ldx #0
-    stx concerto_synth::note_channel
+    stx concerto_synth::note_voice
     jsr concerto_synth::release_note
 
 @continue_next_event:
