@@ -76,7 +76,7 @@
     sta concerto_synth::note_timbre
     lda #0 ; TODO: polyphony
     sta concerto_synth::note_channel
-    lda #MAX_VOLUME ;concerto_gui::play_volume   ; TODO: velocity sensitivity
+    lda events::note_velocity
     jsr concerto_synth::play_note
     bra @continue_next_event
 @note_off:

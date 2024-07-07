@@ -1264,9 +1264,47 @@ height = 2 * detail::event_edit_height
    rts
 .endproc
 
+.proc velocityEdit
+   lda mouse_variables::delta_y
+   bne :+
+   rts
+:
+   jsr song_engine::event_selection::resetStreamSelectedOnly
+@next_event:
+   jsr song_engine::event_selection::streamGetNextEvent
+   bcs @events_loop_end
+   pha
+   phx
+   phy
+   jsr v5b::read_entry
+   clc
+   lda mouse_variables::delta_y
+   bmi @negative_delta
+@positive_delta:
+   adc song_engine::events::note_velocity
+   cmp #MAX_VOLUME
+   bcc @write_back
+   lda #MAX_VOLUME
+   bra @write_back
+@negative_delta:
+   adc song_engine::events::note_velocity
+   bcs @write_back
+   lda #0
+@write_back:
+   sta song_engine::events::note_velocity
+   ply
+   plx
+   pla
+   jsr v5b::write_entry
+   bra @next_event
+@events_loop_end:
+   inc gui_variables::request_components_redraw
+   rts
+.endproc
+
 
 .scope drag_action
-   ID_GENERATOR 0, none, scroll, zoom, box_select, drag, resize
+   ID_GENERATOR 0, none, scroll, zoom, box_select, drag, resize, velocity_edit
 .endscope
 
 .proc commonLeftClick
@@ -1397,14 +1435,20 @@ height = 2 * detail::event_edit_height
 @right_button:
    lda mouse_variables::curr_data_1
    beq @scroll ; only scroll when the mouse did not point at any note (?)
+   ; pointing at a note. If it is selected, we do velocity editing.
+   lda mouse_variables::curr_data_3
+   bmi @velocity
    stz dnd::drag_action_state ; #drag_action::none
    rts
 @middle_button:
    lda #drag_action::zoom
-   sta dnd::drag_action_state
-   rts
+   bra @finish
+@velocity:
+   lda #drag_action::velocity_edit
+   bra @finish
 @scroll:
    lda #drag_action::scroll
+@finish:
    sta dnd::drag_action_state
    rts
 .endproc
@@ -1441,6 +1485,7 @@ height = 2 * detail::event_edit_height
    .word guiutils::updateBoxSelectFrame
    .word noteDrag
    .word noteResize
+   .word velocityEdit
 .endproc
 
 
