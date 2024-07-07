@@ -14,7 +14,7 @@
    hg = 60
    comps:
    .scope comps
-      COMPONENT_DEFINITION arrowed_edit, timbre_select, 45, 1, 0, N_TIMBRES-1, 0
+      COMPONENT_DEFINITION arrowed_edit, instrument_select, 45, 1, 0, N_INSTRUMENTS-1, 0
       COMPONENT_DEFINITION button, load_preset, 66, 0, 13, A load_preset_lb
       COMPONENT_DEFINITION button, save_preset, 52, 0, 13, A save_preset_lb
       COMPONENT_DEFINITION button, copy_preset, 37, 2, 6, A copy_preset_lb
@@ -26,12 +26,12 @@
    .endscope
    capts:
       .byte CCOLOR_CAPTION, 34, 1
-      .word timbre_lb
+      .word instrument_lb
       .byte CCOLOR_CAPTION, 34, 5
       .word velocity_lb
       .byte 0
    ; data specific to the synth-navigation panel
-   timbre_lb: STR_FORMAT "instrument"
+   instrument_lb: STR_FORMAT "instrument"
    load_preset_lb: STR_FORMAT " load preset"
    save_preset_lb: STR_FORMAT " save preset"
    load_song_lb: STR_FORMAT "  load song"
@@ -50,7 +50,7 @@
       tax
       jmp (@jmp_tbl, x)
    @jmp_tbl:
-      .word @timbre_selector
+      .word @instrument_selector
       .word @load_preset
       .word @save_preset
       .word @copy_preset
@@ -58,10 +58,10 @@
       .word @set_play_volume
       .word @load_song
       .word @save_song
-   @timbre_selector:
-      ; read data from component string and write it to the Timbre setting
-      LDA_COMPONENT_MEMBER_ADDRESS arrowed_edit, timbre_select, value
-      sta gui_variables::current_synth_timbre
+   @instrument_selector:
+      ; read data from component string and write it to the Instrument setting
+      LDA_COMPONENT_MEMBER_ADDRESS arrowed_edit, instrument_select, value
+      sta gui_variables::current_synth_instrument
       jsr gui_routines__refresh_gui
       rts
    @load_preset:
@@ -89,14 +89,14 @@
       rts
 
    @copy_preset:
-      lda gui_variables::current_synth_timbre
-      sta concerto_synth::timbres::detail::copying
+      lda gui_variables::current_synth_instrument
+      sta concerto_synth::instruments::detail::copying
       rts
    @paste_preset:
       sei
       jsr concerto_synth::voices::panic
-      ldx gui_variables::current_synth_timbre
-      jsr concerto_synth::timbres::copy_paste
+      ldx gui_variables::current_synth_instrument
+      jsr concerto_synth::instruments::copy_paste
       jsr gui_routines__refresh_gui
       cli
       rts

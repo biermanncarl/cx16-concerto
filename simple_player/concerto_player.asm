@@ -151,7 +151,7 @@ concerto_player_tick:
    sta concerto_synth::note_voice
    iny
    lda (zp_pointer), y
-   sta concerto_synth::note_timbre
+   sta concerto_synth::note_instrument
    iny
    lda (zp_pointer), y
    sta concerto_synth::note_pitch

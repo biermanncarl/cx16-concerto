@@ -128,15 +128,15 @@ next_voice:
    ; 3 - sustain phase
    ; 4 - release phase
 
-   ; load timbre index into register Y ... this will function as the indexing 
+   ; load instrument index into register Y ... this will function as the indexing 
    ; offset to access the correct envelope data.
-   ; it will be advanced by N_TIMBRES steps in order to access envelope fields
-   ; in the Timbre data.
-   ldy voices::Voice::timbre, x
+   ; it will be advanced by N_INSTRUMENTS steps in order to access envelope fields
+   ; in the Instrument data.
+   ldy voices::Voice::instrument, x
    ; A similar thing will be done with the X register. It will be advanced by
    ; N_VOICES in order to access envelope fields in the Voice data.
    ; setup loop counter
-   lda timbres::Timbre::n_envs, y
+   lda instruments::Instrument::n_envs, y
    sta n_envs
    dec
 next_env:
@@ -163,10 +163,10 @@ env_do_attack:
    plx
    ; add attack rate to phase
    clc
-   lda timbres::Timbre::env::attackL, y
+   lda instruments::Instrument::env::attackL, y
    adc voices::Voice::env::phaseL, x
    sta voices::Voice::env::phaseL, x
-   lda timbres::Timbre::env::attackH, y
+   lda instruments::Instrument::env::attackH, y
    adc voices::Voice::env::phaseH, x
    sta voices::Voice::env::phaseH, x
    ; high byte still in accumulator after addition
@@ -183,21 +183,21 @@ env_do_decay:
    ; subtract decay rate from phase
    sec
    lda voices::Voice::env::phaseL, x
-   sbc timbres::Timbre::env::decayL, y
+   sbc instruments::Instrument::env::decayL, y
    sta voices::Voice::env::phaseL, x
    lda voices::Voice::env::phaseH, x
-   sbc timbres::Timbre::env::decayH, y
+   sbc instruments::Instrument::env::decayH, y
    sta voices::Voice::env::phaseH, x
    ; high byte still in accumulator after subtraction, and flags set according to subtraction
    ; first thing that needs to be checked, is for overflow during subtraction (especially for low sustain levels and/or high decay rates)
    bcc @transition_into_sustain
    ; compare to sustain level and check if we've arrived.
-   cmp timbres::Timbre::env::sustain, y
+   cmp instruments::Instrument::env::sustain, y
    bcs advance_env
    ; advance to sustain stage. Set sustain level.
 @transition_into_sustain:
    inc voices::Voice::env::step, x
-   lda timbres::Timbre::env::sustain, y
+   lda instruments::Instrument::env::sustain, y
    sta voices::Voice::env::phaseH, x
    stz voices::Voice::env::phaseL, x
    jmp advance_env
@@ -208,7 +208,7 @@ env_do_sustain:
    ; i.e. by note-off events.
    ; HOWEVER, since we want real-time feedback if the parameter changes,
    ; we do set the phase to the sustain level in every tick.
-   lda timbres::Timbre::env::sustain, y
+   lda instruments::Instrument::env::sustain, y
    sta voices::Voice::env::phaseH, x
    stz voices::Voice::env::phaseL, x
    jmp advance_env
@@ -217,10 +217,10 @@ env_do_release:
    ; subtract release rate from phase
    sec
    lda voices::Voice::env::phaseL, x
-   sbc timbres::Timbre::env::releaseL, y
+   sbc instruments::Instrument::env::releaseL, y
    sta voices::Voice::env::phaseL, x
    lda voices::Voice::env::phaseH, x
-   sbc timbres::Timbre::env::releaseH, y
+   sbc instruments::Instrument::env::releaseH, y
    sta voices::Voice::env::phaseH, x
    ; high byte still in accumulator after subtraction, and flags set according to subtraction
    ; finish up envelope if overflow during subtraction (which indicates we've crossed zero)
@@ -260,10 +260,10 @@ advance_env: ; load phase into modsource and go to next envelope
    ply
    ; advance modulation source
    inc modsource_index
-   ; advance index for Timbre data
+   ; advance index for Instrument data
    tya
    clc
-   adc #N_TIMBRES
+   adc #N_INSTRUMENTS
    tay
    ; advance index for Voice data
    txa
@@ -296,10 +296,10 @@ end_env: ; jump here when done with all envelopes
    ; just incase I change my mind)
 
    ; X register: starts as voice index, increased by N_VOICES to get to the other LFO voice fields
-   ; Y register: starts as timbre index, increased by N_TIMBRES to get to the other LFO timbre fields
+   ; Y register: starts as instrument index, increased by N_INSTRUMENTS to get to the other LFO instrument fields
    ; once the LFO phase has been incremented, Y is changed to indexing the modsources
-   ldy voices::Voice::timbre, x
-   lda timbres::Timbre::n_lfos, y
+   ldy voices::Voice::instrument, x
+   lda instruments::Instrument::n_lfos, y
    sta lfo_counter
 @loop_lfos:
    ; assumes that the zero flag is set according to a counter counting down from n_lfos
@@ -308,7 +308,7 @@ end_env: ; jump here when done with all envelopes
 :  
    ; select waveform / algorithm
    phx
-   lda timbres::Timbre::lfo::wave, y
+   lda instruments::Instrument::lfo::wave, y
    asl
    tax
    jmp (@jmp_table, x)
@@ -328,10 +328,10 @@ end_env: ; jump here when done with all envelopes
    ; advance phase
    lda voices::Voice::lfo::phaseL, x
    clc
-   adc timbres::Timbre::lfo::rateL, y
+   adc instruments::Instrument::lfo::rateL, y
    sta voices::Voice::lfo::phaseL, x
    lda voices::Voice::lfo::phaseH, x
-   adc timbres::Timbre::lfo::rateH, y
+   adc instruments::Instrument::lfo::rateH, y
    sta voices::Voice::lfo::phaseH, x
    ; check high bit
    bmi @tri_falling
@@ -402,10 +402,10 @@ end_env: ; jump here when done with all envelopes
    ; advance phase
    lda voices::Voice::lfo::phaseL, x
    clc
-   adc timbres::Timbre::lfo::rateL, y
+   adc instruments::Instrument::lfo::rateL, y
    sta voices::Voice::lfo::phaseL, x
    lda voices::Voice::lfo::phaseH, x
-   adc timbres::Timbre::lfo::rateH, y
+   adc instruments::Instrument::lfo::rateH, y
    sta voices::Voice::lfo::phaseH, x
    ; check high bit
    bmi @squ_high
@@ -436,10 +436,10 @@ end_env: ; jump here when done with all envelopes
    ; advance phase
    lda voices::Voice::lfo::phaseL, x
    clc
-   adc timbres::Timbre::lfo::rateL, y
+   adc instruments::Instrument::lfo::rateL, y
    sta voices::Voice::lfo::phaseL, x
    lda voices::Voice::lfo::phaseH, x
-   adc timbres::Timbre::lfo::rateH, y
+   adc instruments::Instrument::lfo::rateH, y
    sta voices::Voice::lfo::phaseH, x
    ; check high bit
    bmi @ramp_up_negative
@@ -480,10 +480,10 @@ end_env: ; jump here when done with all envelopes
    ; advance phase
    lda voices::Voice::lfo::phaseL, x
    clc
-   adc timbres::Timbre::lfo::rateL, y
+   adc instruments::Instrument::lfo::rateL, y
    sta voices::Voice::lfo::phaseL, x
    lda voices::Voice::lfo::phaseH, x
-   adc timbres::Timbre::lfo::rateH, y
+   adc instruments::Instrument::lfo::rateH, y
    sta voices::Voice::lfo::phaseH, x
    ; check high bit
    bmi @ramp_dn_negative
@@ -529,7 +529,7 @@ end_env: ; jump here when done with all envelopes
    bne @snh_constant
 @snh_random:
    ; reset counter
-   lda timbres::Timbre::lfo::rateL, y
+   lda instruments::Instrument::lfo::rateL, y
    dec
    sta voices::Voice::lfo::phaseL, x
    ; very rudimentary RNG: 8 bit LFSR
@@ -572,7 +572,7 @@ end_env: ; jump here when done with all envelopes
    tax
    tya
    clc   ; unnecessary
-   adc #N_TIMBRES
+   adc #N_INSTRUMENTS
    tay
    inc modsource_index
    lda lfo_counter
@@ -637,8 +637,8 @@ end_env: ; jump here when done with all envelopes
 @store_new_volume:
    sta voices::Voice::vol::volume, x
    stx note_voice
-   ldy voices::Voice::timbre, x
-   lda timbres::Timbre::fm_general::op_en, y
+   ldy voices::Voice::instrument, x
+   lda instruments::Instrument::fm_general::op_en, y
    jsr voices::set_fm_voice_volume
 @end_volume_slope:
    ldx voice_index
@@ -659,7 +659,7 @@ end_env: ; jump here when done with all envelopes
    ; keyboard tracking.
 
    ; x: voice index
-   ; y: timbre index (in vibrato section)
+   ; y: instrument index (in vibrato section)
 
    ; check pitch slide
    lda voices::Voice::pitch_slide::active, x
@@ -705,8 +705,8 @@ end_env: ; jump here when done with all envelopes
 @do_vibrato:
    ; check if voice vibrato is active
    lda voices::Voice::vibrato::current_level, x
-   bmi @timbre_vibrato
-@voice_vibrato: ; sorry for the spaghetti code in this section (lasts until @timbre_vibrato)
+   bmi @instrument_vibrato
+@voice_vibrato: ; sorry for the spaghetti code in this section (lasts until @instrument_vibrato)
    ; voice vibrato, with possible vibrato ramp being active.
    ; The idea here is that we want to get a linear increase / decrease of modulation depth over time.
    ; This is challenging, since Scale5 is an exponential format, and it is non-trivial to figure out how long
@@ -773,9 +773,9 @@ end_env: ; jump here when done with all envelopes
    ; load vibrato amount
    lda vibrato_scale5_lut, y
    bra @vibrato_multiplication ; scale5 vibrato amount is in A
-@timbre_vibrato:
-   ldy voices::Voice::timbre, x
-   lda timbres::Timbre::vibrato, y
+@instrument_vibrato:
+   ldy voices::Voice::instrument, x
+   lda instruments::Instrument::vibrato, y
 @vibrato_multiplication:
    bpl :+
    jmp @skip_vibrato
@@ -787,7 +787,7 @@ end_env: ; jump here when done with all envelopes
    
 @skip_vibrato:
    ldx voice_index
-   ldy voices::Voice::timbre, x
+   ldy voices::Voice::instrument, x
 
 
 
@@ -799,38 +799,38 @@ end_env: ; jump here when done with all envelopes
    ; --------------
 
    ; check if FM is active
-   lda timbres::Timbre::fm_general::op_en, y
+   lda instruments::Instrument::fm_general::op_en, y
    bne :+
    jmp @skip_fm_pitch
 :
 
    ; keyboard + portamento
-   lda timbres::Timbre::fm_general::track, y
+   lda instruments::Instrument::fm_general::track, y
    beq @notrack_fm
    lda voi_fine
    clc
-   adc timbres::Timbre::fm_general::fine, y
+   adc instruments::Instrument::fm_general::fine, y
    sta osc_fine
    lda voi_pitch
-   adc timbres::Timbre::fm_general::pitch, y
+   adc instruments::Instrument::fm_general::pitch, y
    sta osc_pitch
    bra @donetrack_fm
 @notrack_fm:
-   lda timbres::Timbre::fm_general::fine, y
+   lda instruments::Instrument::fm_general::fine, y
    sta osc_fine
    lda #NOTRACK_CENTER
    clc
-   adc timbres::Timbre::fm_general::pitch, y
+   adc instruments::Instrument::fm_general::pitch, y
    sta osc_pitch
 @donetrack_fm:
    ; modulation
    ; source indexed by X
    ; depth stored in scale5_moddepth
    ; pitch mod source
-   ldx timbres::Timbre::fm_general::pitch_mod_sel, y
+   ldx instruments::Instrument::fm_general::pitch_mod_sel, y
    bpl :+
    jmp @skip_pitchmod_fm
-:  lda timbres::Timbre::fm_general::pitch_mod_dep, y
+:  lda instruments::Instrument::fm_general::pitch_mod_dep, y
    sta scale5_moddepth
    SCALE5_16 voi_modsourcesL, voi_modsourcesH, osc_fine, osc_pitch
 @skip_pitchmod_fm:
@@ -890,8 +890,8 @@ end_env: ; jump here when done with all envelopes
    jsr voices::write_ym2151
    ; key on
    stz voices::Voice::fm::trigger_loaded, x
-   ldy voices::Voice::timbre, x
-   lda timbres::Timbre::fm_general::op_en, y
+   ldy voices::Voice::instrument, x
+   lda instruments::Instrument::fm_general::op_en, y
    asl
    asl
    asl
@@ -911,13 +911,13 @@ end_env: ; jump here when done with all envelopes
    ; ---------------
 
    ; x: offset for envelope/lfo data access, and multi purpose indexing register
-   ; y: offset for oscillator timbre data access ... starting at timbre index, increased by N_TIMBRES for each oscillator
+   ; y: offset for oscillator instrument data access ... starting at instrument index, increased by N_INSTRUMENTS for each oscillator
    ; osc_counter: keeps track of which oscillator we're processing
    ; n_oscs: number of oscillators to be processed
    ; during the PSG voice stuff, x and y are doing different stuff
    ; osc_offset: starting at voice_index, increased by N_VOICES, to access voice dependent oscillator data (PSG index)
-   ldy voices::Voice::timbre, x
-   lda timbres::Timbre::n_oscs, y
+   ldy voices::Voice::instrument, x
+   lda instruments::Instrument::n_oscs, y
    bne :+
    ldx voice_index
    jmp next_voice
@@ -933,16 +933,16 @@ next_osc:
 
    ; do oscillator volume control
    ; read amplifier
-   ldx timbres::Timbre::osc::amp_sel, y
+   ldx instruments::Instrument::osc::amp_sel, y
    lda voi_modsourcesH, x
    lsr   ; put into range 0 ... 63
    sta osc_volume
    ; modulate volume
-   ldx timbres::Timbre::osc::vol_mod_sel, y
+   ldx instruments::Instrument::osc::vol_mod_sel, y
    bpl :+
    jmp @do_volume_knobs
 :  lda voi_modsourcesH, x
-   SCALE_S6 timbres::Timbre::osc::vol_mod_dep, 2
+   SCALE_S6 instruments::Instrument::osc::vol_mod_dep, 2
    clc
    adc osc_volume   ; add modulation to amp envelope
    ; clamp to valid range
@@ -976,14 +976,14 @@ next_osc:
 
    ; multiplying route:
    ; multiply with oscillator volume setting, input and output via register A
-   ;SCALE_U7 timbres::Timbre::osc::volume, 2
+   ;SCALE_U7 instruments::Instrument::osc::volume, 2
    ; multiply with voice's volume
    ;SCALE_U7 voi_volume, 0
 
    ; addition route:
    clc
    ; A is in [0, ... 63]
-   adc timbres::Timbre::osc::volume, y ; maximally 64, result can't be above 127
+   adc instruments::Instrument::osc::volume, y ; maximally 64, result can't be above 127
    adc voi_volume ; maximally 64 (increased by 1 frome the user input), result can't be above 191
    sec
    sbc #128
@@ -994,46 +994,46 @@ next_osc:
    ; do L/R channel selection
 @do_channel_selection:
    clc
-   adc timbres::Timbre::osc::lrmid, y
+   adc instruments::Instrument::osc::lrmid, y
    sta osc_volume
 
 
    ; do oscillator pitch control
    ; keyboard + portamento
-   lda timbres::Timbre::osc::track, y
+   lda instruments::Instrument::osc::track, y
    beq @notrack
    lda voi_fine
    clc
-   adc timbres::Timbre::osc::fine, y
+   adc instruments::Instrument::osc::fine, y
    sta osc_fine
    lda voi_pitch
-   adc timbres::Timbre::osc::pitch, y
+   adc instruments::Instrument::osc::pitch, y
    sta osc_pitch
    bra @donetrack
 @notrack:
    ; modulation
    ; source indexed by X
    ; depth indexed by Y
-   lda timbres::Timbre::osc::fine, y
+   lda instruments::Instrument::osc::fine, y
    sta osc_fine
    lda #NOTRACK_CENTER
    clc
-   adc timbres::Timbre::osc::pitch, y
+   adc instruments::Instrument::osc::pitch, y
    sta osc_pitch
 @donetrack:
    ; pitch mod source 1
-   ldx timbres::Timbre::osc::pitch_mod_sel1, y
+   ldx instruments::Instrument::osc::pitch_mod_sel1, y
    bpl :+
    jmp @skip_pitchmod1
-:  lda timbres::Timbre::osc::pitch_mod_dep1, y
+:  lda instruments::Instrument::osc::pitch_mod_dep1, y
    sta scale5_moddepth
    SCALE5_16 voi_modsourcesL, voi_modsourcesH, osc_fine, osc_pitch
 @skip_pitchmod1:
    ; pitch mod source 2
-   ldx timbres::Timbre::osc::pitch_mod_sel2, y
+   ldx instruments::Instrument::osc::pitch_mod_sel2, y
    bpl :+
    jmp @skip_pitchmod2
-:  lda timbres::Timbre::osc::pitch_mod_dep2, y
+:  lda instruments::Instrument::osc::pitch_mod_dep2, y
    sta scale5_moddepth
    SCALE5_16 voi_modsourcesL, voi_modsourcesH, osc_fine, osc_pitch
 @skip_pitchmod2:
@@ -1045,20 +1045,20 @@ next_osc:
 
 
    ; do oscillator waveform control
-   lda timbres::Timbre::osc::waveform, y
+   lda instruments::Instrument::osc::waveform, y
    sta osc_wave
    beq :+
    jmp @end_pwm
 :  ; pulse width modulation
    ; load pulse width
-   lda timbres::Timbre::osc::pulse, y
+   lda instruments::Instrument::osc::pulse, y
    sta osc_wave
    ; modulate pulse width
-   ldx timbres::Timbre::osc::pwm_sel, y
+   ldx instruments::Instrument::osc::pwm_sel, y
    bpl :+
    jmp @end_pwm
 :  lda voi_modsourcesH, x
-   SCALE_S6 timbres::Timbre::osc::pwm_dep, 2
+   SCALE_S6 instruments::Instrument::osc::pwm_dep, 2
    clc
    adc osc_wave   ; add static pulse width to mpdulation signal
    ; clamp to valid range
@@ -1082,10 +1082,10 @@ next_osc:
    VERA_SET_VOICE_PARAMS_MEM_A osc_freq,osc_volume,osc_wave
 
    ; advance counters for oscillator loop
-   ; timbre data offset
+   ; instrument data offset
    tya
    clc
-   adc #N_TIMBRES
+   adc #N_INSTRUMENTS
    tay
    ; oscillator voice offset
    lda osc_offset

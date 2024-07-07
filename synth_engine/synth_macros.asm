@@ -10,7 +10,7 @@
 
 ; Synth engine definitions
 .define N_VOICES 16
-.define N_TIMBRES 32
+.define N_INSTRUMENTS 32
 .define N_OSCILLATORS 16 ; total number of PSG voices, which correspond to oscillators
 .define N_FM_VOICES 8
 .define MAX_OSCS_PER_VOICE 4
@@ -35,8 +35,8 @@
    .endrep
 .endmacro
 
-.macro TIMBRE_BYTE_FIELD
-   .repeat N_TIMBRES, I
+.macro INSTRUMENT_BYTE_FIELD
+   .repeat N_INSTRUMENTS, I
       .byte 0
    .endrep
 .endmacro
@@ -47,10 +47,10 @@
    .endrep
 .endmacro
 
-; osc1: timbre1 timbre2 timbre3 ... osc2: timbre1 timbre2 timbre3 ... 
-; ---> this format saves multiplication when accessing with arbitrary timbre indes
-.macro OSCILLATOR_TIMBRE_BYTE_FIELD
-   .repeat MAX_OSCS_PER_VOICE*N_TIMBRES
+; osc1: instrument1 instrument2 instrument3 ... osc2: instrument1 instrument2 instrument3 ... 
+; ---> this format saves multiplication when accessing with arbitrary instrument indes
+.macro OSCILLATOR_INSTRUMENT_BYTE_FIELD
+   .repeat MAX_OSCS_PER_VOICE*N_INSTRUMENTS
       .byte 0
    .endrep
 .endmacro
@@ -62,10 +62,10 @@
    .endrep
 .endmacro
 
-; env1: timbre1 timbre2 timbre3 ... env2: timbre1 timbre2 tibre3 ...
-; ---> this format saves multiplication when accessing with arbitrary timbre indices
-.macro ENVELOPE_TIMBRE_BYTE_FIELD
-   .repeat MAX_ENVS_PER_VOICE*N_TIMBRES
+; env1: instrument1 instrument2 instrument3 ... env2: instrument1 instrument2 tibre3 ...
+; ---> this format saves multiplication when accessing with arbitrary instrument indices
+.macro ENVELOPE_INSTRUMENT_BYTE_FIELD
+   .repeat MAX_ENVS_PER_VOICE*N_INSTRUMENTS
       .byte 0
    .endrep
 .endmacro
@@ -77,10 +77,10 @@
    .endrep
 .endmacro
 
-; lfo1: timbre1 timbre2 timbre3 ... lfo2: timbre1 timbre2 tibre3 ...
-; ---> this format saves multiplication when accessing with arbitrary timbre indices
-.macro LFO_TIMBRE_BYTE_FIELD
-   .repeat MAX_LFOS_PER_VOICE*N_TIMBRES
+; lfo1: instrument1 instrument2 instrument3 ... lfo2: instrument1 instrument2 tibre3 ...
+; ---> this format saves multiplication when accessing with arbitrary instrument indices
+.macro LFO_INSTRUMENT_BYTE_FIELD
+   .repeat MAX_LFOS_PER_VOICE*N_INSTRUMENTS
       .byte 0
    .endrep
 .endmacro
@@ -92,8 +92,8 @@
    .endrep
 .endmacro
 
-.macro OPERATOR_TIMBRE_BYTE_FIELD
-   .repeat N_OPERATORS*N_TIMBRES
+.macro OPERATOR_INSTRUMENT_BYTE_FIELD
+   .repeat N_OPERATORS*N_INSTRUMENTS
       .byte 0
    .endrep
 .endmacro
@@ -243,7 +243,7 @@
 ; The result is the effective portamento rate.
 ; It guarantees that the portamento time is constant regardless of how far
 ; two notes are apart.
-; Expects voice index in X, timbre index in Y, slide distance in mzpbb
+; Expects voice index in X, instrument index in Y, slide distance in mzpbb
 .macro MUL8x8_PORTA ; uses ZP variables in the process
    mp_slide_distance = cn_slide_distance ; must be the same as in "continue_note"!
    mp_return_value = mzpwb
@@ -254,7 +254,7 @@
    ; initialization
    ; mp_return_value stores the porta rate. It needs a 16 bit variable because it is left shifted
    ; throughout the multiplication
-   lda timbres::Timbre::porta_r, y
+   lda instruments::Instrument::porta_r, y
    sta mp_return_value+1
    stz mp_return_value
    stz Voice::pitch_slide::rateL, x

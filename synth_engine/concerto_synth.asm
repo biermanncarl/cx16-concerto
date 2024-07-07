@@ -42,17 +42,17 @@
 
 
 
-; Loading of timbre data at compile time
+; Loading of instrument data at compile time
 ; ======================================
-; Two definitions need to be made in order to use an existing timbre bank (*.COB) file at compile time.
-; The first one, concerto_use_timbres_from_file, needs to be set in order to communicate
+; Two definitions need to be made in order to use an existing instrument bank (*.COB) file at compile time.
+; The first one, concerto_use_instruments_from_file, needs to be set in order to communicate
 ; to the assembler THAT an external file is being used.
-; The second one, CONCERTO_TIMBRES_PATH, is set to the file name containing the timbre data.
+; The second one, CONCERTO_INSTRUMENTS_PATH, is set to the file name containing the instrument data.
 ; Both definitions need to be made before the inclusion of this file (concerto_synth.asm).
 ; Example:
 ;
-;    concerto_use_timbres_from_file = 1
-;    .define CONCERTO_TIMBRES_PATH "FACTORY.COB"
+;    concerto_use_instruments_from_file = 1
+;    .define CONCERTO_INSTRUMENTS_PATH "FACTORY.COB"
 ;    .include "concerto_synth.asm"
 
 ; Enabling the Zsound recorder
@@ -91,13 +91,11 @@
 .ifdef ::concerto_enable_zsound_recording
    .include "zsm_recording.asm"
 .endif
-.include "timbres.asm"
+.include "instruments.asm"
 .include "voices.asm"
 .include "synth_tick.asm"
 .include "isr.asm"
 .include "scale5.asm"
-; This just provides some macros which can be used by the host app. Doesn't do anything on its own:
-.include "presets.asm"
 
 ; Concerto API registers
 creg0 = mzpba
@@ -106,7 +104,7 @@ creg2 = mzpbg
 
 ; Interface parameters
 note_voice = creg0
-note_timbre  = creg1
+note_instrument  = creg1
 note_pitch   = creg2
 pitchslide_mode = creg1
 ; Interface read-only
@@ -121,8 +119,8 @@ free_fm_voices = voices::FMmap::nfv
 ; PARAMETERS: none
 ; AFFECTS: .A, .X, .Y
 initialize:
-.ifndef concerto_use_timbres_from_file
-   jsr timbres::init_timbres
+.ifndef concerto_use_instruments_from_file
+   jsr instruments::init_instruments
 .endif
 .ifdef concerto_enable_zsound_recording
    stz zsm_recording::recorder_active
@@ -150,7 +148,7 @@ deactivate_synth:
 ; The new note does not get played if there aren't enough voices available at the VERA or the YM2151.
 ; PARAMETERS: 
 ;              voice number: note_voice
-;              note timbre:    note_timbre
+;              note instrument:    note_instrument
 ;              note pitch:     note_pitch
 ;              note volume:    .A
 ; AFFECTS: .A, .X, .Y
@@ -219,13 +217,13 @@ set_volume_ramp = voices::set_volume_ramp
 
 ; concerto_synth::set_vibrato_amount
 ; Controls how much the LFO modulates the voice's pitch. Values from 0 to 75
-; are valid. The frequency and waveform of the LFO is dictated by the timbre's
+; are valid. The frequency and waveform of the LFO is dictated by the instrument's
 ; settings.
 ; Calling this function temporarily overwrites the "vibrato" setting of the
-; timbre.
+; instrument.
 ; The original setting is restored by passing 0 as the modulation amount,
-; after voice inactivity or upon timbre change on the voice.
-; The LFO must be activated in the timbre for vibrato!
+; after voice inactivity or upon instrument change on the voice.
+; The LFO must be activated in the instrument for vibrato!
 ; PARAMETERS:
 ;              voice number: .X
 ;              vibrato amount: .A (values 0 to 27)
@@ -242,23 +240,23 @@ set_vibrato_amount = voices::set_vibrato_amount
 ; AFFECTS: .A
 set_vibrato_ramp = voices::set_vibrato_ramp
 
-; concerto_synth::dump_timbres
-; Dumps the entirety of timbre data as a byte stream to CHROUT.
-; Use this to save all timbre data to an already opened file.
+; concerto_synth::dump_instruments
+; Dumps the entirety of instrument data as a byte stream to CHROUT.
+; Use this to save all instrument data to an already opened file.
 ; The number of bytes emitted by this function is always the same (within one version of Concerto).
 ; PARAMETERS: none
 ; AFFECTS: .A, .X, .Y
-dump_timbres = timbres::dump_to_chrout
+dump_instruments = instruments::dump_to_chrout
 
-; concerto_synth::restore_timbres
-; Loads the entire timbre data as a byte stream from CHRIN.
-; Use this to load all timbre data from an already opened file.
+; concerto_synth::restore_instruments
+; Loads the entire instrument data as a byte stream from CHRIN.
+; Use this to load all instrument data from an already opened file.
 ; The number of bytes consumed by this function is always the same (within one version of Concerto).
 ; PARAMETERS: none
 ; AFFECTS: .A, .X, .Y
 ; RETURNS: 1 in .A if successfully loaded
 ;          0 in .A if an error occurred (e.g. wrong data header)
-restore_timbres = timbres::restore_from_chrin
+restore_instruments = instruments::restore_from_chrin
 
 
 

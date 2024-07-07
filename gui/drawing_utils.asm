@@ -138,14 +138,14 @@ display_1s:         .byte 0
    DISPLAY_BYTE concerto_synth::voices::FMmap::freevoicelist+6, 25,55
    DISPLAY_BYTE concerto_synth::voices::FMmap::freevoicelist+7, 29,55
 
-   DISPLAY_BYTE concerto_synth::voices::FMmap::timbremap, 1,57
-   DISPLAY_BYTE concerto_synth::voices::FMmap::timbremap+1, 5,57
-   DISPLAY_BYTE concerto_synth::voices::FMmap::timbremap+2, 9,57
-   DISPLAY_BYTE concerto_synth::voices::FMmap::timbremap+3, 13,57
-   DISPLAY_BYTE concerto_synth::voices::FMmap::timbremap+4, 17,57
-   DISPLAY_BYTE concerto_synth::voices::FMmap::timbremap+5, 21,57
-   DISPLAY_BYTE concerto_synth::voices::FMmap::timbremap+6, 25,57
-   DISPLAY_BYTE concerto_synth::voices::FMmap::timbremap+7, 29,57
+   DISPLAY_BYTE concerto_synth::voices::FMmap::instrumentmap, 1,57
+   DISPLAY_BYTE concerto_synth::voices::FMmap::instrumentmap+1, 5,57
+   DISPLAY_BYTE concerto_synth::voices::FMmap::instrumentmap+2, 9,57
+   DISPLAY_BYTE concerto_synth::voices::FMmap::instrumentmap+3, 13,57
+   DISPLAY_BYTE concerto_synth::voices::FMmap::instrumentmap+4, 17,57
+   DISPLAY_BYTE concerto_synth::voices::FMmap::instrumentmap+5, 21,57
+   DISPLAY_BYTE concerto_synth::voices::FMmap::instrumentmap+6, 25,57
+   DISPLAY_BYTE concerto_synth::voices::FMmap::instrumentmap+7, 29,57
    ; ffv, lfv
    DISPLAY_BYTE concerto_synth::voices::FMmap::ffv, 40,55
    DISPLAY_BYTE concerto_synth::voices::FMmap::lfv, 44,55

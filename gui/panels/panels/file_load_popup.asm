@@ -77,8 +77,8 @@
       jsr file_browsing::openFile
       bcs :+
       jsr concerto_synth::voices::panic
-      lda gui_variables::current_synth_timbre
-      jsr concerto_synth::timbres::loadInstrument
+      lda gui_variables::current_synth_instrument
+      jsr concerto_synth::instruments::loadInstrument
       jsr file_browsing::closeFile
    :  jsr gui_routines__refresh_gui
       plp

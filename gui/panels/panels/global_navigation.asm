@@ -219,8 +219,8 @@
       ; play note
       sta concerto_synth::note_pitch
       ;lda #MAX_VOLUME
-      lda gui_variables::current_synth_timbre
-      sta concerto_synth::note_timbre
+      lda gui_variables::current_synth_instrument
+      sta concerto_synth::note_instrument
       lda #0
       sta concerto_synth::note_voice
       lda concerto_gui::play_volume

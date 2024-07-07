@@ -7,9 +7,9 @@
 ; binary assets
 .include "../assets/vram_assets.asm"
 
-; communicate that we want to compile in timbre data from a file
-concerto_use_timbres_from_file = 1
-.define CONCERTO_TIMBRES_PATH "FACTORY.COB"
+; communicate that we want to compile in instrument data from a file
+concerto_use_instruments_from_file = 1
+.define CONCERTO_INSTRUMENTS_PATH "FACTORY.COB"
 
 ; include the synth and song engines
 .include "../song_engine/song_engine.asm"

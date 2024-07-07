@@ -16,7 +16,7 @@ command is addressed. If the command does not address a specific voice
 | Command number | Description | Data Byte 1 | Data Byte 2 | Data Byte 3 |
 |----------------|-------------|-------------|-------------|-------------|
 |              0 | Wait for N ticks. N is a 16 bit number. | N low | N high | --- |
-|              1 | Play note | Timbre number | pitch | velocity (0...63) |
+|              1 | Play note | Instrument number | pitch | velocity (0...63) |
 |              2 | Release note (aka soft note-off) | --- | --- | --- |
 |              3 | Stop note (aka hard note-off) | --- | --- | --- |
 |              4 | Set pitchbend position. | Fine tune | Note | --- |
@@ -69,12 +69,12 @@ retriggered (i.e. tied together).
 ---------------------
 
 This command sets the amount of vibrato on a note. If vibrato is active in the
-timbre, it gets overridden temporarily. The effect will last until one of the
+instrument, it gets overridden temporarily. The effect will last until one of the
 three conditions is fulfilled:
 * the vibrato is set to 0,
 * a hard note-off,
 * the voice is inactive for at least one tick,
-* the timbre is changed.
+* the instrument is changed.
 Value 0 deactivates vibrato, the values 1 to 27 correspond to a pitch
 modulation of 28 to 54. This shift of values and the limited vibrato range is
 due to the way the vibrato amount is represented internally and how the vibrato

@@ -48,4 +48,4 @@ example_06: build_folder unspecified_dependencies
 	cl65 -t cx16 -o build/EXAMPLE06.PRG -C cx16-asm.cfg -u __EXEHDR__ "examples/example_06_callback.asm"
 
 example_07: build_folder unspecified_dependencies
-	cl65 -t cx16 -o build/EXAMPLE07.PRG -C cx16-asm.cfg -u __EXEHDR__ "examples/example_07_include_timbres.asm"
+	cl65 -t cx16 -o build/EXAMPLE07.PRG -C cx16-asm.cfg -u __EXEHDR__ "examples/example_07_include_instruments.asm"

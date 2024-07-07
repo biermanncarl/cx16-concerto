@@ -61,35 +61,35 @@ write_ym2151:
    rts
 
 
-; prevent timbres already loaded onto the YM2151 from being reused, e.g. after a timbre has been modified.
-invalidate_fm_timbres:
-   ; override all timbres with invalid timbre
+; prevent instruments already loaded onto the YM2151 from being reused, e.g. after a instrument has been modified.
+invalidate_fm_instruments:
+   ; override all instruments with invalid instrument
    ldx #(N_FM_VOICES-1)
 @loop_fm_voices:
-   lda #N_TIMBRES ; invalid timbre number ... enforce loading onto the YM2151 (invalid timbre won't get reused)
-   sta FMmap::timbremap, x
+   lda #N_INSTRUMENTS ; invalid instrument number ... enforce loading onto the YM2151 (invalid instrument won't get reused)
+   sta FMmap::instrumentmap, x
    dex
    bpl @loop_fm_voices
    rts
 
 
-; Load an FM timbre onto the YM2151.
+; Load an FM instrument onto the YM2151.
 ; Expects voice index in A
-; Expects note_timbre and note_voice to be set accordingly.
-load_fm_timbre:
+; Expects note_instrument and note_voice to be set accordingly.
+load_fm_instrument:
    lfmt_operator_counter = mzpbd
    lfmt_op_en = mzpbc
    pha
-   ldx note_timbre
+   ldx note_instrument
 
    ; General parameters
    ; set RL_FL_CON
-   lda timbres::Timbre::fm_general::fl, x
+   lda instruments::Instrument::fm_general::fl, x
    asl
    asl
    asl
-   ora timbres::Timbre::fm_general::con, x ; set "Connection" bits
-   ora timbres::Timbre::fm_general::lr, x ; set LR bits
+   ora instruments::Instrument::fm_general::con, x ; set "Connection" bits
+   ora instruments::Instrument::fm_general::lr, x ; set LR bits
    tay
    pla
    clc
@@ -109,7 +109,7 @@ load_fm_timbre:
    lda #4
    sta lfmt_operator_counter
    ; Load operator enabled register
-   lda timbres::Timbre::fm_general::op_en, x
+   lda instruments::Instrument::fm_general::op_en, x
    ; Data offset
 ; expects the op_en register to be loaded in A (right shifted by how many operators we have already done)
 @loop:
@@ -123,12 +123,12 @@ load_fm_timbre:
 @operator_enabled:
    ; ** DT1_MUL
    ; value
-   lda timbres::Timbre::operators::dt1, x
+   lda instruments::Instrument::operators::dt1, x
    asl
    asl
    asl
    asl
-   ora timbres::Timbre::operators::mul, x
+   ora instruments::Instrument::operators::mul, x
    tay
    ; address
    pla
@@ -141,12 +141,12 @@ load_fm_timbre:
 
    ; ** KS_AR
    ; value
-   lda timbres::Timbre::operators::ks, x
+   lda instruments::Instrument::operators::ks, x
    clc
    ror
    ror
    ror
-   adc timbres::Timbre::operators::ar, x
+   adc instruments::Instrument::operators::ar, x
    tay
    ; address
    pla
@@ -157,7 +157,7 @@ load_fm_timbre:
 
    ; ** AMS-EN_D1R (5 bits D1R)
    ; value
-   ldy timbres::Timbre::operators::d1r, x
+   ldy instruments::Instrument::operators::d1r, x
    ; address
    pla
    clc
@@ -167,12 +167,12 @@ load_fm_timbre:
 
    ; ** DT2_D2R
    ; value
-   lda timbres::Timbre::operators::dt2, x
+   lda instruments::Instrument::operators::dt2, x
    clc
    ror
    ror
    ror
-   ora timbres::Timbre::operators::d2r, x
+   ora instruments::Instrument::operators::d2r, x
    tay
    ; address
    pla
@@ -183,12 +183,12 @@ load_fm_timbre:
 
    ; ** D1L_RR
    ; value
-   lda timbres::Timbre::operators::d1l, x
+   lda instruments::Instrument::operators::d1l, x
    asl
    asl
    asl
    asl
-   ora timbres::Timbre::operators::rr, x
+   ora instruments::Instrument::operators::rr, x
    tay
    ; address
    pla
@@ -212,7 +212,7 @@ load_fm_timbre:
    ; advance read address offset
    txa
    clc
-   adc #N_TIMBRES
+   adc #N_INSTRUMENTS
    tax
    lda lfmt_op_en
    dec lfmt_operator_counter
@@ -226,7 +226,7 @@ load_fm_timbre:
 ; Sets the volume of an FM voice
 ; Only the operators that are marked as velocity-sensitive will be affected by
 ; a change of volume.
-; Expects note_timbre and note_voice to be set accordingly.
+; Expects note_instrument and note_voice to be set accordingly.
 ; The volume is read from the respective voice.
 ; This function is called when a new note is being triggered, or upon volume updates
 ; during a note.
@@ -238,7 +238,7 @@ set_fm_voice_volume:
 
    ; set operator volumes
    ; *********************
-   ; This is annoyingly complicated ... we basically need to replicate the load timbre loop just for this
+   ; This is annoyingly complicated ... we basically need to replicate the load instrument loop just for this
    lda #YM_TL
    clc
    adc Voice::fm_voice_map, x
@@ -246,8 +246,8 @@ set_fm_voice_volume:
    lda #4
    sta sfmv_operator_counter
    ; Load operator enabled register
-   ldx note_timbre
-   lda timbres::Timbre::fm_general::op_en, x
+   ldx note_instrument
+   lda instruments::Instrument::fm_general::op_en, x
 ; expects the op_en register to be loaded in A (right shifted by how many operators we have already done)
 @vol_loop:
    ; Check if operator is enabled, only then copy parameters
@@ -260,8 +260,8 @@ set_fm_voice_volume:
 @operator_enabled:
    ; TOTAL LEVEL
    ; value
-   lda timbres::Timbre::operators::level, x
-   ldy timbres::Timbre::operators::vol_sens, x
+   lda instruments::Instrument::operators::level, x
+   ldy instruments::Instrument::operators::vol_sens, x
    beq @no_volume_sensitivity
    clc
    adc #64 ; when note volume is minimal, this is how much the level gets reduced
@@ -286,7 +286,7 @@ set_fm_voice_volume:
    ; advance read address offset
    txa
    clc
-   adc #N_TIMBRES
+   adc #N_INSTRUMENTS
    tax
    lda sfmv_op_en
    dec sfmv_operator_counter

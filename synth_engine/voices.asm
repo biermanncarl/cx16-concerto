@@ -27,7 +27,7 @@
 
    ; general
    pitch:     VOICE_BYTE_FIELD
-   timbre:    VOICE_BYTE_FIELD   ; which synth patch to use
+   instrument:    VOICE_BYTE_FIELD   ; which synth instrument to use
 
    ; volume
    .scope vol
@@ -67,7 +67,7 @@
       posH:    VOICE_BYTE_FIELD
    .endscope
 
-   ; vibrato settings, overrides the vibrato setting of the timbre
+   ; vibrato settings, overrides the vibrato setting of the instrument
    .scope vibrato
       current_level: VOICE_BYTE_FIELD ; refers to vibrato lookup-table, 128 or higher means inactive
       ticks:         VOICE_BYTE_FIELD ; current "vibrato tick" countdown until the next vibrato level
@@ -105,10 +105,10 @@
    ; information about which FM voices are free
 
    ; ringlist of available FM voices and another list with their
-   ; corresponding previous timbres that have been loaded onto them.
-   ; This is to be able to reuse previously loaded timbres (which saves costly communication with the YM2151 chip)
+   ; corresponding previous instruments that have been loaded onto them.
+   ; This is to be able to reuse previously loaded instruments (which saves costly communication with the YM2151 chip)
    freevoicelist: FM_VOICE_BYTE_FIELD
-   timbremap:     FM_VOICE_BYTE_FIELD
+   instrumentmap:     FM_VOICE_BYTE_FIELD
    ffv:  .byte 0 ; this is the next (first) free voice (as long as there is at least one) in the ring list
    lfv:  .byte 0 ; this points one past the last free voice, or to the first used voice as long as there is at least one being used
    nfv:  .byte 0
@@ -159,8 +159,8 @@ init_voices:
 @loop_fm_voices:
    txa
    sta FMmap::freevoicelist, x
-   lda #N_TIMBRES ; invalid timbre number ... enforce loading onto the YM2151 (invalid timbre won't get reused)
-   sta FMmap::timbremap, x
+   lda #N_INSTRUMENTS ; invalid instrument number ... enforce loading onto the YM2151 (invalid instrument won't get reused)
+   sta FMmap::instrumentmap, x
    dex
    bpl @loop_fm_voices
 
@@ -173,37 +173,37 @@ init_voices:
 
 
 
-; Plays a note. needs info for voice number, timbre, pitch and volume.
+; Plays a note. needs info for voice number, instrument, pitch and volume.
 ; Can be called from within the ISR and the main program.
 ; In this subroutine, register X usually contains the index of the voice.
 ; What exactly does this routine do?
 ; If no note is currently active on the voice, it plays a new note with retriggering envelopes,
-; and retriggering LFOs as specified in the timbre settings, provided there are enough oscillators
+; and retriggering LFOs as specified in the instrument settings, provided there are enough oscillators
 ; available.
-; If a note is currently active on the voice, the action depends on whether it is the same timbre or not.
-; If it's the same timbre, retrigger and portamento are applied as specified in the timbre settings.
-; If it's a different timbre, the old note is replaced entirely (just as if there was no note played previously).
+; If a note is currently active on the voice, the action depends on whether it is the same instrument or not.
+; If it's the same instrument, retrigger and portamento are applied as specified in the instrument settings.
+; If it's a different instrument, the old note is replaced entirely (just as if there was no note played previously).
 play_note:
    php
    sei
    ldx note_voice
-   ldy note_timbre
+   ldy note_instrument
    inc ; compensate for max volume being 63, but the synth engine can handle 64. Consequently, volume 0 won't be silent.
    sta Voice::vol::volume, x
    ; check if there is an active note on the voice
    lda Voice::active, x
    beq @new_note
 @existing_note:
-   ; check if it's the same timbre
-   lda Voice::timbre, x
-   cmp note_timbre
-   beq @same_timbre
-@different_timbre:
+   ; check if it's the same instrument
+   lda Voice::instrument, x
+   cmp note_instrument
+   beq @same_instrument
+@different_instrument:
    jsr stop_note
    ldx note_voice
-   ldy note_timbre
+   ldy note_instrument
    bra @new_note
-@same_timbre:
+@same_instrument:
    jsr continue_note
    bra @common_stuff
 @new_note:
@@ -211,15 +211,15 @@ play_note:
    ; check if starting note was successful (unsuccessful if there weren't enough oscillators available)
    beq @skip_play
    ldx note_voice
-   ldy note_timbre
+   ldy note_instrument
    jsr retrigger_note
 @common_stuff:
    ; the stuff that is always done.
    ldx note_voice
    lda note_pitch
    sta Voice::pitch, x
-   lda note_timbre
-   sta Voice::timbre, x
+   lda note_instrument
+   sta Voice::instrument, x
 
    ; activate note (should be the last thing done!)
    lda #1
@@ -228,14 +228,14 @@ play_note:
    plp
    rts
 
-; This subroutine is used in play_note in the case that a note with the same timbre as played is
+; This subroutine is used in play_note in the case that a note with the same instrument as played is
 ; still active on the voice. It does all the stuff specific to that case.
-; expects voice index in X, timbre index in Y (additionally to the note_ variables)
+; expects voice index in X, instrument index in Y (additionally to the note_ variables)
 ; doesn't preserve X and Y
 continue_note:
    cn_slide_distance = mzpbe
    ; check if porta active
-   lda timbres::Timbre::porta, y
+   lda instruments::Instrument::porta, y
    bne @setup_porta
 @no_porta:
    stz Voice::pitch_slide::active, x
@@ -259,7 +259,7 @@ continue_note:
 :  tya
    sta Voice::pitch_slide::active, x ; up or down
    ; determine porta rate
-   ldy note_timbre
+   ldy note_instrument
    MUL8x8_PORTA
    ; set current porta starting point
    stz Voice::pitch_slide::posL, x
@@ -267,32 +267,32 @@ continue_note:
    sta Voice::pitch_slide::posH, x
 cn_check_retrigger:
    ; retrigger or continue?
-   lda timbres::Timbre::retrig, y
+   lda instruments::Instrument::retrig, y
    beq :+
    ; do retrigger
    jsr retrigger_note
    rts
 :  ; if not retriggered, we still need to update the FM volume
-   lda timbres::Timbre::fm_general::op_en, y
+   lda instruments::Instrument::fm_general::op_en, y
    beq :+
    jsr set_fm_voice_volume
 :  rts
 
 
 ; retriggers note (envelopes and LFOs). This subroutine is called in play_note.
-; expects voice index in X and timbre index in Y
+; expects voice index in X and instrument index in Y
 ; doesn't preserve X and Y
 retrigger_note:
    ; initialize envelopes
    ; x: starts as voice index, becomes env1, env2, env3 sublattice offset by addition of N_VOICES
    ; ZP variable: is set to n_envs
-   ; y: counter (and timbre index before that)
+   ; y: counter (and instrument index before that)
    rn_number = mzpbe
    stz Voice::fm::trigger_loaded, x
    stz Voice::vol::slope, x
    phx
    phy
-   lda timbres::Timbre::n_envs, y
+   lda instruments::Instrument::n_envs, y
    sta rn_number
    ldy #0
 @loop_envs:
@@ -321,17 +321,17 @@ retrigger_note:
 
    ; initialize LFOs
    ; x: starts as voice index, becomes lfo1, lfo2, lfo3 sublattice offset by addition of N_VOICES
-   ; y: starts as timbre index, becomes lfo1, lfo2, lfo3 sublattice offset by addition of N_TIMBRES
+   ; y: starts as instrument index, becomes lfo1, lfo2, lfo3 sublattice offset by addition of N_INSTRUMENTS
 @reset_lfos:
-   lda timbres::Timbre::n_lfos, y
+   lda instruments::Instrument::n_lfos, y
    beq @skip_lfos   ; for now we skip only if there are NO LFOs active. should be fine tho, because initializing unused stuff doesn't hurt
 @loop_lfos:
    ; figure out if lfo is retriggered. If yes, reset phase
    ; TODO: if it's an SnH LFO, get a random initial phase from entropy_get (KERNAL routine) if not retriggered
-   lda timbres::Timbre::lfo::retrig, y
+   lda instruments::Instrument::lfo::retrig, y
    beq @advance_lfo
    ; set lfo phase
-   lda timbres::Timbre::lfo::offs, y
+   lda instruments::Instrument::lfo::offs, y
    sta Voice::lfo::phaseH, x
    stz Voice::lfo::phaseL, x
 
@@ -342,15 +342,15 @@ retrigger_note:
    tax
    tya
    clc
-   adc #N_TIMBRES
+   adc #N_INSTRUMENTS
    tay
    cpx #(MAX_LFOS_PER_VOICE*N_VOICES) ; a bit wonky ... but should do.
    bcc @loop_envs
 @skip_lfos:
 
    ; Check if FM voice is needed
-   ldy note_timbre
-   lda timbres::Timbre::fm_general::op_en, y
+   ldy note_instrument
+   lda instruments::Instrument::fm_general::op_en, y
    beq @skip_fm  ; no voice is needed.
    jsr set_fm_voice_volume
    ldx note_voice
@@ -364,18 +364,18 @@ retrigger_note:
 ; checks if there are enough VERA oscillators and FM voices available
 ; and, in that case, reserves them for the new voice.
 ; Also resets portamento and vibrato.
-; expects voice index in X, timbre index in Y
+; expects voice index in X, instrument index in Y
 ; returns A=1 if successful, A=0 otherwise (zero flag set accordingly)
 ; doesn't preserve X and Y
 ; This function is used within play_note.
 start_note:
    stn_loop_counter = mzpbe
    lda Oscmap::nfo
-   cmp timbres::Timbre::n_oscs, y ; carry is set if nfo>=non (number of free oscillators >= number of oscillators needed)
+   cmp instruments::Instrument::n_oscs, y ; carry is set if nfo>=non (number of free oscillators >= number of oscillators needed)
    bcs :+
    jmp @unsuccessful    ; if there's not enough oscillators left, don't play
 :  ; check if we need an FM voice
-   lda timbres::Timbre::fm_general::op_en, y
+   lda instruments::Instrument::fm_general::op_en, y
    beq :+ ; no FM voice needed -> go ahead initializing the voice
    lda FMmap::nfv ; check if there's an FM voice available
    bne :+
@@ -386,8 +386,8 @@ start_note:
    sta Voice::vibrato::current_level, x
    ; get oscillators from and update free oscillators ringlist
    ; x: offset in voice data
-   ; y: offset in freeosclist (but first, it is timbre index)
-   lda timbres::Timbre::n_oscs, y
+   ; y: offset in freeosclist (but first, it is instrument index)
+   lda instruments::Instrument::n_oscs, y
    beq @end_loop_osc
    sta stn_loop_counter
 @loop_osc:
@@ -408,35 +408,35 @@ start_note:
 
    ; FM stuff
    ; Check again if FM voice is needed
-   ldy note_timbre
-   lda timbres::Timbre::fm_general::op_en, y
+   ldy note_instrument
+   lda instruments::Instrument::fm_general::op_en, y
    bne :+
    lda #1 ; if no voice is needed, return successfully
    rts
-:  ; look for an unused voice that has the same timbre loaded
-   lda note_timbre
+:  ; look for an unused voice that has the same instrument loaded
+   lda note_instrument
    ldx FMmap::ffv
-@search_timbre:
-   cmp FMmap::timbremap, x ; patches that have been loaded are stored in timbremap
-   beq @timbre_found
+@search_instrument:
+   cmp FMmap::instrumentmap, x ; instruments that have been loaded are stored in instrumentmap
+   beq @instrument_found
    inx
    cpx #N_FM_VOICES
    bne :+
    ldx #0
 :  cpx FMmap::lfv
-   bne @search_timbre
-@timbre_not_found:
+   bne @search_instrument
+@instrument_not_found:
    ; this is simple. get the next available voice, and load data onto YM2151
    ldx FMmap::ffv
    lda FMmap::freevoicelist, x
    pha
-   jsr load_fm_timbre
+   jsr load_fm_instrument
    pla
    bra @claim_fm_voice
-@timbre_found:
-   ; First check if the timbre found is actually in the next avialable voice.
-   ; in this case, we doe the same as in the case the timbre was not found,
-   ; only we do not load the timbre onto the YM2151.
+@instrument_found:
+   ; First check if the instrument found is actually in the next avialable voice.
+   ; in this case, we doe the same as in the case the instrument was not found,
+   ; only we do not load the instrument onto the YM2151.
    cpx FMmap::ffv
    bne @rotate_voices
    lda FMmap::freevoicelist, x
@@ -444,18 +444,18 @@ start_note:
 @rotate_voices:
    ; More complicated. need to swap things around.
    ; The situation is as follows:
-   ;                               v   unused voice with the same timbre loaded as the new note
+   ;                               v   unused voice with the same instrument loaded as the new note
    ; | 0 | 0 | 1 | 1 | 0 | 0 | 0 | 0 |     (0=unused, 1=used)
 
    ; We want to move the slots as follows
    ;                   ,-----------,
    ;                   V -> ->  -> |
    ; | 0 | 0 | 1 | 1 | 0 | 0 | 0 | 0 |
-   ; so that the unused voice with the correct timbre is right in front of the other used voices,
+   ; so that the unused voice with the correct instrument is right in front of the other used voices,
    ; and the order of the other unused voices has been preserved.
 
    ; We will do this backwards
-   ; We know which timbre the found voice has, so we don't need to save that.
+   ; We know which instrument the found voice has, so we don't need to save that.
    ; But we do need to save the voide index.
    lda FMmap::freevoicelist, x
    pha
@@ -471,8 +471,8 @@ start_note:
 :  ; move data
    lda FMmap::freevoicelist, x
    sta FMmap::freevoicelist, y
-   lda FMmap::timbremap, x
-   sta FMmap::timbremap, y
+   lda FMmap::instrumentmap, x
+   sta FMmap::instrumentmap, y
    ; loop condition
    cpx FMmap::ffv
    bne @shift_loop
@@ -513,11 +513,11 @@ stop_note:
    ; update freeosclist
    ; get oscillators from voice and put them back into free oscillators ringlist
    ; x: offset in voice data
-   ; y: offset in freeosclist (but first, it is timbre index)
+   ; y: offset in freeosclist (but first, it is instrument index)
    spn_loop_counter = mzpbe ; e and not b because stop_note is also called from within synth_tick
-   ldy Voice::timbre, x
+   ldy Voice::instrument, x
    stz Voice::active, x
-   lda timbres::Timbre::n_oscs, y
+   lda instruments::Instrument::n_oscs, y
    beq @end_loop_osc
    sta spn_loop_counter
 @loop_osc:
@@ -540,8 +540,8 @@ stop_note:
    ; do FM stuff
    ; check if FM was used
    ldx note_voice
-   ldy Voice::timbre, x
-   lda timbres::Timbre::fm_general::op_en, y
+   ldy Voice::instrument, x
+   lda instruments::Instrument::fm_general::op_en, y
    bne :+
    plp
    rts
@@ -572,9 +572,9 @@ stop_note:
    ; put the YM2151 voice back into the ringlist
    lda Voice::fm_voice_map, x
    sta FMmap::freevoicelist, y
-   ; remember which timbre was played so that we may not need to reload it
-   lda Voice::timbre, x
-   sta FMmap::timbremap, y
+   ; remember which instrument was played so that we may not need to reload it
+   lda Voice::instrument, x
+   sta FMmap::instrumentmap, y
    ; advance the pointer of the first used voice
    ADVANCE_FVL_POINTER FMmap::lfv
    ; increment available voices
@@ -592,10 +592,10 @@ release_note:
    php
    sei
    ldx note_voice
-   ; load timbre number
-   ldy Voice::timbre, x
+   ; load instrument number
+   ldy Voice::instrument, x
    ; number of active envelopes
-   lda timbres::Timbre::n_envs, y
+   lda instruments::Instrument::n_envs, y
    sta rln_env_counter
 @loop_env:
    lda #4
@@ -609,7 +609,7 @@ release_note:
    bne @loop_env
 
    ; FM key off
-   lda timbres::Timbre::fm_general::op_en, y
+   lda instruments::Instrument::fm_general::op_en, y
    bne :+
    plp
    rts
@@ -759,8 +759,8 @@ set_volume:
    stz Voice::vol::volume_low, x
    lda Voice::active, x
    beq :+ ; skip FM part if voice is inactive
-   ldy Voice::timbre, x
-   lda timbres::Timbre::fm_general::op_en, y
+   ldy Voice::instrument, x
+   lda instruments::Instrument::fm_general::op_en, y
    beq :+ ; skip FM part if FM part is inactive
    stx note_voice
    jsr voices::set_fm_voice_volume

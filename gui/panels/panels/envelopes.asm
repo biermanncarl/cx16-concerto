@@ -58,14 +58,14 @@
    .endproc
 
    .proc write
-      ; first, determine the offset of the envelope in the Timbre data
-      lda gui_variables::current_synth_timbre
+      ; first, determine the offset of the envelope in the instrument data
+      lda gui_variables::current_synth_instrument
       ldx active_tab ; envelope number
    @loop:
       cpx #0
       beq @end_loop
       clc
-      adc #N_TIMBRES
+      adc #N_INSTRUMENTS
       dex
       bra @loop
    @end_loop:
@@ -97,31 +97,31 @@
    @attack:
       plx
       lda comps, y
-      sta concerto_synth::timbres::Timbre::env::attackH, x
+      sta concerto_synth::instruments::Instrument::env::attackH, x
       iny
       lda comps, y
-      sta concerto_synth::timbres::Timbre::env::attackL, x
+      sta concerto_synth::instruments::Instrument::env::attackL, x
       rts
    @decay:
       plx
       lda comps, y
-      sta concerto_synth::timbres::Timbre::env::decayH, x
+      sta concerto_synth::instruments::Instrument::env::decayH, x
       iny
       lda comps, y
-      sta concerto_synth::timbres::Timbre::env::decayL, x
+      sta concerto_synth::instruments::Instrument::env::decayL, x
       rts
    @sustain:
       plx
       lda comps, y
-      sta concerto_synth::timbres::Timbre::env::sustain, x
+      sta concerto_synth::instruments::Instrument::env::sustain, x
       rts
    @release:
       plx
       lda comps, y
-      sta concerto_synth::timbres::Timbre::env::releaseH, x
+      sta concerto_synth::instruments::Instrument::env::releaseH, x
       iny
       lda comps, y
-      sta concerto_synth::timbres::Timbre::env::releaseL, x
+      sta concerto_synth::instruments::Instrument::env::releaseL, x
       rts
    @skip:
       plx
@@ -130,36 +130,36 @@
 
 
    .proc refresh
-      ; first, determine the offset of the envelope in the Timbre data
-      lda gui_variables::current_synth_timbre
+      ; first, determine the offset of the envelope in the instrument data
+      lda gui_variables::current_synth_instrument
       ldx active_tab ; envelope number
    @loop:
       cpx #0
       beq @end_loop
       clc
-      adc #N_TIMBRES
+      adc #N_INSTRUMENTS
       dex
       bra @loop
    @end_loop:
       tax ; envelope index is in x
-      ; read ADSR data from Timbre and load it into edits
+      ; read ADSR data from Instrument and load it into edits
       ; attack edit
-      lda concerto_synth::timbres::Timbre::env::attackH, x
+      lda concerto_synth::instruments::Instrument::env::attackH, x
       STA_COMPONENT_MEMBER_ADDRESS drag_edit, attack, coarse_value
-      lda concerto_synth::timbres::Timbre::env::attackL, x
+      lda concerto_synth::instruments::Instrument::env::attackL, x
       STA_COMPONENT_MEMBER_ADDRESS drag_edit, attack, fine_value
       ; decay edit
-      lda concerto_synth::timbres::Timbre::env::decayH, x
+      lda concerto_synth::instruments::Instrument::env::decayH, x
       STA_COMPONENT_MEMBER_ADDRESS drag_edit, decay, coarse_value
-      lda concerto_synth::timbres::Timbre::env::decayL, x
+      lda concerto_synth::instruments::Instrument::env::decayL, x
       STA_COMPONENT_MEMBER_ADDRESS drag_edit, decay, fine_value
       ; sustain edit
-      lda concerto_synth::timbres::Timbre::env::sustain, x
+      lda concerto_synth::instruments::Instrument::env::sustain, x
       STA_COMPONENT_MEMBER_ADDRESS drag_edit, sustain, coarse_value
       ; release edit
-      lda concerto_synth::timbres::Timbre::env::releaseH, x
+      lda concerto_synth::instruments::Instrument::env::releaseH, x
       STA_COMPONENT_MEMBER_ADDRESS drag_edit, release, coarse_value
-      lda concerto_synth::timbres::Timbre::env::releaseL, x
+      lda concerto_synth::instruments::Instrument::env::releaseL, x
       STA_COMPONENT_MEMBER_ADDRESS drag_edit, release, fine_value
       rts
    .endproc

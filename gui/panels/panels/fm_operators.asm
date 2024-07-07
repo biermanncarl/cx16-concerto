@@ -87,17 +87,17 @@
    .endproc
 
    .proc write
-      ; invalidate all FM timbres that have been loaded onto the YM2151 (i.e. enforce reload after timbre has been changed)
+      ; invalidate all FM instruments that have been loaded onto the YM2151 (i.e. enforce reload after instrument has been changed)
       jsr concerto_synth::voices::panic
-      jsr concerto_synth::voices::invalidate_fm_timbres
+      jsr concerto_synth::voices::invalidate_fm_instruments
       ; determine operator index
       ldx active_tab
-      lda gui_variables::current_synth_timbre
+      lda gui_variables::current_synth_instrument
       clc
    @loop:
       dex
       bmi @loop_done
-      adc #N_TIMBRES
+      adc #N_INSTRUMENTS
       bra @loop
    @loop_done:
       tax
@@ -130,34 +130,34 @@
    @attack:
       plx
       LDA_COMPONENT_MEMBER_ADDRESS drag_edit, attack, coarse_value
-      sta concerto_synth::timbres::Timbre::operators::ar, x
+      sta concerto_synth::instruments::Instrument::operators::ar, x
       rts
    @decay1:
       plx
       LDA_COMPONENT_MEMBER_ADDRESS drag_edit, decay_1, coarse_value
-      sta concerto_synth::timbres::Timbre::operators::d1r, x
+      sta concerto_synth::instruments::Instrument::operators::d1r, x
       rts
    @decay_level:
       plx
       sec
       lda #15
       SBC_COMPONENT_MEMBER_ADDRESS drag_edit, decay_level, coarse_value
-      sta concerto_synth::timbres::Timbre::operators::d1l, x
+      sta concerto_synth::instruments::Instrument::operators::d1l, x
       rts
    @decay2:
       plx
       LDA_COMPONENT_MEMBER_ADDRESS drag_edit, decay_2, coarse_value
-      sta concerto_synth::timbres::Timbre::operators::d2r, x
+      sta concerto_synth::instruments::Instrument::operators::d2r, x
       rts
    @release:
       plx
       LDA_COMPONENT_MEMBER_ADDRESS drag_edit, release, coarse_value
-      sta concerto_synth::timbres::Timbre::operators::rr, x
+      sta concerto_synth::instruments::Instrument::operators::rr, x
       rts
    @mul:
       plx
       LDA_COMPONENT_MEMBER_ADDRESS drag_edit, mul, coarse_value
-      sta concerto_synth::timbres::Timbre::operators::mul, x
+      sta concerto_synth::instruments::Instrument::operators::mul, x
       rts
    @fine:
       plx
@@ -167,29 +167,29 @@
       eor #%11111111
       clc
       adc #5
-   :  sta concerto_synth::timbres::Timbre::operators::dt1, x
+   :  sta concerto_synth::instruments::Instrument::operators::dt1, x
       rts
    @coarse:
       plx
       LDA_COMPONENT_MEMBER_ADDRESS drag_edit, coarse, coarse_value
-      sta concerto_synth::timbres::Timbre::operators::dt2, x
+      sta concerto_synth::instruments::Instrument::operators::dt2, x
       rts
    @vol:
       plx
       lda #127
       sec
       SBC_COMPONENT_MEMBER_ADDRESS drag_edit, level, coarse_value
-      sta concerto_synth::timbres::Timbre::operators::level, x
+      sta concerto_synth::instruments::Instrument::operators::level, x
       rts
    @key_scaling:
       plx
       LDA_COMPONENT_MEMBER_ADDRESS drag_edit, key_scaling, coarse_value
-      sta concerto_synth::timbres::Timbre::operators::ks, x
+      sta concerto_synth::instruments::Instrument::operators::ks, x
       rts
    @vol_sens:
       plx
       LDA_COMPONENT_MEMBER_ADDRESS checkbox, vol_sensitivity, checked
-      sta concerto_synth::timbres::Timbre::operators::vol_sens, x
+      sta concerto_synth::instruments::Instrument::operators::vol_sens, x
       rts
    .endproc
 
@@ -197,60 +197,60 @@
    .proc refresh
       ; determine operator index
       ldx active_tab
-      lda gui_variables::current_synth_timbre
+      lda gui_variables::current_synth_instrument
       clc
    @loop:
       dex
       bmi @loop_done
       clc
-      adc #N_TIMBRES
+      adc #N_INSTRUMENTS
       bra @loop
    @loop_done:
       tax
       ; attack
-      lda concerto_synth::timbres::Timbre::operators::ar, x
+      lda concerto_synth::instruments::Instrument::operators::ar, x
       STA_COMPONENT_MEMBER_ADDRESS drag_edit, attack, coarse_value
       ; decay 1
-      lda concerto_synth::timbres::Timbre::operators::d1r, x
+      lda concerto_synth::instruments::Instrument::operators::d1r, x
       STA_COMPONENT_MEMBER_ADDRESS drag_edit, decay_1, coarse_value
       ; decay level
       sec
       lda #15
-      sbc concerto_synth::timbres::Timbre::operators::d1l, x
+      sbc concerto_synth::instruments::Instrument::operators::d1l, x
       STA_COMPONENT_MEMBER_ADDRESS drag_edit, decay_level, coarse_value
       ; decay 2
-      lda concerto_synth::timbres::Timbre::operators::d2r, x
+      lda concerto_synth::instruments::Instrument::operators::d2r, x
       STA_COMPONENT_MEMBER_ADDRESS drag_edit, decay_2, coarse_value
       ; release
-      lda concerto_synth::timbres::Timbre::operators::rr, x
+      lda concerto_synth::instruments::Instrument::operators::rr, x
       STA_COMPONENT_MEMBER_ADDRESS drag_edit, release, coarse_value
       ; mul
-      lda concerto_synth::timbres::Timbre::operators::mul, x
+      lda concerto_synth::instruments::Instrument::operators::mul, x
       STA_COMPONENT_MEMBER_ADDRESS drag_edit, mul, coarse_value
       ; fine
-      lda concerto_synth::timbres::Timbre::operators::dt1, x
+      lda concerto_synth::instruments::Instrument::operators::dt1, x
       and #%00000100
       beq :+
-      lda concerto_synth::timbres::Timbre::operators::dt1, x
+      lda concerto_synth::instruments::Instrument::operators::dt1, x
       eor #%11111111
       clc
       adc #5
       bra :++
-   :  lda concerto_synth::timbres::Timbre::operators::dt1, x
+   :  lda concerto_synth::instruments::Instrument::operators::dt1, x
    :  STA_COMPONENT_MEMBER_ADDRESS drag_edit, fine, coarse_value
       ; coarse
-      lda concerto_synth::timbres::Timbre::operators::dt2, x
+      lda concerto_synth::instruments::Instrument::operators::dt2, x
       STA_COMPONENT_MEMBER_ADDRESS drag_edit, coarse, coarse_value
       ; vol
       sec
       lda #127
-      sbc concerto_synth::timbres::Timbre::operators::level, x
+      sbc concerto_synth::instruments::Instrument::operators::level, x
       STA_COMPONENT_MEMBER_ADDRESS drag_edit, level, coarse_value
       ; key scaling
-      lda concerto_synth::timbres::Timbre::operators::ks, x
+      lda concerto_synth::instruments::Instrument::operators::ks, x
       STA_COMPONENT_MEMBER_ADDRESS drag_edit, key_scaling, coarse_value
       ; volume sensitivity
-      lda concerto_synth::timbres::Timbre::operators::vol_sens, x
+      lda concerto_synth::instruments::Instrument::operators::vol_sens, x
       STA_COMPONENT_MEMBER_ADDRESS checkbox, vol_sensitivity, checked
       rts
    .endproc

@@ -72,8 +72,8 @@
 @note_on:
     lda events::note_pitch
     sta concerto_synth::note_pitch
-    lda #0  ; concerto_gui::gui_variables::current_synth_timbre
-    sta concerto_synth::note_timbre
+    lda #0  ; concerto_gui::gui_variables::current_synth_instrument
+    sta concerto_synth::note_instrument
     lda #0 ; TODO: polyphony
     sta concerto_synth::note_voice
     lda events::note_velocity

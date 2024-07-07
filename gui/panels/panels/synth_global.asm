@@ -65,7 +65,7 @@
    .endproc
 
    .proc write
-      ldx gui_variables::current_synth_timbre
+      ldx gui_variables::current_synth_instrument
       ; now jump to component which has been clicked/dragged
       phx
       lda mouse_variables::curr_component_id
@@ -84,68 +84,68 @@
       jsr concerto_synth::voices::panic ; If we don't do this, a different number of oscillators might be released than initially acquired by a voice. Safety first.
       plx
       LDA_COMPONENT_MEMBER_ADDRESS arrowed_edit, n_oscs, value
-      sta concerto_synth::timbres::Timbre::n_oscs, x
+      sta concerto_synth::instruments::Instrument::n_oscs, x
       rts
    @n_envs:
       plx
       LDA_COMPONENT_MEMBER_ADDRESS arrowed_edit, n_envs, value
-      sta concerto_synth::timbres::Timbre::n_envs, x
+      sta concerto_synth::instruments::Instrument::n_envs, x
       rts
    @n_lfos:
       plx
       LDA_COMPONENT_MEMBER_ADDRESS checkbox, lfo_activate, checked
-      sta concerto_synth::timbres::Timbre::n_lfos, x
+      sta concerto_synth::instruments::Instrument::n_lfos, x
       rts
    @retr_activate:
       plx
       LDA_COMPONENT_MEMBER_ADDRESS checkbox, retrigger, checked
-      sta concerto_synth::timbres::Timbre::retrig, x
+      sta concerto_synth::instruments::Instrument::retrig, x
       rts
    @porta_activate:
       plx
       LDA_COMPONENT_MEMBER_ADDRESS checkbox, porta_activate, checked
-      sta concerto_synth::timbres::Timbre::porta, x
+      sta concerto_synth::instruments::Instrument::porta, x
       rts
    @porta_rate:
       plx
       LDA_COMPONENT_MEMBER_ADDRESS drag_edit, porta_rate, coarse_value
-      sta concerto_synth::timbres::Timbre::porta_r, x
+      sta concerto_synth::instruments::Instrument::porta_r, x
       rts
    @vibrato_amount:
       plx
       LDA_COMPONENT_MEMBER_ADDRESS drag_edit, vibrato_amount, coarse_value ; if this value is 0, that means vibrato off, which is represented as a negative value internally
       beq :+
       jsr concerto_synth::map_twos_complement_to_scale5
-      sta concerto_synth::timbres::Timbre::vibrato, x
+      sta concerto_synth::instruments::Instrument::vibrato, x
       rts
    :  lda #$FF
-      sta concerto_synth::timbres::Timbre::vibrato, x
+      sta concerto_synth::instruments::Instrument::vibrato, x
       rts
    .endproc
 
 
    .proc refresh
-      ldx gui_variables::current_synth_timbre
+      ldx gui_variables::current_synth_instrument
       ; number of oscillators
-      lda concerto_synth::timbres::Timbre::n_oscs, x
+      lda concerto_synth::instruments::Instrument::n_oscs, x
       STA_COMPONENT_MEMBER_ADDRESS arrowed_edit, n_oscs, value
       ; number of envelopes
-      lda concerto_synth::timbres::Timbre::n_envs, x
+      lda concerto_synth::instruments::Instrument::n_envs, x
       STA_COMPONENT_MEMBER_ADDRESS arrowed_edit, n_envs, value
       ; LFO activate checkbox
-      lda concerto_synth::timbres::Timbre::n_lfos, x
+      lda concerto_synth::instruments::Instrument::n_lfos, x
       STA_COMPONENT_MEMBER_ADDRESS checkbox, lfo_activate, checked
       ; retrigger checkbox
-      lda concerto_synth::timbres::Timbre::retrig, x
+      lda concerto_synth::instruments::Instrument::retrig, x
       STA_COMPONENT_MEMBER_ADDRESS checkbox, retrigger, checked
       ; porta activate checkbox
-      lda concerto_synth::timbres::Timbre::porta, x
+      lda concerto_synth::instruments::Instrument::porta, x
       STA_COMPONENT_MEMBER_ADDRESS checkbox, porta_activate, checked
       ; porta rate edit
-      lda concerto_synth::timbres::Timbre::porta_r, x
+      lda concerto_synth::instruments::Instrument::porta_r, x
       STA_COMPONENT_MEMBER_ADDRESS drag_edit, porta_rate, coarse_value
       ; vibrato amount edit
-      lda concerto_synth::timbres::Timbre::vibrato, x
+      lda concerto_synth::instruments::Instrument::vibrato, x
       bmi :+
       jsr concerto_synth::map_scale5_to_twos_complement
       bra :++

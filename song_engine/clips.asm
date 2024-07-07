@@ -44,16 +44,16 @@
 ; * it simplifies browsing clips when there's a collection of clips (as in an arrangement)
 
 ; Drum pads
-; Clips can be selected to operate as "drum pads". The basic idea is to make several timbres accessible from a single clip
+; Clips can be selected to operate as "drum pads". The basic idea is to make several instruments accessible from a single clip
 ; in a convenient way, so that drums can be programmed within a single clip.
-; A certain range of timbres (e.g. 16 to 31) are accessible for drum pad clips.
-; When a note in a drum pad clip is played, the lower nibble of the pitch is interpreted as the timbre
-; (e.g. add 16 to arrive at the 16 "drum pad timbres"). The note is played at a certain predefined pitch
+; A certain range of instruments (e.g. 16 to 31) are accessible for drum pad clips.
+; When a note in a drum pad clip is played, the lower nibble of the pitch is interpreted as the instrument
+; (e.g. add 16 to arrive at the 16 "drum pad instruments"). The note is played at a certain predefined pitch
 ; (somewhere in the center of the MIDI pitch range). The high nibble is then added to that pitch
-; so that the pitch of the sound can be slightly changed by playing in different repetitions of the 16 timbres.
-; Of course, timbres accessible from the drum pad can still be used as normal timbres.
-; It would be nice to add a visualization to the synth section showing up when one edits a timbre which can be
-; played from the drum pad. (E.g. a green "DRUM PAD" lighting up below the timbre selector).
+; so that the pitch of the sound can be slightly changed by playing in different repetitions of the 16 instruments.
+; Of course, instruments accessible from the drum pad can still be used as normal instruments.
+; It would be nice to add a visualization to the synth section showing up when one edits a instrument which can be
+; played from the drum pad. (E.g. a green "DRUM PAD" lighting up below the instrument selector).
 
 
 
