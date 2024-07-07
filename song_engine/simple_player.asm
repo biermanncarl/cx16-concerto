@@ -15,6 +15,10 @@
     next_time_stamp: .word 0
     next_event: .res 3
 
+    ; Which voice belongs to which channel
+    voice_channels:
+        .res N_VOICES
+
     ; if no more events available, carry is set upon return
     .proc getNextEventAndTimeStamp
         jsr event_selection::streamGetNextEvent
@@ -39,6 +43,51 @@
         clc
         rts
     .endproc
+
+    ; Looks through the 16 voices and tries to find a free one.
+    ; Returns the index of the voice in .X
+    ; If no voice was found, carry will be set, otherwise clear.
+    .proc findFreeVoice
+        ldx #0
+    @voice_loop:
+        lda concerto_synth::voices::Voice::active,x
+        beq @voice_found
+        inx
+        cpx #N_VOICES
+        bcc @voice_loop
+        rts ; end of voices reached, carry is set as per previous jump condition
+    @voice_found:
+        clc
+        rts
+    .endproc
+
+    ; Given a channel and pitch, finds an active voice which matches these.
+    ; .A : channel
+    ; .Y : pitch
+    ; Returns voice index in .X
+    ; If no voice was found, carry will be set, otherwise clear.
+    .proc findVoice
+        sta channel
+        ldx #255
+    @voice_loop:
+        inx
+        cpx #N_VOICES
+        bcs @not_found
+        lda concerto_synth::voices::Voice::active,x
+        beq @voice_loop ; voice inactive, go to next
+        lda channel
+        cmp voice_channels,x
+        bne @voice_loop ; not the channel we are looking for, go to next
+        tya
+        cmp concerto_synth::voices::Voice::pitch,x
+        bne @voice_loop ; not the same pitch that is playing, go to next
+    @voice_found:
+        clc
+    @not_found:
+        rts
+    channel:
+        .byte 0
+    .endproc
 .endscope
 
 .proc player_tick
@@ -46,9 +95,6 @@
     bne :+
     rts
 :
-    ; TODO: take care of ISR-stream-swap
-    ; TODO: do live updates while editing
-    ; TODO: polyphony
     jsr event_selection::swapBackFrontStreams
 
 @process_events_loop:
@@ -70,18 +116,23 @@
     cmp #events::event_type_note_on
     bne @continue_next_event ; for now, ignore all events that aren't note-on or note-off
 @note_on:
+    ; Todo read clip/track settings and interpret them
+    jsr detail::findFreeVoice
+    bcs @continue_next_event ; no free voice found, go to next event
+    stx concerto_synth::note_voice
+    stz detail::voice_channels, x ; 0 is the channel index for now, todo: read from clip/track
     lda events::note_pitch
     sta concerto_synth::note_pitch
     lda #0  ; concerto_gui::gui_variables::current_synth_instrument
     sta concerto_synth::note_instrument
-    lda #0 ; TODO: polyphony
-    sta concerto_synth::note_voice
     lda events::note_velocity
     jsr concerto_synth::play_note
     bra @continue_next_event
 @note_off:
-    ; TODO: pitch sensitivity for polyphony
-    ldx #0
+    lda #0 ; channel number - todo read from clip/track
+    ldy events::note_pitch
+    jsr detail::findVoice
+    bcs @continue_next_event ; not found (e.g. mono-legato --> note's pitch got changed)
     stx concerto_synth::note_voice
     jsr concerto_synth::release_note
 
