@@ -1,8 +1,8 @@
 ; Copyright 2023 Carl Georg Biermann
 
-.ifndef ::GUI_PANELS_PANELS_TEMPLATE_ASM
+.ifndef ::GUI_PANELS_PANELS_CLIP_EDITING_ASM
 
-::GUI_PANELS_PANELS_TEMPLATE_ASM = 1
+::GUI_PANELS_PANELS_CLIP_EDITING_ASM = 1
 
 .include "../../gui_macros.asm"
 .include "common.asm"
@@ -111,4 +111,4 @@
    keypress = panel_common::dummy_subroutine
 .endscope
 
-.endif ; .ifndef ::GUI_PANELS_PANELS_TEMPLATE_ASM
+.endif ; .ifndef ::GUI_PANELS_PANELS_CLIP_EDITING_ASM

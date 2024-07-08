@@ -7,6 +7,8 @@
 .include "panels/synth_global.asm"
 .include "panels/psg_oscillators.asm"
 .include "panels/clip_editing.asm"
+.include "panels/track_name_popup.asm"
+.include "panels/clip_properties.asm"
 .include "panels/envelopes.asm"
 .include "panels/fm_general.asm"
 .include "panels/fm_operators.asm"
@@ -22,6 +24,7 @@
 .linecont + ; switch on line continuation with "\"
 .define ALL_PANEL_SCOPES \
     clip_editing, \
+    clip_properties, \
     synth_global, \
     psg_oscillators, \
     envelopes, \
@@ -30,6 +33,7 @@
     file_save_popup, \
     file_load_popup, \
     ok_cancel_popup, \
+    track_name_popup, \
     lfo, \
     synth_info, \
     fm_general, \

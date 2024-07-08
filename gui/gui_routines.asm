@@ -38,12 +38,14 @@
 
    .proc load_clip_gui
       jsr guiutils::cls
-      lda #2 ; GUI stack size (how many panels are visible)
+      lda #3 ; GUI stack size (how many panels are visible)
       sta panels::panels_stack_pointer
       lda #panels::ids::global_navigation
       sta panels::panels_stack+0
       lda #panels::ids::clip_editing
       sta panels::panels_stack+1
+      lda #panels::ids::clip_properties
+      sta panels::panels_stack+2
       jsr refresh_gui
       rts
    .endproc

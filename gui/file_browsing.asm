@@ -291,10 +291,10 @@ delete_me:
     lda #0
     sta (v32b::entrypointer), y
     ; create new file name buffer
-    lda files
-    ldx files+1
     lda RAM_BANK
     pha
+    lda files
+    ldx files+1
     jsr v32b::append_new_entry
     pla
     sta RAM_BANK

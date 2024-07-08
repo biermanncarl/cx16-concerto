@@ -43,6 +43,7 @@ initialize:
    sta guiutils::original_map_base
    jsr gui_routines::load_synth_gui
    jsr mouse::mouse_init
+   jsr song_engine::clips::initialize
    jsr file_browsing::initialize
    jsr panels::file_save_popup::initialize
    jsr panels::file_load_popup::initialize

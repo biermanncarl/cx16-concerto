@@ -26,12 +26,11 @@
    .endscope
    capts:
       .byte CCOLOR_CAPTION, 34, 1
-      .word instrument_lb
+      .word panel_common::lb_instrument
       .byte CCOLOR_CAPTION, 34, 5
       .word velocity_lb
       .byte 0
    ; data specific to the synth-navigation panel
-   instrument_lb: STR_FORMAT "instrument"
    load_preset_lb: STR_FORMAT " load preset"
    save_preset_lb: STR_FORMAT " save preset"
    load_song_lb: STR_FORMAT "  load song"

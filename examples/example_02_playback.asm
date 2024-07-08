@@ -35,7 +35,7 @@ my_custom_playback_routine:
    lda #0
    sta concerto_synth::note_voice
    lda #0
-   sta concerto_synth::note_timbre
+   sta concerto_synth::note_instrument
    lda #63 ; note volume
    jsr concerto_synth::play_note
    ; and play another note at another voice

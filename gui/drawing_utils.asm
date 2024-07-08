@@ -883,8 +883,8 @@ alternative_gotoxy:
 ; clobbers some of the other API variables
 draw_globalnav:
    @tab_height = 16
-   @tab_start = 12 ; y coordinate
-   @num_tabs = 3
+   @tab_start = 28 ; y coordinate
+   @num_tabs = 2
    ; abuse API variables for temporary storage
    @character_top = draw_x
    @character_bottom = draw_y
@@ -984,7 +984,7 @@ draw_globalnav:
    jmp @tab_loop
 :  rts
 @captions:
-   STR_FORMAT "arrangement  c l i p   s y n t h "
+   STR_FORMAT " t r a c k  s y n t h "
 
 
 ; Sets up VERA port 0 to access a sprite of given index. Will position the data pointer at the x position for convenience (not the bitmap address).

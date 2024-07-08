@@ -81,3 +81,105 @@
 ; * pitch slide: 110 + 172 + 165 ?  (oder 126 pi for "pitch")
 ; * pitch set: 126 + 95
 
+
+.ifndef ::SONG_ENGINE_CLIPS_ASM
+::SONG_ENGINE_CLIPS_ASM = 1
+
+.scope clips
+
+clips_vector:
+    .word 0
+number_of_clips:
+    .byte 0 ; potentially word in the future
+max_number_of_clips = 16 ; for now, equals maximum number of tracks
+
+clip_name_max_length = 9
+clip_data_size = 30 ; want to keep it at 30 even though we use v32b (32 bytes) because v32b might be reduced to 31 bytes (or lower?) in the future
+
+.struct clip_data
+    ; we keep the clip name in the beginning so that this clip data format is compatible with listbox
+    clip_name     .byte 10 ; account for the terminating zero byte
+    event_ptr     .word ; pointer to v5b vector containing the event data in the clip
+    instrument_id .byte
+    monophonic    .byte
+    drum_pad      .byte ; could this be merged with instrument id?
+    .res 15 ; reserve some space for future data members
+.endstruct
+; size checks
+.if .sizeof(clip_data) <> clip_data_size
+    .error "clip_data has wrong size!"
+.endif
+.if .sizeof(clip_data::clip_name) <> (clip_name_max_length + 1)
+    .error "clip_name has wrong size!"
+.endif
+
+
+; Initializes a clip with default values.
+; Prior to this, v32b::accessFirstEntry or similar has to be called.
+.proc initializeClip
+    ldy #clip_data_size-1
+@loop:
+    lda #0
+    cpy #7 ; length of default name, must be shorter than max
+    bcs :+
+    lda default_name, y
+:   sta (v32b::entrypointer), y
+    dey
+    bpl @loop
+    ; create the events vector
+    lda RAM_BANK
+    pha
+    jsr v5b::new
+    pla
+    sta RAM_BANK
+    ldy #clip_data::event_ptr
+    sta (v32b::entrypointer), y
+    iny
+    txa
+    sta (v32b::entrypointer), y
+    rts
+default_name:
+    .byte "unnamed"
+.endproc
+
+
+; Creates the clips_vector with a default clip
+.proc initialize
+    jsr v32b::new
+    sta clips_vector
+    stx clips_vector+1
+    jsr v32b::accessFirstEntry
+    jsr initializeClip
+    lda #1
+    sta number_of_clips
+    rts
+.endproc
+
+
+; Adds a clip if the maximum number of clips isn't reached yet.
+.proc addClip
+    lda number_of_clips
+    cmp #max_number_of_clips
+    bcs :+
+    lda clips_vector
+    ldx clips_vector+1
+    jsr v32b::append_new_entry ; returns pointer to new entry in .A/.X
+    jsr v32b::accessFirstEntry
+    jsr initializeClip
+    inc number_of_clips
+:   rts
+.endproc
+
+
+; expects index of clip in .Y
+.proc accessClip
+    lda clips_vector
+    ldx clips_vector+1
+    jsr dll::getElementByIndex
+    jsr v32b::accessFirstEntry
+    rts
+.endproc
+
+.endscope
+
+.endif ; .ifndef SONG_ENGINE_CLIPS_ASM

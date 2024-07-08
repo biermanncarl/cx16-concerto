@@ -32,23 +32,18 @@
 
    .proc write
       lda mouse_variables::curr_data_2 ; y position in multiples of 8 pixels
-      ; tabs start at row 12 and are 16 high each
+      ; tabs start at row 28 and are 16 high each
       sec
-      sbc #12
+      sbc #28
       lsr
       lsr
       lsr
       lsr
       sta active_tab
       cmp #0
-      beq @load_arrangement_view
-      cmp #1
       beq @load_clip_view
       jsr gui_routines__load_synth_gui
-      bra @end
-   @load_arrangement_view:
-      jsr gui_routines__load_arrangement_gui
-      bra @end
+      rts
    @load_clip_view:
       jsr gui_routines__load_clip_gui
    @end:
