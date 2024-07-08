@@ -61,6 +61,7 @@
         sta guiutils::draw_height
         stz guiutils::draw_data1
         jsr guiutils::draw_frame
+        STZ_COMPONENT_MEMBER_ADDRESS text_edit, track_name, cursor_position
         rts
     .endproc
 

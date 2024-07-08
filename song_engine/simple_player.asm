@@ -117,6 +117,7 @@
     bne @continue_next_event ; for now, ignore all events that aren't note-on or note-off
 @note_on:
     ; Todo read clip/track settings and interpret them
+    ; TODO: find voice with current channel & pitch --> replace
     jsr detail::findFreeVoice
     bcs @continue_next_event ; no free voice found, go to next event
     stx concerto_synth::note_voice
