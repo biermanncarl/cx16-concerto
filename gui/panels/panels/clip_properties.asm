@@ -51,6 +51,15 @@
         ldx song_engine::clips::clips_vector+1
         sta comps::track_select + components::listbox::data_members::string_pointer
         stx comps::track_select + components::listbox::data_members::string_pointer+1
+        ; put current clip as clip data
+        ldy active_clip_id
+        jsr song_engine::clips::accessClip
+        ldy #song_engine::clips::clip_data::event_ptr
+        lda (v32b::entrypointer),y
+        sta song_engine::unselected_events_vector
+        iny
+        lda (v32b::entrypointer),y
+        sta song_engine::unselected_events_vector+1
         rts
     .endproc
 
@@ -73,6 +82,21 @@
         .word @move_up
         .word @move_down
     @track_select:
+        ; TODO -- factor this out into its own function
+        ; move all events back into the list of clips
+        php
+        sei
+        SET_SELECTED_VECTOR song_engine::selected_events_vector
+        SET_UNSELECTED_VECTOR song_engine::unselected_events_vector
+        jsr song_engine::event_selection::unSelectAllEvents
+        ldy #song_engine::clips::clip_data::event_ptr
+        lda song_engine::unselected_events_vector
+        sta (v32b::entrypointer),y
+        iny
+        lda song_engine::unselected_events_vector+1
+        sta (v32b::entrypointer),y
+
+        ; update to new clip
         LDA_COMPONENT_MEMBER_ADDRESS listbox, track_select, selected_entry
         bpl :+
         ; invalid entry, select last track
@@ -80,8 +104,18 @@
         dec
         STA_COMPONENT_MEMBER_ADDRESS listbox, track_select, selected_entry
     :   sta active_clip_id
-        jsr refresh
-        inc gui_variables::request_components_redraw
+        jsr refresh ; calls accessClip on new clip, so we don't have to
+        ; move events of new clip into the GUI
+        ldy #song_engine::clips::clip_data::event_ptr
+        lda (v32b::entrypointer),y
+        sta song_engine::unselected_events_vector
+        iny
+        lda (v32b::entrypointer),y
+        sta song_engine::unselected_events_vector+1
+
+        jsr song_engine::simple_player::updatePlayback
+        plp
+        jsr gui_routines__draw_gui
         rts
     @instrument:
         LDA_COMPONENT_MEMBER_ADDRESS drag_edit, instrument_sel, coarse_value
@@ -100,7 +134,6 @@
         rts
     @track_name:
         ; set string pointer to clip name
-        ; TODO
         lda RAM_BANK
         sta track_name_popup::string_address
         lda v32b::entrypointer+1

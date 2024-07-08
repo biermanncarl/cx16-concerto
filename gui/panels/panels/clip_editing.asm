@@ -89,8 +89,8 @@
       stz song_engine::simple_player::detail::time_stamp
       stz song_engine::simple_player::detail::time_stamp+1
       jsr song_engine::event_selection::swapBackFrontStreams
-      SET_SELECTED_VECTOR components::dnd::dragables::notes::selected_events_vector
-      SET_UNSELECTED_VECTOR  components::dnd::dragables::notes::unselected_events_vector
+      SET_SELECTED_VECTOR song_engine::selected_events_vector
+      SET_UNSELECTED_VECTOR song_engine::unselected_events_vector
       jsr song_engine::event_selection::resetStream
       jsr song_engine::simple_player::detail::getNextEventAndTimeStamp
       jsr song_engine::event_selection::swapBackFrontStreams

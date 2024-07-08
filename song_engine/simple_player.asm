@@ -161,6 +161,10 @@
 ; (By the way, changing or even reading played back clip data in non-ISR code MUST be masked by SEI...)
 ; It basically rewinds the playback and fast-forwards to the current time stamp.
 .proc updatePlayback
+    jsr song_engine::event_selection::swapBackFrontStreams
+    SET_SELECTED_VECTOR selected_events_vector
+    SET_UNSELECTED_VECTOR unselected_events_vector
+
     jsr concerto_synth::panic
     jsr event_selection::resetStream
 @fast_forward_loop:
@@ -176,6 +180,7 @@
     bcc @fast_forward_loop
 
 @fast_forward_done:
+    jsr song_engine::event_selection::swapBackFrontStreams
     rts
 .endproc
 

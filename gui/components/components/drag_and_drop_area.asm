@@ -152,11 +152,7 @@
         beq @end
         cmp #dnd::dragables::notes::drag_action::zoom
         beq @end
-        jsr song_engine::event_selection::swapBackFrontStreams
-        SET_SELECTED_VECTOR components::dnd::dragables::notes::selected_events_vector
-        SET_UNSELECTED_VECTOR  components::dnd::dragables::notes::unselected_events_vector
         jsr song_engine::simple_player::updatePlayback
-        jsr song_engine::event_selection::swapBackFrontStreams
     @end:
         rts
     .endproc
@@ -188,14 +184,11 @@
         jsr v5b::new
         sta dnd::clipboard_events
         stx dnd::clipboard_events+1
-        ; create unselected vector
-        jsr v5b::new
-        sta dnd::dragables::notes::unselected_events_vector
-        stx dnd::dragables::notes::unselected_events_vector+1
+        ; create unselected vector isn't needed because that is given by the clip data
         ; create selected vector
         jsr v5b::new
-        sta dnd::dragables::notes::selected_events_vector
-        stx dnd::dragables::notes::selected_events_vector+1
+        sta song_engine::selected_events_vector
+        stx song_engine::selected_events_vector+1
         ; just for testing
         jsr dnd::dragables::notes::setup_test_clip
         rts
