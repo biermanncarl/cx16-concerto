@@ -62,6 +62,15 @@
       sta guiutils::draw_height
       stz guiutils::draw_data1
       jsr guiutils::draw_frame
+      ; put current clip as clip data
+      ldy clip_properties::active_clip_id
+      jsr song_engine::clips::accessClip
+      ldy #song_engine::clips::clip_data::event_ptr
+      lda (v32b::entrypointer),y
+      sta song_engine::unselected_events_vector
+      iny
+      lda (v32b::entrypointer),y
+      sta song_engine::unselected_events_vector+1
       rts
    .endproc
 

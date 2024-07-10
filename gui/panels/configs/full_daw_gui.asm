@@ -6,9 +6,9 @@
 
 .include "panels/synth_global.asm"
 .include "panels/psg_oscillators.asm"
-.include "panels/clip_editing.asm"
 .include "panels/track_name_popup.asm"
 .include "panels/clip_properties.asm"
+.include "panels/clip_editing.asm"
 .include "panels/envelopes.asm"
 .include "panels/fm_general.asm"
 .include "panels/fm_operators.asm"
