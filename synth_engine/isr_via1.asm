@@ -74,19 +74,16 @@ shutdown_isr:
    ; load time interval into timer latches ($0000 to stop the timer NOW and inhibit any further NMIs down the line, which make our life miserable)
    stz VIA_T1C_L
    stz VIA_T1C_H ; this causes the latched values to be loaded into the counter and thus stops the timer
-   ; an NMI will occur pretty much right away, as we set the counter to 0
-   ; We don't uninstall the NMI here, but let the NMI uninstall itself. This is safer.
-   ; If we were to allow an NMI to occur with the original NMI vector, we would be facing a BRK,
-   ; or worse, an emulator crash (when the wrong ROM page is selected).
-   ; Hence, we keep ours for the last iteration and allow it to uninstall itself.
+   ; an interrupt will occur pretty much right away, as we set the counter to 0
 
    ; restore IRQ interrupt handler
+   php
    sei            ; block interrupts
    lda default_irq_isr
    sta IRQVec
    lda default_irq_isr+1
    sta IRQVec+1
-   cli            ; allow interrupts
+   plp            ; allow interrupts
 
    ; set ROM bank back to original
    lda default_rom_page
@@ -109,7 +106,7 @@ the_isr:
 
    lda tick_is_running
    bne @end_tick ; skip running the tick 
-   lda #1
+   inc
    sta tick_is_running ; prevent ISR from interrupting itself
    jsr do_tick
    stz tick_is_running

@@ -10,7 +10,7 @@
 
 ; define default timing source selector, if no other source has been selected yet
 .ifndef ::concerto_clock_select
-   ;::concerto_clock_select = CONCERTO_CLOCK_AFLOW
+   ; ::concerto_clock_select = CONCERTO_CLOCK_AFLOW
    ::concerto_clock_select = CONCERTO_CLOCK_VIA1_T1
 .endif
 
