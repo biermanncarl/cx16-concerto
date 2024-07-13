@@ -19,6 +19,29 @@
     voice_channels:
         .res N_VOICES
 
+    temp_variable_a:
+        .byte 0
+    temp_variable_b:
+        .byte 0
+
+    ; state for each event player
+    ; player with index 0 is for the currently selected events, players 1-MAX are the clips (and the unselected events of the currently edited clip)
+    num_players = MAX_TRACKS + 1 ; we need one extra player for the selected events in the current clip edit view
+    next_event_timestamp_l:
+        .res num_players
+    next_event_timestamp_h:
+        .res num_players
+    next_event_pointer_a:
+        .res num_players
+    next_event_pointer_x:
+        .res num_players
+    next_event_pointer_y: ; this variable doubles as the "active" switch. If zero (NULL pointer), the player is inactive.
+        .res num_players
+    clip_settings_a:
+        .res num_players
+    clip_settings_x:
+        .res num_players
+
     ; if no more events available, carry is set upon return
     .proc getNextEventAndTimeStamp
         jsr event_selection::streamGetNextEvent
@@ -66,6 +89,7 @@
     ; .Y : pitch
     ; Returns voice index in .X
     ; If no voice was found, carry will be set, otherwise clear.
+    ; TODO: also look for instrument id (support drum pad)
     .proc findVoice
         sta channel
         ldx #255
@@ -88,103 +112,252 @@
     channel:
         .byte 0
     .endproc
+
+    ; Sets up event pointer and time stamp for playback on a given track.
+    ; Expects pointer to event vector (B/H) in .A/.X
+    ; Expects index of player in .Y
+    .proc startPlabackOnTrack
+        track_index = detail::temp_variable_a
+        temp = detail::temp_variable_b
+        sty track_index
+        jsr v5b::get_first_entry
+        bcs :+ ; skip empty tracks
+            stx temp
+            ldx track_index
+            sta detail::next_event_pointer_a, x
+            pha
+            tya
+            sta detail::next_event_pointer_y, x
+            lda temp
+            sta detail::next_event_pointer_x, x
+            pla
+            ldx temp
+            jsr v5b::read_entry
+            ldx track_index
+            lda events::event_time_stamp_l
+            sta detail::next_event_timestamp_l, x
+            lda events::event_time_stamp_h
+            sta detail::next_event_timestamp_h, x
+        :
+        rts
+    .endproc
 .endscope
 
-.proc player_tick
+
+; New, multitrack capable version
+; Possible adaptation later: start from time stamp
+.proc startPlayback
+    track_index = detail::temp_variable_a
+    temp = detail::temp_variable_b
+    php
+    sei
+    ; First, deactivate all players
+    ldx #0
+@deactivate_loop:
+    stz detail::next_event_pointer_y, x
+    inx
+    cpx #MAX_TRACKS
+    bne @deactivate_loop
+
+    ; Set time stamp to zero
+    stz detail::time_stamp
+    stz detail::time_stamp+1
+
+    ; Initialize player for selected events (player index 0)
+    ; Set up pointer to clip options data
+    ldy clips::active_clip_id
+    lda clips::clips_vector
+    ldx clips::clips_vector+1
+    jsr dll::getElementByIndex ; returns pointer in .A/.X
+    sta detail::clip_settings_a ; player index 0, no offset needed
+    stx detail::clip_settings_x
+    ; Set up timestamp & pointer to event data
+    lda selected_events_vector
+    ldx selected_events_vector+1
+    ldy #0
+    jsr detail::startPlabackOnTrack
+
+
+    ; Now, initialize the normal players
+    ldy #1
+    sty track_index ; track index 0 was already initialized above
+    dey
+    jsr clips::accessClip
+@track_loop:
+    ; backup RAM BANK
+    lda RAM_BANK
+    pha
+    ; setup pointer to clip data on current track
+    ldx track_index
+    ; B component of B/H pointer was RAM BANK, already loaded above
+    sta detail::clip_settings_a, x
+    lda v32b::entrypointer_h
+    sta detail::clip_settings_x, x
+    ; load first event of the clip
+    ldy #clips::clip_data::event_ptr
+    lda (v32b::entrypointer), y
+    pha
+    iny
+    lda (v32b::entrypointer), y
+    tax
+    pla
+@setup_first_event:
+    ldy track_index
+    jsr detail::startPlabackOnTrack
+
+    inc track_index
+    pla
+    sta RAM_BANK
+    jsr v32b::accessNextEntry
+    bcc @track_loop
+
+    lda #1
+    sta song_engine::simple_player::detail::active
+
+    plp
+    rts
+.endproc
+
+
+
+.proc playerTick
+    track_index = detail::temp_variable_a
     lda detail::active
     bne :+
     rts
 :
-    jsr event_selection::swapBackFrontStreams
+    ldx #0
+@track_loop:
+    stx track_index
+    lda detail::next_event_pointer_y, x
+    bne @process_events_loop
+@jmp_to_finish_track:
+    jmp @finish_track
+    @process_events_loop:
+        lda detail::next_event_timestamp_l, x
+        cmp detail::time_stamp
+        bne @jmp_to_finish_track
+        lda detail::next_event_timestamp_h, x
+        cmp detail::time_stamp+1
+        bne @jmp_to_finish_track
+        
+        ; it's the current time stamp!
+        ; Dispatch current event
+        ldx track_index
+        ldy detail::next_event_pointer_y, x
+        lda detail::next_event_pointer_x, x
+        pha
+        lda detail::next_event_pointer_a, x
+        plx
 
-@process_events_loop:
-    lda detail::next_time_stamp+1
-    cmp detail::time_stamp+1
-    bne @end_processing_events
-    lda detail::next_time_stamp
-    cmp detail::time_stamp
-    bne @end_processing_events
+        pha
+        phx
+        phy
+        jsr v5b::read_entry
 
-    ; it's the current time stamp!
-    lda detail::next_event
-    ldx detail::next_event+1
-    ldy detail::next_event+2
-    jsr v5b::read_entry
+        lda events::event_type
+        beq @note_off ; #events::event_type_note_off
+        cmp #events::event_type_note_on
+        bne @continue_next_event ; for now, ignore all events that aren't note-on or note-off
+    @note_on:
+        ; Setup access to clip settings
+        ldy track_index
+        lda detail::clip_settings_a, y
+        ldx detail::clip_settings_x, y
+        jsr v32b::accessFirstEntry
+        ; TODO: check for drum pad
+        ; Check for monophonic
+        ldy #clips::clip_data::monophonic
+        lda (v32b::entrypointer), y
+        beq @find_free_voice
+        @monophonic:
+            ; find voice with current channel & pitch --> replace
+            lda track_index
+            ldy events::note_pitch
+            jsr detail::findVoice
+            bcc @setup_note_on ; jump if note was found --> continue playing the same note
+            ; not found, fall through to finding a voice
+    @find_free_voice:
+        jsr detail::findFreeVoice
+        bcs @continue_next_event ; no free voice found, go to next event
+    @setup_note_on:
+        stx concerto_synth::note_voice
+        lda track_index
+        sta detail::voice_channels, x
+        lda events::note_pitch
+        sta concerto_synth::note_pitch
+        ldy #clips::clip_data::instrument_id
+        lda (v32b::entrypointer), y
+        sta concerto_synth::note_instrument
+        lda events::note_velocity
+        jsr concerto_synth::play_note
+        bra @continue_next_event
 
-    lda events::event_type
-    beq @note_off ; #events::event_type_note_off
-    cmp #events::event_type_note_on
-    bne @continue_next_event ; for now, ignore all events that aren't note-on or note-off
-@note_on:
-    ; Todo read clip/track settings and interpret them
-    ; TODO: find voice with current channel & pitch --> replace
-    jsr detail::findFreeVoice
-    bcs @continue_next_event ; no free voice found, go to next event
-    stx concerto_synth::note_voice
-    stz detail::voice_channels, x ; 0 is the channel index for now, todo: read from clip/track
-    lda events::note_pitch
-    sta concerto_synth::note_pitch
-    lda #0  ; concerto_gui::gui_variables::current_synth_instrument
-    sta concerto_synth::note_instrument
-    lda events::note_velocity
-    jsr concerto_synth::play_note
-    bra @continue_next_event
-@note_off:
-    lda #0 ; channel number - todo read from clip/track
-    ldy events::note_pitch
-    jsr detail::findVoice
-    bcs @continue_next_event ; not found (e.g. mono-legato --> note's pitch got changed)
-    stx concerto_synth::note_voice
-    jsr concerto_synth::release_note
+    @note_off:
+        lda track_index
+        ldy events::note_pitch
+        jsr detail::findVoice
+        bcs @continue_next_event ; not found (e.g. mono-legato --> note's pitch got changed)
+        stx concerto_synth::note_voice
+        jsr concerto_synth::release_note
 
-@continue_next_event:
-    jsr detail::getNextEventAndTimeStamp
-    bcc @process_events_loop
-    rts
-@end_processing_events:
+    @continue_next_event:
+        ply
+        plx
+        pla
+        jsr v5b::get_next_entry
+        bcs @disable_track
+    @go_to_next_event:
+        pha
+        phy
+        phx
+        ldx track_index
+        sta detail::next_event_pointer_a, x
+        tya
+        sta detail::next_event_pointer_y, x
+        pla
+        sta detail::next_event_pointer_x, x
+        tax
+        ply
+        pla
+        jsr v5b::read_entry
+        ldx track_index
+        lda events::event_time_stamp_l
+        sta detail::next_event_timestamp_l, x
+        lda events::event_time_stamp_h
+        sta detail::next_event_timestamp_h, x
+        jmp @process_events_loop
 
+    @disable_track:
+        ldx track_index
+        stz detail::next_event_pointer_y, x
 
+    @finish_track:
+    ldx track_index
+    inx
+    cpx #MAX_TRACKS+1
+    bcs :+
+    jmp @track_loop
+:
+    
     inc detail::time_stamp
     bne :+
     inc detail::time_stamp+1
 :
-    jsr event_selection::swapBackFrontStreams
     rts
 .endproc
 
-.proc start_playback
-    ; content moved to clip_editing start play button
-    ; reason: this module has no ownership of the necessary data vectors
-.endproc
+
 
 ; This function must be called whenever the clip data that is being played back is changed.
 ; (By the way, changing or even reading played back clip data in non-ISR code MUST be masked by SEI...)
 ; It basically rewinds the playback and fast-forwards to the current time stamp.
 .proc updatePlayback
-    jsr song_engine::event_selection::swapBackFrontStreams
-    SET_SELECTED_VECTOR selected_events_vector
-    SET_UNSELECTED_VECTOR unselected_events_vector
-
-    jsr concerto_synth::panic
-    jsr event_selection::resetStream
-@fast_forward_loop:
-    jsr detail::getNextEventAndTimeStamp
-    bcs stop_playback ; basically sneaky jsr without return
-
-    lda detail::next_time_stamp+1
-    cmp detail::time_stamp+1
-    bcc @fast_forward_loop
-    bne @fast_forward_done
-    lda detail::next_time_stamp
-    cmp detail::time_stamp
-    bcc @fast_forward_loop
-
-@fast_forward_done:
-    jsr song_engine::event_selection::swapBackFrontStreams
+    ; TODO: remove
     rts
 .endproc
 
-.proc stop_playback
+.proc stopPlayback
     stz detail::active
     jsr concerto_synth::panic
     rts

@@ -1,4 +1,4 @@
-; Copyright 2023 Carl Georg Biermann
+; Copyright 2023-2024 Carl Georg Biermann
 
 ; This file helps resolve circular dependencies by lifting certain symbols
 ; out of their scopes. This makes them accessible to code which lives in earlier scopes

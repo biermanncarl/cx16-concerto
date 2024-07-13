@@ -91,7 +91,11 @@ clips_vector:
     .word 0
 number_of_clips:
     .byte 0 ; potentially word in the future
-max_number_of_clips = 16 ; for now, equals maximum number of tracks
+max_number_of_clips = MAX_TRACKS ; for now, as long as we don't have arrangement view
+
+; active clip/track in edit view, put here for variable visibility reasons
+active_clip_id:
+    .byte 0
 
 clip_name_max_length = 9
 clip_data_size = 30 ; want to keep it at 30 even though we use v32b (32 bytes) because v32b might be reduced to 31 bytes (or lower?) in the future

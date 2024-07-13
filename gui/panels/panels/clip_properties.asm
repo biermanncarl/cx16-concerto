@@ -43,9 +43,6 @@
     lb_up: STR_FORMAT "  up"
     lb_down: STR_FORMAT " down"
 
-    active_clip_id:
-        .byte 0
-
     .proc draw
         lda song_engine::clips::clips_vector
         ldx song_engine::clips::clips_vector+1
@@ -55,7 +52,7 @@
     .endproc
 
     .proc write
-        ldy active_clip_id
+        ldy song_engine::clips::active_clip_id
         jsr song_engine::clips::accessClip
 
         lda mouse_variables::curr_component_id
@@ -94,7 +91,7 @@
         LDA_COMPONENT_MEMBER_ADDRESS listbox, track_select, valid_entries
         dec
         STA_COMPONENT_MEMBER_ADDRESS listbox, track_select, selected_entry
-    :   sta active_clip_id
+    :   sta song_engine::clips::active_clip_id
         jsr refresh ; calls accessClip on new clip, so we don't have to
         ; move events of new clip into the GUI
         ldy #song_engine::clips::clip_data::event_ptr
@@ -137,6 +134,7 @@
         jsr gui_routines__draw_gui
         rts
     @new_track:
+        jsr song_engine::simple_player::stopPlayback
         jsr song_engine::clips::addClip
         inc gui_variables::request_components_redraw
         rts
@@ -150,7 +148,7 @@
 
 
     .proc refresh
-        ldy active_clip_id
+        ldy song_engine::clips::active_clip_id
         jsr song_engine::clips::accessClip
         ldy #song_engine::clips::clip_data::instrument_id
         lda (v32b::entrypointer), y

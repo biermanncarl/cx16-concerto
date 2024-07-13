@@ -7,8 +7,10 @@
 .include "../dynamic_memory/vector_32bytes.asm"
 .include "../common/x16.asm"
 
-concerto_playback_routine = song_engine__simple_player__player_tick
+concerto_playback_routine = song_engine__simple_player__playerTick
 .include "../synth_engine/concerto_synth.asm"
+
+.define MAX_TRACKS 16
 
 .scope song_engine
 
@@ -31,6 +33,6 @@ selected_events_vector:
 
 
 ; "backward definition"
-song_engine__simple_player__player_tick = song_engine::simple_player::player_tick
+song_engine__simple_player__playerTick = song_engine::simple_player::playerTick
 
 .endif ; .ifndef SONG_ENGINE_SONG_ENGINE_ASM
