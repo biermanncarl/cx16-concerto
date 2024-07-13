@@ -111,6 +111,7 @@
       jsr gui_routines__draw_gui
       rts
    file_exists:
+      plp
       ; Set dynamic label to file name
       lda save_file_name
       ldx save_file_name+1

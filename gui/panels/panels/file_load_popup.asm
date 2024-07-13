@@ -68,7 +68,7 @@
       ldx file_browsing::files+1
       LDY_COMPONENT_MEMBER_ADDRESS listbox, file_select, selected_entry
       cpy #255
-      beq :+ ; don't open invalid file
+      beq button_cancel ; don't open invalid file
       jsr dll::getElementByIndex
       ; open file
       ldy #0 ; open for reading
@@ -80,8 +80,8 @@
       lda gui_variables::current_synth_instrument
       jsr concerto_synth::instruments::loadInstrument
       jsr file_browsing::closeFile
-   :  jsr gui_routines__refresh_gui
-      plp
+   :  plp
+      jsr gui_routines__refresh_gui
       ; fall through to button_cancel, which closes the popup
    button_cancel:
       ; close popup
