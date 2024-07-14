@@ -1,11 +1,14 @@
 ; Copyright 2023-2024 Carl Georg Biermann
 
 ; This file implements work with selections. The features work with streams of events.
-; Events are located in the entries of a 40bit vector, with the time stamp as the first 16 bits.
+; Events are located in the entries of a 5-bytes vector, with the time stamp as the first 2 bytes.
 ; By user interactions with the GUI, these events can become selected and unselected.
 ; The way how we select and unselect events is by cutting selected events and pasting
 ; them in a separate, "selected" vector. When an event gets unselected, it is inserted
 ; back into the original vector.
+; Caution: this functionality is NOT intended for use inside the ISR.
+; Variables would have to be backed up. This was the case previously, but was removed due
+; to lack of need. Commit where the functionality was removed:
 
 .ifndef SONG_DATA_EVENT_SELECTION_ASM
 SONG_DATA_EVENT_SELECTION_ASM = 1
@@ -19,7 +22,6 @@ SONG_DATA_EVENT_SELECTION_ASM = 1
 
 .pushseg
 .zeropage
-start_of_stream_variables:
 ; these variables are only here in ZP for speed and code size, could be moved out if needed
 
 ; PART OF API
@@ -41,18 +43,11 @@ last_unselected_id:
     .res 2
 last_event_source:
     .res 1
-
-end_of_stream_variables:
 .popseg
 
 ; reuse some variables for function calls
 select_action = last_event_source
 
-; When the ISR uses this code, it might interrupt other routines using it,
-; so it has to swap out the ZP variables.
-back_buffer_size = end_of_stream_variables - start_of_stream_variables
-back_buffer:
-    .res back_buffer_size
 
 .scope detail
 .proc loadNextUnselectedEvent
@@ -407,24 +402,6 @@ pitch:
     rts
 .endproc
 
-
-; Swaps the stream in the active ZP buffer with the back buffer.
-; This enables concurrent usage of two streams, which is most important for the ISR,
-; which could interrupt the main program's stream usage.
-; Only call in Interrupt-flagged or ISR code!
-.proc swapBackFrontStreams
-    ldx #0
-@swap_loop:
-    ldy start_of_stream_variables, x
-    lda back_buffer, x
-    sta start_of_stream_variables, x
-    tya
-    sta back_buffer, x
-    inx
-    cpx #back_buffer_size
-    bne @swap_loop
-    rts
-.endproc
 
 
 ; Individual item selection and unselection
