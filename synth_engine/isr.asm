@@ -50,10 +50,11 @@ do_tick:
    ; The variables used by v5b are NOT backed up and instead, in the main program, v5b usage is constrained to self-contained blocks masked with SEI.
    ; Self-contained means that at the end of the SEI-masked block, whatever state is in the v5b API variables can safely be discarded and overwritten by the ISR.
    ; As for non-API v5b variables, these must not be changed by the ISR. The ISR must not modify the content of any dynamic memory storage.
-   ; call playback routine
-   jsr concerto_playback_routine
    ; do synth tick updates
    jsr synth_engine::synth_tick
+   ; call playback routine (done after the synth tick to reduce jitter caused by fluctuating computational load inside the playback routine.
+   ; Jitter hasn't been a problem so far, this move was done in anticipation of jitter)
+   jsr concerto_playback_routine
    ; restore shared variables
    pla
    sta VERA_addr_high
