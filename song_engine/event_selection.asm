@@ -8,7 +8,7 @@
 ; back into the original vector.
 ; Caution: this functionality is NOT intended for use inside the ISR.
 ; Variables would have to be backed up. This was the case previously, but was removed due
-; to lack of need. Commit where the functionality was removed:
+; to lack of need. Commit where the functionality was removed: d9007fef0743c0
 
 .ifndef SONG_DATA_EVENT_SELECTION_ASM
 SONG_DATA_EVENT_SELECTION_ASM = 1
