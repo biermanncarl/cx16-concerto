@@ -311,8 +311,8 @@
 .endscope
 
 
-; Expects track id in .A
-.proc stopVoicesOnTrack
+; Expects channel id in .A
+.proc stopVoicesOnChannel
     ldx #0
 @voices_loop:
     cmp detail::voice_channels, x
@@ -338,7 +338,7 @@
     bne :+
     rts
 :   sta track_index
-    jsr stopVoicesOnTrack
+    jsr stopVoicesOnChannel
     ldy track_index
     bne @track_player
 @selected_events_player:

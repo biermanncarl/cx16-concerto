@@ -220,6 +220,7 @@ VRAM_sprattr   = $1FC00
 IRQVec         := $0314
 BRKVec         := $0316
 NMIVec         := $0318
+KBDVec         := $032E
 
 ; VIA
 ; $9F60 to $9F6F or $9F00 to $9F0F ?

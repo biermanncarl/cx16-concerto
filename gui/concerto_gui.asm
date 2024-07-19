@@ -47,6 +47,7 @@ initialize:
    jsr file_browsing::initialize
    jsr panels::file_save_popup::initialize
    jsr panels::file_load_popup::initialize
+   jsr keyboard::installMusicalKeyboard
 .ifdef ::concerto_full_daw
    jsr components::dnd::hitboxes::initialize
    jsr components::drag_and_drop_area::initialize
@@ -58,6 +59,7 @@ initialize:
 ; PARAMETERS: none
 ; AFFECTS: A, X
 hide: 
+   jsr keyboard::uninstallMusicalKeyboard
    lda guiutils::original_map_base
    sta VERA_L1_mapbase
    jsr mouse::mouse_hide

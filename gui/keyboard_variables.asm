@@ -20,6 +20,12 @@
         .byte 0
     alt_key_pressed:
         .byte 0
+
+    original_keyboard_handler:
+        .word 0
+    musical_keyboard_base_pitch:
+        .byte 60
+    musical_keyboard_channel = $FF
 .endscope
 
 .endif ; .ifndef ::GUI_KEYBOARD_VARIABLES_ASM
