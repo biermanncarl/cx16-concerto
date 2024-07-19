@@ -379,6 +379,10 @@ pitch:
 .endmacro
 
 ; maybe move into v5b?
+; Caution: this may only be used if the vectors are either
+; * swapped back immediately afterwards (with some operation in between), or
+; * if none of the operands is an "unselected events" vector.
+; In other words, event data other than the selected events vector, which is accessed by other entities, must not be invalidated with this macro.
 .macro SWAP_VECTORS vector_a, vector_b
     pha
     phy

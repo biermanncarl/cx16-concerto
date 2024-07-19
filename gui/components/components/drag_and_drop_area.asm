@@ -146,13 +146,13 @@
     .endproc
 
     .proc doPlayerUpdate
-        ; skip certain actions that don't require player updates
-        lda dnd::drag_action_state
-        cmp #dnd::dragables::notes::drag_action::scroll
+        lda dnd::dragables::notes::note_data_changed
         beq @end
-        cmp #dnd::dragables::notes::drag_action::zoom
-        beq @end
-        jsr song_engine::simple_player::updatePlayback
+        lda #0
+        jsr song_engine::simple_player::updateTrackPlayer
+        lda song_engine::clips::active_clip_id
+        inc
+        jsr song_engine::simple_player::updateTrackPlayer
     @end:
         rts
     .endproc

@@ -182,6 +182,7 @@ copyElement = detail::copyElement
 
 ; Expects (non-NULL) pointer (B/H) to an element in .A/.X
 ; Returns pointer to the next element in .A/.X (may be a NULL-pointer)
+; If NULL-pointer, zero flag is set upon return.
 .proc get_next_element
    sta RAM_BANK ; NOT backing up RAM bank here
    stz zp_pointer
@@ -195,6 +196,7 @@ copyElement = detail::copyElement
 
 ; Expects (non-NULL) pointer (B/H) to an element in .A/.X
 ; Returns pointer to the next element in .A/.X (may be a NULL-pointer)
+; If NULL-pointer, zero flag is set upon return.
 .proc get_previous_element
    sta RAM_BANK ; NOT backing up RAM bank here
    stz zp_pointer

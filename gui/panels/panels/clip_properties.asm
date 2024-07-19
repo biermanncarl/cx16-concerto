@@ -101,7 +101,9 @@
         lda (v32b::entrypointer),y
         sta song_engine::unselected_events_vector+1
 
-        jsr song_engine::simple_player::updatePlayback
+        ; TODO update playback
+        ; ldy something
+        ;jsr song_engine::simple_player::updateTrackPlayer
         plp
         jsr gui_routines__draw_gui
         rts

@@ -23,6 +23,8 @@ temporal_zoom:
    .byte 2
 max_temporal_zoom = 4
 
+note_data_changed: ; flag set within drag&drop operations to signal if playback needs to react to changed note data
+   .res 1
 
 .scope detail
    selection_min_pitch:
@@ -890,6 +892,7 @@ height = 2 * detail::event_edit_height
    rts
 
 @do_drag:
+   inc note_data_changed
    delta_x = detail::determineTimeShift::delta_x
    delta_y = detail::temp_variable_y
    sta delta_x
@@ -1061,6 +1064,7 @@ height = 2 * detail::event_edit_height
 @do_resize:
    delta_x = detail::determineTimeShift::delta_x
    sta delta_x
+   inc note_data_changed
 
    ; Find delta time
    ; ---------------
@@ -1188,6 +1192,7 @@ height = 2 * detail::event_edit_height
 
 
 .proc addNewNote
+   inc note_data_changed
    ; grid position
    lda mouse_variables::curr_x_downscaled
    lsr
@@ -1252,6 +1257,7 @@ height = 2 * detail::event_edit_height
 .endproc
 
 .proc velocityEdit
+   ; note data changed doesn't need to be set here because the addresses and order of events remains the same
    lda mouse_variables::delta_y
    bne :+
    rts
@@ -1295,6 +1301,7 @@ height = 2 * detail::event_edit_height
 .endscope
 
 .proc commonLeftClick
+   inc note_data_changed ; always set to true because in the calling code the note data was already changed
    ; duplicate?
    lda kbd_variables::ctrl_key_pressed
    beq @check_delete
@@ -1367,6 +1374,7 @@ height = 2 * detail::event_edit_height
       lda kbd_variables::shift_key_pressed
       bne :+ ; if SHIFT is pressed, skip unselection of all
          jsr song_engine::event_selection::unSelectAllEvents
+         inc note_data_changed
       :
       lda #drag_action::box_select
       sta dnd::drag_action_state
@@ -1394,6 +1402,7 @@ height = 2 * detail::event_edit_height
          SET_SELECTED_VECTOR song_engine::selected_events_vector
          stz song_engine::event_selection::select_action ; #event_selection::selectEvent::action::delete_original
          jsr detail::selectWithHitboxId
+         inc note_data_changed
          rts
       :
          ; event wasn't selected yet --> we want to unselect all, and select the clicked-at one
@@ -1445,6 +1454,7 @@ height = 2 * detail::event_edit_height
    ; preparations
    SET_SELECTED_VECTOR song_engine::selected_events_vector
    SET_UNSELECTED_VECTOR song_engine::unselected_events_vector
+   stz note_data_changed
 
    lda mouse_variables::drag_start
    beq @drag_continue
@@ -1478,11 +1488,13 @@ height = 2 * detail::event_edit_height
 
 ; This routine is mainly needed for box selection
 .proc doDragEnd
+   stz note_data_changed
    lda dnd::drag_action_state
    cmp #drag_action::box_select
    beq :+
    rts
 :
+   inc note_data_changed
    ; hide "box"
    jsr guiutils::hideBoxSelectFrame
 

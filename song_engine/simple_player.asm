@@ -216,7 +216,173 @@
         adc #60 ; center pitch around the note 60
         rts
     .endproc
+
+
+    ; Expects the pointer to an events vector in .A/.X,
+    ; and the time stamp in time_stamp (if more flexibility is needed, timing::timestamp_parameter could be used alternatively).
+    ; Returns the first event which comes at the given time stamp or later.
+    ; If no such event exists, carry will be set; otherwise clear.
+    ; This function aims to be performant by doing "hierarchical" linear search,
+    ; i.e. it first narrows down the search across chunks, and then within a chunk.
+    ; This function only needs to run in the main program (starting playback, potentially drawing routine).
+    .proc findEventAtCurrentTimeStamp
+        zp_pointer_2 = v5b::zp_pointer_2
+        ;bra @linear_search ; TEMPORARY MEASURE to reduce function complexity at the cost of speed
+    @chunk_loop:
+        sta zp_pointer_2
+        stx zp_pointer_2+1
+        jsr v5b::get_first_entry ; uses v5b::zp_pointer
+        bcc :+ ; only continue if the chunk contains any events
+        rts ; return early if chunk doesn't contain any events ... only possible for the first chunk, others must contain at least one event
+    :
+        ; loop over chunks and find the first chunk whose first event has a time stamp at or after the given one.
+        jsr v5b::read_entry ; uses v5b::zp_pointer
+        ; check time stamp
+        lda events::event_time_stamp_h
+        cmp time_stamp+1
+        bne :+
+        ; high bytes equal, compare low bytes
+        lda events::event_time_stamp_l
+        cmp time_stamp
+        beq @previous_or_this_chunk ; both bytes equal: this chunk or previous (if events with the same time stamp exist in previous chunk)
+    :
+        bcs @previous_or_this_chunk ; event time stamp was higher -> must be in this or previous chunk
+        ; event time stamp was lower -> must go to next chunk
+    @check_beginning_of_next_chunk:
+        lda zp_pointer_2
+        ldx zp_pointer_2+1
+        jsr dll::get_next_element ; uses v5b::zp_pointer
+        beq @this_chunk ; next chunk doesn't exist, can only be in this chunk
+        bra @chunk_loop
+
+    @previous_or_this_chunk:
+        ; The time stamp of the start of current chunk is higher or equal to the time stamp.
+        ; The most likely scenario is that somewhere within the previous chunk (if it exists), the time stamp was surpassed.
+        ; We basically start doing linear search at the start of the previous chunk.
+        ; In the unlikely case that it's in fact the beginning of the current chunk, linear search will find it eventually.
+        lda zp_pointer_2
+        ldx zp_pointer_2+1
+        jsr dll::get_previous_element ; uses v5b::zp_pointer
+        bne @linear_search
+        ; there is no previous element, so the beginning of the current chunk must be it.
+        lda zp_pointer_2
+        ldx zp_pointer_2+1
+        jsr v5b::get_first_entry
+        rts
+
+    @this_chunk:
+        ; There is no next chunk, so the only place where the time stamp could be crossed is within the current chunk.
+        ; We start linear search at the start of the current chunk.
+        lda zp_pointer_2
+        ldx zp_pointer_2+1
+
+    @linear_search:
+        jsr v5b::get_first_entry
+    @linear_search_loop:
+        pha
+        phx
+        phy
+        jsr v5b::read_entry
+        ; do comparison
+        lda events::event_time_stamp_h
+        cmp time_stamp+1
+        bne :+
+        ; high bytes equal, compare low bytes
+        lda events::event_time_stamp_l
+        cmp time_stamp
+        beq @event_found ; time stamps equal
+    :
+        bcs @event_found ; event comes after time stamp
+        ply
+        plx
+        pla
+        jsr v5b::get_next_entry
+        bcc @linear_search_loop
+        ; no event found. carry is already set, just need to return
+        rts
+
+    @event_found:
+        ply
+        plx
+        pla
+        clc
+        rts
+    .endproc
 .endscope
+
+
+; Expects track id in .A
+.proc stopVoicesOnTrack
+    ldx #0
+@voices_loop:
+    cmp detail::voice_channels, x
+    bne :+
+    phx
+    pha
+    stx concerto_synth::note_voice
+    jsr concerto_synth::stop_note
+    pla
+    plx
+:   inx
+    cpx #N_VOICES
+    bne @voices_loop
+    rts
+.endproc
+
+
+; Restarts playback for the given player id from the current time stamp.
+; Expects track id in .A
+.proc updateTrackPlayer
+    track_index = detail::temp_variable_a
+    ldx detail::active
+    bne :+
+    rts
+:   sta track_index
+    jsr stopVoicesOnTrack
+    ldy track_index
+    bne @track_player
+@selected_events_player:
+    lda selected_events_vector
+    ldx selected_events_vector+1
+    bra @find_event
+@track_player:
+    dey
+    jsr clips::accessClip
+    ; load event vector of the clip
+    ; #optimize-for-size: put these commands in function and reuse in startPlayback routine
+    ldy #clips::clip_data::event_ptr
+    lda (v32b::entrypointer), y
+    pha
+    iny
+    lda (v32b::entrypointer), y
+    tax
+    pla
+@find_event:
+    ; Event vector is in .A/.X
+    jsr detail::findEventAtCurrentTimeStamp
+    bcc :+
+    ; no event
+    ldx track_index
+    stz detail::next_event_pointer_y, x
+    rts
+:   ; an event
+    pha
+    phx
+    phy
+    jsr v5b::read_entry
+    ldx track_index
+    lda events::event_time_stamp_l
+    sta detail::next_event_timestamp_l, x
+    lda events::event_time_stamp_h
+    sta detail::next_event_timestamp_h, x
+    pla
+    sta detail::next_event_pointer_y, x
+    pla
+    sta detail::next_event_pointer_x, x
+    pla
+    sta detail::next_event_pointer_a, x
+    rts
+.endproc
 
 
 ; New, multitrack capable version
@@ -226,7 +392,8 @@
     temp = detail::temp_variable_b
     php
     sei
-    ; First, deactivate all players
+    ; First, deactivate all players and voices
+    jsr concerto_synth::panic ; stop all voices
     ldx #0
 @deactivate_loop:
     stz detail::next_event_pointer_y, x
@@ -458,15 +625,6 @@
     rts
 .endproc
 
-
-
-; This function must be called whenever the clip data that is being played back is changed.
-; (By the way, changing or even reading played back clip data in non-ISR code MUST be masked by SEI...)
-; It basically rewinds the playback and fast-forwards to the current time stamp.
-.proc updatePlayback
-    ; TODO: remove
-    rts
-.endproc
 
 .proc stopPlayback
     stz detail::active
