@@ -84,6 +84,12 @@
         lda song_engine::unselected_events_vector+1
         sta (v32b::entrypointer),y
 
+        ; update playback
+        ; we only need to update the track that is being unselected
+        lda song_engine::clips::active_clip_id
+        inc
+        jsr song_engine::simple_player::updateTrackPlayer
+
         ; update to new clip
         LDA_COMPONENT_MEMBER_ADDRESS listbox, track_select, selected_entry
         bpl :+
@@ -101,9 +107,6 @@
         lda (v32b::entrypointer),y
         sta song_engine::unselected_events_vector+1
 
-        ; TODO update playback
-        ; ldy something
-        ;jsr song_engine::simple_player::updateTrackPlayer
         plp
         jsr gui_routines__draw_gui
         rts

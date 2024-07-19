@@ -1467,7 +1467,7 @@ height = 2 * detail::event_edit_height
    bra @drag_continue
 :  cmp #drag_action::resize
    bne @drag_continue
-   jsr resizeNoteStart ; TODO: resizeNoteStart
+   jsr resizeNoteStart
 
 ; do the actual drag operation
 @drag_continue:
