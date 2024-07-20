@@ -78,8 +78,14 @@
       rts
 
    @keyboard_space:
-      ; TODO: play/pause
-      rts
+      lda song_engine::simple_player::detail::active
+      beq @start_playback
+      @stop_playback:
+         jsr song_engine::simple_player::stopPlayback
+         rts
+      @start_playback:
+         jsr song_engine::simple_player::startPlayback
+         rts
 
    @keyboard_z:
       lda kbd_variables::musical_keyboard_base_pitch
