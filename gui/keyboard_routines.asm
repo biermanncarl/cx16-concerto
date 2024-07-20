@@ -34,10 +34,10 @@
         sec
         sbc #lowest_relevant_keycode
         cmp #(highest_relevant_keycode + 1 - lowest_relevant_keycode) ; this and higher key codes are irrelevant for musical keyboard
-        bcs @finish_keep
+        bcs @finish
         tax
         lda key_pitch_map_lut, x
-        bmi @finish_keep ; filter out irrelevant keys
+        bmi @finish ; filter out irrelevant keys
 
         clc
         adc kbd_variables::musical_keyboard_base_pitch
@@ -49,9 +49,9 @@
         tay
         lda #kbd_variables::musical_keyboard_channel
         jsr song_engine::simple_player::detail::findVoiceChannelPitch
-        bcc @finish_clear
+        bcc @finish
         jsr song_engine::simple_player::detail::findFreeVoice
-        bcs @finish_clear
+        bcs @finish
         stx concerto_synth::note_voice
         lda #kbd_variables::musical_keyboard_channel
         sta song_engine::simple_player::detail::voice_channels, x
@@ -59,20 +59,15 @@
         sta concerto_synth::note_instrument
         lda concerto_gui::play_volume
         jsr concerto_synth::play_note
-        bra @finish_clear
+        bra @finish
     @key_up:
         tay
         lda #kbd_variables::musical_keyboard_channel
         jsr song_engine::simple_player::detail::findVoiceChannelPitch
-        bcs @finish_clear ; not found
+        bcs @finish ; not found
         stx concerto_synth::note_voice
         jsr concerto_synth::release_note
-    @finish_clear:
-        plx
-        pla
-        lda #0
-        jmp (kbd_variables::original_keyboard_handler)
-    @finish_keep:
+    @finish:
         ; restore .A and .X for original keyboard handler
         plx
         pla
