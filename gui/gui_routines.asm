@@ -91,6 +91,7 @@
 
 ; reads through the stack and draws everything
 .proc draw_gui
+   stz kbd_variables::musical_keyboard_bypass ; panels can activate it in their draw routine
    dg_counter = gui_variables::mzpbe ; counter variable
    stz dg_counter
 @loop:

@@ -16,6 +16,11 @@
         ; keycodes can be found here: https://github.com/X16Community/x16-rom/blob/master/inc/keycode.inc
         lowest_relevant_keycode = $12 ; keycode for "w" key
         highest_relevant_keycode = $29 ; single quote on english keyboard, rightmost key on second row
+
+        ; check bypass
+        ldy kbd_variables::musical_keyboard_bypass
+        bne @finish_direct
+
         ; save .A and .X for original keyboard handler
         pha
         phx
@@ -71,6 +76,7 @@
         ; restore .A and .X for original keyboard handler
         plx
         pla
+    @finish_direct:
         jmp (kbd_variables::original_keyboard_handler)
     key_down:
         .byte 0

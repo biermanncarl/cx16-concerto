@@ -43,6 +43,7 @@
    .endproc
 
    .proc draw
+      inc kbd_variables::musical_keyboard_bypass
       jsr file_popups_common::clearAndDrawFrame
       ; prepare file listing
       ldx #file_browsing::file_type::instrument

@@ -61,6 +61,7 @@
 
     .proc draw
         ; #optimize-for-size because this is pretty much the same code as for the file save/load popups but with different parameters
+        inc kbd_variables::musical_keyboard_bypass
         jsr clearArea
         lda #box_x
         sta guiutils::draw_x
