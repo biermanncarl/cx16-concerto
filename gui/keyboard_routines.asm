@@ -41,6 +41,10 @@
         beq @key_up
     @key_down:
         sta concerto_synth::note_pitch
+        tay
+        lda #kbd_variables::musical_keyboard_channel
+        jsr song_engine::simple_player::detail::findVoiceChannelPitch
+        bcc @finish_clear
         jsr song_engine::simple_player::detail::findFreeVoice
         bcs @finish_clear
         stx concerto_synth::note_voice
