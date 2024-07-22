@@ -5,14 +5,17 @@
 
 .scope timing
 
+
+; After changing one or several of the following variables, you MUST call change_song_tempo
+beats_per_bar:
+   .byte 4 ; must stay below 32 (max. 31)
 ; Song tempo, defined by the number of ticks in the first and second eighths (allowing for shuffle/swing effect)
 ; Their sum must not exceed 255!
-; After changing these, you MUST call change_song_tempo
 first_eighth_ticks:
    .byte 32
 second_eighth_ticks:
    .byte 32
-; TODO: number of beats per bar ?
+
 
 ; Variable which is used by some functions
 time_stamp_parameter:
@@ -46,10 +49,28 @@ temp_variable_c:
 .endscope
 
 
+; Expects zoom level in .X
+; Returns thirtysecondths stride in .A (i.e. how many thirtysecondth notes a grid stride is on a given zoom level)
+; Preserves .X and .Y
+.proc get_note_duration_thirtysecondths
+   lda thirtysecondths_notes_zoom, x
+   rts
+thirtysecondths_notes_zoom:
+   .byte 0,1,2,4,8,32 ; tick, thirtysecondth, sixteenth, eighth, quarter(beat), bar
+.endproc
+thirtysecondths_per_bar = get_note_duration_thirtysecondths::thirtysecondths_notes_zoom+5
+
+
 .proc recalculate_rhythm_values
+   ; bars (number of thirtysecondths in a bar)
+   lda beats_per_bar
+   asl
+   asl
+   asl
+   sta thirtysecondths_per_bar
    ; quarter note
    lda first_eighth_ticks
-   clc
+   ; clc ; carry should still be clear from above
    adc second_eighth_ticks
    sta detail::quarter_ticks
    ; sixteenth notes
@@ -186,6 +207,45 @@ temp_variable_c:
 .endproc
 
 
+; Given a number of thirtysecondth notes, returns the number of bars and the remaining thirtysecondths.
+; Expects the number of thirtysecondth-notes in .A (high) / .X (low)  (output of disassemble_time_stamp).
+; Returns Residual thirtysecondths in .A, number of bars in .Y (high) and .X (low)
+; Note: because this routine involves division, it is quite expensive.
+.proc thirtysecondthsToBarsAndResidual
+   low = detail::temp_variable_a
+   high = detail::temp_variable_b
+
+   stx low
+
+   ldy #255
+@high_loop:
+   sec
+   sbc thirtysecondths_per_bar
+   iny
+   bcs @high_loop
+   adc thirtysecondths_per_bar
+   inc ; offset of one for low_loop
+   sta high
+   ; result's high byte in .Y
+
+   ldx #255
+   lda low
+@low_loop:
+   inx
+   sec
+   sbc thirtysecondths_per_bar
+   bcs @low_loop ; no overflow
+   ; overflow
+   dec high
+   bne @low_loop
+   ; result's low byte in .X
+
+   adc thirtysecondths_per_bar ; carry should be clear from last subtraction
+   ; Residual in .A
+   rts
+.endproc
+
+
 ; Assembles the number of thirtysecondth notes and remaining ticks into a 16-bit time stamp. (Untested!)
 ; It expects the number of thirtysecondth-notes in .A (high) / .X (low) and the number of remaining ticks in .Y
 ; The 16-bit time stamp is returned in .A (high) / .X (low)
@@ -248,7 +308,8 @@ temp_variable_c:
 ; Returns the length of the next time interval in ticks in .A
 ; Expects the low byte of the number of thirtysecondth notes of the disassembled time stamp
 ; (output of disassemble_time_stamp) in .X.
-; Expects the "zoom level" in .A (0: single tick resolution, 1: thirtysecondths, 2: sixteenths, 3: eighths, 4: quarters, 5: bars)
+; Expects the "zoom level" in .A (0: single tick resolution, 1: thirtysecondths, 2: sixteenths, 3: eighths, 4: quarters)
+; Bars are not supported because their length can go above 255 ticks (requires 16 bit return).
 ; (The registers in which each of these functions passes or expects arguments could be optimized)
 ; Preserves .Y
 .proc get_note_duration_ticks
@@ -290,17 +351,6 @@ temp_variable_c:
 @bars:
    ; TODO
    rts
-.endproc
-
-
-; Expects zoom level in .X
-; Returns thirtysecondths stride in .A (i.e. how many thirtysecondth notes a grid stride is on a given zoom level)
-; Preserves .X and .Y
-.proc get_note_duration_thirtysecondths
-   lda @thirtysecondths_notes_zoom, x
-   rts
-@thirtysecondths_notes_zoom:
-   .byte 0,1,2,4,8 ; TODO: bars. could be updated with external, referenceable LUT and must be updated in recalculate_rhythm_values
 .endproc
 
 

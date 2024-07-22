@@ -43,7 +43,7 @@
       STR_FORMAT "1/32"
       STR_FORMAT "1/8"
       STR_FORMAT "1/4"
-      STR_FORMAT "1/2"
+      STR_FORMAT "1/4"
       STR_FORMAT "1/1"
 
    zoom_caption: STR_FORMAT "grid"

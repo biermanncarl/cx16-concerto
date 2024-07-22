@@ -64,6 +64,10 @@ note_data_changed: ; flag set within drag&drop operations to signal if playback 
       .res 1
    temp_variable_t:
       .res 1
+   temp_variable_s:
+      .res 1
+   temp_variable_r:
+      .res 1
 
    ; Editing area rectangle
    event_edit_width = 50
@@ -321,12 +325,16 @@ change_song_tempo = song_engine::timing::recalculate_rhythm_values ; TODO: actua
    running_time_stamp_h = detail::temp_variable_b
    end_of_data = detail::temp_variable_c
    thirtysecondth_stride = detail::temp_variable_z ; how many thirtysecondth notes we advance with every column
-   thirtysecondth_count = detail::temp_variable_y ; how many thirtysecondth notes since a grid-aligned quarter. Only its mod 8 value matters.
    column_index = detail::temp_variable_x
-   ticks_since_last_full_thirtysecondth = detail::temp_variable_w ; only relevant at zoom level 0
    piano_roll_offset = detail::temp_variable_v
    velocity = detail::temp_variable_u
    velocity_status = detail::temp_variable_t
+   ; Grid related
+   ticks_since_last_thirtysecondth = detail::temp_variable_w ; only relevant at zoom level 0
+   thirtysecondths_since_last_bar = detail::temp_variable_y ; how many thirtysecondth notes since the last full bar
+   bars_count = detail::temp_variable_s ; may overflow; we are interested in divisibility by low powers of 2
+   grid_line = detail::temp_variable_r ; 0 is no grid line, 1 means normal grid line, 2 or higher means emphasized grid line
+
 
    ; column data format
    ; The high bit of the row's byte indicates whether the note is selected or not.
@@ -347,8 +355,10 @@ change_song_tempo = song_engine::timing::recalculate_rhythm_values ; TODO: actua
    ldx window_time_stamp
    stx running_time_stamp_l
    jsr song_engine::timing::disassemble_time_stamp
-   stx thirtysecondth_count
-   sty ticks_since_last_full_thirtysecondth
+   sty ticks_since_last_thirtysecondth
+   jsr song_engine::timing::thirtysecondthsToBarsAndResidual
+   sta thirtysecondths_since_last_bar
+   stx bars_count
 
    ; column stride
    ldx temporal_zoom
@@ -450,57 +460,14 @@ change_song_tempo = song_engine::timing::recalculate_rhythm_values ; TODO: actua
    ; 4. draw column
 
 
-   ; Decide whether to draw a temporal grid line
-   ; ===========================================
-   ldx temporal_zoom
-   beq @decide_full_thirtysecondth
-@decide_resolution_times_four: ; if zoom level is at least 1, we simply look at the thirtysecondth count
-   jsr song_engine::timing::get_note_duration_thirtysecondths
-   ; grid resolution times 4 minus 1 --> bit mask to check for exact multiple of 4.
-   asl
-   asl
-   dec
-   and thirtysecondth_count
-   bne @grid_line_off
-@grid_line_on:
-   lda #101 ; line character
-   bra @select_background_character
-@decide_full_thirtysecondth: ; at zoom level 0, we need to look at single ticks to decide whether we are at a full thirtysecondth note
-   ; additionally to finding the grid line position, this section advances the thirtysecondth_count variable correctly at zoom level 0
-   lda ticks_since_last_full_thirtysecondth
-   bne :+
-   ; it's zero. advance and activate grid line
-   inc ticks_since_last_full_thirtysecondth
-   bra @grid_line_on
-:  ; not zero. advance, check for equality to thirtysecondth note and do rollover. fall through to deactivate grid line
-   inc ticks_since_last_full_thirtysecondth
-   lda #1
-   ldx thirtysecondth_count
-   jsr song_engine::timing::get_note_duration_ticks
-   ; got length of thirtysecondth note in .A
-   cmp ticks_since_last_full_thirtysecondth
-   bne :+
-   stz ticks_since_last_full_thirtysecondth
-   inc thirtysecondth_count
-:
-@grid_line_off:
-   lda #32 ; space character
-@select_background_character:
-   ; store the character in the code that draws the column
-   sta @draw_space+1
-
 
    ; Calculate relevant end time stamp for current column (up to which point do we need to register events for the current column)
    ; ====================================================
    ; get the length of the next column in ticks
    ; add it to the running time stamp (TODO: keep copy of it, but use a time stamp that was only advanced by half the column duration to achieve "nearest neighbor rounding")
 
-   lda thirtysecondth_count
-   tax ; save the current thirtysecondth count for use in get_note_duration_ticks, then update the variable
-   clc
-   adc thirtysecondth_stride ; At zoom level 0, this has no effect -- the correct advancement of thirtysecondth_count is done by the temporal grid code, instead.
-   sta thirtysecondth_count
-   lda temporal_zoom ; zoom level
+   lda temporal_zoom
+   ldx thirtysecondths_since_last_bar
    jsr song_engine::timing::get_note_duration_ticks
    clc
    adc running_time_stamp_l
@@ -508,6 +475,117 @@ change_song_tempo = song_engine::timing::recalculate_rhythm_values ; TODO: actua
    bcc :+
    inc running_time_stamp_h
 :
+
+
+   ; Update Grid variables &
+   ; Decide whether to draw a temporal grid line
+   ; ===========================================
+   stz grid_line
+   ldx temporal_zoom
+   bne @grid_line_logic
+@ticks_update:
+   ; additionally to finding the grid line position, this section advances the thirtysecondths_since_last_bar variable correctly at zoom level 0
+   lda ticks_since_last_thirtysecondth
+   beq @ticks_advance_thirtysecondths
+   ; not zero. advance, check for equality to thirtysecondth note and do rollover. fall through to deactivate grid line
+   inc ticks_since_last_thirtysecondth
+   lda #1
+   ldx thirtysecondths_since_last_bar
+   jsr song_engine::timing::get_note_duration_ticks
+   ; got length of thirtysecondth note in .A
+   cmp ticks_since_last_thirtysecondth
+   bne @grid_update_finish
+   stz ticks_since_last_thirtysecondth
+   inc thirtysecondths_since_last_bar
+   bra @grid_update_finish
+@ticks_advance_thirtysecondths:
+   inc ticks_since_last_thirtysecondth
+   inc grid_line ; grid line on full thirtysecondth notes
+
+@grid_line_logic:
+   ; Grid line logic -- done before the thirtysecondths and bars are updated
+   ; What we want is the following
+   ; Zoom level 0: column width 1 tick, normal grid lines on 1/32ths, emphasis on 1/8ths
+   ; Zoom level 1: column width 1/32th, normal grid lines on 1/8ths,  emphasis on bars
+   ; Zoom level 2: column width 1/16th, normal grid lines on beats,   emphasis on bars
+   ; Zoom level 3: column width 1/8th,  normal grid lines on beats,   emphasis on bars  (??)
+   ; Zoom level 4: column width 1 beat, normal grid lines on bars,    emphasis on four bars  (??)
+   ; (Zoom level 5: column width 1 bar, normal grid lines on bars,    emphasis on four bars) -- not yet possible
+   ;
+   ; This leads to a wild spaghetti code, unfortunately.
+   ldx temporal_zoom
+   cpx #2
+   bcc @grid_line_eighths
+   ; zoom level is 2 or larger
+   cpx #4
+   bcs @grid_line_bars
+   ; zoom level is 2 or 3 -- fall through to beats
+
+@grid_line_beats:
+   lda #7
+   and thirtysecondths_since_last_bar
+   bne :+
+   inc grid_line
+:  ; potential "users": zoom level 2 and 3, both of which want emphasis on bars
+   bra @grid_line_bars
+@grid_line_eighths:
+   lda #3
+   and thirtysecondths_since_last_bar
+   bne :+
+   inc grid_line
+:  ; potential "users": zoom level 0 and 1
+   ldx temporal_zoom
+   cpx #0
+   beq @thirtysecondths_update
+   ; for zoom level 1, fall through to bars
+@grid_line_bars:
+   lda thirtysecondths_since_last_bar
+   bne :+
+   inc grid_line
+:  ; potential "users": zoom levels 1 through 5; 4 or 5 want emphasis on four bars
+   ldx temporal_zoom
+   cpx #4
+   bcc @thirtysecondths_update
+   ; zoom levels 4 and 5: fall through to four bars
+@grid_line_four_bars:
+   lda thirtysecondths_since_last_bar
+   bne :+ ; check if we're at the start of a bar
+   lda #3
+   and bars_count
+   bne :+
+   inc grid_line
+:  ; fall through to next section
+
+@thirtysecondths_update:
+   lda thirtysecondths_since_last_bar
+   clc
+   adc thirtysecondth_stride ; At zoom level 0, this has no effect -- the correct advancement of thirtysecondths_since_last_bar is done in the ticks_update above.
+   sta thirtysecondths_since_last_bar
+@bars_update:
+   cmp song_engine::timing::thirtysecondths_per_bar
+   bcc :+
+   stz thirtysecondths_since_last_bar
+   inc bars_count ; currently limited to one bar per column
+:
+
+@grid_update_finish:
+   lda grid_line
+   beq @grid_line_off
+   dec
+   beq @grid_line_normal
+@grid_line_emphasized:
+   lda #116 ; ticker line character
+   bra @select_background_character
+@grid_line_normal:
+   lda #101 ; line character
+   bra @select_background_character
+@grid_line_off:
+   lda #32 ; space character
+@select_background_character:
+   ; store the character in the code that draws the column
+   sta @draw_space+1
+
+
 
    ; LOOP OVER EVENTS
    ; ================
