@@ -66,6 +66,35 @@
       rts
    .endproc
 
+   ; Upon return, if aborted because file exists, carry will be set. Clear otherwise.
+   ; This can be prevented by using the "@:" DOS command for overwriting the file.
+   .proc doFileOperation
+      lda save_file_name
+      ldx save_file_name+1
+      ldy #1 ; open for writing
+      php
+      sei
+      jsr file_browsing::openFile
+      bcc :+
+      plp
+      sec
+      rts
+   :  ; fill in the data
+      lda file_browsing::current_file_type
+      bne @save_song
+      @save_instrument:
+         lda gui_variables::current_synth_instrument
+         jsr concerto_synth::instruments::saveInstrument
+         bra @close_file
+      @save_song:
+         jsr song_engine::song_data::saveSong
+      @close_file:
+      jsr file_browsing::closeFile
+      plp
+      clc
+      rts
+   .endproc
+
    .proc write
       lda mouse_variables::curr_component_id
       asl
@@ -93,17 +122,8 @@
       inc gui_variables::request_components_redraw
       rts
    button_ok:
-      lda save_file_name
-      ldx save_file_name+1
-      ldy #1 ; open for writing
-      php
-      sei
-      jsr file_browsing::openFile
+      jsr doFileOperation
       bcs file_exists
-      lda gui_variables::current_synth_instrument
-      jsr concerto_synth::instruments::saveInstrument
-      jsr file_browsing::closeFile
-      plp
       ; fall through to button_cancel, which closes the popup
    button_cancel:
       ; close popup
@@ -112,7 +132,6 @@
       jsr gui_routines__draw_gui
       rts
    file_exists:
-      plp
       ; Set dynamic label to file name
       lda save_file_name
       ldx save_file_name+1

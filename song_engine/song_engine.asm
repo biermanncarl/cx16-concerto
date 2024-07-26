@@ -27,9 +27,8 @@ selected_events_vector:
 .include "events.asm"
 .include "event_selection.asm"
 .include "clips.asm"
+.include "song_data.asm"
 .include "multitrack_player.asm"
-
-change_song_tempo = timing::recalculate_rhythm_values ; TODO: actually recalculate ALL time stamps (lossy for sub-1/32 values)
 
 .endscope
 

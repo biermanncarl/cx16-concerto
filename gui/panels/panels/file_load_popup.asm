@@ -77,9 +77,16 @@
       sei
       jsr file_browsing::openFile
       bcs :+
-      jsr concerto_synth::voices::panic
-      lda gui_variables::current_synth_instrument
-      jsr concerto_synth::instruments::loadInstrument
+      jsr song_engine::multitrack_player::stopPlayback
+      lda file_browsing::current_file_type
+      bne @load_song
+      @load_instrument:
+         lda gui_variables::current_synth_instrument
+         jsr concerto_synth::instruments::loadInstrument
+         bra @close_file
+      @load_song:
+         jsr song_engine::song_data::loadSong
+      @close_file:
       jsr file_browsing::closeFile
    :  plp
       jsr gui_routines__refresh_gui

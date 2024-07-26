@@ -94,17 +94,7 @@
         lda #'@'
         ldy #0
         jsr v32b::insertCharacter
-        ; #optimize-for-size exploit commonality with equivalent code from save file popup?
-        lda panels__file_save_popup__save_file_name
-        ldx panels__file_save_popup__save_file_name+1
-        ldy #1 ; open for writing
-        php
-        sei
-        jsr file_browsing::openFile
-        lda gui_variables::current_synth_instrument
-        jsr concerto_synth::instruments::saveInstrument
-        jsr file_browsing::closeFile
-        plp
+        jsr panels__file_save_popup__doFileOperation
         ; empty string
         lda panels__file_save_popup__save_file_name
         ldx panels__file_save_popup__save_file_name+1

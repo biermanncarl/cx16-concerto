@@ -17,6 +17,7 @@ panels__combobox_popup__lb_id = panels::combobox_popup::lb_id
 panels__combobox_popup__lb_panel = panels::combobox_popup::lb_panel
 panels__combobox_popup__draw = panels::combobox_popup::draw
 panels__file_save_popup__save_file_name = panels::file_save_popup::save_file_name
+panels__file_save_popup__doFileOperation = panels::file_save_popup::doFileOperation
 panels__ok_cancel_popup__string_bank = panels::ok_cancel_popup::string_bank
 panels__ok_cancel_popup__string_address = panels::ok_cancel_popup::string_address
 panels__panels_stack = panels::panels_stack

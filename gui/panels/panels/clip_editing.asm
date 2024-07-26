@@ -107,10 +107,26 @@
       jsr gui_routines__draw_gui
       rts
    @load_song:
-      ; TODO
+      ; open the file browser popup on the GUI stack
+      lda #file_browsing::file_type::song
+      sta file_browsing::current_file_type
+      ; TODO: factor out the GUI stack operation
+      ldx panels__panels_stack_pointer
+      lda #panels__ids__file_load_popup
+      sta panels__panels_stack, x
+      inc panels__panels_stack_pointer
+      jsr gui_routines__draw_gui
       rts
    @save_song:
-      ; TODO
+      ; open the file browser popup on the GUI stack
+      lda #file_browsing::file_type::song
+      sta file_browsing::current_file_type
+      ; TODO: factor out the GUI stack operation
+      ldx panels__panels_stack_pointer
+      lda #panels__ids__file_save_popup
+      sta panels__panels_stack, x
+      inc panels__panels_stack_pointer
+      jsr gui_routines__draw_gui
       rts
    .endproc
 

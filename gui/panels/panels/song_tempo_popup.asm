@@ -104,7 +104,7 @@
         sta song_engine::timing::first_eighth_ticks
         LDA_COMPONENT_MEMBER_ADDRESS drag_edit, ticks_second_eighth, coarse_value
         sta song_engine::timing::second_eighth_ticks
-        jsr song_engine::change_song_tempo
+        jsr song_engine::song_data::change_song_tempo
 
         ; fall through to button_cancel, which closes the popup
     button_cancel:
