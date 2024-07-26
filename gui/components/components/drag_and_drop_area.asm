@@ -149,10 +149,10 @@
         lda dnd::dragables::notes::note_data_changed
         beq @end
         lda #0
-        jsr song_engine::simple_player::updateTrackPlayer
+        jsr song_engine::multitrack_player::updateTrackPlayer
         lda song_engine::clips::active_clip_id
         inc
-        jsr song_engine::simple_player::updateTrackPlayer
+        jsr song_engine::multitrack_player::updateTrackPlayer
     @end:
         rts
     .endproc

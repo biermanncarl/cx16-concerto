@@ -48,13 +48,13 @@
         sta concerto_synth::note_pitch
         tay
         lda #kbd_variables::musical_keyboard_channel
-        jsr song_engine::simple_player::detail::findVoiceChannelPitch
+        jsr song_engine::multitrack_player::detail::findVoiceChannelPitch
         bcc @finish
-        jsr song_engine::simple_player::detail::findFreeVoice
+        jsr song_engine::multitrack_player::detail::findFreeVoice
         bcs @finish
         stx concerto_synth::note_voice
         lda #kbd_variables::musical_keyboard_channel
-        sta song_engine::simple_player::detail::voice_channels, x
+        sta song_engine::multitrack_player::detail::voice_channels, x
         lda concerto_gui::gui_variables::current_synth_instrument
         sta concerto_synth::note_instrument
         lda concerto_gui::play_volume
@@ -63,7 +63,7 @@
     @key_up:
         tay
         lda #kbd_variables::musical_keyboard_channel
-        jsr song_engine::simple_player::detail::findVoiceChannelPitch
+        jsr song_engine::multitrack_player::detail::findVoiceChannelPitch
         bcs @finish ; not found
         stx concerto_synth::note_voice
         jsr concerto_synth::release_note

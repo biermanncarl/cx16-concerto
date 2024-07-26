@@ -78,13 +78,13 @@
       rts
 
    @keyboard_space:
-      lda song_engine::simple_player::detail::active
+      lda song_engine::multitrack_player::detail::active
       beq @start_playback
       @stop_playback:
-         jsr song_engine::simple_player::stopPlayback
+         jsr song_engine::multitrack_player::stopPlayback
          rts
       @start_playback:
-         jsr song_engine::simple_player::startPlayback
+         jsr song_engine::multitrack_player::startPlayback
          rts
 
    @keyboard_z:
@@ -94,7 +94,7 @@
       sbc #12
       sta kbd_variables::musical_keyboard_base_pitch
       lda #kbd_variables::musical_keyboard_channel
-      jsr song_engine::simple_player::stopVoicesOnChannel
+      jsr song_engine::multitrack_player::stopVoicesOnChannel
    :  rts
    @keyboard_x:
       lda kbd_variables::musical_keyboard_base_pitch
@@ -104,7 +104,7 @@
       adc #12
       sta kbd_variables::musical_keyboard_base_pitch
       lda #kbd_variables::musical_keyboard_channel
-      jsr song_engine::simple_player::stopVoicesOnChannel
+      jsr song_engine::multitrack_player::stopVoicesOnChannel
    :  rts
    .endproc
 .endscope

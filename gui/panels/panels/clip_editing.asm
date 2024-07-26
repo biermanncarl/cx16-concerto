@@ -85,8 +85,8 @@
    @jmp_tbl:
       .word panel_common::dummy_subroutine ; drag and drop
       .word @zoom_level
-      .word song_engine::simple_player::startPlayback
-      .word song_engine::simple_player::stopPlayback
+      .word song_engine::multitrack_player::startPlayback
+      .word song_engine::multitrack_player::stopPlayback
       .word @song_tempo
    @zoom_level:
       lda comps, y

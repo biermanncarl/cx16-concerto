@@ -88,7 +88,7 @@
         ; we only need to update the track that is being unselected
         lda song_engine::clips::active_clip_id
         inc
-        jsr song_engine::simple_player::updateTrackPlayer
+        jsr song_engine::multitrack_player::updateTrackPlayer
 
         ; update to new clip
         LDA_COMPONENT_MEMBER_ADDRESS listbox, track_select, selected_entry
@@ -139,7 +139,7 @@
         jsr gui_routines__draw_gui
         rts
     @new_track:
-        jsr song_engine::simple_player::stopPlayback
+        jsr song_engine::multitrack_player::stopPlayback
         jsr song_engine::clips::addClip
         inc gui_variables::request_components_redraw
         rts

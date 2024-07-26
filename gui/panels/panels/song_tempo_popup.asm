@@ -97,7 +97,7 @@
         .word panel_common::dummy_subroutine ; drag edit: update when closing popup
         .word panel_common::dummy_subroutine ; drag edit: update when closing popup
     button_ok:
-        jsr song_engine::simple_player::stopPlayback
+        jsr song_engine::multitrack_player::stopPlayback
         LDA_COMPONENT_MEMBER_ADDRESS drag_edit, beats_per_bar, coarse_value
         sta song_engine::timing::beats_per_bar
         LDA_COMPONENT_MEMBER_ADDRESS drag_edit, ticks_first_eighth, coarse_value

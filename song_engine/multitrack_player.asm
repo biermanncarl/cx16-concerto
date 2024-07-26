@@ -1,13 +1,9 @@
 ; Copyright 2024 Carl Georg Biermann
 
-.ifndef ::SONG_ENGINE_SIMPLE_PLAYER_ASM
-::SONG_ENGINE_SIMPLE_PLAYER_ASM = 1
+.ifndef ::SONG_ENGINE_MULTITRACK_PLAYER_ASM
+::SONG_ENGINE_MULTITRACK_PLAYER_ASM = 1
 
-; This player serves as a provisional way to play back note/event data.
-; Whether it will later be expanded into a full, multi-track engine is not decided yet.
-; This code has nothing to do with the one under /simple_player/concerto_player.asm  --  sorry for the bad uncreative naming.
-
-.scope simple_player
+.scope multitrack_player
 
 .scope detail
     active: .byte 0
@@ -454,7 +450,7 @@
     bcc @track_loop
 
     lda #1
-    sta song_engine::simple_player::detail::active
+    sta song_engine::multitrack_player::detail::active
 
     plp
     rts
@@ -634,4 +630,4 @@
 
 .endscope
 
-.endif ; .ifndef SONG_ENGINE_SIMPLE_PLAYER_ASM
+.endif ; .ifndef SONG_ENGINE_MULTITRACK_PLAYER_ASM
