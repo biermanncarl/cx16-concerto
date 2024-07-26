@@ -29,7 +29,7 @@
         lda (components_common::data_pointer), y
         tax
         pla
-        jmp v32b::accessFirstEntry
+        jmp v32b::accessEntry
     .endproc
 
     .proc draw
@@ -172,7 +172,7 @@
         tax
         dey
         lda (components_common::data_pointer), y
-        jsr v32b::accessFirstEntry
+        jsr v32b::accessEntry
         iny
         iny
         iny ; .Y is back to cursor position

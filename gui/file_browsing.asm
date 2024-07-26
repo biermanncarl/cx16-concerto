@@ -91,7 +91,7 @@ current_file_type:
     jsr detail::updateExtension
     plx ; recall pointer to file name
     pla
-    jsr v32b::accessFirstEntry
+    jsr v32b::accessEntry
     ldy #255
 @find_end_of_string_loop:
     iny
@@ -236,7 +236,7 @@ delete_me:
 
     lda files
     ldx files+1
-    jsr v32b::accessFirstEntry ; there's only one entry at this point
+    jsr v32b::accessEntry ; there's only one entry at this point
 @read_files_loop:
     ; read link (pointer to next line) -- discarded except for NULL check
     jsr CHRIN
@@ -319,7 +319,7 @@ command:
 ; .proc printFiles
 ;     lda files
 ;     ldx files+1
-;     jsr v32b::accessFirstEntry
+;     jsr v32b::accessEntry
 ; @file_loop:
 ;     ldy #0
 ; @character_loop:

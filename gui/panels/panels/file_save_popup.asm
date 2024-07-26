@@ -47,7 +47,7 @@
       jsr v32b::new
       sta save_file_name
       stx save_file_name+1
-      jsr v32b::accessFirstEntry
+      jsr v32b::accessEntry
       lda #0
       tay
       sta (v32b::entrypointer), y
@@ -116,7 +116,7 @@
       ; Set dynamic label to file name
       lda save_file_name
       ldx save_file_name+1
-      jsr v32b::accessFirstEntry
+      jsr v32b::accessEntry
       lda v32b::entrypointer
       sta panels__ok_cancel_popup__string_address
       lda v32b::entrypointer+1

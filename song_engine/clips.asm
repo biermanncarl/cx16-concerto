@@ -119,7 +119,7 @@ clip_data_size = 30 ; want to keep it at 30 even though we use v32b (32 bytes) b
 
 
 ; Initializes a clip with default values.
-; Prior to this, v32b::accessFirstEntry or similar has to be called.
+; Prior to this, v32b::accessEntry or similar has to be called.
 .proc initializeClip
     ldy #clip_data_size-1
 @loop:
@@ -152,7 +152,7 @@ default_name:
     jsr v32b::new
     sta clips_vector
     stx clips_vector+1
-    jsr v32b::accessFirstEntry
+    jsr v32b::accessEntry
     jsr initializeClip
     lda #1
     sta number_of_clips
@@ -168,7 +168,7 @@ default_name:
     lda clips_vector
     ldx clips_vector+1
     jsr v32b::append_new_entry ; returns pointer to new entry in .A/.X
-    jsr v32b::accessFirstEntry
+    jsr v32b::accessEntry
     jsr initializeClip
     inc number_of_clips
 :   rts
@@ -180,7 +180,7 @@ default_name:
     lda clips_vector
     ldx clips_vector+1
     jsr dll::getElementByIndex
-    jsr v32b::accessFirstEntry
+    jsr v32b::accessEntry
     rts
 .endproc
 

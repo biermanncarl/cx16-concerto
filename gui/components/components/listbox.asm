@@ -56,7 +56,7 @@
         tay
         lda temp
         jsr dll::getElementByIndex ; we assume it succeeds ...
-        jsr v32b::accessFirstEntry ; actually not the first entry here
+        jsr v32b::accessEntry ; actually not the first entry here
 
         ; calculate position of selected entry relative to first visible line
         ply

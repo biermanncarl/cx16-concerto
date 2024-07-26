@@ -503,7 +503,7 @@
         ldy track_index
         lda detail::clip_settings_a, y
         ldx detail::clip_settings_x, y
-        jsr v32b::accessFirstEntry
+        jsr v32b::accessEntry
         ; check for drum pad
         ldy #clips::clip_data::drum_pad
         lda (v32b::entrypointer), y
@@ -553,7 +553,7 @@
         ldy track_index
         lda detail::clip_settings_a, y
         ldx detail::clip_settings_x, y
-        jsr v32b::accessFirstEntry
+        jsr v32b::accessEntry
         ; check for drum pad
         ldy #clips::clip_data::drum_pad
         lda (v32b::entrypointer), y

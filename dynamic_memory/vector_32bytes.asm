@@ -66,7 +66,7 @@ delete_entry = dll::delete_element
 ; Sets up RAM_BANK and entrypointer such that (entrypointer),y addressing will result in the first
 ; entry being accessed, starting from y=0.
 ; Expects pointer to vector in .A/.X
-.proc accessFirstEntry
+.proc accessEntry
     sta RAM_BANK
     stx entrypointer_h
     ; low byte of entrypointer is already set by "new".
@@ -84,7 +84,7 @@ delete_entry = dll::delete_element
     rts
 .endproc
 
-; Can be called after access to another entry of the vector has been established (e.g. accessFirstEntry).
+; Can be called after access to another entry of the vector has been established (e.g. accessEntry).
 ; If the next entry doesn't exist, carry will be set upon return, clear otherwise.
 .proc accessNextEntry
     lda RAM_BANK
@@ -114,7 +114,7 @@ delete_entry = dll::delete_element
 :   rts
 .endproc
 
-; Can be called after access to another entry of the vector has been established (e.g. accessFirstEntry).
+; Can be called after access to another entry of the vector has been established (e.g. accessEntry).
 .proc isFirstEntry
     lda RAM_BANK
     ldx entrypointer_h
@@ -122,7 +122,7 @@ delete_entry = dll::delete_element
     rts
 .endproc
 
-; Can be called after access to another entry of the vector has been established (e.g. accessFirstEntry).
+; Can be called after access to another entry of the vector has been established (e.g. accessEntry).
 .proc isLastEntry
     lda RAM_BANK
     ldx entrypointer_h
@@ -132,7 +132,7 @@ delete_entry = dll::delete_element
 
 ; This function interprets the content of the v32b as a zero-terminated string and inserts a character
 ; at a given position.
-; accessFirstEntry or similar have to be called first.
+; accessEntry or similar have to be called first.
 ; .A : the character to be inserted
 ; .Y : the position inside the string where to insert.
 .proc insertCharacter

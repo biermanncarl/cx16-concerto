@@ -87,7 +87,7 @@
         ; insert @: command
         lda panels__file_save_popup__save_file_name
         ldx panels__file_save_popup__save_file_name+1
-        jsr v32b::accessFirstEntry
+        jsr v32b::accessEntry
         lda #':'
         ldy #0
         jsr v32b::insertCharacter
@@ -108,7 +108,7 @@
         ; empty string
         lda panels__file_save_popup__save_file_name
         ldx panels__file_save_popup__save_file_name+1
-        jsr v32b::accessFirstEntry
+        jsr v32b::accessEntry
         lda #0
         tay
         sta (v32b::entrypointer), y
