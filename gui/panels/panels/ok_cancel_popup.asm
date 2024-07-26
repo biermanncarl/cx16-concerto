@@ -6,7 +6,6 @@
 
 .include "common.asm"
 .include "../../file_browsing.asm"
-.include "file_popups_common.asm"
 
 .scope ok_cancel_popup
     ; popup blocks the whole screen, therefore this panel is "fullscreen" (for click detection)
@@ -21,7 +20,7 @@
         box_y = (60 - box_height) / 2
     comps:
     .scope comps
-        COMPONENT_DEFINITION button, ok, 41, box_y + box_height - 3, 6, A lb_ok
+        COMPONENT_DEFINITION button, ok, 41, box_y + box_height - 3, 6, A panel_common::lb_ok
         COMPONENT_DEFINITION button, cancel, 33, box_y + box_height - 3, 6, A panel_common::lb_cancel
         COMPONENT_DEFINITION dynamic_label, filename_msg, box_x+2, box_y+2, CCOLOR_CAPTION, box_width-4, 0, A 0
         COMPONENT_LIST_END
@@ -32,7 +31,6 @@
         .word lb_overwrite
         .byte 0
     ; data specific to the panel
-    lb_ok: STR_FORMAT "  ok"
     lb_overwrite: STR_FORMAT "overwrite file?"
     string_bank = comps::filename_msg + components::dynamic_label::data_members::ram_bank
     string_address = comps::filename_msg + components::dynamic_label::data_members::label_address

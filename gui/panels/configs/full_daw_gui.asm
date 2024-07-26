@@ -18,6 +18,7 @@
 .include "panels/file_save_popup.asm"
 .include "panels/file_load_popup.asm"
 .include "panels/ok_cancel_popup.asm"
+.include "panels/song_tempo_popup.asm"
 .include "panels/synth_info.asm"
 .include "panels/synth_navigation.asm"
 
@@ -33,6 +34,7 @@
     file_save_popup, \
     file_load_popup, \
     ok_cancel_popup, \
+    song_tempo_popup, \
     track_name_popup, \
     lfo, \
     synth_info, \

@@ -28,6 +28,7 @@
       COMPONENT_DEFINITION combobox, zoom_level_indicator, zoom_level_indicator_x, zoom_level_indicator_y, 6, 5, A zoom_select_lb, 0
       COMPONENT_DEFINITION button, play_start, 34, 57, 6, A play_caption
       COMPONENT_DEFINITION button, play_stop, 41, 57, 6, A stop_caption
+      COMPONENT_DEFINITION button, song_tempo, 55, 57, 10, A tempo_caption
       COMPONENT_DEFINITION text_field, clip_help, help_box_x+2, help_box_y+2, help_box_width-4, help_box_height-4, A vram_assets::help_text_note_edit
       COMPONENT_LIST_END
    .endscope
@@ -49,6 +50,7 @@
    zoom_caption: STR_FORMAT "grid"
    play_caption: STR_FORMAT " play"
    stop_caption: STR_FORMAT " stop"
+   tempo_caption: STR_FORMAT "song tempo"
 
    .proc draw
       ; help frame
@@ -85,9 +87,18 @@
       .word @zoom_level
       .word song_engine::simple_player::startPlayback
       .word song_engine::simple_player::stopPlayback
+      .word @song_tempo
    @zoom_level:
       lda comps, y
       sta components::dnd::dragables::notes::temporal_zoom
+      rts
+   @song_tempo:
+      ; TODO: factor out the GUI stack operation
+      ldx panels__panels_stack_pointer
+      lda #panels__ids__song_tempo_popup
+      sta panels__panels_stack, x
+      inc panels__panels_stack_pointer
+      jsr gui_routines__draw_gui
       rts
    .endproc
 

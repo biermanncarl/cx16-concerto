@@ -22,6 +22,7 @@
    lb_release: STR_FORMAT "rel"
    lb_help: STR_FORMAT "help"
    lb_cancel: STR_FORMAT "cancel"
+   lb_ok: STR_FORMAT "  ok"
    lb_instrument: STR_FORMAT "instrument"
    lb_track_name: STR_FORMAT "track name"
    channel_lb: .byte 12, 47, 18, 0 ; L/R

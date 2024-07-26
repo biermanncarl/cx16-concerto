@@ -21,7 +21,7 @@
    capts:
       .byte 0
    ; data specific to the synth-navigation panel
-   active_tab: .byte 2
+   active_tab: .byte 1
 
    .proc draw
       lda active_tab
