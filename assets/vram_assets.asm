@@ -355,6 +355,11 @@ help_text_note_edit:
     PADDED_TEXT @text_width, normal_text_color, ""
     PADDED_TEXT @text_width, normal_text_color, "duplicate   "
     PADDED_TEXT @text_width, darker_text_color, "    ctrl+lmb"
+    PADDED_TEXT @text_width, normal_text_color, ""
+    PADDED_TEXT @text_width, normal_text_color, "velocity    "
+    PADDED_TEXT @text_width, darker_text_color, " drag rmb on"
+    PADDED_TEXT @text_width, darker_text_color, "    selected"
+    PADDED_TEXT @text_width, darker_text_color, "        note"
 
 help_text_synth:
     @text_width = 12
