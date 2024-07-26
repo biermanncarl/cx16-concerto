@@ -536,7 +536,7 @@ change_song_tempo = song_engine::timing::recalculate_rhythm_values ; TODO: actua
 :  ; potential "users": zoom level 0 and 1
    ldx temporal_zoom
    cpx #0
-   beq @thirtysecondths_update
+   beq @grid_update_finish
    ; for zoom level 1, fall through to bars
 @grid_line_bars:
    lda thirtysecondths_since_last_bar
@@ -545,29 +545,16 @@ change_song_tempo = song_engine::timing::recalculate_rhythm_values ; TODO: actua
 :  ; potential "users": zoom levels 1 through 5; 4 or 5 want emphasis on four bars
    ldx temporal_zoom
    cpx #4
-   bcc @thirtysecondths_update
+   bcc @grid_update_finish
    ; zoom levels 4 and 5: fall through to four bars
-@grid_line_four_bars:
+@grid_line_four_bars: ; not sure if emphasis on four bars is a good idea ... probably a question of taste
    lda thirtysecondths_since_last_bar
    bne :+ ; check if we're at the start of a bar
    lda #3
    and bars_count
    bne :+
    inc grid_line
-:  ; fall through to next section
-
-@thirtysecondths_update:
-   lda thirtysecondths_since_last_bar
-   clc
-   adc thirtysecondth_stride ; At zoom level 0, this has no effect -- the correct advancement of thirtysecondths_since_last_bar is done in the ticks_update above.
-   sta thirtysecondths_since_last_bar
-@bars_update:
-   cmp song_engine::timing::thirtysecondths_per_bar
-   bcc :+
-   stz thirtysecondths_since_last_bar
-   inc bars_count ; currently limited to one bar per column
-:
-
+:  ; fall through to grid update
 @grid_update_finish:
    lda grid_line
    beq @grid_line_off
@@ -585,6 +572,18 @@ change_song_tempo = song_engine::timing::recalculate_rhythm_values ; TODO: actua
    ; store the character in the code that draws the column
    sta @draw_space+1
 
+
+@thirtysecondths_update:
+   lda thirtysecondths_since_last_bar
+   clc
+   adc thirtysecondth_stride ; At zoom level 0, this has no effect -- the correct advancement of thirtysecondths_since_last_bar is done in the ticks_update above.
+   sta thirtysecondths_since_last_bar
+@bars_update:
+   cmp song_engine::timing::thirtysecondths_per_bar
+   bcc :+
+   stz thirtysecondths_since_last_bar
+   inc bars_count ; currently limited to one bar per column
+:
 
 
    ; LOOP OVER EVENTS
