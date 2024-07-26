@@ -26,9 +26,11 @@
    .scope comps
       COMPONENT_DEFINITION drag_and_drop_area, notes_edit, components::dnd::dragables::ids::notes
       COMPONENT_DEFINITION combobox, zoom_level_indicator, zoom_level_indicator_x, zoom_level_indicator_y, 6, 5, A zoom_select_lb, 0
-      COMPONENT_DEFINITION button, play_start, 34, 57, 6, A play_caption
-      COMPONENT_DEFINITION button, play_stop, 41, 57, 6, A stop_caption
-      COMPONENT_DEFINITION button, song_tempo, 55, 57, 10, A tempo_caption
+      COMPONENT_DEFINITION button, play_start, 31, 54, 6, A play_caption
+      COMPONENT_DEFINITION button, play_stop, 38, 54, 6, A stop_caption
+      COMPONENT_DEFINITION button, song_tempo, 31, 57, 10, A tempo_caption
+      COMPONENT_DEFINITION button, load_song, 11, 57, 9, A load_song_lb
+      COMPONENT_DEFINITION button, save_song, 21, 57, 9, A save_song_lb
       COMPONENT_DEFINITION text_field, clip_help, help_box_x+2, help_box_y+2, help_box_width-4, help_box_height-4, A vram_assets::help_text_note_edit
       COMPONENT_LIST_END
    .endscope
@@ -51,6 +53,8 @@
    play_caption: STR_FORMAT " play"
    stop_caption: STR_FORMAT " stop"
    tempo_caption: STR_FORMAT "song tempo"
+   load_song_lb: STR_FORMAT "load song"
+   save_song_lb: STR_FORMAT "save song"
 
    .proc draw
       ; help frame
@@ -88,6 +92,8 @@
       .word song_engine::multitrack_player::startPlayback
       .word song_engine::multitrack_player::stopPlayback
       .word @song_tempo
+      .word @load_song
+      .word @save_song
    @zoom_level:
       lda comps, y
       sta components::dnd::dragables::notes::temporal_zoom
@@ -99,6 +105,12 @@
       sta panels__panels_stack, x
       inc panels__panels_stack_pointer
       jsr gui_routines__draw_gui
+      rts
+   @load_song:
+      ; TODO
+      rts
+   @save_song:
+      ; TODO
       rts
    .endproc
 

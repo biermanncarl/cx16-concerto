@@ -20,8 +20,6 @@
       COMPONENT_DEFINITION button, copy_preset, 37, 2, 6, A copy_preset_lb
       COMPONENT_DEFINITION button, paste_preset, 44, 2, 7, A paste_preset_lb
       COMPONENT_DEFINITION drag_edit, keyboard_volume, 43, 5, %00000000, 0, 63, 63, 0
-      COMPONENT_DEFINITION button, load_song, 66, 2, 13, A load_song_lb
-      COMPONENT_DEFINITION button, save_song, 52, 2, 13, A save_song_lb
       COMPONENT_LIST_END
    .endscope
    capts:
@@ -33,8 +31,6 @@
    ; data specific to the synth-navigation panel
    load_preset_lb: STR_FORMAT " load preset"
    save_preset_lb: STR_FORMAT " save preset"
-   load_song_lb: STR_FORMAT "  load song"
-   save_song_lb: STR_FORMAT "  save song"
    copy_preset_lb: STR_FORMAT " copy"
    paste_preset_lb: STR_FORMAT " paste"
    velocity_lb: STR_FORMAT "velocity"
@@ -55,8 +51,6 @@
       .word @copy_preset
       .word @paste_preset
       .word @set_play_volume
-      .word @load_song
-      .word @save_song
    @instrument_selector:
       ; read data from component string and write it to the Instrument setting
       LDA_COMPONENT_MEMBER_ADDRESS arrowed_edit, instrument_select, value
@@ -102,12 +96,6 @@
    @set_play_volume:
       LDA_COMPONENT_MEMBER_ADDRESS drag_edit, keyboard_volume, coarse_value
       sta play_volume
-      rts
-   @load_song:
-      ; TODO
-      rts
-   @save_song:
-      ; TODO
       rts
    .endproc
 
