@@ -30,6 +30,8 @@
       rts
    .endproc
 
+
+
    .proc write
       lda mouse_variables::curr_data_2 ; y position in multiples of 8 pixels
       ; tabs start at row 28 and are 16 high each
@@ -39,17 +41,17 @@
       lsr
       lsr
       lsr
+      ; fall through to loadTab
+   .endproc
+   ; Expects the tab number in .A
+   .proc loadTab
       sta active_tab
       cmp #0
       beq @load_clip_view
-      jsr gui_routines__load_synth_gui
-      rts
+      jmp gui_routines__load_synth_gui
    @load_clip_view:
-      jsr gui_routines__load_clip_gui
-   @end:
-      rts
+      jmp gui_routines__load_clip_gui
    .endproc
-
 
    refresh = panel_common::dummy_subroutine
 
@@ -57,7 +59,10 @@
       ; The keyboard handling was moved from the main loop to this place here.
       lda concerto_gui::kbd_variables::current_key
       stz concerto_gui::kbd_variables::current_key
-
+      cmp #09 ; tab
+      bne @skip_tab
+      jmp @keyboard_tab
+   @skip_tab:
       cmp #32
       bne @skip_space
       jmp @keyboard_space
@@ -76,6 +81,12 @@
       rts
    @end_keychecks:
       rts
+
+   @keyboard_tab:
+      lda active_tab
+      eor #1
+      sta active_tab
+      jmp loadTab
 
    @keyboard_space:
       lda song_engine::multitrack_player::detail::active
