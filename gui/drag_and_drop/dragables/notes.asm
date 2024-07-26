@@ -295,27 +295,6 @@ note_data_changed: ; flag set within drag&drop operations to signal if playback 
 .endscope
 
 
-
-
-change_song_tempo = song_engine::timing::recalculate_rhythm_values ; TODO: actually recalculate ALL time stamps (lossy for sub-1/32 values)
-
-
-; Sets up a clip for testing.
-.proc setup_test_clip
-   test_first_eighth_ticks = 20
-   test_second_eighth_ticks = 15
-   test_quarter_ticks = test_first_eighth_ticks + test_second_eighth_ticks
-   start_time_stamp = 8*test_quarter_ticks
-   ; make sure all the ticks are properly populated
-   lda #test_first_eighth_ticks
-   sta song_engine::timing::first_eighth_ticks
-   lda #test_second_eighth_ticks
-   sta song_engine::timing::second_eighth_ticks
-   jsr song_engine::timing::recalculate_rhythm_values
-   rts
-.endproc
-
-
 ; Draws the editing area of notes within a clip. (Later perhaps effects, too)
 ; Expects pointer to unselected events in unselected_events_vector, selected events in selected_events_vector
 .proc draw

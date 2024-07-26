@@ -97,15 +97,14 @@
         .word panel_common::dummy_subroutine ; drag edit: update when closing popup
         .word panel_common::dummy_subroutine ; drag edit: update when closing popup
     button_ok:
+        jsr song_engine::simple_player::stopPlayback
         LDA_COMPONENT_MEMBER_ADDRESS drag_edit, beats_per_bar, coarse_value
         sta song_engine::timing::beats_per_bar
         LDA_COMPONENT_MEMBER_ADDRESS drag_edit, ticks_first_eighth, coarse_value
         sta song_engine::timing::first_eighth_ticks
         LDA_COMPONENT_MEMBER_ADDRESS drag_edit, ticks_second_eighth, coarse_value
         sta song_engine::timing::second_eighth_ticks
-        jsr song_engine::timing::recalculate_rhythm_values
-
-        ; TODO: In the future, we also want to re-scale all the events and should issue a warning about potentially lossy operation.
+        jsr song_engine::change_song_tempo
 
         ; fall through to button_cancel, which closes the popup
     button_cancel:

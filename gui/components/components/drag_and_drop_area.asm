@@ -177,6 +177,7 @@
     .endproc
 
     .proc initialize
+        jsr song_engine::timing::recalculate_rhythm_values
         ; create vectors for temporary event storage
         jsr v5b::new
         sta dnd::temp_events
@@ -189,8 +190,6 @@
         jsr v5b::new
         sta song_engine::selected_events_vector
         stx song_engine::selected_events_vector+1
-        ; just for testing
-        jsr dnd::dragables::notes::setup_test_clip
         rts
     .endproc
 
