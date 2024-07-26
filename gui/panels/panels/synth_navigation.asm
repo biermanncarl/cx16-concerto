@@ -100,7 +100,11 @@
    .endproc
 
 
-   refresh = panel_common::dummy_subroutine
+   .proc refresh
+      lda gui_variables::current_synth_instrument
+      STA_COMPONENT_MEMBER_ADDRESS arrowed_edit, instrument_select, value
+      rts
+   .endproc
 
    keypress = panel_common::dummy_subroutine
 .endscope

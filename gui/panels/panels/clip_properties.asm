@@ -114,6 +114,7 @@
         LDA_COMPONENT_MEMBER_ADDRESS drag_edit, instrument_sel, coarse_value
         ldy #song_engine::clips::clip_data::instrument_id
         sta (v32b::entrypointer), y
+        sta gui_variables::current_synth_instrument
         rts
     @mono:
         LDA_COMPONENT_MEMBER_ADDRESS checkbox, monophonic, checked
@@ -158,6 +159,7 @@
         ldy #song_engine::clips::clip_data::instrument_id
         lda (v32b::entrypointer), y
         STA_COMPONENT_MEMBER_ADDRESS drag_edit, instrument_sel, coarse_value
+        sta gui_variables::current_synth_instrument ; Load the clip's instrument in the synth UI, too
         iny ; monophonic id
         lda (v32b::entrypointer), y
         STA_COMPONENT_MEMBER_ADDRESS checkbox, monophonic, checked
