@@ -737,6 +737,33 @@ destroy = dll::destroy_list
 .endproc
 
 
+.proc readEntryFromCHRIN
+   ldx #0
+@loop:
+   phx
+   jsr CHRIN
+   plx
+   sta value_0, x
+   inx
+   cpx #entry_size
+   bne @loop
+   rts
+.endproc
+
+.proc writeEntryToCHROUT
+   ldx #0
+@loop:
+   phx
+   lda value_0, x
+   jsr CHROUT
+   plx
+   inx
+   cpx #entry_size
+   bne @loop
+   rts
+.endproc
+
+
 ; Converts an entry from "direct pointer" representation to the "vector+index" representation.
 ; Expects the direct pointer to a valid entry in .A/.X/.Y.
 ; Returns the pointer to the vector in value_0, value_1 (B/H).

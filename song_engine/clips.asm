@@ -196,6 +196,10 @@ default_name:
     rts
 .endproc
 
+; Expects that access to the clip has already been established.
+; Returns vector in .A/.X
+getCurrentEventVector = getClipEventVector+3
+
 
 ; Deletes all clip data and events data.
 .proc clearClips
@@ -243,7 +247,25 @@ default_name:
     cpy #clip_data_size
     bne @header_loop
 
-    ; TODO save event data
+    ; save event data
+    jsr getCurrentEventVector
+    jsr v5b::get_first_entry
+    bcs @finish_events
+@events_loop:
+    pha
+    phx
+    phy
+    jsr v5b::read_entry
+    jsr v5b::writeEntryToCHROUT
+    ply
+    plx
+    pla
+    jsr v5b::get_next_entry
+    bcc @events_loop
+@finish_events:
+    lda #events::event_type_invalid
+    sta events::event_type
+    jsr v5b::writeEntryToCHROUT
 
     rts
 .endproc
@@ -252,10 +274,14 @@ default_name:
 ; Expects clip id in .Y
 .proc readClipFromFile
     jsr accessClip
+    ; backup event vector
+    jsr getCurrentEventVector
+    sta event_vector
+    stx event_vector+1
 
     ; load header data
     ; Note that it doesn't make sense to read the pointer to the event vector.
-    ; But for the sake of simplicity, we'll read it anyway and overwrite it afterwards.
+    ; But for the sake of simplicity, we'll read it anyway and restore it afterwards.
     ldy #0
 @header_loop:
     phy
@@ -266,9 +292,29 @@ default_name:
     cpy #clip_data_size
     bne @header_loop
 
-    ; TODO load event data
+    ; load event data
+@events_loop:
+    jsr v5b::readEntryFromCHRIN
+    lda events::event_type
+    cmp #events::event_type_invalid
+    beq @events_loop_end
+    lda event_vector
+    ldx event_vector+1
+    jsr v5b::append_new_entry
+    bra @events_loop
+@events_loop_end:
 
+    ; overwrite event vector
+    ldy #clip_data::event_ptr
+    lda event_vector
+    sta (v32b::entrypointer), y
+    iny
+    lda event_vector+1
+    sta (v32b::entrypointer), y
     rts
+
+event_vector:
+    .word 0
 .endproc
 
 .endscope
