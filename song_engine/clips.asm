@@ -292,6 +292,14 @@ getCurrentEventVector = getClipEventVector+3
     cpy #clip_data_size
     bne @header_loop
 
+    ; overwrite event vector
+    ldy #clip_data::event_ptr
+    lda event_vector
+    sta (v32b::entrypointer), y
+    iny
+    lda event_vector+1
+    sta (v32b::entrypointer), y
+
     ; load event data
 @events_loop:
     jsr v5b::readEntryFromCHRIN
@@ -304,13 +312,6 @@ getCurrentEventVector = getClipEventVector+3
     bra @events_loop
 @events_loop_end:
 
-    ; overwrite event vector
-    ldy #clip_data::event_ptr
-    lda event_vector
-    sta (v32b::entrypointer), y
-    iny
-    lda event_vector+1
-    sta (v32b::entrypointer), y
     rts
 
 event_vector:
