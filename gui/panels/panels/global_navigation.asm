@@ -77,7 +77,7 @@
    @skip_x:
       cmp #81        ; exit if pressed "Q"
       bne @end_keychecks
-      inc gui_variables::request_program_exit
+      ;inc gui_variables::request_program_exit ; disable exit for now...
       rts
    @end_keychecks:
       rts

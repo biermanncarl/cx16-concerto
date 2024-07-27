@@ -184,6 +184,93 @@ default_name:
     rts
 .endproc
 
+; expects index of clip in .Y
+; Returns vector in .A/.X
+.proc getClipEventVector
+    jsr accessClip
+    ldy #clip_data::event_ptr+1
+    lda (v32b::entrypointer), y
+    tax
+    dey
+    lda (v32b::entrypointer), y
+    rts
+.endproc
+
+
+; Deletes all clip data and events data.
+.proc clearClips
+    ; destroy all event vectors
+    ldy number_of_clips
+@clips_loop:
+    dey
+    phy
+    jsr getClipEventVector
+    jsr v5b::destroy
+    ply
+    beq @clips_loop_exit
+    bra @clips_loop
+@clips_loop_exit:
+
+    ; destroy all clips except one
+    lda clips_vector
+    ldx clips_vector+1
+    jsr v32b::clear
+
+    ; initialize one clip
+    ldy #0
+    jsr accessClip
+    jsr initializeClip
+
+    stz active_clip_id
+    rts
+.endproc
+
+; Sends data of a clip to CHROUT.
+; Expects clip id in .Y
+.proc saveClipToFile
+    jsr accessClip
+
+    ; write header data
+    ; Note that it doesn't make sense to save the pointer to the event vector.
+    ; But for the sake of simplicity, we'll save it anyway.
+    ldy #0
+@header_loop:
+    phy
+    lda (v32b::entrypointer), y
+    jsr CHROUT
+    ply
+    iny
+    cpy #clip_data_size
+    bne @header_loop
+
+    ; TODO save event data
+
+    rts
+.endproc
+
+; Reads data of a clip from CHRIN
+; Expects clip id in .Y
+.proc readClipFromFile
+    jsr accessClip
+
+    ; load header data
+    ; Note that it doesn't make sense to read the pointer to the event vector.
+    ; But for the sake of simplicity, we'll read it anyway and overwrite it afterwards.
+    ldy #0
+@header_loop:
+    phy
+    jsr CHRIN
+    ply
+    sta (v32b::entrypointer), y
+    iny
+    cpy #clip_data_size
+    bne @header_loop
+
+    ; TODO load event data
+
+    rts
+.endproc
+
 .endscope
 
 .endif ; .ifndef SONG_ENGINE_CLIPS_ASM
