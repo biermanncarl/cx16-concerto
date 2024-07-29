@@ -7,7 +7,46 @@
 
     .proc changeSongTempo 
         jsr timing::detail::recalculateTimingValues
-        ; TODO: actually recalculate ALL time stamps (lossy for sub-1/32 values)
+        ; recalculate ALL time stamps (lossy for sub-1/32 values, and if events move beyond what is representable by 16 bits)
+        ldy #0
+    @clips_loop:
+        phy
+        jsr clips::getClipEventVector
+        jsr v5b::get_first_entry
+        bcs @events_loop_end
+        @events_loop:
+            pha
+            phx
+            phy
+            jsr v5b::read_entry
+
+            lda events::event_time_stamp_h
+            ldx events::event_time_stamp_l
+            jsr timing::disassemble_time_stamp
+            ; TODO: handle residual ticks
+            jsr timing::detail::assembleTimeStamp
+            sta events::event_time_stamp_h
+            stx events::event_time_stamp_l
+
+            ; TODO: do sort events if they fall on the same time stamp
+            ply
+            plx
+            pla
+            pha
+            phx
+            phy
+            jsr v5b::write_entry
+            ply
+            plx
+            pla
+            jsr v5b::get_next_entry
+            bcc @events_loop
+        @events_loop_end:
+        ply
+        iny
+        cpy clips::number_of_clips
+        bne @clips_loop
+
         jsr timing::detail::commitNewTiming
         rts
     .endproc

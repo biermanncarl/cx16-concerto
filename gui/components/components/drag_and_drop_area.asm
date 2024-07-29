@@ -177,6 +177,11 @@
     .endproc
 
     .proc initialize
+        lda #4
+        sta song_engine::timing::detail::new_timing::beats_per_bar
+        lda #30
+        sta song_engine::timing::detail::new_timing::first_eighth_ticks
+        sta song_engine::timing::detail::new_timing::second_eighth_ticks
         jsr song_engine::timing::detail::recalculateTimingValues
         jsr song_engine::timing::detail::commitNewTiming
         ; create vectors for temporary event storage

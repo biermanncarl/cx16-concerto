@@ -40,7 +40,7 @@ time_stamp_parameter:
          second_eighth_ticks, 1, \
          quarter_ticks, 1, \
          sixteenth_ticks, 4, \
-         thirtysecondth_ticks, 16, \
+         thirtysecondth_ticks, 8, \
          thirtysecondths_per_bar, 1
       .linecont -
       SCRATCHPAD_VARIABLES NEW_TIMING_SCRATCHPAD
@@ -82,7 +82,7 @@ time_stamp_parameter:
       jsr split_value
       sta new_timing::sixteenth_ticks
       stx new_timing::sixteenth_ticks+1
-      lda second_eighth_ticks
+      lda new_timing::second_eighth_ticks
       jsr split_value
       sta new_timing::sixteenth_ticks+2
       stx new_timing::sixteenth_ticks+3
@@ -110,6 +110,8 @@ time_stamp_parameter:
       ; #optimize-for-size by putting all the variables next to each other and copy with a single loop
       lda new_timing::beats_per_bar
       sta beats_per_bar
+      lda new_timing::thirtysecondths_per_bar
+      sta thirtysecondths_per_bar
       lda new_timing::quarter_ticks
       sta quarter_ticks
       lda new_timing::first_eighth_ticks
@@ -130,7 +132,7 @@ time_stamp_parameter:
       rts
    .endproc
 
-   ; Assembles the number of thirtysecondth notes and remaining ticks into a 16-bit time stamp. (Untested!)
+   ; Assembles the number of thirtysecondth notes and remaining ticks into a 16-bit time stamp.
    ; Uses the new (uncommitted) timing to allow recalculating event time stamps (disassemble with old time stamp, assemble with new one).
    ; It expects the number of thirtysecondth-notes in .A (high) / .X (low) and the number of remaining ticks in .Y
    ; The 16-bit time stamp is returned in .A (high) / .X (low)
@@ -152,7 +154,7 @@ time_stamp_parameter:
       clc
       adc timestamp
       sta timestamp
-      bne :+
+      bcc :+
       inc timestamp+1
    :
       ; add the quarters
@@ -164,6 +166,8 @@ time_stamp_parameter:
       dex
       bne :-
 
+      lda quarter_counter+1
+      beq @quarter_loop_high_end
    @quarter_loop_high:
       lda timestamp+1
       clc
@@ -171,7 +175,10 @@ time_stamp_parameter:
       sta timestamp+1
       dec quarter_counter+1
       bne @quarter_loop_high
+   @quarter_loop_high_end:
 
+      lda quarter_counter
+      beq @quarter_loop_low_end
    @quarter_loop_low: ; this loop can potentially run very often
       lda timestamp
       clc
@@ -181,7 +188,7 @@ time_stamp_parameter:
       inc timestamp+1
    :  dec quarter_counter
       bne @quarter_loop_low
-
+   @quarter_loop_low_end:
       lda timestamp+1
       ldx timestamp
       rts
@@ -193,9 +200,9 @@ time_stamp_parameter:
       .proc subQuartersToTicks
          clc
       @loop:
-         cpx #0
-         beq @end_loop
          dex
+         cpx #255
+         beq @end_loop
          adc new_timing::thirtysecondth_ticks, x
          bra @loop
       @end_loop:
