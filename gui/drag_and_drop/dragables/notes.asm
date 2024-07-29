@@ -50,24 +50,6 @@ note_data_changed: ; flag set within drag&drop operations to signal if playback 
       .res 1
    .popseg
 
-   temp_variable_z:
-      .res 1
-   temp_variable_y:
-      .res 1
-   temp_variable_x:
-      .res 1
-   temp_variable_w:
-      .res 1
-   temp_variable_v:
-      .res 1
-   temp_variable_u:
-      .res 1
-   temp_variable_t:
-      .res 1
-   temp_variable_s:
-      .res 1
-   temp_variable_r:
-      .res 1
 
    ; Editing area rectangle
    event_edit_width = 50
@@ -81,23 +63,30 @@ note_data_changed: ; flag set within drag&drop operations to signal if playback 
    event_edit_note_border_color_high_velocity = 10 ; ??
 
 
-   ; Buffers
-   ; -------
-   ; Consider 
-   ; * reusing these for multiple purposes
-   ; * moving them to "golden RAM" ($0400-$07FF)
-
+   ; Buffers in scratchpad
+   ; ---------------------
    ; column buffers
    ; used for drawing.
-   column_buffer:
-      .res event_edit_height
-   ; used for hitbox generation
-   note_is_selected:
-      .res event_edit_height
-   note_id_low:
-      .res event_edit_height
-   note_id_high:
-      .res event_edit_height
+   .linecont + ; switch on line continuation with "\"
+   .define DND_NOTES_COLUMN_BUFFERS \
+      column_buffer, event_edit_height, \
+      note_is_selected, event_edit_height, \
+      note_id_low, event_edit_height, \
+      note_id_high, event_edit_height
+   .define DND_NOTES_TEMP_VARIABLES \
+      temp_variable_z, 1, \
+      temp_variable_y, 1, \
+      temp_variable_x, 1, \
+      temp_variable_w, 1, \
+      temp_variable_v, 1, \
+      temp_variable_u, 1, \
+      temp_variable_t, 1, \
+      temp_variable_s, 1, \
+      temp_variable_r, 1
+   .linecont - ; switch off line continuation with "\" (default)
+   SCRATCHPAD_VARIABLES DND_NOTES_COLUMN_BUFFERS, DND_NOTES_TEMP_VARIABLES
+
+
 
 
    ; Calculates the row of a note and checks if it is inside the view vertically.

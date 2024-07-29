@@ -6,9 +6,10 @@
 .scope dragables
 
 .include "../../common/utility_macros.asm"
+.include "dragables/common.asm"
+.include "dragables/notes.asm"
 .include "dragables/clips.asm"
 .include "dragables/effects.asm"
-.include "dragables/notes.asm"
 
 ; register all types of drag and drop objects we support
 .define ALL_DRAG_AND_DROP_TYPE_SCOPES notes, effects, clips

@@ -7,6 +7,9 @@
 ; binary assets
 .include "../assets/vram_assets.asm"
 
+; Scratchpad memory for memory-hungry single-shot applications.
+.include "../common/scratchpad_memory.asm"
+
 ; communicate that we want to compile in instrument data from a file
 concerto_use_instruments_from_file = 1
 .define CONCERTO_INSTRUMENTS_PATH "FACTORY.COB"

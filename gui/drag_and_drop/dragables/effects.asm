@@ -5,9 +5,6 @@
 .ifndef ::GUI_DRAG_AND_DROP_DRAGABLES_EFFECTS_ASM
 ::GUI_DRAG_AND_DROP_DRAGABLES_EFFECTS_ASM = 1
 
-.include "common.asm"
-.include "notes.asm"
-
 .scope effects
     hitbox_height = 2
     px = notes::px

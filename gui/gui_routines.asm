@@ -1,10 +1,5 @@
 ; Copyright 2021, 2023 Carl Georg Biermann
 
-.include "gui_variables.asm"
-.include "components/components.asm"
-.include "panels/panels.asm"
-
-
 .scope gui_routines
 
 .ifdef ::concerto_full_daw
