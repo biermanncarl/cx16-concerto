@@ -22,30 +22,186 @@ time_stamp_parameter:
    .word 0
 
 .scope detail
-; number of ticks for various note values
-quarter_ticks:
-   .res 1
-; eighths are given already
-sixteenth_ticks:
-   .res 4
-thirdysecondth_ticks:
-   .res 8
+   ; number of ticks for various note values
+   quarter_ticks:
+      .res 1
+   ; eighths are given already
+   sixteenth_ticks:
+      .res 4
+   thirtysecondth_ticks:
+      .res 8
 
-temp_variable_a:
-   .res 2
-temp_variable_b:
-   .res 2
-temp_variable_c:
-   .res 1
+   ; When changing song tempo, the new values of the timing variables will be put here until re-tempo of the song is complete.
+   .scope new_timing
+      .linecont +
+      .define NEW_TIMING_SCRATCHPAD \
+         beats_per_bar, 1, \
+         first_eighth_ticks, 1, \
+         second_eighth_ticks, 1, \
+         quarter_ticks, 1, \
+         sixteenth_ticks, 4, \
+         thirtysecondth_ticks, 16, \
+         thirtysecondths_per_bar, 1
+      .linecont -
+      SCRATCHPAD_VARIABLES NEW_TIMING_SCRATCHPAD
+   .endscope
 
-; this function splits the value in .A in two halves, which are returned in .A and .X. If necessary, .A is rounded up and .X is rounded down.
-; .Y is preserved
-.proc split_value
-   lsr ; divide by 2 (rounding down)
-   tax ; that's already half of the job done
-   adc #0 ; if .A was uneven, the LSR instruction will have set the carry flag, which we will add back here to "round up"
-   rts
-.endproc
+   temp_variable_a:
+      .res 2
+   temp_variable_b:
+      .res 2
+   temp_variable_c:
+      .res 1
+
+   ; this function splits the value in .A in two halves, which are returned in .A and .X. If necessary, .A is rounded up and .X is rounded down.
+   ; .Y is preserved
+   .proc split_value
+      lsr ; divide by 2 (rounding down)
+      tax ; that's already half of the job done
+      adc #0 ; if .A was uneven, the LSR instruction will have set the carry flag, which we will add back here to "round up"
+      rts
+   .endproc
+
+   ; From new beats_per_bar and the eighth ticks, calculates the new rhythm values.
+   ; They are kept in the "new_timing" scope as long as we still need the old timing values for re-timing of the event data to their new time stamps.
+   ; Before control is handed away to other parts of the software, commitNewTempo should be called. Otherwise the new timing values will get lost.
+   .proc recalculateTimingValues
+      ; bars (number of thirtysecondths in a bar)
+      lda new_timing::beats_per_bar
+      asl
+      asl
+      asl
+      sta new_timing::thirtysecondths_per_bar
+      ; quarter note
+      lda new_timing::first_eighth_ticks
+      ; clc ; carry should still be clear from above
+      adc new_timing::second_eighth_ticks
+      sta new_timing::quarter_ticks
+      ; sixteenth notes
+      lda new_timing::first_eighth_ticks
+      jsr split_value
+      sta new_timing::sixteenth_ticks
+      stx new_timing::sixteenth_ticks+1
+      lda second_eighth_ticks
+      jsr split_value
+      sta new_timing::sixteenth_ticks+2
+      stx new_timing::sixteenth_ticks+3
+      ; thirtysecondth notes
+      ldx #0
+      ldy #0
+   @loop:
+      lda new_timing::sixteenth_ticks, x
+      phx
+      jsr split_value
+      sta new_timing::thirtysecondth_ticks, y
+      iny
+      txa
+      sta new_timing::thirtysecondth_ticks, y
+      iny
+      plx
+      inx
+      cpx #4
+      bne @loop
+      rts
+   .endproc
+
+   ; Moves the newly calculated rhythm values to the main variables.
+   .proc commitNewTiming
+      ; #optimize-for-size by putting all the variables next to each other and copy with a single loop
+      lda new_timing::beats_per_bar
+      sta beats_per_bar
+      lda new_timing::quarter_ticks
+      sta quarter_ticks
+      lda new_timing::first_eighth_ticks
+      sta first_eighth_ticks
+      lda new_timing::second_eighth_ticks
+      sta second_eighth_ticks
+      ldx #0
+   @thirtysecondths_loop:
+      lda new_timing::thirtysecondth_ticks, x
+      sta thirtysecondth_ticks, x
+      cpx #4
+      bcs :+ ; skip copying sixteenths when above 3
+      lda new_timing::sixteenth_ticks, x
+      sta sixteenth_ticks, x
+   :  inx
+      cpx #8
+      bne @thirtysecondths_loop
+      rts
+   .endproc
+
+   ; Assembles the number of thirtysecondth notes and remaining ticks into a 16-bit time stamp. (Untested!)
+   ; Uses the new (uncommitted) timing to allow recalculating event time stamps (disassemble with old time stamp, assemble with new one).
+   ; It expects the number of thirtysecondth-notes in .A (high) / .X (low) and the number of remaining ticks in .Y
+   ; The 16-bit time stamp is returned in .A (high) / .X (low)
+   ; Involves multiplication, so it is quite costly
+   .proc assembleTimeStamp
+      timestamp = temp_variable_a
+      quarter_counter = temp_variable_b
+      stz timestamp+1
+      sty timestamp
+      ; backup the thirtysecondth count
+      stx quarter_counter
+      sta quarter_counter+1
+      ; add the sub-quarter duration
+      txa
+      and #%00000111
+      tax
+      lda #0
+      jsr subQuartersToTicks ; could be optimized to be inline
+      clc
+      adc timestamp
+      sta timestamp
+      bne :+
+      inc timestamp+1
+   :
+      ; add the quarters
+      ; ----------------
+      ; get the quarter-count from thirtysecondths-count by dividing by 8
+      ldx #3
+   :  lsr quarter_counter+1
+      ror quarter_counter
+      dex
+      bne :-
+
+   @quarter_loop_high:
+      lda timestamp+1
+      clc
+      adc new_timing::quarter_ticks
+      sta timestamp+1
+      dec quarter_counter+1
+      bne @quarter_loop_high
+
+   @quarter_loop_low: ; this loop can potentially run very often
+      lda timestamp
+      clc
+      adc new_timing::quarter_ticks
+      sta timestamp
+      bcc :+
+      inc timestamp+1
+   :  dec quarter_counter
+      bne @quarter_loop_low
+
+      lda timestamp+1
+      ldx timestamp
+      rts
+
+      ; Given a number of thirtysecondth notes in .X, relative to the previous grid-aligned beat,
+      ; and a number of ticks in .A, calculates the number of ticks since the previous grid-aligned beat.
+      ; Total tick number returned in .A
+      ; Preserves .Y
+      .proc subQuartersToTicks
+         clc
+      @loop:
+         cpx #0
+         beq @end_loop
+         dex
+         adc new_timing::thirtysecondth_ticks, x
+         bra @loop
+      @end_loop:
+         rts
+      .endproc
+   .endproc
 .endscope
 
 
@@ -61,47 +217,6 @@ thirtysecondths_notes_zoom:
 thirtysecondths_per_bar = get_note_duration_thirtysecondths::thirtysecondths_notes_zoom+5
 
 
-.proc recalculate_rhythm_values
-   ; bars (number of thirtysecondths in a bar)
-   lda beats_per_bar
-   asl
-   asl
-   asl
-   sta thirtysecondths_per_bar
-   ; quarter note
-   lda first_eighth_ticks
-   ; clc ; carry should still be clear from above
-   adc second_eighth_ticks
-   sta detail::quarter_ticks
-   ; sixteenth notes
-   lda first_eighth_ticks
-   jsr detail::split_value
-   sta detail::sixteenth_ticks
-   stx detail::sixteenth_ticks+1
-   lda second_eighth_ticks
-   jsr detail::split_value
-   sta detail::sixteenth_ticks+2
-   stx detail::sixteenth_ticks+3
-   ; thirtysecondth notes
-   ldx #0
-   ldy #0
-@loop:
-   lda detail::sixteenth_ticks, x
-   phx
-   jsr detail::split_value
-   sta detail::thirdysecondth_ticks, y
-   iny
-   txa
-   sta detail::thirdysecondth_ticks, y
-   iny
-   plx
-   inx
-   cpx #4
-   bne @loop
-   rts
-.endproc
-
-
 ; Given a number of ticks in .A, which is the temporal distance to the previous grid-aligned beat (quarter note),
 ; this routine figures out what the sub-values are.
 ; Returns the number of thirtysecondth notes according to the current timing grid in .X
@@ -111,7 +226,7 @@ thirtysecondths_per_bar = get_note_duration_thirtysecondths::thirtysecondths_not
    ldx #0
 @loop:
    sec
-   sbc detail::thirdysecondth_ticks, x
+   sbc detail::thirtysecondth_ticks, x
    beq @exact_match
    bcc @overshoot
    inx
@@ -121,28 +236,13 @@ thirtysecondths_per_bar = get_note_duration_thirtysecondths::thirtysecondths_not
    bra @loop
 @overshoot:
    clc
-   adc detail::thirdysecondth_ticks, x
+   adc detail::thirtysecondth_ticks, x
    rts
 @exact_match:
    inx
    rts
 .endproc
 
-; Given a number of thirtysecondth notes in .X, relative to the previous grid-aligned beat,
-; and a number of ticks in .A, calculates the number of ticks since the previous grid-aligned beat.
-; Total tick number returned in .A
-; Preserves .Y
-.proc sub_quarters_to_ticks
-   clc
-@loop:
-   cpx #0
-   beq @end_loop
-   dex
-   adc detail::thirdysecondth_ticks, x
-   bra @loop
-@end_loop:
-   rts
-.endproc
 
 
 ; This function is an extension of ticks_to_sub_quarters.
@@ -246,63 +346,6 @@ thirtysecondths_per_bar = get_note_duration_thirtysecondths::thirtysecondths_not
 .endproc
 
 
-; Assembles the number of thirtysecondth notes and remaining ticks into a 16-bit time stamp. (Untested!)
-; It expects the number of thirtysecondth-notes in .A (high) / .X (low) and the number of remaining ticks in .Y
-; The 16-bit time stamp is returned in .A (high) / .X (low)
-; Involves multiplication, so it is quite costly
-; .proc assemble_time_stamp
-;    timestamp = detail::temp_variable_a
-;    quarter_counter = detail::temp_variable_b
-;    stz timestamp+1
-;    sty timestamp
-;    ; backup the thirtysecondth count
-;    stx quarter_counter
-;    sta quarter_counter+1
-;    ; add the sub-quarter duration
-;    txa
-;    and #%00000111
-;    tax
-;    lda #0
-;    jsr sub_quarters_to_ticks
-;    clc
-;    adc timestamp
-;    sta timestamp
-;    bne :+
-;    inc timestamp+1
-; :
-;    ; add the quarters
-;    ; ----------------
-;    ; get the quarter count from thirtysecondths count by dividing by 8
-;    ldx #3
-; :  lsr quarter_counter+1
-;    ror quarter_counter
-;    dex
-;    bne :-
-
-; @quarter_loop_high:
-;    lda timestamp+1
-;    clc
-;    adc detail::quarter_ticks
-;    sta timestamp+1
-;    dec quarter_counter+1
-;    bne @quarter_loop_high
-
-; @quarter_loop_low: ; this loop can potentially run very often
-;    lda time_stamp
-;    clc
-;    adc detail::quarter_ticks
-;    sta timestamp
-;    bcc :+
-;    inc timestamp+1
-; :  dec quarter_counter
-;    bne @quarter_loop_low
-
-;    lda timestamp+1
-;    ldx timestamp
-;    rts
-; .endproc
-
-
 ; Given an 8-bit number of thirtysecondth notes (which is assumed to be relative to a whole quarter note -- true after disassemble_time_stamp),
 ; returns the length of the quantization cell of specified (zoom) level the time stamp is part of (left inclusive, right exclusive).
 ; Returns the length of the next time interval in ticks in .A
@@ -332,7 +375,7 @@ thirtysecondths_per_bar = get_note_duration_thirtysecondths::thirtysecondths_not
    rts
 @thirtysecondths:
    tax
-   lda detail::thirdysecondth_ticks, x
+   lda detail::thirtysecondth_ticks, x
    rts
 @sixteenths:
    lsr

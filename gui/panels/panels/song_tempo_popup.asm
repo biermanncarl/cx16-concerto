@@ -99,12 +99,12 @@
     button_ok:
         jsr song_engine::multitrack_player::stopPlayback
         LDA_COMPONENT_MEMBER_ADDRESS drag_edit, beats_per_bar, coarse_value
-        sta song_engine::timing::beats_per_bar
+        sta song_engine::timing::detail::new_timing::beats_per_bar
         LDA_COMPONENT_MEMBER_ADDRESS drag_edit, ticks_first_eighth, coarse_value
-        sta song_engine::timing::first_eighth_ticks
+        sta song_engine::timing::detail::new_timing::first_eighth_ticks
         LDA_COMPONENT_MEMBER_ADDRESS drag_edit, ticks_second_eighth, coarse_value
-        sta song_engine::timing::second_eighth_ticks
-        jsr song_engine::song_data::change_song_tempo
+        sta song_engine::timing::detail::new_timing::second_eighth_ticks
+        jsr song_engine::song_data::changeSongTempo
 
         ; fall through to button_cancel, which closes the popup
     button_cancel:

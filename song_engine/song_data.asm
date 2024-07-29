@@ -5,7 +5,12 @@
 
 .scope song_data
 
-    change_song_tempo = timing::recalculate_rhythm_values ; TODO: actually recalculate ALL time stamps (lossy for sub-1/32 values)
+    .proc changeSongTempo 
+        jsr timing::detail::recalculateTimingValues
+        ; TODO: actually recalculate ALL time stamps (lossy for sub-1/32 values)
+        jsr timing::detail::commitNewTiming
+        rts
+    .endproc
 
     .scope data_block_type
         ID_GENERATOR 0, none, clip
@@ -58,12 +63,13 @@
         ; ---------------------
         ; Song tempo
         jsr CHRIN
-        sta song_engine::timing::beats_per_bar
+        sta song_engine::timing::detail::new_timing::beats_per_bar
         jsr CHRIN
-        sta song_engine::timing::first_eighth_ticks
+        sta song_engine::timing::detail::new_timing::first_eighth_ticks
         jsr CHRIN
-        sta song_engine::timing::second_eighth_ticks
-        jsr song_engine::timing::recalculate_rhythm_values
+        sta song_engine::timing::detail::new_timing::second_eighth_ticks
+        jsr song_engine::timing::detail::recalculateTimingValues
+        jsr song_engine::timing::detail::commitNewTiming
         ; Instrument data
         jsr concerto_synth::instruments::restore_from_chrin
 

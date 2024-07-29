@@ -177,7 +177,8 @@
     .endproc
 
     .proc initialize
-        jsr song_engine::timing::recalculate_rhythm_values
+        jsr song_engine::timing::detail::recalculateTimingValues
+        jsr song_engine::timing::detail::commitNewTiming
         ; create vectors for temporary event storage
         jsr v5b::new
         sta dnd::temp_events
