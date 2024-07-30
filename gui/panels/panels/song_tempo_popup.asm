@@ -13,8 +13,8 @@
     wd = 80
     hg = 60
     ; where the actual popup appears
-        box_width = 18
-        box_height = 14
+        box_width = 23
+        box_height = 23
         box_x = (80 - box_width) / 2
         box_y = (60 - box_height) / 2
     comps:
@@ -24,6 +24,7 @@
         COMPONENT_DEFINITION drag_edit, ticks_first_eighth, 40+4, box_y+4, %00000000, 8, 127, 12, 0
         COMPONENT_DEFINITION drag_edit, ticks_second_eighth, 40+4, box_y+6, %00000000, 8, 127, 12, 0
         COMPONENT_DEFINITION drag_edit, beats_per_bar, 40+4, box_y+9, %00000000, 2, 16, 4, 0
+        COMPONENT_DEFINITION text_field, warning_text, box_x+2, box_y+12, 19, 8, A vram_assets::change_tempo_hint
         COMPONENT_LIST_END
     .endscope
     capts:

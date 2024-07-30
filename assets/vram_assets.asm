@@ -1,5 +1,15 @@
 ; Copyright 2024 Carl Georg Biermann
 
+; Stuff that goes into VRAM.
+; Specifically, this file is loaded into the first bank of video RAM after the
+; text screen memory at address 0 (size 15k=60*256 bytes).
+; The contents of this file are all data, no executable code contained.
+;
+; The contents are assembled into their own VRAM1ASSETS segment, which is emitted into its own file.
+; Still, the addresses / labels can be used by the including program to access the assets in video RAM.
+; This file gets assembled twice -- once during assembly of the loader, and once more for the main program.
+; But that's no problem.
+
 .pushseg
 .segment "VRAM1LOADADDR"
 .import __VRAM1ASSETS_START__
@@ -42,6 +52,7 @@ color_alg_operator = lightgreen+16*black
 
 normal_text_color = lightgray+16*darkgray
 darker_text_color = midgray+16*darkgray
+orange_text_color = orange+16*darkgray
 
 .macro PADDED_TEXT length, color, str
     ; stolen from the STR_FORMAT macro
@@ -392,7 +403,16 @@ help_text_synth:
     PADDED_TEXT @text_width, darker_text_color, "if min. 1 op"
     PADDED_TEXT @text_width, darker_text_color, "is active."
 
-
+change_tempo_hint:
+    @text_width = 19
+    PADDED_TEXT @text_width, orange_text_color, "      caution      "
+    PADDED_TEXT @text_width, normal_text_color, ""
+    PADDED_TEXT @text_width, normal_text_color, "changing song tempo"
+    PADDED_TEXT @text_width, normal_text_color, "can be lossy for   "
+    PADDED_TEXT @text_width, normal_text_color, "sub-1/32 precise   "
+    PADDED_TEXT @text_width, normal_text_color, "timings.           "
+    PADDED_TEXT @text_width, normal_text_color, "maximum song length"
+    PADDED_TEXT @text_width, normal_text_color, "is 8:36 min.       "
 
 
 .endscope
