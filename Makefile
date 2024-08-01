@@ -2,7 +2,7 @@ all: CONCERTO.PRG
 
 .PHONY: run
 run:
-	cd build ; x16emu -prg CONCERTO.PRG -run -scale 2 -quality nearest -debug
+	cd build ; x16emu -prg CONCERTO.PRG -run -scale 2 -quality nearest -debug -abufs 8
 
 .PHONY: test
 test:
