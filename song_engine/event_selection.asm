@@ -1,11 +1,12 @@
 ; Copyright 2023-2024 Carl Georg Biermann
 
-; This file implements work with selections. The features work with streams of events.
+; This file implements work with selections. There are two vectors, vector A and vector B,
+; which can broadly be imagined as a vector of selected and unselected events, respectively.
 ; Events are located in the entries of a 5-bytes vector, with the time stamp as the first 2 bytes.
 ; By user interactions with the GUI, these events can become selected and unselected.
-; The way how we select and unselect events is by cutting selected events and pasting
-; them in a separate, "selected" vector. When an event gets unselected, it is inserted
-; back into the original vector.
+; The way how we select and unselect events is by cutting selected events from their original vector
+; (typically vector B) and pasting them in a separate, "selected" vector (typically vector A).
+; When an event gets unselected, it is inserted back into the original vector.
 ; Caution: this functionality is NOT intended for use inside the ISR.
 ; Variables would have to be backed up. This was the case previously, but was removed due
 ; to lack of need. Commit where the functionality was removed: d9007fef0743c0
@@ -25,66 +26,66 @@ SONG_DATA_EVENT_SELECTION_ASM = 1
 ; these variables are only here in ZP for speed and code size, could be moved out if needed
 
 ; PART OF API
-; pointers to the 40bit vectors with events
-selected_events: ; data not owned by this module
+; pointers to the 5-byte vectors with events
+event_vector_a: ; data not owned by this module
     .res 2
-unselected_events: ; data not owned by this module
+event_vector_b: ; data not owned by this module
     .res 2
 
 ; NOT PART OF API
 ; other variables (no pointers)
-next_selected_event:
+next_event_a:
     .res 3
-last_selected_id:
+most_recent_id_a:
     .res 2
-next_unselected_event:
+next_event_b:
     .res 3
-last_unselected_id:
+most_recent_id_b:
     .res 2
-last_event_source:
+most_recent_event_source:
     .res 1
 .popseg
 
 ; reuse some variables for function calls
-select_action = last_event_source
+move_action = most_recent_event_source
 
 
 .scope detail
-.proc loadNextUnselectedEvent
-    lda next_unselected_event
-    ldx next_unselected_event+1
-    ldy next_unselected_event+2
+.proc loadNextEventInB
+    lda next_event_b
+    ldx next_event_b+1
+    ldy next_event_b+2
     rts
 .endproc
 
-.proc storeNextUnselectedEvent
-    sta next_unselected_event
-    stx next_unselected_event+1
-    sty next_unselected_event+2
+.proc storeNextEventInB
+    sta next_event_b
+    stx next_event_b+1
+    sty next_event_b+2
     rts
 .endproc
 
-.proc loadNextSelectedEvent
-    lda next_selected_event
-    ldx next_selected_event+1
-    ldy next_selected_event+2
+.proc loadNextEventInA
+    lda next_event_a
+    ldx next_event_a+1
+    ldy next_event_a+2
     rts
 .endproc
 
-.proc storeNextSelectedEvent
-    sta next_selected_event
-    stx next_selected_event+1
-    sty next_selected_event+2
+.proc storeNextEventInA
+    sta next_event_a
+    stx next_event_a+1
+    sty next_event_a+2
     rts
 .endproc
 
-.proc advanceNextSelectedEvent
-    ; Expects the current selected event in .A/.X/.Y
+.proc advanceNextEventA
+    ; Expects the current event of vector a in .A/.X/.Y
     jsr v5b::get_next_entry
-    stz next_selected_event+2 ; mark next event as invalid preemptively (will override it if not invalid)
+    stz next_event_a+2 ; mark next event as invalid preemptively (will override it if not invalid)
     bcc :+
     rts
-:   jsr detail::storeNextSelectedEvent
+:   jsr detail::storeNextEventInA
     rts
 .endproc
 .endscope
@@ -134,117 +135,125 @@ pitch:
 .endproc
 
 
+; Given the pointer to a note-off event in .A/.X/.Y, finds the corresponding note-on event by linear search.
+; If no matching note-on is found, carry will be set, otherwise clear.
+.proc findNoteOn
+    ; TODO
+    ; Question: do we tolerate other note-offs in between? Maybe we shouldn't, maybe it doesn't matter.
+    rts
+.endproc
+
 
 
 
 ; Common event stream
 ; ===================
 ; This section is concerned with providing a unified, temporally ascending
-; stream of events, regardless of whether they are selected or not. 
+; stream of events, regardless of whether they are in vector a or b.
 
 
 ; Resets/initializes the common event stream.
-; Expects the selected_events and unselected_events pointers to be set to the respective vectors.
-; TODO: actually, we can just keep the selected_events vector, and receive the unselected in .A/.X/.Y ... TBD (#dataOwnership)
+; Expects the event_vector_a and event_vector_b pointers to be set to the respective vectors.
+; TODO: actually, we can just keep the event_vector_a vector, and receive the first event of vector B in .A/.X/.Y ... TBD (#dataOwnership)
 .proc resetStream
     ; reset id counters
     lda #$ff
-    sta last_selected_id
-    sta last_selected_id+1
-    sta last_unselected_id
-    sta last_unselected_id+1
+    sta most_recent_id_a
+    sta most_recent_id_a+1
+    sta most_recent_id_b
+    sta most_recent_id_b+1
     ; reset the event pointers to the beginning
-    lda selected_events
-    ldx selected_events+1
+    lda event_vector_a
+    ldx event_vector_a+1
     jsr v5b::get_first_entry
-    bcs @selected_is_empty
-@selected_is_populated:
-    jsr detail::storeNextSelectedEvent
-    bra @continue_to_unselected
-@selected_is_empty:
-    stz next_selected_event+2 ; invalidate
-@continue_to_unselected:
-    lda unselected_events
-    ldx unselected_events+1
+    bcs @vector_a_is_empty
+@vector_a_is_populated:
+    jsr detail::storeNextEventInA
+    bra @continue_vector_b
+@vector_a_is_empty:
+    stz next_event_a+2 ; invalidate
+@continue_vector_b:
+    lda event_vector_b
+    ldx event_vector_b+1
     jsr v5b::get_first_entry
-    bcs @unselected_is_empty
-@unselected_is_populated:
-    jsr detail::storeNextUnselectedEvent
+    bcs @vector_b_is_empty
+@vector_b_is_populated:
+    jsr detail::storeNextEventInB
     rts
-@unselected_is_empty:
-    stz next_unselected_event+2 ; invalidate
+@vector_b_is_empty:
+    stz next_event_b+2 ; invalidate
     rts
 .endproc
 
 
-; Like resetStream, but it sets the unselected event pointer to NULL, so
-; streamGetNextEvent only returns selected events in sequence.
+; Like resetStream, but it sets the B event pointer to NULL, so
+; streamGetNextEvent only returns events of vector A in sequence.
 ; It also doesn't care about id (yet).
 ; This routine could be optimized for size by factoring out common code with resetStream
-.proc resetStreamSelectedOnly
-    ; set unselected to NULL
-    stz next_unselected_event+2
-    ; reset the selected event pointer to the beginning
-    lda selected_events
-    ldx selected_events+1
+.proc resetStreamVectorAOnly
+    ; set B to NULL
+    stz next_event_b+2
+    ; reset the event pointer A to the beginning
+    lda event_vector_a
+    ldx event_vector_a+1
     jsr v5b::get_first_entry
-    bcs @selected_is_empty
-@selected_is_populated:
-    jsr detail::storeNextSelectedEvent
+    bcs @vector_a_is_empty
+@vector_a_is_populated:
+    jsr detail::storeNextEventInA
     rts
-@selected_is_empty:
-    stz next_selected_event+2 ; invalidate
+@vector_a_is_empty:
+    stz next_event_a+2 ; invalidate
     rts
 .endproc
 
 
 ; Compares two events and decides which of them comes sooner. (not part of stream API)
 ; Expects
-; * pointer to a valid event in next_selected_event
-; * pointer to another valid event in next_unselected_event
-; If the "selected" event comes first, carry will be set, otherwise clear (if time stamps and event types are the same, carry will be set)
+; * pointer to a valid event in next_event_a
+; * pointer to another valid event in next_event_b
+; If the vector-A event comes first, carry will be set, otherwise clear (if time stamps and event types are the same, carry will be set)
 .proc compareEvents
     ; abusing variables in this function which "belong" to other functions which we don't use
     ; set up zeropage pointers to both entries
-    lda next_selected_event+1
+    lda next_event_a+1
     sta v5b::zp_pointer+1
     stz v5b::zp_pointer
-    lda next_unselected_event+1
+    lda next_event_b+1
     sta v5b::zp_pointer_2+1
     stz v5b::zp_pointer_2
     ; compute offsets inside the chunk
-    lda next_selected_event
+    lda next_event_a
     asl
     asl
-    adc next_selected_event
+    adc next_event_a
     adc #v5b::payload_offset
-    sta v5b::value_0 ; selected offset
-    lda next_unselected_event
+    sta v5b::value_0 ; offset in vector A's chunk
+    lda next_event_b
     asl
     asl
-    adc next_unselected_event
+    adc next_event_b
     adc #v5b::payload_offset
-    sta v5b::value_1 ; unselected offset
+    sta v5b::value_1 ; offset in vector B's chunk
 @compare_high_time_stamp:
     tay
     iny
-    ldx next_unselected_event+2
+    ldx next_event_b+2
     stx RAM_BANK
-    lda (v5b::zp_pointer_2), y ; look up unselected
-    ldx next_selected_event+2
+    lda (v5b::zp_pointer_2), y ; look up in B
+    ldx next_event_a+2
     stx RAM_BANK
     ldy v5b::value_0
     iny
-    cmp (v5b::zp_pointer), y ; compare to selected
+    cmp (v5b::zp_pointer), y ; compare with A
     beq @compare_low_time_stamp
     rts
 @compare_low_time_stamp:
     dey
-    lda (v5b::zp_pointer), y ; look up selected
-    ldx next_unselected_event+2
+    lda (v5b::zp_pointer), y ; look up in A
+    ldx next_event_b+2
     stx RAM_BANK
     ldy v5b::value_1
-    cmp (v5b::zp_pointer_2), y ; compare with unselected
+    cmp (v5b::zp_pointer_2), y ; compare with B
     beq @compare_event_types
     ; invert the carry flag before returning
     rol
@@ -254,13 +263,13 @@ pitch:
 @compare_event_types:
     iny
     iny
-    lda (v5b::zp_pointer_2), y ; look up unselected
-    ldx next_selected_event+2
+    lda (v5b::zp_pointer_2), y ; look up in B
+    ldx next_event_a+2
     stx RAM_BANK
     ldy v5b::value_0
     iny
     iny
-    cmp (v5b::zp_pointer), y ; compare with selected
+    cmp (v5b::zp_pointer), y ; compare with A
     rts
 .endproc
 
@@ -269,51 +278,51 @@ pitch:
 ; That means, note-offs first, then note-ons, then effects.
 ; If no more events are available, carry is set upon return, clear otherwise.
 ; If another event is available, its pointer is returned in .A/.X/.Y
-; If another event is available, the content of last_event_source is set to 0 in case the last event was unselected, or $80 if it was selected
-; The respective id (last_selected_id/last_unselected_id) is advanced accordingly.
+; If another event is available, the content of most_recent_event_source is set to 0 in case the last event was vector_b, or $80 if it was vector_a
+; The respective id (most_recent_id_a/most_recent_id_b) is advanced accordingly.
 .proc streamGetNextEvent
     ; Check if more events are available
-    ldy next_selected_event+2
-    bne @selected_not_empty
-@selected_empty:
-    ldy next_unselected_event+2
+    ldy next_event_a+2
+    bne @vector_a_not_empty
+@vector_a_empty:
+    ldy next_event_b+2
     beq @both_empty
-    bra @next_unselected
+    bra @next_vector_b
 @both_empty:
     sec ; signal that no more events are available
     rts
-@selected_not_empty:
-    ldy next_unselected_event+2
-    beq @next_selected
+@vector_a_not_empty:
+    ldy next_event_b+2
+    beq @next_vector_a
 @both_available:
     jsr compareEvents
-    bcc @next_unselected
+    bcc @next_vector_b
 
-@next_selected:
+@next_vector_a:
     lda #$80
-    sta last_event_source
-    inc last_selected_id
+    sta most_recent_event_source
+    inc most_recent_id_a
     bne :+
-    inc last_selected_id+1
-:   jsr detail::loadNextSelectedEvent
+    inc most_recent_id_a+1
+:   jsr detail::loadNextEventInA
     pha
     phx
     phy
-    jsr detail::advanceNextSelectedEvent
+    jsr detail::advanceNextEventA
     bra @return_pointer
-@next_unselected:
-    stz last_event_source
-    inc last_unselected_id
+@next_vector_b:
+    stz most_recent_event_source
+    inc most_recent_id_b
     bne :+
-    inc last_unselected_id+1
-:   jsr detail::loadNextUnselectedEvent
+    inc most_recent_id_b+1
+:   jsr detail::loadNextEventInB
     pha
     phx
     phy
     jsr v5b::get_next_entry
-    stz next_unselected_event+2 ; mark next event as invalid preemptively (will override it if not invalid)
+    stz next_event_b+2 ; mark next event as invalid preemptively (will override it if not invalid)
     bcs @return_pointer
-    jsr detail::storeNextUnselectedEvent
+    jsr detail::storeNextEventInB
 @return_pointer:
     ply
     plx
@@ -323,11 +332,11 @@ pitch:
 .endproc
 
 
-; If available, returns the pointer to the next selected event in .A/.X/.Y without advancing
+; If available, returns the pointer to the next event of vector_a in .A/.X/.Y without advancing
 ; the stream.
 ; If available, carry will be clear; set otherwise.
-.proc streamPeekNextSelectedEvent
-    jsr detail::loadNextSelectedEvent
+.proc streamPeekNextEventInA
+    jsr detail::loadNextEventInA
     cpy #0
     bne :+
     sec
@@ -336,11 +345,11 @@ pitch:
     rts
 .endproc
 
-; Deletes the next event from the selected events and advances the stream to the next selected event.
-; Expects that the next selected event actually exists (that is, before it gets deleted).
-; Meant for use in conjunction with streamPeekNextSelectedEvent.
-.proc streamDeleteNextSelectedEvent
-    jsr detail::loadNextSelectedEvent
+; Deletes the next event from vector_a and advances the stream to the next event in A.
+; Expects that the next event in A actually exists (that is, before it gets deleted).
+; Meant for use in conjunction with streamPeekNextEventInA.
+.proc streamDeleteNextEventInA
+    jsr detail::loadNextEventInA
     jsr v5b::get_previous_entry
     bcs @delete_first_event
     pha
@@ -351,38 +360,38 @@ pitch:
     ply
     plx
     pla
-    jsr detail::advanceNextSelectedEvent
+    jsr detail::advanceNextEventA
     rts
 @delete_first_event:
     ; If the first event gets deleted, we know for sure that afterwards,
     ; the vector is either empty or the original event pointer is a valid one afterwards, too.
-    jsr detail::loadNextSelectedEvent
+    jsr detail::loadNextEventInA
     jsr v5b::delete_entry
     bcc :+
-    stz next_selected_event+2 ; it was the only event, invalidate next selected event.
+    stz next_event_a+2 ; it was the only event, invalidate next event in vector A.
 :   rts
 .endproc
 
 
-.macro SET_SELECTED_VECTOR vector_address
+.macro SET_VECTOR_A vector_address
     lda vector_address
-    sta song_engine::event_selection::selected_events
+    sta song_engine::event_selection::event_vector_a
     lda vector_address+1
-    sta song_engine::event_selection::selected_events+1
+    sta song_engine::event_selection::event_vector_a+1
 .endmacro
 
-.macro SET_UNSELECTED_VECTOR vector_address
+.macro SET_VECTOR_B vector_address
     lda vector_address
-    sta song_engine::event_selection::unselected_events
+    sta song_engine::event_selection::event_vector_b
     lda vector_address+1
-    sta song_engine::event_selection::unselected_events+1
+    sta song_engine::event_selection::event_vector_b+1
 .endmacro
 
 ; maybe move into v5b?
 ; Caution: this may only be used if the vectors are either
-; * swapped back immediately afterwards (with some operation in between), or
-; * if none of the operands is an "unselected events" vector.
-; In other words, event data other than the selected events vector, which is accessed by other entities, must not be invalidated with this macro.
+; * swapped back immediately afterwards (usually with some operation in between), or
+; * if none of the operands is an "unselected events" vector (e.g. typically the event vector of clips)
+; In other words, event data which is accessed by other entities MUST NOT be invalidated with this macro, EXCEPT the selected events vector.
 .macro SWAP_VECTORS vector_a, vector_b
     pha
     phy
@@ -399,10 +408,10 @@ pitch:
 .endmacro
 
 
-; Swaps the selected and unselected vector.
+; Swaps the vector_a and vector_b.
 ; This is useful to unselect items.
-.proc swapSelectedUnselectedVectors
-    SWAP_VECTORS selected_events, unselected_events
+.proc swapVectorsAB
+    SWAP_VECTORS event_vector_a, event_vector_b
     rts
 .endproc
 
@@ -416,31 +425,31 @@ pitch:
 ; and can be used fully independently from each other).
 
 
-; Moves an event from an event vector to the selected events vector.
-; * In .A/.X/.Y, expects the pointer to the object to be selected,
-; * In select_action, expects the action to be done on the original event (one of selectEvent::action options).
-; If the object is a note-on, the corresponding note-off is automatically selected, too.
-; Returns in .A/.X/.Y the address of the newly selected event.
-.proc selectEvent
+; Moves an event from an event vector to vector_a.
+; * In .A/.X/.Y, expects the pointer to the object to be moved,
+; * In move_action, expects the action to be done on the original event (one of moveEventToA::action options).
+; If the object is a note-on, the corresponding note-off is automatically moved, too.
+; Returns in .A/.X/.Y the address of the newly moved event.
+.proc moveEventToA
     .scope action
         ID_GENERATOR 0, delete_original, invalidate_original, keep_original
     .endscope
-    jsr detail::storeNextUnselectedEvent
-    lda selected_events
-    ldx selected_events+1
+    jsr detail::storeNextEventInB
+    lda event_vector_a
+    ldx event_vector_a+1
     jsr v5b::get_first_entry
     bcc :+
     ldy #0 ; set .A/.X/.Y pointer to NULL if event doesn't exist
-:   jsr detail::storeNextSelectedEvent
-    jsr insertInSelectedEvents
-    pha ; remember address of the newly selected event
+:   jsr detail::storeNextEventInA
+    jsr insertInVectorA
+    pha ; remember address of the newly moved event
     phx
     phy
     beq @handle_note_off ; if it wasn't a note-on, we can go straight to deleting this event
-    jsr detail::loadNextUnselectedEvent
+    jsr detail::loadNextEventInB
 @handle_original:
     jsr handleOriginal
-    ; pull the address of the newly selected event from the stack
+    ; pull the address of the newly moved event from the stack
     ply
     plx
     pla
@@ -448,19 +457,19 @@ pitch:
 
 @handle_note_off:
     ; As the event was a note-on, need to also select note-off.
-    ; save the position of the recently selected event
-    jsr detail::storeNextSelectedEvent
-    ; first, save the currently selected element, so we can deal with it later (delete/invalidate/keep)
-    jsr detail::loadNextUnselectedEvent
+    ; save the position of the recently moved event
+    jsr detail::storeNextEventInA
+    ; first, save the currently moved element, so we can deal with it later (delete/invalidate/keep)
+    jsr detail::loadNextEventInB
     pha
     phx
     phy
-    ; copy the note-off to selected events
+    ; copy the note-off to vector A
     jsr findNoteOff
-    jsr detail::storeNextUnselectedEvent
-    jsr insertInSelectedEvents
+    jsr detail::storeNextEventInB
+    jsr insertInVectorA
     ; delete note-off first because then we know for sure where the remaining note-on is (the other way round we wouldn't know for sure)
-    jsr detail::loadNextUnselectedEvent
+    jsr detail::loadNextEventInB
     jsr handleOriginal
     ; deal with note-on
     ply
@@ -468,11 +477,11 @@ pitch:
     pla
     bra @handle_original
 
-    ; performs the selected action on the original selected event.
-    ; In .A/.X/.Y, expects the pointer to the original selected event.
+    ; performs the desired action on the originally selected event.
+    ; In .A/.X/.Y, expects the pointer to the originally selected event.
     .proc handleOriginal
         pha
-        lda select_action
+        lda move_action
         bne @check_keep
         pla
         jsr v5b::delete_entry
@@ -498,48 +507,48 @@ pitch:
         rts
     .endproc
 
-    ; sub routine which does the insertion of a single event in the "selected" events vector.
+    ; sub routine which does the insertion of a single event in vector A.
     ; Expects:
-    ;   * in next_unselected_event, pointer event to be copied
-    ;   * in next_selected_event, pointer to any event known to come before the given event (WRT time stamps)
-    ;     in the "selected" vector, or NULL if such an event is not contained
+    ;   * in next_event_b, pointer event to be copied
+    ;   * in next_event_a, pointer to any event known to come before the given event (WRT time stamps)
+    ;     in vector B, or NULL if such an event is not contained
     ; Returns:
     ;   * in zero flag, whether the event was a note-on (z=1 if yes, z=0 if not)
     ;   * in .A/.X/.Y, the position of the copied event where it has been inserted
-    ;   * next_unselected_event is preserved
-    .proc insertInSelectedEvents
+    ;   * next_event_b is preserved
+    .proc insertInVectorA
     @search_loop:
-        ldy next_selected_event+2
-        beq @append ; append if next selected is NULL
+        ldy next_event_a+2
+        beq @append ; append if next event in vector A is NULL
         jsr compareEvents
         bcc @insert_position_found
-        jsr detail::loadNextSelectedEvent
+        jsr detail::loadNextEventInA
         jsr v5b::get_next_entry
         bcs @append
-        jsr detail::storeNextSelectedEvent
+        jsr detail::storeNextEventInA
         bra @search_loop
 
     @append:
         jsr readEventAndCheckNoteOn
         php
-        lda selected_events ; alternatively, we could use the values in next_selected_event and thus make it independent from selected_events being set correctly.
-        ldx selected_events+1 ; This could allow for efficient "selection" into varying vectors.
+        lda event_vector_a ; alternatively, we could use the values in next_event_a and thus make it independent from event_vector_a being set correctly.
+        ldx event_vector_a+1 ; This could allow for efficient "selection" into varying vectors.
         jsr v5b::append_new_entry
-        lda selected_events
-        ldx selected_events+1
+        lda event_vector_a
+        ldx event_vector_a+1
         jsr v5b::get_last_entry
         plp
         rts
     @insert_position_found:
         jsr readEventAndCheckNoteOn
         php
-        jsr detail::loadNextSelectedEvent
+        jsr detail::loadNextEventInA
         jsr v5b::insert_entry
         plp
         rts
 
         .proc readEventAndCheckNoteOn
-            jsr detail::loadNextUnselectedEvent
+            jsr detail::loadNextEventInB
             jsr v5b::read_entry
             lda events::event_type
             cmp #events::event_type_note_on
@@ -549,75 +558,75 @@ pitch:
 .endproc
 
 
-; Moves an event from the selected to the unselected vector.
-; * In .A/.X/.Y, expects the pointer to the object to be unselected,
-; * In select_action, expects the action to be done on the original event (one of selectEvent::action options).
-; If the object is a note-on, the corresponding note-off is automatically unselected, too.
-.proc unselectEvent
-    jsr swapSelectedUnselectedVectors
-    jsr selectEvent
-    jsr swapSelectedUnselectedVectors
+; Moves an event to vector_b.
+; * In .A/.X/.Y, expects the pointer to the object to be moved,
+; * In move_action, expects the action to be done on the original event (one of moveEventToA::action options).
+; If the object is a note-on, the corresponding note-off is automatically moved, too.
+.proc moveEventToB
+    jsr swapVectorsAB
+    jsr moveEventToA
+    jsr swapVectorsAB
     rts
 .endproc
 
 
-; Merges all unselected events into the selected events vector. (Untested!)
-; To unselect all, call swapSelectedUnselectedVectors before and after this function.
-.proc selectAllEvents
+; Merges all events from vector_b into vector_a.
+; For the other direction, call swapVectorsAB before and after this function.
+.proc moveAllEventsFromBToA
     ; Using stream API.
-    ; Basically stream them, but instead of just "consuming" the event, it gets inserted into the selected vector.
+    ; Basically stream them, but instead of just "consuming" the event, it gets inserted into vector A.
     ; We need to do some more book-keeping to not break the stream API's illusion that it's just normally streaming.
-    ; One thing we don't do here is to correct the selected/unselected id as it is not needed here.
+    ; One thing we don't do here is to correct the "most recent ids" as they are not needed here.
     jsr resetStream
 @merge_loop:
     jsr streamGetNextEvent
     bcs @merge_loop_end ; returns event pointer in .A/.X/.Y
     pha
-    ; is the next event already selected?
-    lda last_event_source
+    ; is the next event already in vector A?
+    lda most_recent_event_source
     bpl @insert_event ; action required
-    ; already selected, no action required --> go to next
+    ; already in vector A, no action required --> go to next
     pla
     bra @merge_loop
 
 @insert_event:
-    ; insert event into selected events vector
+    ; insert event into vector A
     pla
     jsr v5b::read_entry
 
-    ldy next_selected_event+2
-    beq @append_event ; are we already at the end of the selected events vector?
-    ; selected events vector isn't empty: insert before next_selected_event
-    lda next_selected_event
-    ldx next_selected_event+1
+    ldy next_event_a+2
+    beq @append_event ; are we already at the end of vector A?
+    ; vector A isn't empty: insert before next_event_a
+    lda next_event_a
+    ldx next_event_a+1
     jsr v5b::insert_entry
     ; Use the fact that v5b::insert_entry returns the new position of the inserted entry:
     jsr v5b::get_next_entry
     bcc :+
-    ldy #0 ; set to nullptr if next selected event doesn't exist
-:   jsr detail::storeNextSelectedEvent
+    ldy #0 ; set to nullptr if next event in vector A doesn't exist
+:   jsr detail::storeNextEventInA
     bra @merge_loop
 @append_event:
-    lda selected_events
-    ldx selected_events+1
+    lda event_vector_a
+    ldx event_vector_a+1
     jsr v5b::append_new_entry
-    ; don't need to deal with next_selected_event, since it is already nullptr, which is what we want in this case
+    ; don't need to deal with next_event_a, since it is already nullptr, which is what we want in this case
     bra @merge_loop
 
 @merge_loop_end:
-    ; remove all events from unselected vector
-    lda unselected_events
-    ldx unselected_events+1
+    ; remove all events vector B
+    lda event_vector_b
+    ldx event_vector_b+1
     jsr v5b::clear
     rts
 .endproc
 
 
-; Merges all selected events into the unselected events vector.
-.proc unSelectAllEvents
-    jsr swapSelectedUnselectedVectors
-    jsr selectAllEvents
-    jsr swapSelectedUnselectedVectors
+; Merges all events from both vector A and vector B into vector B.
+.proc moveAllEventsFromAToB
+    jsr swapVectorsAB
+    jsr moveAllEventsFromBToA
+    jsr swapVectorsAB
     rts
 .endproc
 
@@ -630,23 +639,23 @@ pitch:
     rts
 
 @events_loop:
-    jsr detail::storeNextUnselectedEvent ; save current event
+    jsr detail::storeNextEventInB ; save current event
     jsr v5b::read_entry
     lda events::event_type
     cmp #events::event_type_invalid
     php ; remember if it's an invalid event
-    jsr detail::loadNextUnselectedEvent ; recall current event to get previous
+    jsr detail::loadNextEventInB ; recall current event to get previous
     jsr v5b::get_previous_entry
     bcc :+
     ldy #0 ; set event pointer to NULL if no previous one exists
-:   jsr detail::storeNextSelectedEvent
+:   jsr detail::storeNextEventInA
     plp ; recall if it's an invalid event
     bne @continue
 @delete_event:
-    jsr detail::loadNextUnselectedEvent
+    jsr detail::loadNextEventInB
     jsr v5b::delete_entry
 @continue:
-    jsr detail::loadNextSelectedEvent
+    jsr detail::loadNextEventInA
     cpy #0 ; check if NULL
     bne @events_loop
     rts
@@ -656,24 +665,24 @@ pitch:
 .if 0
     ; Earlier attempt at writing this functionality (not sure if finished)
     ; Merges all unselected events into the selected events vector.
-    ; To unselect all, call swapSelectedUnselectedVectors before and after this function.
-    .proc selectAllEvents
+    ; To unselect all, call swapVectorsAB before and after this function.
+    .proc moveAllEventsFromBToA
         ; This function is implemented for small code size.
-        ; Should it become a bottleneck, this could be implemented without calling selectEvent.
+        ; Should it become a bottleneck, this could be implemented without calling moveEventToA.
         ; The main point of optimization would be that we don't have to delete the events from the
         ; unselected vector individually (an expensive operation), but could discard them at the
         ; end at once. We would also not need to care about finding matching note-offs, as they
         ; will always be contained in "all".
 
         ; Initialization
-        lda selected_events
-        ldx selected_events+1
+        lda event_vector_a
+        ldx event_vector_a+1
         jsr v5b::get_first_entry
-        jsr detail::storeNextSelectedEvent
+        jsr detail::storeNextEventInA
         ; we basically grab the first event over and over again (as they get deleted one by one)
     @merge_loop:
-        lda unselected_events
-        ldx unselected_events+1
+        lda event_vector_b
+        ldx event_vector_b+1
         jsr v5b::get_first_entry
         bcs @end_merge_loop
 
