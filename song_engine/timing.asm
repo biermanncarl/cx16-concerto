@@ -34,7 +34,7 @@ time_stamp_parameter:
    ; When changing song tempo, the new values of the timing variables will be put here until re-tempo of the song is complete.
    .scope new_timing
       .linecont +
-      .define NEW_TIMING_SCRATCHPAD \
+      SCRATCHPAD_VARIABLES \
          beats_per_bar, 1, \
          first_eighth_ticks, 1, \
          second_eighth_ticks, 1, \
@@ -43,7 +43,6 @@ time_stamp_parameter:
          thirtysecondth_ticks, 8, \
          thirtysecondths_per_bar, 1
       .linecont -
-      SCRATCHPAD_VARIABLES NEW_TIMING_SCRATCHPAD
    .endscope
 
    temp_variable_a:

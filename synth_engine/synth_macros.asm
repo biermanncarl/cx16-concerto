@@ -363,7 +363,6 @@
 ; computes the frequency of a given pitch+fine combo
 ; may have to redo it with indirect mode for more flexibility later
 ; Pitch Computation Variables
-; TODO: replace some CLC-ROR by LSR
 .macro COMPUTE_FREQUENCY cf_pitch, cf_fine, cf_output ; done in ISR
    .local @skip_bit0
    .local @skip_bit1

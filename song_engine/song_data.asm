@@ -23,12 +23,24 @@
             lda events::event_time_stamp_h
             ldx events::event_time_stamp_l
             jsr timing::disassemble_time_stamp
-            ; TODO: handle residual ticks
+            ; handle residual ticks, crop to length of thirtysecondth note
+            pha
+            phx
+            txa
+            and #$07
+            tax
+            tya
+            cmp timing::detail::new_timing::thirtysecondth_ticks, x
+            bcc :+
+            lda timing::detail::new_timing::thirtysecondth_ticks, x
+        :   tay
+            plx
+            pla
             jsr timing::detail::assembleTimeStamp
             sta events::event_time_stamp_h
             stx events::event_time_stamp_l
 
-            ; TODO: do sort events if they fall on the same time stamp
+            ; TODO: remove zero-tick length notes!
             ply
             plx
             pla
