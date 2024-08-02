@@ -338,8 +338,8 @@
     ldy track_index
     bne @track_player
 @selected_events_player:
-    lda selected_events_vector
-    ldx selected_events_vector+1
+    lda event_selection::selected_events_vector
+    ldx event_selection::selected_events_vector+1
     bra @find_event
 @track_player:
     dey
@@ -410,8 +410,8 @@
     sta detail::clip_settings_a ; player index 0, no offset needed
     stx detail::clip_settings_x
     ; Set up timestamp & pointer to event data
-    lda selected_events_vector
-    ldx selected_events_vector+1
+    lda event_selection::selected_events_vector
+    ldx event_selection::selected_events_vector+1
     ldy #0
     jsr detail::startPlabackOnTrack
 

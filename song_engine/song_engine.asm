@@ -14,15 +14,6 @@ concerto_playback_routine = song_engine__simple_player__playerTick
 
 .scope song_engine
 
-; Vectors of currently processed events on the GUI (defined here so that the player can see them, too)
-.pushseg
-.zeropage
-unselected_events_vector:
-   .res 2
-selected_events_vector:
-   .res 2
-.popseg
-
 .include "timing.asm"
 .include "events.asm"
 .include "event_selection.asm"

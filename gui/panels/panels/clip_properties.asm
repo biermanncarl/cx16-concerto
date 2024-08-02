@@ -74,14 +74,14 @@
         ; move all events back into the list of clips
         php
         sei
-        SET_VECTOR_A song_engine::selected_events_vector
-        SET_VECTOR_B song_engine::unselected_events_vector
+        SET_VECTOR_A song_engine::event_selection::selected_events_vector
+        SET_VECTOR_B song_engine::event_selection::unselected_events_vector
         jsr song_engine::event_selection::moveAllEventsFromAToB
         ldy #song_engine::clips::clip_data::event_ptr
-        lda song_engine::unselected_events_vector
+        lda song_engine::event_selection::unselected_events_vector
         sta (v32b::entrypointer),y
         iny
-        lda song_engine::unselected_events_vector+1
+        lda song_engine::event_selection::unselected_events_vector+1
         sta (v32b::entrypointer),y
 
         ; update playback
@@ -102,10 +102,10 @@
         ; move events of new clip into the GUI
         ldy #song_engine::clips::clip_data::event_ptr
         lda (v32b::entrypointer),y
-        sta song_engine::unselected_events_vector
+        sta song_engine::event_selection::unselected_events_vector
         iny
         lda (v32b::entrypointer),y
-        sta song_engine::unselected_events_vector+1
+        sta song_engine::event_selection::unselected_events_vector+1
 
         plp
         jsr gui_routines__draw_gui

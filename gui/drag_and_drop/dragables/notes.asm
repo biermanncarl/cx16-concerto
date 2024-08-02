@@ -184,12 +184,12 @@ note_data_changed: ; flag set within drag&drop operations to signal if playback 
       lda v5b::value_1
       bmi @load_selected
    @load_unselected:
-      ldy song_engine::unselected_events_vector
-      ldx song_engine::unselected_events_vector+1
+      ldy song_engine::event_selection::unselected_events_vector
+      ldx song_engine::event_selection::unselected_events_vector+1
       bra @continue
    @load_selected:
-      ldy song_engine::selected_events_vector
-      ldx song_engine::selected_events_vector+1
+      ldy song_engine::event_selection::selected_events_vector
+      ldx song_engine::event_selection::selected_events_vector+1
       and #$7F ; remove the selected bit
    @continue:
       sta v5b::value_1
@@ -341,8 +341,8 @@ note_data_changed: ; flag set within drag&drop operations to signal if playback 
    bpl @clear_column_buffer_loop
 
    ; event sources: unselected and selected events
-   SET_VECTOR_A song_engine::selected_events_vector
-   SET_VECTOR_B song_engine::unselected_events_vector
+   SET_VECTOR_A song_engine::event_selection::selected_events_vector
+   SET_VECTOR_B song_engine::event_selection::unselected_events_vector
    jsr song_engine::event_selection::resetStream
 
    ; initialize the hitbox list
@@ -891,7 +891,7 @@ height = 2 * detail::event_edit_height
 ; Figures out the vertical (pitch) min and max note values, as well as the leftmost (first) event
 ; so that we can clamp drag operations and move events without danger.
 .proc dragNoteStart
-   SET_VECTOR_A song_engine::selected_events_vector
+   SET_VECTOR_A song_engine::event_selection::selected_events_vector
    stz detail::selection_max_pitch
    lda #255
    sta detail::selection_min_pitch
@@ -1039,7 +1039,7 @@ height = 2 * detail::event_edit_height
 .proc resizeNoteStart
    time_stamp_temp_l = detail::temp_variable_a
    time_stamp_temp_h = detail::temp_variable_b
-   SET_VECTOR_A song_engine::selected_events_vector
+   SET_VECTOR_A song_engine::event_selection::selected_events_vector
    lda #255
    sta detail::selection_shortest_note_length
    sta detail::selection_shortest_note_length+1
@@ -1267,12 +1267,12 @@ height = 2 * detail::event_edit_height
    ; add note-on
    lda #song_engine::events::event_type_note_on
    sta song_engine::events::event_type
-   lda song_engine::selected_events_vector
-   ldx song_engine::selected_events_vector+1
+   lda song_engine::event_selection::selected_events_vector
+   ldx song_engine::event_selection::selected_events_vector+1
    jsr v5b::append_new_entry
    ; mark new note as the pointed-at event (so that resizing is relative to the correct note-off)
-   lda song_engine::selected_events_vector
-   ldx song_engine::selected_events_vector+1
+   lda song_engine::event_selection::selected_events_vector
+   ldx song_engine::event_selection::selected_events_vector+1
    jsr v5b::get_first_entry ; new note-on *should* be the first entry
    sta detail::pointed_at_event
    stx detail::pointed_at_event+1
@@ -1288,8 +1288,8 @@ height = 2 * detail::event_edit_height
    ; add note-off
    lda #song_engine::events::event_type_note_off
    sta song_engine::events::event_type
-   lda song_engine::selected_events_vector
-   ldx song_engine::selected_events_vector+1
+   lda song_engine::event_selection::selected_events_vector
+   ldx song_engine::event_selection::selected_events_vector+1
    jsr v5b::append_new_entry
    ; restore viewing window
    pla
@@ -1350,8 +1350,8 @@ height = 2 * detail::event_edit_height
    ; duplicate?
    lda kbd_variables::ctrl_key_pressed
    beq @check_delete
-   lda song_engine::selected_events_vector
-   ldx song_engine::selected_events_vector+1
+   lda song_engine::event_selection::selected_events_vector
+   ldx song_engine::event_selection::selected_events_vector+1
    jsr v5b::get_first_entry ; since we just selected an event, I don't deal with the case that there's nothing in this vector
 @duplicate_loop:
    pha
@@ -1379,8 +1379,8 @@ height = 2 * detail::event_edit_height
    bne @do_delete
    rts
 @do_delete:
-   lda song_engine::selected_events_vector
-   ldx song_engine::selected_events_vector+1
+   lda song_engine::event_selection::selected_events_vector
+   ldx song_engine::event_selection::selected_events_vector+1
    jsr v5b::clear
    rts
 .endproc
@@ -1444,7 +1444,7 @@ height = 2 * detail::event_edit_height
          lda kbd_variables::shift_key_pressed
          beq :+
          ; SHIFT was pressed --> allow multiple selection
-         SET_VECTOR_A song_engine::selected_events_vector
+         SET_VECTOR_A song_engine::event_selection::selected_events_vector
          stz song_engine::event_selection::move_action ; #event_selection::moveEventToA::action::delete_original
          jsr detail::selectWithHitboxId
          inc note_data_changed
@@ -1456,10 +1456,10 @@ height = 2 * detail::event_edit_height
          SET_VECTOR_A temp_events
          stz song_engine::event_selection::move_action ; #event_selection::moveEventToA::action::delete_original
          jsr detail::selectWithHitboxId
-         SET_VECTOR_A song_engine::selected_events_vector
+         SET_VECTOR_A song_engine::event_selection::selected_events_vector
          jsr song_engine::event_selection::moveAllEventsFromAToB
          ; now, swap selected with temp vector, as they have the correct contents already
-         SWAP_VECTORS temp_events, song_engine::selected_events_vector
+         SWAP_VECTORS temp_events, song_engine::event_selection::selected_events_vector
          jmp commonLeftClick
       @already_selected:
          jsr detail::getEntryFromHitboxObjectId
@@ -1468,7 +1468,7 @@ height = 2 * detail::event_edit_height
          sty detail::pointed_at_event+2
          lda kbd_variables::shift_key_pressed
          beq :+
-         SET_VECTOR_A song_engine::selected_events_vector
+         SET_VECTOR_A song_engine::event_selection::selected_events_vector
          stz song_engine::event_selection::move_action ; #event_selection::moveEventToA::action::delete_original
          lda detail::pointed_at_event
          jsr song_engine::event_selection::moveEventToB
@@ -1497,8 +1497,8 @@ height = 2 * detail::event_edit_height
 
 .proc doDrag
    ; preparations
-   SET_VECTOR_A song_engine::selected_events_vector
-   SET_VECTOR_B song_engine::unselected_events_vector
+   SET_VECTOR_A song_engine::event_selection::selected_events_vector
+   SET_VECTOR_B song_engine::event_selection::unselected_events_vector
    stz note_data_changed
 
    lda mouse_variables::drag_start
@@ -1636,11 +1636,11 @@ height = 2 * detail::event_edit_height
    ; end of loop
 
    ; clean up invalidated events
-   lda song_engine::unselected_events_vector
-   ldx song_engine::unselected_events_vector+1
+   lda song_engine::event_selection::unselected_events_vector
+   ldx song_engine::event_selection::unselected_events_vector+1
    jsr song_engine::event_selection::deleteAllInvalidEvents
-   lda song_engine::selected_events_vector
-   ldx song_engine::selected_events_vector+1
+   lda song_engine::event_selection::selected_events_vector
+   ldx song_engine::event_selection::selected_events_vector+1
    jsr song_engine::event_selection::deleteAllInvalidEvents
 
    ; get rid of invalid hitboxes for safety (will be re-generated when redraw happens)
@@ -1649,14 +1649,14 @@ height = 2 * detail::event_edit_height
    ; move all events which were previously selected.
    ; Normally move them into the unselected events vector,
    ; but if SHIFT is pressed, we move them into the temp vector, which will eventually become the new selected vector.
-   SET_VECTOR_B song_engine::unselected_events_vector
-   SET_VECTOR_A song_engine::selected_events_vector
+   SET_VECTOR_B song_engine::event_selection::unselected_events_vector
+   SET_VECTOR_A song_engine::event_selection::selected_events_vector
    lda kbd_variables::shift_key_pressed
    beq :+
    SET_VECTOR_B temp_events
 :  jsr song_engine::event_selection::moveAllEventsFromAToB
 
-   SWAP_VECTORS song_engine::selected_events_vector, temp_events
+   SWAP_VECTORS song_engine::event_selection::selected_events_vector, temp_events
 
    inc gui_variables::request_components_redraw
    stz dnd::drag_action_state ; #drag_action::none

@@ -194,8 +194,8 @@
         ; create unselected vector isn't needed because that is given by the clip data
         ; create selected vector
         jsr v5b::new
-        sta song_engine::selected_events_vector
-        stx song_engine::selected_events_vector+1
+        sta song_engine::event_selection::selected_events_vector
+        stx song_engine::event_selection::selected_events_vector+1
         rts
     .endproc
 

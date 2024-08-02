@@ -73,10 +73,10 @@
       jsr song_engine::clips::accessClip
       ldy #song_engine::clips::clip_data::event_ptr
       lda (v32b::entrypointer),y
-      sta song_engine::unselected_events_vector
+      sta song_engine::event_selection::unselected_events_vector
       iny
       lda (v32b::entrypointer),y
-      sta song_engine::unselected_events_vector+1
+      sta song_engine::event_selection::unselected_events_vector+1
       rts
    .endproc
 
