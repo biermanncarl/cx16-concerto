@@ -219,6 +219,8 @@ getCurrentEventVector = getClipEventVector+3
     lda clips_vector
     ldx clips_vector+1
     jsr v32b::clear
+    lda #1
+    sta number_of_clips
 
     ; initialize one clip
     ldy #0
