@@ -1235,8 +1235,10 @@ height = 2 * detail::event_edit_height
    sbc #detail::event_edit_pos_x
    jsr moveTimeWindow
 
+   php
+   cli ; explicitly allow interrupts during refresh and redraw to make playback smooth when zooming
    jsr gui_routines__refresh_gui
-   inc gui_variables::request_components_redraw
+   plp
    rts
 .endproc
 

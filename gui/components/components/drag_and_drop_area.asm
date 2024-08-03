@@ -28,11 +28,8 @@
         lda (components_common::data_pointer), y
         asl
         tax
-        php
-        sei
         INDEXED_JSR dnd::dragables::jump_table_draw, @return_addr
     @return_addr:
-        plp
         ply
         iny
         rts
