@@ -211,6 +211,9 @@ delete_me:
 
     jsr detail::updateExtension
 
+    php
+    sei
+
     lda files
     ldx files+1
     jsr v32b::clear
@@ -309,6 +312,8 @@ delete_me:
     ldx files+1
     jsr v32b::get_last_entry
     jsr v32b::delete_entry ; the last empty buffer added
+
+    plp
     rts
 command:
     .byte "$"
