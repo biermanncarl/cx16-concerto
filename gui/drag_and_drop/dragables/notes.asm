@@ -1410,7 +1410,7 @@ height = 2 * detail::event_edit_height
       ; no event clicked.
       lda kbd_variables::ctrl_key_pressed
       beq :+ ; if CTRL is pressed, add a new note
-         jsr song_engine::event_selection::moveAllEventsFromAToB
+         jsr song_engine::event_selection::unselectAllEvents
          jsr addNewNote
          lda #drag_action::resize
          sta dnd::drag_action_state
@@ -1418,7 +1418,7 @@ height = 2 * detail::event_edit_height
       :
       lda kbd_variables::shift_key_pressed
       bne :+ ; if SHIFT is pressed, skip unselection of all
-         jsr song_engine::event_selection::moveAllEventsFromAToB
+         jsr song_engine::event_selection::unselectAllEvents
          inc note_data_changed
       :
       lda #drag_action::box_select
@@ -1456,8 +1456,7 @@ height = 2 * detail::event_edit_height
          SET_VECTOR_A temp_events
          stz song_engine::event_selection::move_action ; #event_selection::moveEventToA::action::delete_original
          jsr detail::selectWithHitboxId
-         SET_VECTOR_A song_engine::event_selection::selected_events_vector
-         jsr song_engine::event_selection::moveAllEventsFromAToB
+         jsr song_engine::event_selection::unselectAllEvents
          ; now, swap selected with temp vector, as they have the correct contents already
          SWAP_VECTORS temp_events, song_engine::event_selection::selected_events_vector
          jmp commonLeftClick

@@ -74,9 +74,7 @@
         ; move all events back into the list of clips
         php
         sei
-        SET_VECTOR_A song_engine::event_selection::selected_events_vector
-        SET_VECTOR_B song_engine::event_selection::unselected_events_vector
-        jsr song_engine::event_selection::moveAllEventsFromAToB
+        jsr song_engine::event_selection::unselectAllEvents
         ldy #song_engine::clips::clip_data::event_ptr
         lda song_engine::event_selection::unselected_events_vector
         sta (v32b::entrypointer),y

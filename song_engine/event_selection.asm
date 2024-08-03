@@ -674,7 +674,12 @@ selected_events_vector:
 .popseg
 
 
-
+.proc unselectAllEvents
+    SET_VECTOR_A selected_events_vector
+    SET_VECTOR_B unselected_events_vector
+    jsr moveAllEventsFromAToB
+    rts
+.endproc
 
 
 .if 0

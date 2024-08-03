@@ -5,7 +5,8 @@
 
 .scope song_data
 
-    .proc changeSongTempo 
+    .proc changeSongTempo
+        jsr event_selection::unselectAllEvents
         jsr timing::detail::recalculateTimingValues
         ; recalculate ALL time stamps (lossy for sub-1/32 values, and if events move beyond what is representable by 16 bits)
         ldy #0
