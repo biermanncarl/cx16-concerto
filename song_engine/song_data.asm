@@ -71,6 +71,7 @@
     ; Assumes that a file is opened for writing.
     ; Dumps all the song data into the file.
     .proc saveSong
+        jsr event_selection::unselectAllEvents
         ; Fixed data size stuff
         ; ---------------------
         ; Song tempo

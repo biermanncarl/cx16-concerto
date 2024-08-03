@@ -86,12 +86,13 @@
       sta concerto_synth::instruments::detail::copying
       rts
    @paste_preset:
+      php
       sei
       jsr concerto_synth::voices::panic
       ldx gui_variables::current_synth_instrument
       jsr concerto_synth::instruments::copy_paste
       jsr gui_routines__refresh_gui
-      cli
+      plp
       rts
    @set_play_volume:
       LDA_COMPONENT_MEMBER_ADDRESS drag_edit, keyboard_volume, coarse_value

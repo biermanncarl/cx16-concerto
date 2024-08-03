@@ -104,7 +104,6 @@
         iny
         lda (v32b::entrypointer),y
         sta song_engine::event_selection::unselected_events_vector+1
-
         plp
         jsr gui_routines__draw_gui
         rts

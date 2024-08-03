@@ -22,7 +22,7 @@ mzpbb:   .byte 0
 mzpbc:   .byte 0
 mzpbd:   .byte 0
 
-; variables that are backed up before the ISR, and thus are save to use in the main program, too
+; variables that are backed up before the ISR, and thus are safe to use in the main program, too
 ; This is especially important for subroutines that shall be callable from both ISR and main program
 mzpba:   .byte 0 ; concerto API register
 mzpbe:   .byte 0
