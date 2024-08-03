@@ -42,8 +42,6 @@
     ; * mouse_variables::curr_data_2 and _3 will contain the id of the hitbox (curr_data_3's MSB signals whether the hitbox is a selected or unselected one)
     ; and if not, mouse_variables::curr_data_1 will contain hitbox_handle::none.
     .proc check_mouse
-        php
-        sei
         temp_zp = gui_variables::mzpbf
         ; This is basically a "mouse is inside box" check with variable width and height.
         ; Get dragable type
@@ -58,7 +56,6 @@
         cmp dnd::dragables::edit_width, x
         bcc @horizontal_in
     @out:
-        plp
         clc
         rts
     @horizontal_in:  ; we're in
@@ -106,7 +103,6 @@
         bcc @loop
     @no_hit:
         stz mouse_variables::curr_data_1 ; dnd::hitboxes::hitbox_handle::none
-        plp
         sec
         rts
 
@@ -126,7 +122,6 @@
         sta mouse_variables::curr_data_2
         lda dnd::hitboxes::object_id_h
         sta mouse_variables::curr_data_3
-        plp
         sec
         rts
     .endproc
