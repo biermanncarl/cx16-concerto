@@ -115,7 +115,7 @@ note_data_changed: ; flag set within drag&drop operations to signal if playback 
 
    ; Sets the note hitbox active on the row with index .X
    ; Basically just copies the event index into the buffer.
-   ; preserves .X and .Y
+   ; preserves .X
    .proc startNoteHitbox
       lda song_engine::event_selection::most_recent_event_source
       sta note_is_selected, x
@@ -140,23 +140,29 @@ note_data_changed: ; flag set within drag&drop operations to signal if playback 
    .proc finishNoteHitbox
       column_index = detail::temp_variable_x
 
-      ; hitbox width
       lda column_buffer, x
       dec ; the column buffer contains a value always one bigger than the note width
-      asl
-      sta hitboxes__hitbox_width
-      ; hitbox x position
-      lda column_index
-      asl
-      sec
-      sbc hitboxes__hitbox_width
-      sta hitboxes__hitbox_pos_x
-      ; grant short notes a hitbox of non-zero width. (We do it after the x position calculation, as otherwise, we would get x wrong in case of a short note)
-      lda hitboxes__hitbox_width
-      bne :+
-      lda #2
-      sta hitboxes__hitbox_width
-   :
+      beq @short_mode
+      cmp #$7D ; events equal to or above this are special cases
+      bcc @normal_mode
+      @short_mode:
+         lda column_index
+         asl
+         sta hitboxes__hitbox_pos_x
+         lda #2
+         sta hitboxes__hitbox_width
+         bra @x_stuff_end
+      @normal_mode:
+         ; hitbox width
+         asl
+         sta hitboxes__hitbox_width
+         ; hitbox x position
+         lda column_index
+         asl
+         sec
+         sbc hitboxes__hitbox_width
+         sta hitboxes__hitbox_pos_x
+      @x_stuff_end:
       ; hitbox y position
       txa
       clc
@@ -628,7 +634,6 @@ note_data_changed: ; flag set within drag&drop operations to signal if playback 
    lda #column_buffer_short_note
 @write_to_column_buffer:
    sta detail::column_buffer, x
-   bra @parse_next_event
 
 @parse_next_event:
    jsr song_engine::event_selection::streamGetNextEvent
