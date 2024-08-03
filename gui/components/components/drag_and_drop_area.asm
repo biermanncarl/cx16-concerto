@@ -55,6 +55,7 @@
         tax
         ; check x direction
         lda mouse_variables::curr_x_downscaled
+        sec
         sbc dnd::dragables::edit_positions_x, x ; now we have the distance of the mouse pointer to the left side of the hitbox
         ; now A must be smaller than the hitbox' width.
         cmp dnd::dragables::edit_width, x
