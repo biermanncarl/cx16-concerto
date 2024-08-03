@@ -55,9 +55,8 @@
         tax
         ; check x direction
         lda mouse_variables::curr_x_downscaled
-        sec
-        sbc dnd::dragables::edit_positions_x, x ; now we have the distance of the mouse pointer to the left side of the checkbox
-        ; now A must be smaller than the checkbox' width.
+        sbc dnd::dragables::edit_positions_x, x ; now we have the distance of the mouse pointer to the left side of the hitbox
+        ; now A must be smaller than the hitbox' width.
         cmp dnd::dragables::edit_width, x
         bcc @horizontal_in
     @out:
@@ -95,7 +94,8 @@
         lda mouse_variables::curr_x_downscaled
         sec
         sbc dnd::hitboxes::hitbox_pos_x
-        inc ; increment so we can distinguish right end
+        inc ; increment so we can distinguish right end, but that means zero isn't inside anymore
+        beq @continue
         cmp dnd::hitboxes::hitbox_width
         beq @hit_right_end
         bcc @hit_bulk
