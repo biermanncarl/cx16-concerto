@@ -41,15 +41,34 @@ do_tick:
    pha
    lda mzpbg
    pha
+   lda dll_zp_pointer
+   pha
+   lda dll_zp_pointer+1
+   pha
+   lda dll_zp_pointer_2
+   pha
+   lda dll_zp_pointer_2+1
+   pha
+   lda v5b::value_0
+   pha
+   lda v5b::value_1
+   pha
+   lda v5b::value_2
+   pha
+   lda v5b::value_3
+   pha
+   lda v5b::value_4
+   pha
+   lda v32b::entrypointer
+   pha
+   lda v32b::entrypointer+1
+   pha
    lda VERA_addr_low
    pha
    lda VERA_addr_mid
    pha
    lda VERA_addr_high
    pha
-   ; The variables used by v5b are NOT backed up and instead, in the main program, v5b usage is constrained to self-contained blocks masked with SEI.
-   ; Self-contained means that at the end of the SEI-masked block, whatever state is in the v5b API variables can safely be discarded and overwritten by the ISR.
-   ; As for non-API v5b variables, these must not be changed by the ISR. The ISR must not modify the content of any dynamic memory storage.
    ; do synth tick updates
    jsr synth_engine::synth_tick
    ; call playback routine (done after the synth tick to reduce jitter caused by fluctuating computational load inside the playback routine.
@@ -62,6 +81,28 @@ do_tick:
    sta VERA_addr_mid
    pla
    sta VERA_addr_low
+   pla
+   sta v32b::entrypointer+1
+   pla
+   sta v32b::entrypointer
+   pla
+   sta v5b::value_4
+   pla
+   sta v5b::value_3
+   pla
+   sta v5b::value_2
+   pla
+   sta v5b::value_1
+   pla
+   sta v5b::value_0
+   pla
+   sta dll_zp_pointer_2+1
+   pla
+   sta dll_zp_pointer_2
+   pla
+   sta dll_zp_pointer+1
+   pla
+   sta dll_zp_pointer
    pla
    sta mzpbg
    pla
