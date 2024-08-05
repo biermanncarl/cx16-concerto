@@ -43,23 +43,31 @@
         lda (components_common::data_pointer),y
         iny
         sta temp
+    @retry_scroll:
         lda (components_common::data_pointer),y
         iny
         tax
         ; pointer to string list in temp/.X
         lda (components_common::data_pointer),y ; read scroll offset
-        iny
         phy ; remember data offset
         ; Here we need the assumption that the scroll offset must be smaller than the number of strings.
         ; advance string list to scroll offset
         sta valid_entries ; use scroll offset as starting point here
         tay
         lda temp
-        jsr dll::getElementByIndex ; we assume it succeeds ...
-        jsr v32b::accessEntry ; actually not the first entry here
+        jsr dll::getElementByIndex
+        bcc :+
+            ; out of range, reset scroll offset and try again
+            lda #0
+            ply
+            sta (components_common::data_pointer),y
+            dey
+            bra @retry_scroll
+    :   jsr v32b::accessEntry ; actually not the first entry here
 
         ; calculate position of selected entry relative to first visible line
         ply
+        iny
         lda (components_common::data_pointer),y
         phy
         inc ; trick to better utilize zero-flag in the print loop
