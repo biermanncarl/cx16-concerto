@@ -26,8 +26,8 @@
    .scope comps
       COMPONENT_DEFINITION drag_and_drop_area, notes_edit, components::dnd::dragables::ids::notes
       COMPONENT_DEFINITION combobox, zoom_level_indicator, zoom_level_indicator_x, zoom_level_indicator_y, 6, 5, A zoom_select_lb, 0
-      COMPONENT_DEFINITION button, play_start, 31, 54, 6, A play_caption
-      COMPONENT_DEFINITION button, play_stop, 38, 54, 6, A stop_caption
+      COMPONENT_DEFINITION button, play_start, 34, 54, 3, A play_caption
+      COMPONENT_DEFINITION button, play_stop, 38, 54, 3, A stop_caption
       COMPONENT_DEFINITION button, song_tempo, 31, 57, 10, A tempo_caption
       COMPONENT_DEFINITION button, load_song, 11, 57, 9, A load_song_lb
       COMPONENT_DEFINITION button, save_song, 21, 57, 9, A save_song_lb
@@ -50,8 +50,8 @@
       STR_FORMAT "1/1"
 
    zoom_caption: STR_FORMAT "grid"
-   play_caption: STR_FORMAT " play"
-   stop_caption: STR_FORMAT " stop"
+   play_caption: .byte 32, '>', 0
+   stop_caption: .byte 32, 228, 0
    tempo_caption: STR_FORMAT "song tempo"
    load_song_lb: STR_FORMAT "load song"
    save_song_lb: STR_FORMAT "save song"
