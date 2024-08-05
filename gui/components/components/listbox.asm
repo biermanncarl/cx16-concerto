@@ -91,12 +91,15 @@
         bne :+
         lda #(16*COLOR_COMBOBOX_POPUP_FG+COLOR_COMBOBOX_POPUP_BG)
     :   sta guiutils::color
-        inc valid_entries
         ldx width
         inx
         ldy #0
+        ; check if valid
+        lda (v32b::entrypointer), y
+        beq :+
+        inc valid_entries
         ; print line
-        lda #1
+    :   lda #1
         sta guiutils::draw_data1
         jsr guiutils::print_with_padding
         jsr v32b::accessNextEntry

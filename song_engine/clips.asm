@@ -121,15 +121,6 @@ clip_data_size = 30 ; want to keep it at 30 even though we use v32b (32 bytes) b
 ; Initializes a clip with default values.
 ; Prior to this, v32b::accessEntry or similar has to be called.
 .proc initializeClip
-    ldy #clip_data_size-1
-@loop:
-    lda #0
-    cpy #7 ; length of default name, must be shorter than max
-    bcs :+
-    lda default_name, y
-:   sta (v32b::entrypointer), y
-    dey
-    bpl @loop
     ; create the events vector
     lda RAM_BANK
     pha
@@ -141,6 +132,20 @@ clip_data_size = 30 ; want to keep it at 30 even though we use v32b (32 bytes) b
     iny
     txa
     sta (v32b::entrypointer), y
+    ; fall through to initializeClipName
+.endproc
+; Sets a clip's name to the default.
+; Prior to this, v32b::accessEntry or similar has to be called.
+.proc initializeClipName
+    ldy #clip_data_size-1
+@loop:
+    lda #0
+    cpy #7 ; length of default name, must be shorter than max
+    bcs :+
+    lda default_name, y
+:   sta (v32b::entrypointer), y
+    dey
+    bpl @loop
     rts
 default_name:
     .byte "unnamed"

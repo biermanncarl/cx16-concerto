@@ -72,7 +72,16 @@
         ; close popup
         jsr clearArea
         dec panels_stack_pointer
-        jsr gui_routines__draw_gui
+        ; check if string is empty (which is not allowed)
+        lda string_address
+        ldx string_address+1
+        jsr v32b::accessEntry
+        ldy #0
+        lda (v32b::entrypointer), y
+        bne :+
+            ; string is empty, fill it with default
+            jsr song_engine::clips::initializeClipName
+    :   jsr gui_routines__draw_gui
         rts
     .endproc
 
