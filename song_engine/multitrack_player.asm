@@ -5,6 +5,9 @@
 
 .scope multitrack_player
 
+player_start_timestamp:
+    .word 0
+
 .scope detail
     active: .byte 0
     time_stamp: .word 0
@@ -398,59 +401,49 @@
     bne @deactivate_loop
 
     ; Set time stamp to zero
-    stz detail::time_stamp
-    stz detail::time_stamp+1
+    lda player_start_timestamp
+    sta detail::time_stamp
+    lda player_start_timestamp+1
+    sta detail::time_stamp+1
+    ; Set player to active (done early because updateTrackPlayer wants it)
+    lda #1
+    sta song_engine::multitrack_player::detail::active
 
     ; Initialize player for selected events (player index 0)
-    ; Set up pointer to clip options data
+    ; Set up pointer to clip options data. (Selected events use the same settings as the currently visible clip)
     ldy clips::active_clip_id
     lda clips::clips_vector
     ldx clips::clips_vector+1
     jsr dll::getElementByIndex ; returns pointer in .A/.X
     sta detail::clip_settings_a ; player index 0, no offset needed
     stx detail::clip_settings_x
-    ; Set up timestamp & pointer to event data
-    lda event_selection::selected_events_vector
-    ldx event_selection::selected_events_vector+1
-    ldy #0
-    jsr detail::startPlabackOnTrack
+    lda #0
+    jsr updateTrackPlayer
 
 
-    ; Now, initialize the normal players
-    ldy #1
-    sty track_index ; track index 0 was already initialized above
-    dey
-    jsr clips::accessClip
+    ; Copy the track settings pointers into the player
+    stz track_index
 @track_loop:
-    ; backup RAM BANK
-    lda RAM_BANK
-    pha
-    ; setup pointer to clip data on current track
+    ldy track_index
+    jsr clips::accessClip ; this is not very efficient, but small code...
+    inc track_index
     ldx track_index
-    ; B component of B/H pointer was RAM BANK, already loaded above
+    lda RAM_BANK
     sta detail::clip_settings_a, x
     lda v32b::entrypointer_h
     sta detail::clip_settings_x, x
-    ; load first event of the clip
-    ldy #clips::clip_data::event_ptr
-    lda (v32b::entrypointer), y
+    cpx clips::number_of_clips
+    bne @track_loop
+
+    ; Start all players
+    lda #255
+@start_playback_loop:
+    inc
     pha
-    iny
-    lda (v32b::entrypointer), y
-    tax
+    jsr updateTrackPlayer
     pla
-@setup_first_event:
-    ldy track_index
-    jsr detail::startPlabackOnTrack
-
-    inc track_index
-    pla
-    sta RAM_BANK
-    jsr v32b::accessNextEntry
-    bcc @track_loop
-
-    lda #1
-    sta song_engine::multitrack_player::detail::active
+    cmp clips::number_of_clips
+    bne @start_playback_loop
 
     plp
     rts
