@@ -53,7 +53,7 @@ note_data_changed: ; flag set within drag&drop operations to signal if playback 
 
    ; Editing area rectangle
    event_edit_width = 50
-   event_edit_height = 45
+   event_edit_height = 44
    event_edit_pos_x = (80-event_edit_width) / 2 - 4
    event_edit_pos_y = (60-event_edit_height) / 2
    event_edit_background_color = 15
@@ -82,7 +82,8 @@ note_data_changed: ; flag set within drag&drop operations to signal if playback 
       temp_variable_u, 1, \
       temp_variable_t, 1, \
       temp_variable_s, 1, \
-      temp_variable_r, 1
+      temp_variable_r, 1, \
+      temp_variable_q, 1
    .linecont - ; switch off line continuation with "\" (default)
    SCRATCHPAD_VARIABLES DND_NOTES_COLUMN_BUFFERS, DND_NOTES_TEMP_VARIABLES
 
@@ -308,6 +309,7 @@ note_data_changed: ; flag set within drag&drop operations to signal if playback 
    thirtysecondths_since_last_bar = detail::temp_variable_y ; how many thirtysecondth notes since the last full bar
    bars_count = detail::temp_variable_s ; may overflow; we are interested in divisibility by low powers of 2
    grid_line = detail::temp_variable_r ; 0 is no grid line, 1 means normal grid line, 2 or higher means emphasized grid line
+   playback_start_drawn = detail::temp_variable_q ; if the playback start cursor has already been drawn
 
 
    ; column data format
@@ -338,6 +340,24 @@ note_data_changed: ; flag set within drag&drop operations to signal if playback 
    ldx temporal_zoom
    jsr song_engine::timing::get_note_duration_thirtysecondths
    sta thirtysecondth_stride
+
+   ; start-of-playback cursor
+   stz playback_start_drawn
+   lda song_engine::multitrack_player::player_start_timestamp+1
+   cmp window_time_stamp+1
+   bcc @start_cursor_dim
+   bne @start_cursor_bright
+   lda song_engine::multitrack_player::player_start_timestamp
+   cmp window_time_stamp
+   bcc @start_cursor_dim
+   @start_cursor_bright:
+      lda #7
+      bra @init_start_of_playback_cursor_end
+   @start_cursor_dim:
+      lda #12
+@init_start_of_playback_cursor_end:
+   sta @draw_playback_start_end+4
+
 
    ; clear the column buffer (don't need to clear the hitbox buffers because if the column_buffer is cleared, the others won't get read)
    ldx #(detail::event_edit_height-1)
@@ -449,7 +469,31 @@ note_data_changed: ; flag set within drag&drop operations to signal if playback 
    bcc :+
    inc running_time_stamp_h
 :
-
+   ; Handle playback start cursor
+   ; ----------------------------
+   lda column_index
+   ldx #detail::event_edit_pos_y-1
+   jsr guiutils::alternative_gotoxy
+   ldx playback_start_drawn
+   bne @draw_no_playback_start
+      lda running_time_stamp_h
+      cmp song_engine::multitrack_player::player_start_timestamp+1
+      bcc @draw_no_playback_start
+      bne @do_draw
+      lda song_engine::multitrack_player::player_start_timestamp
+      cmp running_time_stamp_l
+      bcs @draw_no_playback_start
+      @do_draw:
+         ; Do drawing
+         inc playback_start_drawn
+         lda #105
+         bra @draw_playback_start_end
+   @draw_no_playback_start:
+   lda #32
+@draw_playback_start_end:
+   sta VERA_data0
+   lda #7 ; affected by self-modifying code
+   sta VERA_data0
 
    ; Update Grid variables &
    ; Decide whether to draw a temporal grid line

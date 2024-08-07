@@ -16,7 +16,7 @@
    hg = 60
 
    zoom_level_indicator_x = components::dnd::dragables::notes::detail::event_edit_pos_x + components::dnd::dragables::notes::detail::event_edit_width - 6
-   zoom_level_indicator_y = components::dnd::dragables::notes::detail::event_edit_pos_y - 1
+   zoom_level_indicator_y = components::dnd::dragables::notes::detail::event_edit_pos_y + components::dnd::dragables::notes::detail::event_edit_height + 3
    help_box_x = 62
    help_box_y = 24
    help_box_width = (80 - help_box_x - 2)
