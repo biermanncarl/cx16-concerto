@@ -14,7 +14,7 @@
    hg = 60-py
    comps:
    .scope comps
-      COMPONENT_DEFINITION dummy, click_catcher
+      COMPONENT_DEFINITION dummy, click_catcher, 0, 0, 3, 60
       COMPONENT_DEFINITION text_field, concerto_banner, 1, 1, 19, 6, A vram_assets::concerto_banner
       COMPONENT_LIST_END
    .endscope

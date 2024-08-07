@@ -15,7 +15,7 @@
    hg = 60
    comps:
    .scope comps
-      COMPONENT_DEFINITION dummy, click_catcher
+      COMPONENT_DEFINITION dummy, click_catcher, 0, 0, 80, 60
       COMPONENT_LIST_END
    .endscope
    capts:
