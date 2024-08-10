@@ -47,11 +47,11 @@ mouse_tick:
    lda mouse_variables::curr_x
    sta mouse_variables::prev_x
    lda mouse_variables::curr_x+1
-   lda mouse_variables::prev_x+1
+   sta mouse_variables::prev_x+1
    lda mouse_variables::curr_y
    sta mouse_variables::prev_y
    lda mouse_variables::curr_y+1
-   lda mouse_variables::prev_y+1
+   sta mouse_variables::prev_y+1
 :  ; get mouse data
    mouse_data = gui_variables::mzpwa
    ldx #mouse_data
@@ -207,11 +207,31 @@ do_dragging:
    lda mouse_variables::prev_component_ofs
    sta mouse_variables::curr_component_ofs
    ; get distance to last frame
-   ; we assume it's smaller than 127, so we ignore the high byte xD
    lda mouse_variables::curr_x
    sec
    sbc mouse_variables::prev_x
    sta mouse_variables::delta_x
+   tax
+   lda mouse_variables::curr_x+1
+   sbc mouse_variables::prev_x+1
+   ; we clamp to the -126 to +120 range, so in the future we can ignore the high byte of the diff
+   ; some margin to the absolute max/min values seems to be needed; some maths related to scrolling seems to trip up when we're too close
+   bmi @delta_x_negative
+   @delta_x_positive:
+      txa
+      cmp #120
+      bcc @end_delta_x
+      ; bpl @end_delta_x
+      lda #120
+      sta mouse_variables::delta_x
+      bra @end_delta_x
+   @delta_x_negative:
+      txa
+      cmp #130
+      bcs @end_delta_x
+      lda #130 ; -126
+      sta mouse_variables::delta_x
+   @end_delta_x:
    ; for vertical delta we intentionally swap prev and curr because for most applications it's more convenient to let "up" have positive sign
    lda mouse_variables::prev_y
    sec
