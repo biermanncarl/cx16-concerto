@@ -135,7 +135,17 @@
       jsr gui_routines__draw_gui
       rts
    @set_start_of_playback:
-      ; TODO
+      lda mouse_variables::curr_data_1
+      sec
+      sbc #components::dnd::dragables::notes::detail::event_edit_pos_x
+      eor #$ff
+      inc
+      jsr components::dnd::dragables::notes::getTimeStampAtScreen
+      lda song_engine::timing::time_stamp_parameter
+      sta song_engine::multitrack_player::player_start_timestamp
+      lda song_engine::timing::time_stamp_parameter+1
+      sta song_engine::multitrack_player::player_start_timestamp+1
+      jsr gui_routines__draw_gui
       rts
    .endproc
 

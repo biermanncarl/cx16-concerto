@@ -867,8 +867,9 @@ height = 2 * detail::event_edit_height
    rts
 .endproc
 
-; expects the horizontal distance in terms of grid positions in .A
-.proc moveTimeWindow
+; expects the horizontal distance from the left drawing window's border in terms of grid positions in .A (signed, for some reason inverted)
+; returns the result in song_engine::timing::time_stamp_parameter
+.proc getTimeStampAtScreen
    pha ; store horizontal scroll distance to the stack
 
    lda window_time_stamp
@@ -885,21 +886,31 @@ height = 2 * detail::event_edit_height
    lda window_time_stamp
    clc
    adc song_engine::timing::time_stamp_parameter
-   sta window_time_stamp
+   sta song_engine::timing::time_stamp_parameter
    lda window_time_stamp+1
    adc song_engine::timing::time_stamp_parameter+1
-   sta window_time_stamp+1
+   sta song_engine::timing::time_stamp_parameter+1
    ; check if we overshot over t=0
    bcs :+
    lda song_engine::timing::time_stamp_parameter+1
    bpl :+
    ; set back to t=0
-   stz window_time_stamp
-   stz window_time_stamp+1
+   stz song_engine::timing::time_stamp_parameter
+   stz song_engine::timing::time_stamp_parameter+1
 :
    rts
 .endproc
 
+
+; expects the horizontal distance in terms of grid positions in .A
+.proc moveTimeWindow
+   jsr getTimeStampAtScreen
+   lda song_engine::timing::time_stamp_parameter
+   sta window_time_stamp
+   lda song_engine::timing::time_stamp_parameter+1
+   sta window_time_stamp+1
+   rts
+.endproc
 
 ; Expect signed delta x in .A and delta y in .X
 .proc doScrollNormal
@@ -1296,12 +1307,12 @@ height = 2 * detail::event_edit_height
    inc
    clc
    adc #detail::event_edit_pos_x
-   pha ; save grid position, so we can revert it later
-   jsr moveTimeWindow ; abusing the viewing window time stamp here
+   pha ; save grid position, so we can use it for the note-off, as well
+   jsr getTimeStampAtScreen
    ; copy time stamp
-   lda window_time_stamp
+   lda song_engine::timing::time_stamp_parameter
    sta song_engine::events::event_time_stamp_l
-   lda window_time_stamp+1
+   lda song_engine::timing::time_stamp_parameter+1
    sta song_engine::events::event_time_stamp_h
    ; get note pitch
    lda mouse_variables::curr_y_downscaled
@@ -1328,13 +1339,14 @@ height = 2 * detail::event_edit_height
    sta detail::pointed_at_event
    stx detail::pointed_at_event+1
    sty detail::pointed_at_event+2
-   ; move time stamp over by one chargrid position
-   lda #$ff
-   jsr moveTimeWindow
+   ; get time stamp of note-off
+   pla
+   dec
+   jsr getTimeStampAtScreen
    ; copy time stamp
-   lda window_time_stamp
+   lda song_engine::timing::time_stamp_parameter
    sta song_engine::events::event_time_stamp_l
-   lda window_time_stamp+1
+   lda song_engine::timing::time_stamp_parameter+1
    sta song_engine::events::event_time_stamp_h
    ; add note-off
    lda #song_engine::events::event_type_note_off
@@ -1342,12 +1354,6 @@ height = 2 * detail::event_edit_height
    lda song_engine::event_selection::selected_events_vector
    ldx song_engine::event_selection::selected_events_vector+1
    jsr v5b::append_new_entry
-   ; restore viewing window
-   pla
-   dec
-   eor #$ff
-   inc
-   jsr moveTimeWindow
 
    rts
 .endproc
