@@ -87,6 +87,7 @@
 .include "synth_zeropage.asm"
 .include "pitch_data.asm"
 .include "vibrato_lut.asm"
+.include "multiplication.asm"
 .include "synth_macros.asm"
 .ifdef ::concerto_enable_zsound_recording
    .include "zsm_recording.asm"
@@ -126,6 +127,7 @@ initialize:
    stz zsm_recording::recorder_active
 .endif
    jsr voices::init_voices
+   jsr multiplication::setup
    rts
 
 ; concerto_synth::activate_synth

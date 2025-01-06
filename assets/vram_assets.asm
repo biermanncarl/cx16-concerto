@@ -148,6 +148,10 @@ sprite_data_box_selection_frame_top_left:
         .endrepeat
     .endrepeat
 
+; Must be aligned with 256 bytes (if not, need to adapt multiplication code to not make that assumption)
+vera_fx_scratchpad:
+    .res 4
+
 ; text screen data
 fm_algs:
 @alg_0:

@@ -361,9 +361,8 @@
 
 
 ; computes the frequency of a given pitch+fine combo
-; may have to redo it with indirect mode for more flexibility later
-; Pitch Computation Variables
-.macro COMPUTE_FREQUENCY cf_pitch, cf_fine, cf_output ; done in ISR
+; Old version with "forbidden" bbrx/bbsx instructions
+.macro COMPUTE_FREQUENCY_OLD cf_pitch, cf_fine, cf_output ; done in ISR
    .local @skip_bit0
    .local @skip_bit1
    .local @skip_bit2
@@ -485,6 +484,62 @@
    ; total 357 cycles + page crossings ~= 45 us
 @skip_bit0:
 .endmacro
+
+
+
+; computes the frequency of a given pitch+fine combo
+.macro COMPUTE_FREQUENCY cf_pitch, cf_fine, cf_output ; done in ISR
+   ; VERA multiplier setup
+   stz VERA_addr_low ; set low address of ADDR0 scratchpad
+   lda #>vram_assets::vera_fx_scratchpad ; we assume it's aligned with 256 bytes as a small optimization
+   sta VERA_addr_mid ; set mid address of ADDR0 (under ideal circumstances, e.g. no PSG writes in between multiplications, we need to do this only once)
+   lda #(6 << 1)
+   sta VERA_ctrl ; DCSEL=6, brings up the 32-bit cache registers
+   lda VERA_FX_ACCUM_RESET   ; reset accumulator (DCSEL=6)
+
+   ; Store fine pitch (unsigned) in 
+   lda cf_fine
+   sta VERA_FX_CACHE_L
+   ; Load current pitch into .X
+   ldx cf_pitch
+   ; copy lower frequency to output
+   lda pitch_dataL,x
+   sta cf_output
+   lda pitch_dataH,x
+   sta cf_output+1 ; 20 cycles
+
+   ; compute difference between higher and lower frequency
+   ldy cf_pitch
+   iny
+   sec
+   lda pitch_dataL,y
+   sbc pitch_dataL,x
+   ;sta mzpwb   ; here: contains frequency difference between the two adjacent half steps
+   sta VERA_FX_CACHE_H ; here: contains frequency difference between the two adjacent half steps
+
+   lda pitch_dataH,y
+   sbc pitch_dataH,x
+   sta VERA_FX_CACHE_U
+
+   ; setup multiplication output
+   lda #(2 << 1)
+   sta VERA_ctrl        ; DCSEL=2
+   lda #%01000000       ; Cache Write Enable
+   sta VERA_FX_CTRL
+   stz VERA_data0       ; multiply and write out result
+   ; fetch result
+   lda VERA_data0
+   clc
+   adc cf_output
+   sta cf_output
+   lda VERA_data0
+   adc cf_output+1
+   sta cf_output+1
+
+   lda #%00000000       ; Cache Write Enable off
+   sta VERA_FX_CTRL
+.endmacro
+
 
 
 

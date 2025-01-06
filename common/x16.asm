@@ -102,6 +102,16 @@ VERA_audio_data   = $9F3D
 VERA_spi_data     = $9F3E
 VERA_spi_ctrl     = $9F3F
 
+; Vera FX
+; DCSEL = 2
+VERA_FX_CTRL      = $9F29
+VERA_FX_MULT      = $9F2C
+; DCSEL = 6
+VERA_FX_CACHE_L   = $9F29 ; write-only
+VERA_FX_CACHE_M   = $9F2A ; write-only
+VERA_FX_CACHE_H   = $9F2B ; write-only
+VERA_FX_CACHE_U   = $9F2C ; write-only
+VERA_FX_ACCUM_RESET = $9F2C ; read from this address resets accumulatr
 
 ROM_BANK          = $0001
 RAM_BANK          = $0000
