@@ -974,13 +974,6 @@ next_osc:
    ; during the attack phase, so that it is audible immediately, even at low volumes.
    ; 
 
-   ; multiplying route:
-   ; multiply with oscillator volume setting, input and output via register A
-   ;SCALE_U7 instruments::Instrument::osc::volume, 2
-   ; multiply with voice's volume
-   ;SCALE_U7 voi_volume, 0
-
-   ; addition route:
    clc
    ; A is in [0, ... 63]
    adc instruments::Instrument::osc::volume, y ; maximally 64, result can't be above 127
