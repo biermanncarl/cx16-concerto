@@ -240,28 +240,7 @@
    lda #(6 << 1)
    sta VERA_ctrl ; DCSEL=6, brings up the 32-bit cache registers
    lda VERA_FX_ACCUM_RESET   ; reset accumulator (DCSEL=6)
-.endmacro
-; Identical to SETUP_MULTIPLICATION_A except cluttering .X instead of .A
-.macro SETUP_MULTIPLICATION_X
-   stz VERA_addr_low
-   ldx #>vram_assets::vera_fx_scratchpad
-   stx VERA_addr_mid
-   ldx #$10
-   stx VERA_addr_high
-   ldx #(6 << 1)
-   stx VERA_ctrl
-   ldx VERA_FX_ACCUM_RESET
-.endmacro
-; Identical to SETUP_MULTIPLICATION_A except cluttering .Y instead of .A
-.macro SETUP_MULTIPLICATION_Y
-   stz VERA_addr_low
-   ldy #>vram_assets::vera_fx_scratchpad
-   sty VERA_addr_mid
-   ldy #$10
-   sty VERA_addr_high
-   ldy #(6 << 1)
-   sty VERA_ctrl
-   ldy VERA_FX_ACCUM_RESET
+   ; 26 cycles
 .endmacro
 
 
@@ -272,6 +251,7 @@
    lda #%01000000       ; Cache Write Enable
    sta VERA_FX_CTRL
    stz VERA_data0       ; write out multiplication result to VRAM (all 4 bytes at once). At the same time, this advances addr0 which skips the uninteresting least significant byte of the result.
+   ; 16 cycles
 .endmacro
 
 
@@ -396,7 +376,8 @@
 
 
 ; computes the frequency of a given pitch+fine combo
-.macro COMPUTE_FREQUENCY cf_pitch, cf_fine, cf_output ; done in ISR
+.macro COMPUTE_FREQUENCY cf_pitch, cf_fine, cf_output
+   ; constant 136 cycles
    SETUP_MULTIPLICATION
 
    ; Store fine pitch (unsigned) in first factor
@@ -409,7 +390,7 @@
    lda pitch_dataL,x
    sta cf_output
    lda pitch_dataH,x
-   sta cf_output+1 ; 20 cycles
+   sta cf_output+1
 
    ; compute difference between higher and lower frequency
    ldy cf_pitch
@@ -486,17 +467,110 @@
 
 
 
+
+
+; this is used for various modulation depth scalings of 16 bit modulation values (mainly pitch)
+; modulation depth is assumed to be indexed by register Y
+; modulation source is assumed to be indexed by register X (not preserved)
+; result is added to the literal addresses resultL and resultH
+; moddepth is in Scale5 format (see scale5.asm), passed at absolute address scale5_moddepth
+; skipping is NOT done in this macro if modsource select is "none"
+; modsourceL,x:modsourceH,x contain a twos-complement 16 bit value
+.macro SCALE5_16 modsourceL, modsourceH, resultL, resultH
+   SETUP_MULTIPLICATION
+
+   ; first step: calculate the linear 16-bit representation of the quasi-logarithmic Scale5 factor.
+   ; This is inefficient, as it is always the same calculation and could be done in advance,
+   ; but that would require extensive coding re-work to pull off.
+   ; For now, I'll go with the lazy solution.
+   ; A fast and even lazier solution would be to do the whole thing with a big lookup table.
+
+
+
+   ; Get result from VRAM
+   WRITE_MULTIPLICATION_RESULT
+   lda VERA_data0
+   clc
+   adc resultL
+   sta resultL
+   lda VERA_data0
+   adc resultH
+   sta resultH
+
+   stz VERA_FX_CTRL ; Cache Write Enable off
+
+
+   ; =========================
+
+
+
+
+
+   ; mzpbf will hold the sign
+   stz mzpbf
+
+   ; initialize zero page 16 bit value
+   lda modsourceL, x
+   sta mzpwb
+   lda modsourceH, x
+   and #%01111111
+   cmp modsourceH, x
+   sta mzpwb+1        ; 14 cycles
+   ; from now on, the mod source isn't directly accessed anymore, so we can discard X
+   ; store the modulation sign
+   beq :+
+   inc mzpbf
+:
+
+   ; jump to macro-parameter independent code, which can be reused (hence, it is outside the macro)
+   ; you can read that subroutine as if it was part of this macro.
+   jsr scale5_16_internal
+
+   ; now add/subtract scaling result to modulation destiny, according to sign
+   .local @minusS
+   .local @endS
+   lda mzpbf
+   ror
+   bcs @minusS
+   ; if we're here, sign is positive --> add
+   clc
+   lda mzpwb
+   adc resultL
+   sta resultL
+   lda mzpwb+1
+   adc resultH
+   sta resultH
+   bra @endS
+@minusS:
+   ; if we're here, sign is negative --> sub
+   sec
+   lda resultL
+   sbc mzpwb
+   sta resultL
+   lda resultH
+   sbc mzpwb+1
+   sta resultH
+@endS:
+   ; 35 cycles
+   ; worst case overall: 35 + 64 + 24 + 107 + 14 = 244 cycles ... much more than I hoped. (even more now with proper sign handling)
+.endmacro
+
+
+
+
+
+
 ; this is used for various modulation depth scalings of 16 bit modulation values (mainly pitch)
 ; modulation depth is assumed to be indexed by register Y
 ; modulation source is assumed to be indexed by register X (not preserved)
 ; result is added to the literal addesses
-; moddepth is allowed to have a sign bit (bit 7)
+; moddepth is allowed to have a sign bit (bit 7), passed at absolute address scale5_moddepth
 ; moddepth has the format  %SLLLHHHH
 ; where %HHHH is the number of rightshifts to be applied to the 16 bit mod source
 ; and %LLL is the number of the sub-level
 ; skipping is NOT done in this macro if modsource select is "none"
 ; modsourceH is also allowed to have a sign bit (bit 7)
-.macro SCALE5_16 modsourceL, modsourceH, resultL, resultH
+.macro SCALE5_16_OLD modsourceL, modsourceH, resultL, resultH
    ; mzpbf will hold the sign
    stz mzpbf
 
