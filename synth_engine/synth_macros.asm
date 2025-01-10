@@ -543,22 +543,8 @@
    .local @shift_7_or_less
    .local @shift_continue
    lda scale5_moddepth
-   and #%00001000 ; see if we shift by 8 or more bits
-   bne @shift_8_or_more;101
-   @shift_7_or_less:
-      lda scale5_moddepth
-      and #%00000111
-      tax
-      lda VERA_data0
-      sta mzpwb
-      lda VERA_data0;120
-      @shift8_loop: ; maximum 7 iterations
-         lsr
-         ror mzpwb
-         dex
-         bne @shift8_loop
-      sta mzpwb+1
-      bra @shift_continue;worst case 209
+   and #%00001000 ; see if we shift by 8 or more bits   ;101
+   beq @shift_7_or_less
    @shift_8_or_more:
       lda scale5_moddepth
       and #%00000111
@@ -571,12 +557,53 @@
          bne @shift8_loop
       sta mzpwb
       stz mzpwb+1
+      bra @shift_continue; worst case 177 cycles (incl. this bra)
+   @shift_7_or_less:
+         ldx VERA_data0
+         lda VERA_data0
+         sta mzpwb+1
+         ; check bit 2
+         lda scale5_moddepth
+         and #%00000100
+         beq @skipH2
+         txa
+         lsr mzpwb+1
+         ror
+         lsr mzpwb+1
+         ror
+         lsr mzpwb+1
+         ror
+         lsr mzpwb+1
+         ror
+         tax;155
+      @skipH2:
+         ; check bit 1
+         lda scale5_moddepth
+         and #%00000010
+         beq @skipH1
+         txa
+         lsr mzpwb+1
+         ror
+         lsr mzpwb+1
+         ror
+         tax;181
+      @skipH1:
+         ; check bit 0
+         lda scale5_moddepth
+         and #%00000001
+         beq @skipH0
+         lsr mzpwb+1
+         txa
+         ror
+         tax
+      @skipH0:
+         stx mzpwb
 @shift_continue:
-   ; worst case 209  (could save 1 cycle worst case by swapping the two branches)
+   ; worst case 204
 
    ; Determine sign of output
-   lda scale5_moddepth
-   adc mzpbf ; sign bit of result is in carry now
+   lda scale5_moddepth  ; $ff isn't a valid scale5 value, so for the sake of determining the overflow of this calculation, the carry flag doesn't matter
+   adc mzpbf ; sign bit of overall result is in carry now
 
    ; ---- end generic ----
 
@@ -599,7 +626,7 @@
    .local @end
 @end:
    stz VERA_FX_CTRL ; Cache Write Enable off
-   ; Worst case 249 cycles
+   ; Worst case 244 cycles
 .endmacro
 
 
