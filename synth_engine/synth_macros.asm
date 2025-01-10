@@ -469,6 +469,8 @@
 
 
 
+; TODO: make scale5_moddepth a ZP variable
+
 ; this is used for various modulation depth scalings of 16 bit modulation values (mainly pitch)
 ; modulation depth is assumed to be indexed by register Y
 ; modulation source is assumed to be indexed by register X (not preserved)
@@ -488,7 +490,7 @@
    .local @result_negative
    SETUP_MULTIPLICATION
 
-   ; mzpbf will hold the sign of the result
+   ; mzpbf will hold the sign of the mod source
 
    ; Get the absolute value of the modsource into the 32bit cache, and extract the sign.
    lda modsourceH, x
@@ -521,6 +523,8 @@
 
    ; from now on, the mod source isn't directly accessed anymore, so we can discard X
 
+   ; ---- begin generic ----
+
    lda scale5_moddepth
    and #%01110000
    lsr
@@ -538,7 +542,7 @@
 
    ; Do bit-shifting
    ; The final result is expected in mzpwb
-   ; can use mzpwb, mzpwb, mzpwf and mzpbf  (really, so many?)
+   ; can use mzpwb, mzpwc, mzpwf and mzpbf  (really, so many?)
    .local @shift_8_or_more
    .local @shift_7_or_less
    .local @shift_continue
@@ -559,47 +563,42 @@
       stz mzpwb+1
       bra @shift_continue; worst case 177 cycles (incl. this bra)
    @shift_7_or_less:
-         ldx VERA_data0
-         lda VERA_data0
-         sta mzpwb+1
-         ; check bit 2
          lda scale5_moddepth
-         and #%00000100
-         beq @skipH2
-         txa
-         lsr mzpwb+1
-         ror
-         lsr mzpwb+1
-         ror
-         lsr mzpwb+1
-         ror
-         lsr mzpwb+1
-         ror
-         tax;155
-      @skipH2:
-         ; check bit 1
-         lda scale5_moddepth
-         and #%00000010
-         beq @skipH1
-         txa
-         lsr mzpwb+1
-         ror
-         lsr mzpwb+1
-         ror
-         tax;181
-      @skipH1:
-         ; check bit 0
-         lda scale5_moddepth
-         and #%00000001
-         beq @skipH0
-         lsr mzpwb+1
-         txa
-         ror
+         and #%00000111
+         asl
          tax
-      @skipH0:
-         stx mzpwb
+         lda VERA_data0
+         sta mzpwb
+         lda VERA_data0
+         jmp (@jmptbl, x)
+      @jmptbl:
+         .word @unrolled_loop + 7 * 7
+         .word @unrolled_loop + 6 * 7
+         .word @unrolled_loop + 5 * 7
+         .word @unrolled_loop + 4 * 7
+         .word @unrolled_loop + 3 * 7
+         .word @unrolled_loop + 2 * 7
+         .word @unrolled_loop + 1 * 7
+         .word @unrolled_loop + 0 * 7
+      @unrolled_loop:
+         lsr
+         ror mzpwb
+         lsr
+         ror mzpwb
+         lsr
+         ror mzpwb
+         lsr
+         ror mzpwb
+         lsr
+         ror mzpwb
+         lsr
+         ror mzpwb
+         lsr
+         ror mzpwb
+         sta mzpwb+1
+
 @shift_continue:
-   ; worst case 204
+   ; worst case 183
 
    ; Determine sign of output
    lda scale5_moddepth  ; $ff isn't a valid scale5 value, so for the sake of determining the overflow of this calculation, the carry flag doesn't matter
@@ -626,7 +625,7 @@
    .local @end
 @end:
    stz VERA_FX_CTRL ; Cache Write Enable off
-   ; Worst case 244 cycles
+   ; Worst case 221 cycles
 .endmacro
 
 
