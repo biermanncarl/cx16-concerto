@@ -478,11 +478,47 @@
 ; modsourceL,x:modsourceH,x contain a twos-complement 16 bit value
 ; Must preserve .Y
 .macro SCALE5_16 modsourceL, modsourceH, resultL, resultH
+   .local @modsource_positive
+   .local @modsource_negative
+   .local @modsource_prepared
+   .local @modsource_negate_normal
+   .local @modsource_negate_overflow
+   .local @modsource_negate_continue
+   .local @result_positive
+   .local @result_negative
    SETUP_MULTIPLICATION
+
+   ; mzpbf will hold the sign of the result
+
+   ; Get the absolute value of the modsource into the 32bit cache, and extract the sign.
+   lda modsourceH, x
+   bmi @modsource_negative
+@modsource_positive:
+   stz mzpbf
+   sta VERA_FX_CACHE_M
    lda modsourceL, x
    sta VERA_FX_CACHE_L
-   lda modsourceH, x
-   sta VERA_FX_CACHE_M
+   bra @modsource_prepared
+@modsource_negative:
+   lda #$80
+   sta mzpbf
+   lda modsourceL, x
+   eor #$ff
+   inc
+   sta VERA_FX_CACHE_L
+   beq @modsource_negate_overflow
+   @modsource_negate_normal:
+      lda modsourceH, x
+      eor #$ff
+      bra @modsource_negate_continue
+   @modsource_negate_overflow:
+      lda modsourceH, x
+      eor #$ff
+      inc
+   @modsource_negate_continue:
+   sta VERA_FX_CACHE_M;worst case 39
+@modsource_prepared:
+
    ; from now on, the mod source isn't directly accessed anymore, so we can discard X
 
    lda scale5_moddepth
@@ -493,25 +529,12 @@
    lsr
    tax
    lda scale5_mantissa_lut, x
-   .local @moddepth_positive
-   .local @moddepth_negative
-   .local @sign_done
-   ldx scale5_moddepth
-   bmi @moddepth_negative
-@moddepth_positive:
    sta VERA_FX_CACHE_H
    lda #1
-   bra @sign_done
-@moddepth_negative:
-   eor #$ff
-   inc
-   sta VERA_FX_CACHE_H
-   lda #$fe
-@sign_done:
-   sta VERA_FX_CACHE_U
+   sta VERA_FX_CACHE_U;69
 
    ; Put multiplication result in VRAM
-   WRITE_MULTIPLICATION_RESULT
+   WRITE_MULTIPLICATION_RESULT;95
 
    ; Do bit-shifting
    ; The final result is expected in mzpwb
@@ -521,52 +544,62 @@
    .local @shift_continue
    lda scale5_moddepth
    and #%00001000 ; see if we shift by 8 or more bits
-   bne @shift_8_or_more
+   bne @shift_8_or_more;101
    @shift_7_or_less:
       lda scale5_moddepth
       and #%00000111
       tax
       lda VERA_data0
       sta mzpwb
-      lda VERA_data0
-      sta mzpwb+1
-      lda VERA_data0;128 cycles
+      lda VERA_data0;120
       @shift8_loop: ; maximum 7 iterations
          lsr
-         ror mzpwb+1
          ror mzpwb
          dex
          bne @shift8_loop
-      bra @shift_continue
+      sta mzpwb+1
+      bra @shift_continue;worst case 209
    @shift_8_or_more:
       lda scale5_moddepth
       and #%00000111
       tax
       lda VERA_data0 ; we can straight ignore the LSB of the result
       lda VERA_data0
-      sta mzpwb
-      lda VERA_data0 ; high byte consists of either all ones or all zeros. We need that both as high byte, and as source of bits to shift from
-      sta mzpwb+1
       @shift8_loop: ; maximum 7 iterations
          lsr
-         ror mzpwb
          dex
          bne @shift8_loop
-      stz mzpwb
+      sta mzpwb
+      stz mzpwb+1
 @shift_continue:
-   ; worst case 247
+   ; worst case 209  (could save 1 cycle worst case by swapping the two branches)
 
-   lda mzpwb
-   clc
+   ; Determine sign of output
+   lda scale5_moddepth
+   adc mzpbf ; sign bit of result is in carry now
+
    ; ---- end generic ----
-   adc resultL
+
+   lda resultL
+   bcc @result_positive
+@result_negative:
+   sbc mzpwb ; carry is already set correctly
+   sta resultL
+   lda resultH
+   sbc mzpwb+1
+   sta resultH
+   bra @end
+@result_negative:
+   lda mzpwb ; carry is already set correctly
    sta resultL
    lda mzpwb+1
    adc resultH
    sta resultH
 
+   .local @end
+@end:
    stz VERA_FX_CTRL ; Cache Write Enable off
-   ; Worst case 277 cycles
+   ; Worst case 249 cycles
 .endmacro
 
 
