@@ -88,6 +88,7 @@
 .include "pitch_data.asm"
 .include "vibrato_lut.asm"
 .include "multiplication.asm"
+.include "scale5.asm"
 .include "synth_macros.asm"
 .ifdef ::concerto_enable_zsound_recording
    .include "zsm_recording.asm"
@@ -96,7 +97,6 @@
 .include "voices.asm"
 .include "synth_tick.asm"
 .include "isr.asm"
-.include "scale5.asm"
 
 ; Concerto API registers
 creg0 = mzpba

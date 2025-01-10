@@ -476,83 +476,97 @@
 ; moddepth is in Scale5 format (see scale5.asm), passed at absolute address scale5_moddepth
 ; skipping is NOT done in this macro if modsource select is "none"
 ; modsourceL,x:modsourceH,x contain a twos-complement 16 bit value
+; Must preserve .Y
 .macro SCALE5_16 modsourceL, modsourceH, resultL, resultH
    SETUP_MULTIPLICATION
-
-   ; first step: calculate the linear 16-bit representation of the quasi-logarithmic Scale5 factor.
-   ; This is inefficient, as it is always the same calculation and could be done in advance,
-   ; but that would require extensive coding re-work to pull off.
-   ; For now, I'll go with the lazy solution.
-   ; A fast and even lazier solution would be to do the whole thing with a big lookup table.
-
-
-
-   ; Get result from VRAM
-   WRITE_MULTIPLICATION_RESULT
-   lda VERA_data0
-   clc
-   adc resultL
-   sta resultL
-   lda VERA_data0
-   adc resultH
-   sta resultH
-
-   stz VERA_FX_CTRL ; Cache Write Enable off
-
-
-   ; =========================
-
-
-
-
-
-   ; mzpbf will hold the sign
-   stz mzpbf
-
-   ; initialize zero page 16 bit value
    lda modsourceL, x
-   sta mzpwb
+   sta VERA_FX_CACHE_L
    lda modsourceH, x
-   and #%01111111
-   cmp modsourceH, x
-   sta mzpwb+1        ; 14 cycles
+   sta VERA_FX_CACHE_M
    ; from now on, the mod source isn't directly accessed anymore, so we can discard X
-   ; store the modulation sign
-   beq :+
-   inc mzpbf
-:
 
-   ; jump to macro-parameter independent code, which can be reused (hence, it is outside the macro)
-   ; you can read that subroutine as if it was part of this macro.
-   jsr scale5_16_internal
+   lda scale5_moddepth
+   and #%01110000
+   lsr
+   lsr
+   lsr
+   lsr
+   tax
+   lda scale5_mantissa_lut, x
+   .local @moddepth_positive
+   .local @moddepth_negative
+   .local @sign_done
+   ldx scale5_moddepth
+   bmi @moddepth_negative
+@moddepth_positive:
+   sta VERA_FX_CACHE_H
+   lda #1
+   bra @sign_done
+@moddepth_negative:
+   eor #$ff
+   inc
+   sta VERA_FX_CACHE_H
+   lda #$fe
+@sign_done:
+   sta VERA_FX_CACHE_U
 
-   ; now add/subtract scaling result to modulation destiny, according to sign
-   .local @minusS
-   .local @endS
-   lda mzpbf
-   ror
-   bcs @minusS
-   ; if we're here, sign is positive --> add
-   clc
+   ; Put multiplication result in VRAM
+   WRITE_MULTIPLICATION_RESULT
+
+   ; Do bit-shifting
+   ; The final result is expected in mzpwb
+   ; can use mzpwb, mzpwb, mzpwf and mzpbf  (really, so many?)
+   .local @shift_8_or_more
+   .local @shift_7_or_less
+   .local @shift_continue
+   lda scale5_moddepth
+   and #%00001000 ; see if we shift by 8 or more bits
+   bne @shift_8_or_more
+   @shift_7_or_less:
+      lda scale5_moddepth
+      and #%00000111
+      tax
+      lda VERA_data0
+      sta mzpwb
+      lda VERA_data0
+      sta mzpwb+1
+      lda VERA_data0;128 cycles
+      @shift8_loop: ; maximum 7 iterations
+         lsr
+         ror mzpwb+1
+         ror mzpwb
+         dex
+         bne @shift8_loop
+      bra @shift_continue
+   @shift_8_or_more:
+      lda scale5_moddepth
+      and #%00000111
+      tax
+      lda VERA_data0 ; we can straight ignore the LSB of the result
+      lda VERA_data0
+      sta mzpwb
+      lda VERA_data0 ; high byte consists of either all ones or all zeros. We need that both as high byte, and as source of bits to shift from
+      sta mzpwb+1
+      @shift8_loop: ; maximum 7 iterations
+         lsr
+         ror mzpwb
+         dex
+         bne @shift8_loop
+      stz mzpwb
+@shift_continue:
+   ; worst case 247
+
    lda mzpwb
+   clc
+   ; ---- end generic ----
    adc resultL
    sta resultL
    lda mzpwb+1
    adc resultH
    sta resultH
-   bra @endS
-@minusS:
-   ; if we're here, sign is negative --> sub
-   sec
-   lda resultL
-   sbc mzpwb
-   sta resultL
-   lda resultH
-   sbc mzpwb+1
-   sta resultH
-@endS:
-   ; 35 cycles
-   ; worst case overall: 35 + 64 + 24 + 107 + 14 = 244 cycles ... much more than I hoped. (even more now with proper sign handling)
+
+   stz VERA_FX_CTRL ; Cache Write Enable off
+   ; Worst case 277 cycles
 .endmacro
 
 
@@ -580,16 +594,16 @@
    lda modsourceH, x
    and #%01111111
    cmp modsourceH, x
-   sta mzpwb+1        ; 14 cycles
+   sta mzpwb+1
    ; from now on, the mod source isn't directly accessed anymore, so we can discard X
    ; store the modulation sign
    beq :+
    inc mzpbf
-:
+:  ; 27 cycles worst case
 
    ; jump to macro-parameter independent code, which can be reused (hence, it is outside the macro)
    ; you can read that subroutine as if it was part of this macro.
-   jsr scale5_16_internal
+   jsr scale5_16_internal ; worst case 226 (excluding JSR/RTS)
 
    ; now add/subtract scaling result to modulation destiny, according to sign
    .local @minusS
@@ -616,8 +630,7 @@
    sbc mzpwb+1
    sta resultH
 @endS:
-   ; 35 cycles
-   ; worst case overall: 35 + 64 + 24 + 107 + 14 = 244 cycles ... much more than I hoped. (even more now with proper sign handling)
+   ; worst case total: 260 cycles
 .endmacro
 
 
@@ -646,14 +659,14 @@ scale5_16_internal:
    jmp @endH
 :  ; if we got here, we've got a nonzero number of rightshifts to be done in register A
    tax
-   lda mzpwb+1
+   lda mzpwb+1;22 cycles
 @loopH:
    lsr
    dex
    bne @loopH
    sta mzpwb
    stz mzpwb+1
-   jmp @endH    ; worst case if bit 3 is set: 15 rightshifts, makes 9*7 + 35 cycles = 98 cycles
+   jmp @endH    ; worst case if bit 3 is set: 15 rightshifts, makes 57 cycles (including this jmp)
 @skipH3:
    ; check bit 2
    lda scale5_moddepth
@@ -668,7 +681,7 @@ scale5_16_internal:
    ror
    lsr mzpwb+1
    ror
-   sta mzpwb
+   sta mzpwb;51 cycles
 @skipH2:
    ; check bit 1
    lda scale5_moddepth
@@ -679,17 +692,17 @@ scale5_16_internal:
    ror
    lsr mzpwb+1
    ror
-   sta mzpwb
+   sta mzpwb;78 cycles
 @skipH1:
-   ; check bit 1
+   ; check bit 0
    lda scale5_moddepth
    and #%00000001
    beq @skipH0
    lsr mzpwb+1
-   ror mzpwb
-@skipH0:    ; worst case if bit 3 is not set: 107 cycles.
+   ror mzpwb;96 cycles worst case
+@skipH0:
 @endH:
-   ; maximum number of cycles for rightshifts is 107 cycles. Good compared to 230 from naive approach.
+   ; maximum number of cycles for rightshifts is 96 cycles. Good compared to 230 from naive approach.
    ; still hurts tho.
 
    ; do sublevel scaling
@@ -802,6 +815,7 @@ scale5_16_internal:
    sta mzpwb+1
    ; 66 cycles ... ouch!!
 @endL:
+   ; worst case 90 cycles (sublevel scaling only)
 
    ; determine overall sign (mod source * mod depth)
    lda scale5_moddepth
@@ -809,6 +823,10 @@ scale5_16_internal:
    beq :+
    inc mzpbf
 :  ; now if lowest bit of mzpbf is even, sign is positive and if it's odd, sign is negative
+
+   ; worst case right shift: 96 cycles
+   ; worst case sublevel scaling: 103 cycles
+   ; worst case total: 199 cycles
 
    ; return to macro
    rts

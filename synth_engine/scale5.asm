@@ -36,9 +36,12 @@
 ; These values are chosen to be distributed relatively evenly on a logarithmic scale.
 
 
+scale5_mantissa_lut:
+   .byte %00000000, %00100000, %01000000, %10000000, %11000000
+
 
 ; The following two routines map between scale5 and normal binary
-; the binary value can assume values from 1 to 75, or the negative values -75 to -1 (NOT zero!)
+; the binary value can assume values from 1 to 76, or the negative values -76 to -1 (NOT zero!)
 ; These subroutines preserve .X, but not .A and .Y
 scale5_temp_number: .byte 0
 
