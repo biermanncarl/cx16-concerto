@@ -482,9 +482,10 @@
 .macro SCALE5_16 modsourceL, modsourceH, resultL, resultH
    .local @result_positive
    .local @result_negative
+   .local @end
    SETUP_MULTIPLICATION
 
-   ; mzpbf will hold the sign of the mod source
+   ; mzpbf will aid in determining the sign of the modulation
 
    ; Get the absolute value of the modsource into the 32bit cache, and extract the sign.
    lda modsourceH, x
@@ -496,8 +497,37 @@
 
    ; from now on, the mod source isn't directly accessed anymore, so we can discard X
 
-   ; ---- begin generic ----
+   jsr scale5_16_internal
 
+   bpl @result_positive
+@result_negative:
+   lda resultL
+   sec
+   sbc mzpwb
+   sta resultL
+   lda resultH
+   sbc mzpwb+1
+   sta resultH
+   bra @end
+@result_positive:
+   lda resultL
+   clc
+   adc mzpwb
+   sta resultL
+   lda mzpwb+1
+   adc resultH
+   sta resultH
+
+@end:
+   stz VERA_FX_CTRL ; Cache Write Enable off
+   ; Worst case 223 cycles
+.endmacro
+
+
+scale5_moddepth = mzpwf ; only the first byte is used
+
+; does the heavy lifting of the above macro scale5_16. Reusable code here.
+.proc scale5_16_internal
    lda scale5_moddepth
    and #%01110000
    lsr
@@ -516,9 +546,6 @@
    ; Do bit-shifting
    ; The final result is expected in mzpwb
    ; can use mzpwb, mzpwc, mzpwf and mzpbf  (really, so many?)
-   .local @shift_8_or_more
-   .local @shift_7_or_less
-   .local @shift_continue
    lda scale5_moddepth
    and #%00001000 ; see if we shift by 8 or more bits   ;99
    beq @shift_7_or_less
@@ -528,13 +555,16 @@
       tax
       lda VERA_data0 ; we can straight ignore the LSB of the result
       lda VERA_data0
+      cpx #0
+      beq @shift8_loop_end
       @shift8_loop: ; maximum 7 iterations
          lsr
          dex
          bne @shift8_loop
+      @shift8_loop_end:
       sta mzpwb
       stz mzpwb+1
-      bra @shift_continue; worst case 175 cycles (incl. this bra)
+      bra @shift_continue; worst case 180 cycles (incl. this bra)
    @shift_7_or_less:
          lda scale5_moddepth
          and #%00000111
@@ -545,14 +575,14 @@
          lda VERA_data0
          jmp (@jmptbl, x)
       @jmptbl:
-         .word @unrolled_loop + 7 * 7
-         .word @unrolled_loop + 6 * 7
-         .word @unrolled_loop + 5 * 7
-         .word @unrolled_loop + 4 * 7
-         .word @unrolled_loop + 3 * 7
-         .word @unrolled_loop + 2 * 7
-         .word @unrolled_loop + 1 * 7
-         .word @unrolled_loop + 0 * 7
+         .word @unrolled_loop + 7 * 3
+         .word @unrolled_loop + 6 * 3
+         .word @unrolled_loop + 5 * 3
+         .word @unrolled_loop + 4 * 3
+         .word @unrolled_loop + 3 * 3
+         .word @unrolled_loop + 2 * 3
+         .word @unrolled_loop + 1 * 3
+         .word @unrolled_loop + 0 * 3
       @unrolled_loop:
          lsr
          ror mzpwb
@@ -579,296 +609,9 @@
    adc scale5_moddepth  ; $ff isn't a valid scale5 value, so for the sake of determining the overflow of this calculation, the carry flag doesn't matter
    ; overall sign bit is in negative flag now
 
-   ; ---- end generic ----
-
-   bpl @result_positive
-@result_negative:
-   lda resultL
-   sec
-   sbc mzpwb
-   sta resultL
-   lda resultH
-   sbc mzpwb+1
-   sta resultH
-   bra @end
-@result_negative:
-   lda resultL
-   clc
-   adc mzpwb
-   sta resultL
-   lda mzpwb+1
-   adc resultH
-   sta resultH
-
-   .local @end
-@end:
-   stz VERA_FX_CTRL ; Cache Write Enable off
-   ; Worst case 223 cycles
-.endmacro
-
-
-
-
-
-
-; this is used for various modulation depth scalings of 16 bit modulation values (mainly pitch)
-; modulation depth is assumed to be indexed by register Y
-; modulation source is assumed to be indexed by register X (not preserved)
-; result is added to the literal addesses
-; moddepth is allowed to have a sign bit (bit 7), passed at absolute address scale5_moddepth
-; moddepth has the format  %SLLLHHHH
-; where %HHHH is the number of rightshifts to be applied to the 16 bit mod source
-; and %LLL is the number of the sub-level
-; skipping is NOT done in this macro if modsource select is "none"
-; modsourceH is also allowed to have a sign bit (bit 7)
-.macro SCALE5_16_OLD modsourceL, modsourceH, resultL, resultH
-   ; mzpbf will hold the sign
-   stz mzpbf
-
-   ; initialize zero page 16 bit value
-   lda modsourceL, x
-   sta mzpwb
-   lda modsourceH, x
-   and #%01111111
-   cmp modsourceH, x
-   sta mzpwb+1
-   ; from now on, the mod source isn't directly accessed anymore, so we can discard X
-   ; store the modulation sign
-   beq :+
-   inc mzpbf
-:  ; 27 cycles worst case
-
-   ; jump to macro-parameter independent code, which can be reused (hence, it is outside the macro)
-   ; you can read that subroutine as if it was part of this macro.
-   jsr scale5_16_internal ; worst case 226 (excluding JSR/RTS)
-
-   ; now add/subtract scaling result to modulation destiny, according to sign
-   .local @minusS
-   .local @endS
-   lda mzpbf
-   ror
-   bcs @minusS
-   ; if we're here, sign is positive --> add
-   clc
-   lda mzpwb
-   adc resultL
-   sta resultL
-   lda mzpwb+1
-   adc resultH
-   sta resultH
-   bra @endS
-@minusS:
-   ; if we're here, sign is negative --> sub
-   sec
-   lda resultL
-   sbc mzpwb
-   sta resultL
-   lda resultH
-   sbc mzpwb+1
-   sta resultH
-@endS:
-   ; worst case total: 260 cycles
-.endmacro
-
-
-scale5_moddepth:
-   .byte 0
-; does the heavy lifting of the above macro scale5_16. Reusable code here.
-scale5_16_internal:
-   ; do %HHHH rightshifts
-   ; cycle counting needs to be redone, because initially, I forgot about LSR, so I CLCed before each ROR
-   ; instead of the naive approach of looping over rightshifting a 16 bit variable
-   ; we are taking a more efficient approach of testing each bit
-   ; of the %HHHH value and perform suitable actions
-   ; alternative rightshifts: binary branching
-   ; check bit 3
-   lda scale5_moddepth
-   and #%00001000
-   beq @skipH3
-   ; 8 rightshifts = copy high byte to low byte, set high byte to 0
-   ; the subsequent rightshifting can be done entirely inside accumulator, no memory access needed
-   lda scale5_moddepth
-   and #%00000111
-   bne :+          ; if no other bit is set, we just move the bytes and are done
-   lda mzpwb+1
-   sta mzpwb
-   stz mzpwb+1
-   jmp @endH
-:  ; if we got here, we've got a nonzero number of rightshifts to be done in register A
-   tax
-   lda mzpwb+1;22 cycles
-@loopH:
-   lsr
-   dex
-   bne @loopH
-   sta mzpwb
-   stz mzpwb+1
-   jmp @endH    ; worst case if bit 3 is set: 15 rightshifts, makes 57 cycles (including this jmp)
-@skipH3:
-   ; check bit 2
-   lda scale5_moddepth
-   and #%00000100
-   beq @skipH2
-   lda mzpwb
-   lsr mzpwb+1
-   ror
-   lsr mzpwb+1
-   ror
-   lsr mzpwb+1
-   ror
-   lsr mzpwb+1
-   ror
-   sta mzpwb;51 cycles
-@skipH2:
-   ; check bit 1
-   lda scale5_moddepth
-   and #%00000010
-   beq @skipH1
-   lda mzpwb
-   lsr mzpwb+1
-   ror
-   lsr mzpwb+1
-   ror
-   sta mzpwb;78 cycles
-@skipH1:
-   ; check bit 0
-   lda scale5_moddepth
-   and #%00000001
-   beq @skipH0
-   lsr mzpwb+1
-   ror mzpwb;96 cycles worst case
-@skipH0:
-@endH:
-   ; maximum number of cycles for rightshifts is 96 cycles. Good compared to 230 from naive approach.
-   ; still hurts tho.
-
-   ; do sublevel scaling
-   ; select subroutine
-   lda scale5_moddepth
-   and #%01110000
-   beq :+
-   lsr
-   ror
-   ror
-   tax
-   jmp (@tableL-2, x)  ; if x=0, nothing has to be done. if x=2,4,6 or 8, jump to respective subroutine
-:  jmp @endL
-   ; 22 cycles
-@tableL:
-   .word @sublevel_1
-   .word @sublevel_2
-   .word @sublevel_3
-   .word @sublevel_4
-@sublevel_1:
-   ; 2^(1/5) ~= %1.001
-   ; do first ROR while copying to mzpwc
-   lda mzpwb+1
-   lsr
-   sta mzpwc+1
-   lda mzpwb
-   ror
-   sta mzpwc
-   ; then do remaining RORS with high byte in accumulator and low byte in memory
-   lda mzpwc+1
-   lsr
-   ror mzpwc
-   lsr
-   ; but last low byte ROR already in accumulator, since we are going to do addition with it
-   sta mzpwc+1
-   lda mzpwc
-   ror
-   clc
-   adc mzpwb
-   sta mzpwb
-   lda mzpwc+1
-   adc mzpwb+1
-   sta mzpwb+1
-   jmp @endL  ; 62 cycles ... ouch!
-@sublevel_2:
-   ; 2^(2/5) ~= %1.01
-   ; do first ROR while copying to mzpwc
-   lda mzpwb+1
-   lsr
-   sta mzpwc+1
-   lda mzpwb
-   ror
-   sta mzpwc
-   ; do second ROR and addition
-   lsr mzpwc+1
-   lda mzpwc
-   ror
-   clc
-   adc mzpwb
-   sta mzpwb
-   lda mzpwc+1
-   adc mzpwb+1
-   sta mzpwb+1  
-   jmp @endL   ; 49 cycles
-@sublevel_3:
-   ; 2^(3/5) ~= %1.1
-   lda mzpwb+1
-   lsr
-   sta mzpwc+1
-   lda mzpwb
-   ror
-   clc
-   adc mzpwb
-   sta mzpwb
-   lda mzpwc+1
-   adc mzpwb+1
-   sta mzpwb+1
-   jmp @endL  ; 35 cycles
-@sublevel_4:
-   ; 2^(4/5) ~= %1.11
-   ; do first ROR while copying to mzpwc
-   lda mzpwb+1
-   lsr
-   sta mzpwc+1
-   lda mzpwb
-   ror
-   sta mzpwc
-   ; do second ROR while copying to mzpwf
-   lda mzpwc+1
-   lsr
-   sta mzpwf+1
-   lda mzpwc
-   ror
-   ;sta mzpwf ;redundant, because we don't read from it anyway
-   ; do all additions
-   ; first addition
-   clc
-   adc mzpwc ; mzpwf still in A
-   sta mzpwc
-   lda mzpwf+1
-   adc mzpwc+1
-   sta mzpwc+1
-   ; second addition
-   clc
-   lda mzpwc
-   adc mzpwb
-   sta mzpwb
-   lda mzpwc+1
-   adc mzpwb+1
-   sta mzpwb+1
-   ; 66 cycles ... ouch!!
-@endL:
-   ; worst case 90 cycles (sublevel scaling only)
-
-   ; determine overall sign (mod source * mod depth)
-   lda scale5_moddepth
-   and #%10000000
-   beq :+
-   inc mzpbf
-:  ; now if lowest bit of mzpbf is even, sign is positive and if it's odd, sign is negative
-
-   ; worst case right shift: 96 cycles
-   ; worst case sublevel scaling: 103 cycles
-   ; worst case total: 199 cycles
-
    ; return to macro
    rts
-
-
+.endproc
 
 
 .endif ; .ifndef ::SYNTH_ENGINE_SYNTH_MACROS_ASM
