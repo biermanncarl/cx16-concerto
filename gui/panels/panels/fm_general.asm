@@ -219,7 +219,6 @@
 
 
    .proc refresh
-      @rfm_bits = gui_variables::mzpbh
       ldx gui_variables::current_synth_instrument
       ; connection scheme
       lda concerto_synth::instruments::Instrument::fm_general::con, x
@@ -229,27 +228,30 @@
       STA_COMPONENT_MEMBER_ADDRESS drag_edit, feedback, coarse_value
       ; operators enable
       lda concerto_synth::instruments::Instrument::fm_general::op_en, x
-      sta @rfm_bits
       ; operator 1 enable
-      lda #0
-      bbr0 @rfm_bits, :+
-      lda #1
-   :  STA_COMPONENT_MEMBER_ADDRESS checkbox, op1_active, checked
+      ldy #0
+      lsr
+      bcc :+
+      iny
+   :  STY_COMPONENT_MEMBER_ADDRESS checkbox, op1_active, checked
       ; operator 2 enable
-      lda #0
-      bbr1 @rfm_bits, :+
-      lda #1
-   :  STA_COMPONENT_MEMBER_ADDRESS checkbox, op2_active, checked
+      ldy #0
+      lsr
+      bcc :+
+      iny
+   :  STY_COMPONENT_MEMBER_ADDRESS checkbox, op2_active, checked
       ; operator 3 enable
-      lda #0
-      bbr2 @rfm_bits, :+
-      lda #1
-   :  STA_COMPONENT_MEMBER_ADDRESS checkbox, op3_active, checked
+      ldy #0
+      lsr
+      bcc :+
+      iny
+   :  STY_COMPONENT_MEMBER_ADDRESS checkbox, op3_active, checked
       ; operator 4 enable
-      lda #0
-      bbr3 @rfm_bits, :+
-      lda #1
-   :  STA_COMPONENT_MEMBER_ADDRESS checkbox, op4_active, checked
+      ldy #0
+      lsr
+      bcc :+
+      iny
+   :  STY_COMPONENT_MEMBER_ADDRESS checkbox, op4_active, checked
       ; LR channel select
       lda concerto_synth::instruments::Instrument::fm_general::lr, x
       clc

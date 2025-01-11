@@ -594,7 +594,6 @@ draw_arrowed_edit:
 ; data1: number on display
 ; data2: bit 0: coarse/fine available, bit1: coarse/fine switch, bit2: signed
 draw_drag_edit:
-   dde_bittest = gui_variables::mzpbf ; mzpbf used! (use something else for bit-testing in this routine if this clashes with something else)
    lda draw_x
    sta cur_x
    lda draw_y
@@ -602,8 +601,8 @@ draw_drag_edit:
    ldx #(16*COLOR_ARROWED_EDIT_BG + COLOR_ARROWED_EDIT_FG)
    jsr set_cursor
    lda draw_data2
-   sta dde_bittest   
-   bbs2 dde_bittest, @signed
+   and #%00000100
+   bne @signed
 @unsigned:
    bra @check_fine_coarse
 @signed:
@@ -622,9 +621,13 @@ draw_drag_edit:
    sta VERA_data0
    stx VERA_data0
 @check_fine_coarse:
-   bbr0 dde_bittest, @no_coarse_fine ; fine/coarse ?
+   lda draw_data2
+   lsr ; fine/coarse available?
+   bcc @no_coarse_fine
    ; here we are doing fine/coarse
-   bbs1 dde_bittest, @fine ; doing fine?
+   lda draw_data2
+   and #%00000010 ; doing fine?
+   bne @fine
 @coarse:
    lda draw_data1
    jsr print_byte_simple

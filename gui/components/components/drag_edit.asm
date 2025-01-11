@@ -71,19 +71,23 @@
       lsr
       sec
       sbc (components_common::data_pointer), y
-      ; now A must be smaller than the edit's width,
+      tax
+      ; now X must be smaller than the edit's width,
       ; which is, however, dependent on the edit's options.
       ; We first check if it's smaller than the maximally possible width.
-      cmp #5
+      cpx #5
       bcs @out
-      ; Now we increase A if a smaller option is active, thus making it "harder" to be inside
+      ; Now we increase X if a smaller option is active, thus making it "harder" to be inside
       ; coarse/fine switch?
-      bbs0 cde_bittest, :+
-      inc
+      lda cde_bittest
+      lsr ; check if bit 0 is set
+      bcs :+
+      inx
    :  ; signed?
-      bbs2 cde_bittest, :+
-      inc
-   :  cmp #5 ; maximal size of drag edit with all options enabled
+      and #%00000010 ; test former bit 2
+      bne :+
+      inx
+   :  cpx #5 ; maximal size of drag edit with all options enabled
       bcc @horizontal_in
    @out:
       clc

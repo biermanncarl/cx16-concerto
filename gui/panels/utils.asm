@@ -54,6 +54,10 @@
     sta comps::name + components::type::data_members::member
 .endmacro
 
+.macro STY_COMPONENT_MEMBER_ADDRESS type, name, member
+    sty comps::name + components::type::data_members::member
+.endmacro
+
 .macro STZ_COMPONENT_MEMBER_ADDRESS type, name, member
     stz comps::name + components::type::data_members::member
 .endmacro
