@@ -260,117 +260,53 @@
 ; The result is the effective portamento rate.
 ; It guarantees that the portamento time is constant regardless of how far
 ; two notes are apart.
-; Expects voice index in X, instrument index in Y, slide distance in mzpbb
+; Expects voice index in X, instrument index in Y, slide distance in mp_slide_distance
 .macro MUL8x8_PORTA ; uses ZP variables in the process
+   .local @slide_up
+   .local @slide_down
+   .local @end
    mp_slide_distance = cn_slide_distance ; must be the same as in "continue_note"!
-   mp_return_value = mzpwb
+
    ; the idea is that portamento is finished in a constant time
    ; that means, rate must be higher, the larger the porta distance is
    ; This is achieved by multiplying the "base rate" by the porta distance
-   
-   ; initialization
-   ; mp_return_value stores the porta rate. It needs a 16 bit variable because it is left shifted
-   ; throughout the multiplication
+
+   SETUP_MULTIPLICATION
+
    lda instruments::Instrument::porta_r, y
-   sta mp_return_value+1
-   stz mp_return_value
-   stz Voice::pitch_slide::rateL, x
-   stz Voice::pitch_slide::rateH, x
+   sta VERA_FX_CACHE_L
+   stz VERA_FX_CACHE_M
+   lda mp_slide_distance
+   sta VERA_FX_CACHE_H
+   stz VERA_FX_CACHE_U
 
-   ; multiplication
-   bbr0 mp_slide_distance, :+
-   lda mp_return_value+1
-   sta Voice::pitch_slide::rateL, x
-:  clc
-   rol mp_return_value+1
-   rol mp_return_value
-   bbr1 mp_slide_distance, :+
-   clc
-   lda mp_return_value+1
-   adc Voice::pitch_slide::rateL, x
-   sta Voice::pitch_slide::rateL, x
-   lda mp_return_value
-   adc Voice::pitch_slide::rateH, x
-   sta Voice::pitch_slide::rateH, x
-:  clc
-   rol mp_return_value+1
-   rol mp_return_value
-   bbr2 mp_slide_distance, :+
-   clc
-   lda mp_return_value+1
-   adc Voice::pitch_slide::rateL, x
-   sta Voice::pitch_slide::rateL, x
-   lda mp_return_value
-   adc Voice::pitch_slide::rateH, x
-   sta Voice::pitch_slide::rateH, x
-:  clc
-   rol mp_return_value+1
-   rol mp_return_value
-   bbr3 mp_slide_distance, :+
-   clc
-   lda mp_return_value+1
-   adc Voice::pitch_slide::rateL, x
-   sta Voice::pitch_slide::rateL, x
-   lda mp_return_value
-   adc Voice::pitch_slide::rateH, x
-   sta Voice::pitch_slide::rateH, x
-:  clc
-   rol mp_return_value+1
-   rol mp_return_value
-   bbr4 mp_slide_distance, :+
-   clc
-   lda mp_return_value+1
-   adc Voice::pitch_slide::rateL, x
-   sta Voice::pitch_slide::rateL, x
-   lda mp_return_value
-   adc Voice::pitch_slide::rateH, x
-   sta Voice::pitch_slide::rateH, x
-:  clc
-   rol mp_return_value+1
-   rol mp_return_value
-   bbr5 mp_slide_distance, :+
-   clc
-   lda mp_return_value+1
-   adc Voice::pitch_slide::rateL, x
-   sta Voice::pitch_slide::rateL, x
-   lda mp_return_value
-   adc Voice::pitch_slide::rateH, x
-   sta Voice::pitch_slide::rateH, x
-:  clc
-   rol mp_return_value+1
-   rol mp_return_value
-   bbr6 mp_slide_distance, :+
-   clc
-   lda mp_return_value+1
-   adc Voice::pitch_slide::rateL, x
-   sta Voice::pitch_slide::rateL, x
-   lda mp_return_value
-   adc Voice::pitch_slide::rateH, x
-   sta Voice::pitch_slide::rateH, x
-:  clc
-   rol mp_return_value+1
-   rol mp_return_value
-   bbr7 mp_slide_distance, :+
-   clc
-   lda mp_return_value+1
-   adc Voice::pitch_slide::rateL, x
-   sta Voice::pitch_slide::rateL, x
-   lda mp_return_value
-   adc Voice::pitch_slide::rateH, x
-   sta Voice::pitch_slide::rateH, x
+   WRITE_MULTIPLICATION_RESULT
+   stz VERA_addr_low ; here, we actually need the least significant byte, as well, so need to return the address
 
-:  ; check if porta going down. if yes, invert rate
+   ; check if porta going down. if yes, invert rate
    lda Voice::pitch_slide::active, x
    cmp #2
-   bne :+
-   lda Voice::pitch_slide::rateL, x
-   eor #%11111111
+   beq @slide_down
+@slide_up:
+   lda VERA_data0
+   sta Voice::pitch_slide::rateL, x
+   lda VERA_data0
+   sta Voice::pitch_slide::rateH, x
+   bra @end
+@slide_down:
+   lda VERA_data0
+   eor #$ff
    inc
    sta Voice::pitch_slide::rateL, x
-   lda Voice::pitch_slide::rateH, x
-   eor #%11111111
+   clc
+   bne :+
+   sec
+:  lda VERA_data0
+   eor #$ff
+   adc #0
    sta Voice::pitch_slide::rateH, x
-:
+@end:
+   stz VERA_FX_CTRL ; Cache Write Enable off
 .endmacro
 
 
