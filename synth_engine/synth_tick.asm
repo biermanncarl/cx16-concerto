@@ -524,6 +524,7 @@ end_env: ; jump here when done with all envelopes
    ; (?? -- this is not how LFSR is supposed to work!)
 @alg_snh:
    plx
+   phy
    ; countdown
    lda voices::Voice::lfo::phaseL, x
    bne @snh_constant
@@ -534,20 +535,23 @@ end_env: ; jump here when done with all envelopes
    sta voices::Voice::lfo::phaseL, x
    ; very rudimentary RNG: 8 bit LFSR
    lda voices::Voice::lfo::phaseH, x
-   sta bittest
-   phy
    ldy #1
-   bbr0 bittest, :+
+   lsr ; check bit 0
+   bcc :+
    iny
-:  bbr2 bittest, :+
+:  lsr
+   lsr ; check bit 2
+   bcc :+
    iny
-:  bbr3 bittest, :+
+:  lsr ; check bit 3
+   bcc :+
    iny
-:  bbr4 bittest, :+
+:  lsr ; check bit 4
+   bcc :+
    iny
 :  tya
    ror   ; put least significant bit (i.e. parity) into carry flag
-   lda bittest
+   lda voices::Voice::lfo::phaseH, x
    ror
    sta voices::Voice::lfo::phaseH, x
    jmp @snh_write
@@ -556,7 +560,6 @@ end_env: ; jump here when done with all envelopes
    dec
    sta voices::Voice::lfo::phaseL, x
    lda voices::Voice::lfo::phaseH, x
-   phy
 @snh_write:
    ldy modsource_index
    sta voi_modsourcesH, y
