@@ -361,6 +361,7 @@ load_default_instrument:
    sta Instrument::env::sustain, x
    lda #2
    sta Instrument::env::decayH, x
+   lda #64
    sta Instrument::env::releaseH, x
    txa
    clc

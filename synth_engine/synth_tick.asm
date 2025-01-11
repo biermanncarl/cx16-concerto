@@ -859,6 +859,7 @@ end_env: ; jump here when done with all envelopes
    sta keycode
    ldx voice_index
    dey
+   dey
    ; octave is in Y
    tya
    clc
