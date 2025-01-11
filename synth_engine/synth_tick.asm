@@ -44,7 +44,7 @@ osc_panmute:   .byte 0
 
 ; modulation sources, indexed
 ; available: env1, env2, env3, lfo1
-; maybe later: gate, wavetable, MSEG, modwheel
+; maybe later: gate, wavetable, MSEG, modwheel, velocity
 .define N_MODSOURCES MAX_ENVS_PER_VOICE+MAX_LFOS_PER_VOICE
 voi_modsourcesL:
    .repeat N_MODSOURCES
@@ -942,7 +942,7 @@ next_osc:
    bpl :+
    jmp @do_volume_knobs
 :  lda voi_modsourcesH, x
-   SCALE_S6 instruments::Instrument::osc::vol_mod_dep, 2
+   SCALE_S6 instruments::Instrument::osc::vol_mod_dep
    clc
    adc osc_volume   ; add modulation to amp envelope
    ; clamp to valid range
@@ -1058,7 +1058,7 @@ next_osc:
    bpl :+
    jmp @end_pwm
 :  lda voi_modsourcesH, x
-   SCALE_S6 instruments::Instrument::osc::pwm_dep, 2
+   SCALE_S6 instruments::Instrument::osc::pwm_dep
    clc
    adc osc_wave   ; add static pulse width to mpdulation signal
    ; clamp to valid range

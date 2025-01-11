@@ -238,6 +238,53 @@
 .endmacro
 
 
+; These macros support multiplication with VERA FX.
+; They require multiplication::setup subroutine to be called once in the beginning.
+; We currently make the assumption that VERA FX is *only* used for multiplication.
+.macro SETUP_MULTIPLICATION
+   stz VERA_addr_low ; set low address of ADDR0 scratchpad
+   lda #>vram_assets::vera_fx_scratchpad ; we assume it's aligned with 256 bytes as a small optimization
+   sta VERA_addr_mid ; set mid address of ADDR0 scratchpad                        (under ideal circumstances, e.g. no PSG writes in between multiplications, we need to do this only once)
+   lda #$10          ; set high address of scratchpad, as well as auto-increment  (under ideal circumstances, e.g. no PSG writes in between multiplications, we need to do this only once)
+   sta VERA_addr_high
+   lda #(6 << 1)
+   sta VERA_ctrl ; DCSEL=6, brings up the 32-bit cache registers
+   lda VERA_FX_ACCUM_RESET   ; reset accumulator (DCSEL=6)
+.endmacro
+; Identical to SETUP_MULTIPLICATION_A except cluttering .X instead of .A
+.macro SETUP_MULTIPLICATION_X
+   stz VERA_addr_low
+   ldx #>vram_assets::vera_fx_scratchpad
+   stx VERA_addr_mid
+   ldx #$10
+   stx VERA_addr_high
+   ldx #(6 << 1)
+   stx VERA_ctrl
+   ldx VERA_FX_ACCUM_RESET
+.endmacro
+; Identical to SETUP_MULTIPLICATION_A except cluttering .Y instead of .A
+.macro SETUP_MULTIPLICATION_Y
+   stz VERA_addr_low
+   ldy #>vram_assets::vera_fx_scratchpad
+   sty VERA_addr_mid
+   ldy #$10
+   sty VERA_addr_high
+   ldy #(6 << 1)
+   sty VERA_ctrl
+   ldy VERA_FX_ACCUM_RESET
+.endmacro
+
+
+.macro WRITE_MULTIPLICATION_RESULT
+   ; Assumes: addr0 points at scratchpad, factors are in VERA's 32-bit cache, auto-increment is set to 1
+   lda #(2 << 1)
+   sta VERA_ctrl        ; DCSEL=2
+   lda #%01000000       ; Cache Write Enable
+   sta VERA_FX_CTRL
+   stz VERA_data0       ; write out multiplication result to VRAM (all 4 bytes at once). At the same time, this advances addr0 which skips the uninteresting least significant byte of the result.
+.endmacro
+
+
 
 ; In this macro, the slide distance is multiplied by the portamento (base-)rate.
 ; The result is the effective portamento rate.
@@ -489,17 +536,12 @@
 
 ; computes the frequency of a given pitch+fine combo
 .macro COMPUTE_FREQUENCY cf_pitch, cf_fine, cf_output ; done in ISR
-   ; VERA multiplier setup
-   stz VERA_addr_low ; set low address of ADDR0 scratchpad
-   lda #>vram_assets::vera_fx_scratchpad ; we assume it's aligned with 256 bytes as a small optimization
-   sta VERA_addr_mid ; set mid address of ADDR0 (under ideal circumstances, e.g. no PSG writes in between multiplications, we need to do this only once)
-   lda #(6 << 1)
-   sta VERA_ctrl ; DCSEL=6, brings up the 32-bit cache registers
-   lda VERA_FX_ACCUM_RESET   ; reset accumulator (DCSEL=6)
+   SETUP_MULTIPLICATION
 
-   ; Store fine pitch (unsigned) in 
+   ; Store fine pitch (unsigned) in first factor
    lda cf_fine
    sta VERA_FX_CACHE_L
+   stz VERA_FX_CACHE_M
    ; Load current pitch into .X
    ldx cf_pitch
    ; copy lower frequency to output
@@ -514,20 +556,15 @@
    sec
    lda pitch_dataL,y
    sbc pitch_dataL,x
-   ;sta mzpwb   ; here: contains frequency difference between the two adjacent half steps
    sta VERA_FX_CACHE_H ; here: contains frequency difference between the two adjacent half steps
 
    lda pitch_dataH,y
    sbc pitch_dataH,x
    sta VERA_FX_CACHE_U
 
-   ; setup multiplication output
-   lda #(2 << 1)
-   sta VERA_ctrl        ; DCSEL=2
-   lda #%01000000       ; Cache Write Enable
-   sta VERA_FX_CTRL
-   stz VERA_data0       ; multiply and write out result
-   ; fetch result
+   WRITE_MULTIPLICATION_RESULT
+
+   ; fetch result from VRAM and add to coarse frequency
    lda VERA_data0
    clc
    adc cf_output
@@ -536,8 +573,7 @@
    adc cf_output+1
    sta cf_output+1
 
-   lda #%00000000       ; Cache Write Enable off
-   sta VERA_FX_CTRL
+   stz VERA_FX_CTRL ; Cache Write Enable off
 .endmacro
 
 
@@ -549,7 +585,7 @@
 ; meaning that multiplying with 64 is actually multiplying with 1.
 ; The result is returned in the accumulator.
 ; Index denotes, whether the memory held value is indexed by X (1), by Y (2), or not at all (0)
-.macro SCALE_U7 su7_value, index
+.macro SCALE_U7_OLD su7_value, index
    .local @skip_bit0
    .local @skip_bit1
    .local @skip_bit2
@@ -620,9 +656,10 @@
 ; This is used for modulation of the parameters that are only 6 bits wide,
 ; namely volume and pulse width.
 ; The index parameter can be 0, 1 or 2. It influences how the modulation depth is indexed (no indexing, by X, by Y)
+; Mod depth contains 7 bits mantissa and 1 bit sign (NOT twos complement)
 ; modulation source is assumed to be in register A (and all flags from loading of A)
 ; result is returned in register A
-.macro SCALE_S6 moddepth, index
+.macro SCALE_S6_OLD moddepth, index
    ; with this sequence, we do several tasks at once:
    ; We extract the sign from the modulation source and store it in mzpbf
    ; We truncate the sign from the modulation source
@@ -730,6 +767,53 @@
    eor #%11111111
    inc
 @endS:
+.endmacro
+
+
+; This is used for modulation of the parameters that are only 6 bits wide,
+; namely volume and pulse width.
+; Modulation depth is at specified location, INDEXED BY .Y !  (-127 ... 127, 1 sign-bit, 7 magnitude bits)
+; Modulation source is assumed to be in register A (-127 ... 127, 1 sign-bit, 7 magnitude bits)
+; Modulation amount is returned in register A (twos-complement, -128 ... 127; yes, we deliberately use a range that is too large)
+; This function changes .X, preserves .Y
+.macro SCALE_S6 moddepth
+   ; worst case: 99 cycles, best case: 97 cycles
+   .local @result_positive
+   .local @result_negative
+   .local @end
+
+   tax ; temporarily store mod source
+   SETUP_MULTIPLICATION
+
+   ; Mod source: extract sign and store lower 7 bits in operand
+   txa
+   and #%01111111 ; remove sign bit
+   sta VERA_FX_CACHE_L
+   stz VERA_FX_CACHE_M
+
+   ; Mod depth: extract sign and store lower 7 bits in operand
+   lda moddepth, y
+   and #%01111111 ; remove sign bit
+   sta VERA_FX_CACHE_H
+   stz VERA_FX_CACHE_U
+
+   WRITE_MULTIPLICATION_RESULT
+
+   ; Determine sign of result
+   txa
+   and #%10000000 ; get sign bit of mod source
+   clc
+   adc moddepth, y ; overall sign bit is in negative flag now
+   bmi @result_negative
+@result_positive:
+   lda VERA_data0
+   bra @end
+@result_negative:
+   lda VERA_data0
+   eor #$ff
+   inc
+@end:
+   stz VERA_FX_CTRL ; Cache Write Enable off
 .endmacro
 
 
