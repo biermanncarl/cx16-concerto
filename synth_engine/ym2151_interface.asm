@@ -261,7 +261,7 @@ set_fm_voice_volume:
    ; TOTAL LEVEL
    ; value
    lda instruments::Instrument::operators::level, x
-   ldy instruments::Instrument::operators::vol_sens, x
+   ldy instruments::Instrument::operators::vol_sens_vel, x
    beq @no_volume_sensitivity
    clc
    adc #64 ; when note volume is minimal, this is how much the level gets reduced

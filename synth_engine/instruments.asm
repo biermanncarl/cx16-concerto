@@ -105,11 +105,21 @@ instrument_pointer = mzpwg
       fm_track            .res N_INSTRUMENTS    ; keyboard tracking on/off (also affects portamento on/off)
       fm_pitch_mod_sel    .res N_INSTRUMENTS    ; selects source for pitch modulation (bit 7 on means none)
       fm_pitch_mod_dep    .res N_INSTRUMENTS    ; pitch modulation depth (Scale5)
+      ; LFO
+      fm_lfo_enable       .res N_INSTRUMENTS    ; zero if this instrument should not overwrite the global LFO, one if it should
+      fm_lfo_vol_mod      .res N_INSTRUMENTS    ; how much the YM2151's LFO affects volume  -  global setting, which can clash with other instruments!
+      fm_lfo_pitch_mod    .res N_INSTRUMENTS    ; how much the YM2151's LFO affects pitch   -  global setting, which can clash with other instruments!
+      fm_lfo_waveform     .res N_INSTRUMENTS    ; YM2151's LFO waveform                     -  global setting, which can clash with other instruments!
+      fm_lfo_frequency    .res N_INSTRUMENTS    ; YM2151's LFO frequency                    -  global setting, which can clash with other instruments!
+      fm_lfo_vol_sens     .res N_INSTRUMENTS    ; voice's sensitivity for volume modulation
+      fm_lfo_pitch_sens   .res N_INSTRUMENTS    ; voice's sensitivity for pitch modulation
+
    
 
    ; FM Operators
       op_level            .res N_INSTRUMENTS * N_OPERATORS  ; volume (!!! attenuation: higher level means lower output volume) (7 bits)
-      op_vol_sens         .res N_INSTRUMENTS * N_OPERATORS  ; volume sensitivity on/off
+      op_vol_sens_vel     .res N_INSTRUMENTS * N_OPERATORS  ; volume sensitivity on/off (velocity)
+      op_vol_sens_lfo     .res N_INSTRUMENTS * N_OPERATORS  ; volume sensitivity on/off (YM2151's LFO)
       ; pitch related
       op_mul              .res N_INSTRUMENTS * N_OPERATORS  ; multiplier for the frequency (4 bits)
       op_dt1              .res N_INSTRUMENTS * N_OPERATORS  ; fine detune (3 bits)
@@ -135,9 +145,9 @@ instrument_data_start:
 ; communicate the size of the instrument data to other parts of the code
 ; the size of the whole instrument bank
 instrument_data_size = .sizeof(InstrumentDataStruct)
-.export instrument_data_size  ; 5888 bytes currently
+.export instrument_data_size  ; 5152 bytes currently
 ; the number of bytes per instrument
-instrument_data_count = instrument_data_size / N_INSTRUMENTS ; 184 currently
+instrument_data_count = instrument_data_size / N_INSTRUMENTS ; 161 currently
 .export instrument_data_count
 
 ; define the labels to access instrument data
@@ -200,11 +210,20 @@ instrument_data_count = instrument_data_size / N_INSTRUMENTS ; 184 currently
       track = instrument_data_start + InstrumentDataStruct::fm_track
       pitch_mod_sel = instrument_data_start + InstrumentDataStruct::fm_pitch_mod_sel
       pitch_mod_dep = instrument_data_start + InstrumentDataStruct::fm_pitch_mod_dep
+
+      lfo_enable = instrument_data_start + InstrumentDataStruct::fm_lfo_enable
+      lfo_vol_mod = instrument_data_start + InstrumentDataStruct::fm_lfo_vol_mod
+      lfo_pitch_mod = instrument_data_start + InstrumentDataStruct::fm_lfo_pitch_mod
+      lfo_waveform = instrument_data_start + InstrumentDataStruct::fm_lfo_waveform
+      lfo_frequency = instrument_data_start + InstrumentDataStruct::fm_lfo_frequency
+      lfo_vol_sens = instrument_data_start + InstrumentDataStruct::fm_lfo_vol_sens
+      lfo_pitch_sens = instrument_data_start + InstrumentDataStruct::fm_lfo_pitch_sens
    .endscope
 
    .scope operators
       level = instrument_data_start + InstrumentDataStruct::op_level
-      vol_sens = instrument_data_start + InstrumentDataStruct::op_vol_sens
+      vol_sens_vel = instrument_data_start + InstrumentDataStruct::op_vol_sens_vel
+      vol_sens_lfo = instrument_data_start + InstrumentDataStruct::op_vol_sens_lfo
 
       mul = instrument_data_start + InstrumentDataStruct::op_mul
       dt1 = instrument_data_start + InstrumentDataStruct::op_dt1
@@ -321,6 +340,15 @@ load_default_instrument:
    ; select minimal modulation depth
    lda #15
    sta Instrument::fm_general::pitch_mod_dep, x
+   ; FM LFO -- todo: select reasonable defaults
+   stz Instrument::fm_general::lfo_enable, x
+   stz Instrument::fm_general::lfo_vol_mod, x
+   stz Instrument::fm_general::lfo_pitch_mod, x
+   stz Instrument::fm_general::lfo_waveform, x
+   stz Instrument::fm_general::lfo_frequency, x
+   stz Instrument::fm_general::lfo_vol_sens, x
+   stz Instrument::fm_general::lfo_pitch_sens, x
+
    ; envelopes
    ldy #MAX_ENVS_PER_VOICE
 @loop_envs:
@@ -378,10 +406,12 @@ load_default_instrument:
    ldx detail::pasting
    ldy #N_OPERATORS
 @loop_operators:
-   stz Instrument::operators::mul, x
+   lda #1
+   sta Instrument::operators::mul, x
    stz Instrument::operators::dt1, x
    stz Instrument::operators::dt2, x
    stz Instrument::operators::ks, x
+   stz Instrument::operators::vol_sens_lfo, x
    lda #31
    sta Instrument::operators::ar, x
    lda #12
@@ -394,7 +424,7 @@ load_default_instrument:
    lda #22
    sta Instrument::operators::level, x
    lda #1
-   sta Instrument::operators::vol_sens, x
+   sta Instrument::operators::vol_sens_vel, x
    txa
    clc
    adc #N_INSTRUMENTS

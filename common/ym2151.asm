@@ -1,4 +1,4 @@
-; Copyright 2021 Carl Georg Biermann
+; Copyright 2021, 2025 Carl Georg Biermann
 
 
 ; This file contains an incomplete set of the registers of a YM2151 chip.
@@ -37,6 +37,9 @@ COMMON_YM2151_ASM = 1
 ; one parameter in total (1 byte each)
 YM_TEST             = $01
 YM_KON              = $08 ; key on: channel number (bits 0-2) and slot enable M1 C1 M2 C2 (bits 3-6) (0 means key off, 1 means key on for each slot)
+YM_LFRQ             = $18 ; bits 0-7 LFO frequency
+YM_PMD_AMD          = $19 ; bit 7 selects amplitude or pitch modulation depth (0=AMD, 1=PMD), bits 0-6 are mod depth
+YM_CT_W             = $1B ; bits 0-1 select LFO waveform (sawtooth, square, triangle, noise), unsure what bits 6-7 are for
 
 ; one parameter per voice (8 bytes total each)
 YM_RL_FL_CON           = $20 ; right (bit 7) and left (bit 6) channel enable, feedback level (bits 3-5) and connection scheme (bits 0-2)

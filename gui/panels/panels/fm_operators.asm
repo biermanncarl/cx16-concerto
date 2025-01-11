@@ -189,7 +189,7 @@
    @vol_sens:
       plx
       LDA_COMPONENT_MEMBER_ADDRESS checkbox, vol_sensitivity, checked
-      sta concerto_synth::instruments::Instrument::operators::vol_sens, x
+      sta concerto_synth::instruments::Instrument::operators::vol_sens_vel, x
       rts
    .endproc
 
@@ -250,7 +250,7 @@
       lda concerto_synth::instruments::Instrument::operators::ks, x
       STA_COMPONENT_MEMBER_ADDRESS drag_edit, key_scaling, coarse_value
       ; volume sensitivity
-      lda concerto_synth::instruments::Instrument::operators::vol_sens, x
+      lda concerto_synth::instruments::Instrument::operators::vol_sens_vel, x
       STA_COMPONENT_MEMBER_ADDRESS checkbox, vol_sensitivity, checked
       rts
    .endproc
