@@ -477,15 +477,9 @@
 ; result is added to the literal addresses resultL and resultH
 ; moddepth is in Scale5 format (see scale5.asm), passed at absolute address scale5_moddepth
 ; skipping is NOT done in this macro if modsource select is "none"
-; modsourceL,x:modsourceH,x contain a twos-complement 16 bit value
+; modsourceL,x:modsourceH,x contain a sign bit (bit 7 of the high byte) and 15 magnitude bits
 ; Must preserve .Y
 .macro SCALE5_16 modsourceL, modsourceH, resultL, resultH
-   .local @modsource_positive
-   .local @modsource_negative
-   .local @modsource_prepared
-   .local @modsource_negate_normal
-   .local @modsource_negate_overflow
-   .local @modsource_negate_continue
    .local @result_positive
    .local @result_negative
    SETUP_MULTIPLICATION
@@ -494,32 +488,11 @@
 
    ; Get the absolute value of the modsource into the 32bit cache, and extract the sign.
    lda modsourceH, x
-   bmi @modsource_negative
-@modsource_positive:
-   stz mzpbf
+   sta mzpbf ; for sign calculation later
+   and #%01111111 ; remove sign
    sta VERA_FX_CACHE_M
    lda modsourceL, x
    sta VERA_FX_CACHE_L
-   bra @modsource_prepared
-@modsource_negative:
-   lda #$80
-   sta mzpbf
-   lda modsourceL, x
-   eor #$ff
-   inc
-   sta VERA_FX_CACHE_L
-   beq @modsource_negate_overflow
-   @modsource_negate_normal:
-      lda modsourceH, x
-      eor #$ff
-      bra @modsource_negate_continue
-   @modsource_negate_overflow:
-      lda modsourceH, x
-      eor #$ff
-      inc
-   @modsource_negate_continue:
-   sta VERA_FX_CACHE_M;worst case 39
-@modsource_prepared:
 
    ; from now on, the mod source isn't directly accessed anymore, so we can discard X
 
@@ -535,10 +508,10 @@
    lda scale5_mantissa_lut, x
    sta VERA_FX_CACHE_H
    lda #1
-   sta VERA_FX_CACHE_U;69
+   sta VERA_FX_CACHE_U;77
 
    ; Put multiplication result in VRAM
-   WRITE_MULTIPLICATION_RESULT;95
+   WRITE_MULTIPLICATION_RESULT;93
 
    ; Do bit-shifting
    ; The final result is expected in mzpwb
@@ -547,7 +520,7 @@
    .local @shift_7_or_less
    .local @shift_continue
    lda scale5_moddepth
-   and #%00001000 ; see if we shift by 8 or more bits   ;101
+   and #%00001000 ; see if we shift by 8 or more bits   ;99
    beq @shift_7_or_less
    @shift_8_or_more:
       lda scale5_moddepth
@@ -561,7 +534,7 @@
          bne @shift8_loop
       sta mzpwb
       stz mzpwb+1
-      bra @shift_continue; worst case 177 cycles (incl. this bra)
+      bra @shift_continue; worst case 175 cycles (incl. this bra)
    @shift_7_or_less:
          lda scale5_moddepth
          and #%00000111
@@ -598,25 +571,30 @@
          sta mzpwb+1
 
 @shift_continue:
-   ; worst case 183
+   ; worst case 181
 
    ; Determine sign of output
-   lda scale5_moddepth  ; $ff isn't a valid scale5 value, so for the sake of determining the overflow of this calculation, the carry flag doesn't matter
-   adc mzpbf ; sign bit of overall result is in carry now
+   lda mzpbf
+   and #%10000000 ; isolate the sign bit of the mod source
+   adc scale5_moddepth  ; $ff isn't a valid scale5 value, so for the sake of determining the overflow of this calculation, the carry flag doesn't matter
+   ; overall sign bit is in negative flag now
 
    ; ---- end generic ----
 
-   lda resultL
-   bcc @result_positive
+   bpl @result_positive
 @result_negative:
-   sbc mzpwb ; carry is already set correctly
+   lda resultL
+   sec
+   sbc mzpwb
    sta resultL
    lda resultH
    sbc mzpwb+1
    sta resultH
    bra @end
 @result_negative:
-   lda mzpwb ; carry is already set correctly
+   lda resultL
+   clc
+   adc mzpwb
    sta resultL
    lda mzpwb+1
    adc resultH
@@ -625,7 +603,7 @@
    .local @end
 @end:
    stz VERA_FX_CTRL ; Cache Write Enable off
-   ; Worst case 221 cycles
+   ; Worst case 223 cycles
 .endmacro
 
 
