@@ -426,7 +426,7 @@
 ; Modulation amount is returned in register A (twos-complement, -128 ... 127; yes, we deliberately use a range that is too large)
 ; This function changes .X, preserves .Y
 .macro SCALE_S6 moddepth
-   ; worst case: 99 cycles, best case: 97 cycles
+   ; worst case: 95 cycles, best case: 93 cycles
    .local @result_positive
    .local @result_negative
    .local @end
@@ -436,7 +436,7 @@
 
    ; Mod source: extract sign and store lower 7 bits in operand
    txa
-   and #%01111111 ; remove sign bit
+   asl ; remove sign bit, and increase modulation range at the same time
    sta VERA_FX_CACHE_L
    stz VERA_FX_CACHE_M
 
