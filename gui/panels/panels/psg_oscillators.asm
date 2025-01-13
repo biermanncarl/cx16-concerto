@@ -13,72 +13,76 @@
    wd = 34
    hg = synth_global::hg
    ; positions of sub-sections inside the panel
-   modsecx = px + 4
-   modsecy = py + 16
-   pitsecx = px + 4
-   pitsecy = py + 9
-   pwsecx = px + 19
-   pwsecy = py + 4
    wfsecx = px + 4
-   wfsecy = py + 2
-   ampsecx = px + 22
-   ampsecy = pitsecy
+   wfsecy = py + 5
+   pwsecx = px + 4
+   pwsecy = py + 8
+   ampsecx = px + 20
+   ampsecy = py + 5
+   modsecx = px + 14
+   modsecy = py + 12
+   pitsecx = px + 4
+   pitsecy = py + 12
 
    comps:
    .scope comps
       COMPONENT_DEFINITION tab_selector, tab_select, px, py, MAX_OSCS_PER_VOICE, 0
-      COMPONENT_DEFINITION combobox, waveform, wfsecx, wfsecy+2, 8, 4, A waveforms_lb, 0
-      COMPONENT_DEFINITION drag_edit, pulse_width, pwsecx, pwsecy+2, %00000000, 0, 63, 0, 0
-      COMPONENT_DEFINITION combobox, amp_env, ampsecx, ampsecy+1, 8, N_TOT_MODSOURCES, A panel_common::modsources_lb, 0
-      COMPONENT_DEFINITION drag_edit, volume, ampsecx, ampsecy+4, %00000000, 0, 64, 0, 0
-      COMPONENT_DEFINITION combobox, lr_select, ampsecx+4, ampsecy+4, 5, 4, A panel_common::channel_select_lb, 0
+      COMPONENT_DEFINITION arrowed_edit, n_oscs, px+12, py+2, 0, MAX_OSCS_PER_VOICE, 1
+      COMPONENT_DEFINITION combobox, waveform, wfsecx, wfsecy+1, 8, 4, A waveforms_lb, 0
+      COMPONENT_DEFINITION drag_edit, pulse_width, pwsecx, pwsecy+1, %00000000, 0, 63, 0, 0
+      COMPONENT_DEFINITION combobox, amp_env, ampsecx, ampsecy+4, 8, N_TOT_MODSOURCES, A panel_common::modsources_lb, 0
+      COMPONENT_DEFINITION drag_edit, volume, ampsecx, ampsecy+1, %00000000, 0, 64, 0, 0
+      COMPONENT_DEFINITION combobox, lr_select, ampsecx+4, ampsecy+1, 5, 4, A panel_common::channel_select_lb, 0
       COMPONENT_DEFINITION drag_edit, semitones, pitsecx+3, pitsecy+2, %00000100, 128, 127, 0, 0
-      COMPONENT_DEFINITION drag_edit, fine_tune, pitsecx+3, pitsecy+4, %00000100, 128, 127, 0, 0
-      COMPONENT_DEFINITION checkbox, key_track, pitsecx+8, pitsecy+2, 7, 0
-      COMPONENT_DEFINITION combobox, pitch1_modsource, modsecx+7, modsecy+2, 8, N_TOT_MODSOURCES+1, A panel_common::modsources_none_option_lb, 0
-      COMPONENT_DEFINITION combobox, pitch2_modsource, modsecx+7, modsecy+3, 8, N_TOT_MODSOURCES+1, A panel_common::modsources_none_option_lb, 0
-      COMPONENT_DEFINITION combobox, pw_modsource, modsecx+7, modsecy+4, 8, N_TOT_MODSOURCES+1, A panel_common::modsources_none_option_lb, 0
-      COMPONENT_DEFINITION combobox, volume_modsource, modsecx+7, modsecy+5, 8, N_TOT_MODSOURCES+1, A panel_common::modsources_none_option_lb, 0
-      COMPONENT_DEFINITION drag_edit, pitch1_moddepth, modsecx+15, modsecy+2, %10000100, 256-76, 76, 0, 0
-      COMPONENT_DEFINITION drag_edit, pitch2_moddepth, modsecx+15, modsecy+3, %10000100, 256-76, 76, 0, 0
-      COMPONENT_DEFINITION drag_edit, pw_moddepth, modsecx+15, modsecy+4, %00000100, 256-127, 127, 0, 0
-      COMPONENT_DEFINITION drag_edit, volume_moddepth, modsecx+15, modsecy+5, %00000100, 256-127, 127, 0, 0
+      COMPONENT_DEFINITION drag_edit, fine_tune, pitsecx+3, pitsecy+3, %00000100, 128, 127, 0, 0
+      COMPONENT_DEFINITION checkbox, key_track, pitsecx, pitsecy+5, 7, 0
+      COMPONENT_DEFINITION combobox, pitch1_modsource, modsecx+6, modsecy+2, 8, N_TOT_MODSOURCES+1, A panel_common::modsources_none_option_lb, 0
+      COMPONENT_DEFINITION combobox, pitch2_modsource, modsecx+6, modsecy+3, 8, N_TOT_MODSOURCES+1, A panel_common::modsources_none_option_lb, 0
+      COMPONENT_DEFINITION combobox, pw_modsource, modsecx+6, modsecy+4, 8, N_TOT_MODSOURCES+1, A panel_common::modsources_none_option_lb, 0
+      COMPONENT_DEFINITION combobox, volume_modsource, modsecx+6, modsecy+5, 8, N_TOT_MODSOURCES+1, A panel_common::modsources_none_option_lb, 0
+      COMPONENT_DEFINITION drag_edit, pitch1_moddepth, modsecx+14, modsecy+4, %10000100, 256-76, 76, 0, 0
+      COMPONENT_DEFINITION drag_edit, pitch2_moddepth, modsecx+14, modsecy+5, %10000100, 256-76, 76, 0, 0
+      COMPONENT_DEFINITION drag_edit, pw_moddepth, modsecx+14, modsecy+2, %00000100, 256-127, 127, 0, 0
+      COMPONENT_DEFINITION drag_edit, volume_moddepth, modsecx+14, modsecy+3, %00000100, 256-127, 127, 0, 0
       COMPONENT_LIST_END
    .endscope
    capts:
       .byte CCOLOR_CAPTION, px+4, py
       .word cp
+      .byte (COLOR_IMPORTANT_CAPTION+16*COLOR_BACKGROUND), px+4, py+2 ; number of oscillators label
+      .word nosc_lb
       .byte CCOLOR_CAPTION, wfsecx, wfsecy
       .word panel_common::waveform_lb
       .byte CCOLOR_CAPTION, pwsecx, pwsecy
       .word pulsewidth_lb
-      .byte CCOLOR_CAPTION, ampsecx, ampsecy
-      .word amp_lb
       .byte CCOLOR_CAPTION, ampsecx, ampsecy+3
+      .word amp_lb
+      .byte CCOLOR_CAPTION, ampsecx, ampsecy
       .word panel_common::vol_lb
-      .byte CCOLOR_CAPTION, ampsecx+5, ampsecy+3
+      .byte CCOLOR_CAPTION, ampsecx+5, ampsecy
       .word panel_common::channel_lb
       .byte CCOLOR_CAPTION, pitsecx, pitsecy
       .word panel_common::pitch_lb
       .byte CCOLOR_CAPTION, pitsecx, pitsecy+2
       .word panel_common::semi_lb
-      .byte CCOLOR_CAPTION, pitsecx, pitsecy+4
+      .byte CCOLOR_CAPTION, pitsecx, pitsecy+3
       .word panel_common::fine_lb
-      .byte CCOLOR_CAPTION, pitsecx+10, pitsecy+2
+      .byte CCOLOR_CAPTION, pitsecx+2, pitsecy+5
       .word panel_common::track_lb
-      .byte CCOLOR_CAPTION, modsecx, modsecy
+      .byte CCOLOR_CAPTION, modsecx+4, modsecy
       .word modulation_lb
-      .byte CCOLOR_CAPTION, modsecx, modsecy+2
-      .word panel_common::pitch_lb
       .byte CCOLOR_CAPTION, modsecx, modsecy+4
+      .word panel_common::pitch_lb
+      .byte CCOLOR_CAPTION, modsecx+3, modsecy+2
       .word pw_lb
-      .byte CCOLOR_CAPTION, modsecx, modsecy+5
+      .byte CCOLOR_CAPTION, modsecx+2, modsecy+3
       .word panel_common::vol_lb
       .byte 0
 
    ; data specific to the oscillator panel
    active_tab: .byte 0
    cp: STR_FORMAT "psg oscillators" ; caption of panel
+   nosc_lb: STR_FORMAT "n. oscs"
    amp_lb: STR_FORMAT "amp env"
    pulsewidth_lb: STR_FORMAT "pulse width"
    pw_lb: STR_FORMAT "pw"
@@ -130,6 +134,7 @@
       jmp (@jmp_tbl, x)
    @jmp_tbl:
       .word @tab_slector
+      .word @n_oscs
       .word @waveform
       .word @pulsewidth ; pulse width
       .word @ampsel ; amp combobox
@@ -152,6 +157,13 @@
       sta active_tab
       jsr refresh
       inc gui_variables::request_components_redraw
+      rts
+   @n_oscs:
+      jsr concerto_synth::voices::panic ; If we don't do this, a different number of oscillators might be released than initially acquired by a voice. Safety first.
+      plx
+      ldx gui_variables::current_synth_instrument
+      LDA_COMPONENT_MEMBER_ADDRESS arrowed_edit, n_oscs, value
+      sta concerto_synth::instruments::Instrument::n_oscs, x
       rts
    @waveform:
       plx
@@ -358,6 +370,10 @@
       lda concerto_synth::instruments::Instrument::osc::vol_mod_dep, x
       jsr panel_common::map_signed_7bit_to_twos_complement
       STA_COMPONENT_MEMBER_ADDRESS drag_edit, volume_moddepth, coarse_value
+      ; number of oscillators
+      ldx gui_variables::current_synth_instrument
+      lda concerto_synth::instruments::Instrument::n_oscs, x
+      STA_COMPONENT_MEMBER_ADDRESS arrowed_edit, n_oscs, value
       rts
    .endproc
 

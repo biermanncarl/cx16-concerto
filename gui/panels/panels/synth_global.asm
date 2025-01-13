@@ -11,10 +11,9 @@
    px = 11
    py = 8
    wd = 12
-   hg = 24
+   hg = 20
    comps:
    .scope comps
-      COMPONENT_DEFINITION arrowed_edit, n_oscs, px+3, py+3, 0, MAX_OSCS_PER_VOICE, 1
       COMPONENT_DEFINITION arrowed_edit, n_envs, px+3, py+6, 1, 3, 1
       COMPONENT_DEFINITION checkbox, lfo_activate, px+2, py+8, 8, 1
       COMPONENT_DEFINITION checkbox, retrigger, px+2, py+12, 8, 1
@@ -26,8 +25,6 @@
    capts:
       .byte CCOLOR_CAPTION, px+3, py
       .word panel_common::lb_global
-      .byte (COLOR_IMPORTANT_CAPTION+16*COLOR_BACKGROUND), px+2, py+2 ; number of oscillators label
-      .word nosc_lb
       .byte (COLOR_IMPORTANT_CAPTION+16*COLOR_BACKGROUND), px+2, py+5 ; number of envelopes label
       .word nenv_lb
       .byte (COLOR_IMPORTANT_CAPTION+16*COLOR_BACKGROUND), px+4, py+8 ; number of envelopes label
@@ -41,7 +38,6 @@
       .byte CCOLOR_CAPTION, px+2, py+19 ; vibrato amount label
       .word vibrato_lb
       .byte 0
-   nosc_lb: STR_FORMAT "n. oscs"
    nenv_lb: STR_FORMAT "n. envs"
    porta_active_lb: STR_FORMAT "porta" ; portamento activate label
    vibrato_lb: STR_FORMAT "vib."
@@ -72,19 +68,12 @@
       tax
       jmp (@jmp_tbl, x)
    @jmp_tbl:
-      .word @n_oscs
       .word @n_envs
       .word @n_lfos
       .word @retr_activate
       .word @porta_activate
       .word @porta_rate
       .word @vibrato_amount
-   @n_oscs:
-      jsr concerto_synth::voices::panic ; If we don't do this, a different number of oscillators might be released than initially acquired by a voice. Safety first.
-      plx
-      LDA_COMPONENT_MEMBER_ADDRESS arrowed_edit, n_oscs, value
-      sta concerto_synth::instruments::Instrument::n_oscs, x
-      rts
    @n_envs:
       plx
       LDA_COMPONENT_MEMBER_ADDRESS arrowed_edit, n_envs, value
@@ -125,9 +114,6 @@
 
    .proc refresh
       ldx gui_variables::current_synth_instrument
-      ; number of oscillators
-      lda concerto_synth::instruments::Instrument::n_oscs, x
-      STA_COMPONENT_MEMBER_ADDRESS arrowed_edit, n_oscs, value
       ; number of envelopes
       lda concerto_synth::instruments::Instrument::n_envs, x
       STA_COMPONENT_MEMBER_ADDRESS arrowed_edit, n_envs, value
