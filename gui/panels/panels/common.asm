@@ -25,6 +25,7 @@
    lb_ok: STR_FORMAT "  ok"
    lb_instrument: STR_FORMAT "instrument"
    lb_track_name: STR_FORMAT "track name"
+   lb_global: STR_FORMAT "global"
    channel_lb: .byte 12, 47, 18, 0 ; L/R
 
    modsources_none_option_lb:

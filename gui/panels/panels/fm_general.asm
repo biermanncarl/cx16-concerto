@@ -8,10 +8,12 @@
 
 ; FM general setup (everything that isn't operators)
 .scope fm_general
-   px = synth_global::px
+   px = 5
    py = envelopes::py+envelopes::hg+1
-   wd = 29
-   hg = 17
+   wd = 41
+   hg = 18
+   lfo_x = px + 28
+   lfo_y = py
    comps:
    .scope comps
       COMPONENT_DEFINITION arrowed_edit, connection, px+13, py+4, 0, 7, 0
@@ -20,12 +22,17 @@
       COMPONENT_DEFINITION checkbox, op2_active, px+18, py+2, 2, 0
       COMPONENT_DEFINITION checkbox, op3_active, px+21, py+2, 2, 0
       COMPONENT_DEFINITION checkbox, op4_active, px+24, py+2, 2, 0
-      COMPONENT_DEFINITION combobox, lr_select, px+13, py+8, 5, 4, A panel_common::channel_select_lb, 0
-      COMPONENT_DEFINITION drag_edit, semitones, px+5, py+13, %00000100, 128, 127, 0, 0
-      COMPONENT_DEFINITION drag_edit, fine_tune, px+5, py+14, %00000100, 128, 127, 0, 0
-      COMPONENT_DEFINITION checkbox, key_track, px+13, py+11, 7, 0
-      COMPONENT_DEFINITION combobox, pitchmod_sel, px+13, py+13, 8, N_TOT_MODSOURCES+1, A panel_common::modsources_none_option_lb, 0
-      COMPONENT_DEFINITION drag_edit, pitchmod_dep, px+21, py+13, %10000100, 256-76, 76, 0, 0
+      COMPONENT_DEFINITION combobox, lr_select, px+13, py+9, 5, 4, A panel_common::channel_select_lb, 0
+      COMPONENT_DEFINITION drag_edit, semitones, px+5, py+14, %00000100, 128, 127, 0, 0
+      COMPONENT_DEFINITION drag_edit, fine_tune, px+5, py+15, %00000100, 128, 127, 0, 0
+      COMPONENT_DEFINITION checkbox, key_track, px+13, py+12, 7, 0
+      COMPONENT_DEFINITION combobox, pitchmod_sel, px+13, py+14, 8, N_TOT_MODSOURCES+1, A panel_common::modsources_none_option_lb, 0
+      COMPONENT_DEFINITION drag_edit, pitchmod_dep, px+21, py+14, %10000100, 256-76, 76, 0, 0
+      COMPONENT_DEFINITION checkbox, lfo_enable, lfo_x+2, lfo_y+2, 8, 0
+      COMPONENT_DEFINITION combobox, lfo_wave, lfo_x+2, lfo_y+5, 7, 4, A lfo_waveform_lb, 0
+      COMPONENT_DEFINITION drag_edit, lfo_freq, lfo_x+2, lfo_y+8, %0, 0, 255, 0, 0
+      COMPONENT_DEFINITION drag_edit, lfo_vol_sens, lfo_x+2, lfo_y+15, %0, 0, 127, 127, 0
+      COMPONENT_DEFINITION drag_edit, lfo_pitch_sens, lfo_x+8, lfo_y+15, %0, 0, 127, 127, 0
       COMPONENT_LIST_END
    .endscope
    capts:
@@ -45,16 +52,33 @@
       .word lb_op3
       .byte CCOLOR_CAPTION, px+25, py+2
       .word lb_op4
-      .byte CCOLOR_CAPTION, px+2, py+8
+      .byte CCOLOR_CAPTION, px+2, py+9
       .word panel_common::channel_lb
-      .byte CCOLOR_CAPTION, px+2, py+11
+      .byte CCOLOR_CAPTION, px+2, py+12
       .word panel_common::pitch_lb
-      .byte CCOLOR_CAPTION, px+15, py+11
+      .byte CCOLOR_CAPTION, px+15, py+12
       .word panel_common::track_lb
-      .byte CCOLOR_CAPTION, px+2, py+13
-      .word panel_common::semi_lb
       .byte CCOLOR_CAPTION, px+2, py+14
+      .word panel_common::semi_lb
+      .byte CCOLOR_CAPTION, px+2, py+15
       .word panel_common::fine_lb
+      ; global LFO
+      .byte CCOLOR_CAPTION, lfo_x+2, lfo_y
+      .word lb_lfo_settings
+      .byte COLOR_IMPORTANT_CAPTION+16*COLOR_BACKGROUND, lfo_x+4, lfo_y+2
+      .word lb_enable
+      .byte CCOLOR_CAPTION, lfo_x+2, lfo_y+4
+      .word panel_common::waveform_lb
+      .byte CCOLOR_CAPTION, lfo_x+2, lfo_y+7
+      .word panel_common::rate_lb
+      .byte CCOLOR_CAPTION, lfo_x+2, lfo_y+11
+      .word panel_common::lb_global
+      .byte CCOLOR_CAPTION, lfo_x+3, lfo_y+12
+      .word lb_strength
+      .byte CCOLOR_CAPTION, lfo_x+2, lfo_y+14
+      .word panel_common::vol_lb
+      .byte CCOLOR_CAPTION, lfo_x+6, lfo_y+14
+      .word panel_common::pitch_lb
       .byte 0
    cp: STR_FORMAT "fm general"
    con_select_lb: STR_FORMAT "connection"
@@ -64,13 +88,33 @@
    lb_op2: STR_FORMAT "2"
    lb_op3: STR_FORMAT "3"
    lb_op4: STR_FORMAT "4"
+   lb_lfo_settings: STR_FORMAT "fm lfo"
+   lb_enable: STR_FORMAT "enable"
+   lb_global: STR_FORMAT "global"
+   lb_strength: STR_FORMAT "strength"
+   lfo_waveform_lb:
+      STR_FORMAT "saw"
+      STR_FORMAT "squ"
+      STR_FORMAT "tri"
+      STR_FORMAT "noise"
 
    .proc draw
       lda #px
       sta guiutils::draw_x
       lda #py
       sta guiutils::draw_y
-      lda #wd
+      lda #(lfo_x-px)
+      sta guiutils::draw_width
+      lda #hg
+      sta guiutils::draw_height
+      lda #0
+      sta guiutils::draw_data1
+      jsr guiutils::draw_frame
+      lda #lfo_x
+      sta guiutils::draw_x
+      lda #py
+      sta guiutils::draw_y
+      lda #(wd+px-lfo_x)
       sta guiutils::draw_width
       lda #hg
       sta guiutils::draw_height

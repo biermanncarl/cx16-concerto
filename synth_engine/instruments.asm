@@ -114,7 +114,7 @@ instrument_pointer = mzpwg
       fm_lfo_vol_sens     .res N_INSTRUMENTS    ; voice's sensitivity for volume modulation
       fm_lfo_pitch_sens   .res N_INSTRUMENTS    ; voice's sensitivity for pitch modulation
 
-   
+
 
    ; FM Operators
       op_level            .res N_INSTRUMENTS * N_OPERATORS  ; volume (!!! attenuation: higher level means lower output volume) (7 bits)
@@ -342,12 +342,15 @@ load_default_instrument:
    sta Instrument::fm_general::pitch_mod_dep, x
    ; FM LFO -- todo: select reasonable defaults
    stz Instrument::fm_general::lfo_enable, x
-   stz Instrument::fm_general::lfo_vol_mod, x
-   stz Instrument::fm_general::lfo_pitch_mod, x
    stz Instrument::fm_general::lfo_waveform, x
    stz Instrument::fm_general::lfo_frequency, x
    stz Instrument::fm_general::lfo_vol_sens, x
    stz Instrument::fm_general::lfo_pitch_sens, x
+   lda #2
+   sta Instrument::fm_general::lfo_waveform, x
+   lda #127
+   sta Instrument::fm_general::lfo_vol_mod, x
+   sta Instrument::fm_general::lfo_pitch_mod, x
 
    ; envelopes
    ldy #MAX_ENVS_PER_VOICE

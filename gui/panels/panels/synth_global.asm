@@ -25,7 +25,7 @@
    .endscope
    capts:
       .byte CCOLOR_CAPTION, px+3, py
-      .word cp
+      .word panel_common::lb_global
       .byte (COLOR_IMPORTANT_CAPTION+16*COLOR_BACKGROUND), px+2, py+2 ; number of oscillators label
       .word nosc_lb
       .byte (COLOR_IMPORTANT_CAPTION+16*COLOR_BACKGROUND), px+2, py+5 ; number of envelopes label
@@ -41,7 +41,6 @@
       .byte CCOLOR_CAPTION, px+2, py+19 ; vibrato amount label
       .word vibrato_lb
       .byte 0
-   cp: STR_FORMAT "global" ; caption of panel
    nosc_lb: STR_FORMAT "n. oscs"
    nenv_lb: STR_FORMAT "n. envs"
    porta_active_lb: STR_FORMAT "porta" ; portamento activate label

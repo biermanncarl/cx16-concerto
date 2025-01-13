@@ -10,51 +10,54 @@
 .scope fm_operators
    px = fm_general::px+fm_general::wd
    py = fm_general::py
-   wd = fm_general::wd
-   hg = 17
+   wd = 29
+   hg = fm_general::hg
    comps:
    .scope comps
       COMPONENT_DEFINITION tab_selector, tab_select, px, py, N_OPERATORS, 0
-      COMPONENT_DEFINITION drag_edit, attack, px+4 , py+12, %0, 0, 31, 0, 0
-      COMPONENT_DEFINITION drag_edit, decay_1, px+9, py+12, %0, 0, 31, 0, 0 
-      COMPONENT_DEFINITION drag_edit, decay_level, px+14, py+12, %0, 0, 15, 0, 0 
-      COMPONENT_DEFINITION drag_edit, decay_2, px+19, py+12, %0, 0, 31, 0, 0 
-      COMPONENT_DEFINITION drag_edit, release, px+24, py+12, %0, 0, 15, 0, 0 
-      COMPONENT_DEFINITION drag_edit, mul, px+10, py+7, %0, 0, 15, 0, 0 
-      COMPONENT_DEFINITION drag_edit, fine, px+15, py+7, %00000100, 253, 3, 0, 0 
-      COMPONENT_DEFINITION drag_edit, coarse, px+20, py+7, %0, 0, 3, 0, 0 
+      COMPONENT_DEFINITION drag_edit, attack, px+4 , py+14, %0, 0, 31, 0, 0
+      COMPONENT_DEFINITION drag_edit, decay_1, px+9, py+14, %0, 0, 31, 0, 0 
+      COMPONENT_DEFINITION drag_edit, decay_level, px+14, py+14, %0, 0, 15, 0, 0 
+      COMPONENT_DEFINITION drag_edit, decay_2, px+19, py+14, %0, 0, 31, 0, 0 
+      COMPONENT_DEFINITION drag_edit, release, px+24, py+14, %0, 0, 15, 0, 0 
+      COMPONENT_DEFINITION drag_edit, mul, px+10, py+9, %0, 0, 15, 0, 0 
+      COMPONENT_DEFINITION drag_edit, fine, px+15, py+9, %00000100, 253, 3, 0, 0 
+      COMPONENT_DEFINITION drag_edit, coarse, px+20, py+9, %0, 0, 3, 0, 0 
       COMPONENT_DEFINITION drag_edit, level, px+4, py+3, %0, 0, 127, 0, 0 
-      COMPONENT_DEFINITION drag_edit, key_scaling, px+17, py+14, %00000000, 0, 3, 0, 0 
-      COMPONENT_DEFINITION checkbox, vol_sensitivity, px+10, py+3, 2, 0
+      COMPONENT_DEFINITION drag_edit, key_scaling, px+17, py+16, %00000000, 0, 3, 0, 0 
+      COMPONENT_DEFINITION checkbox, vol_sensitivity, px+10, py+3, 10, 0
+      COMPONENT_DEFINITION checkbox, lfo_sensitivity, px+10, py+5, 10, 0
       COMPONENT_LIST_END
    .endscope
    capts:
       .byte CCOLOR_CAPTION, px+4, py
       .word cp
-      .byte CCOLOR_CAPTION, px+4, py+11
+      .byte CCOLOR_CAPTION, px+4, py+13
       .word panel_common::lb_attack
-      .byte CCOLOR_CAPTION, px+9, py+11
+      .byte CCOLOR_CAPTION, px+9, py+13
       .word lb_decay_1
-      .byte CCOLOR_CAPTION, px+14, py+11
+      .byte CCOLOR_CAPTION, px+14, py+13
       .word lb_decay_level
-      .byte CCOLOR_CAPTION, px+19, py+11
+      .byte CCOLOR_CAPTION, px+19, py+13
       .word lb_decay_2
-      .byte CCOLOR_CAPTION, px+24, py+11
+      .byte CCOLOR_CAPTION, px+24, py+13
       .word panel_common::lb_release
-      .byte CCOLOR_CAPTION, px+4, py+6
+      .byte CCOLOR_CAPTION, px+4, py+8
       .word lb_tuning
-      .byte CCOLOR_CAPTION, px+10, py+6
+      .byte CCOLOR_CAPTION, px+10, py+8
       .word lb_mul
-      .byte CCOLOR_CAPTION, px+15, py+6
+      .byte CCOLOR_CAPTION, px+15, py+8
       .word lb_dt1
-      .byte CCOLOR_CAPTION, px+20, py+6
+      .byte CCOLOR_CAPTION, px+20, py+8
       .word lb_dt2
       .byte CCOLOR_CAPTION, px+4, py+2
       .word panel_common::vol_lb
-      .byte CCOLOR_CAPTION, px+4, py+14
+      .byte CCOLOR_CAPTION, px+4, py+16
       .word lb_ks
       .byte CCOLOR_CAPTION, px+12, py+3
       .word lb_vol_sens
+      .byte CCOLOR_CAPTION, px+12, py+5
+      .word lb_lfo_sens
       .byte 0
    active_tab: .byte 0
    cp: STR_FORMAT "fm operators"
@@ -66,7 +69,8 @@
    lb_dt1: STR_FORMAT "fine"
    lb_dt2: STR_FORMAT "coarse"
    lb_ks: STR_FORMAT "key scaling"
-   lb_vol_sens: STR_FORMAT "vol sens"
+   lb_vol_sens: STR_FORMAT "vel sens"
+   lb_lfo_sens: STR_FORMAT "lfo sens"
 
    .proc draw
       lda #px
@@ -120,6 +124,7 @@
       .word @vol
       .word @key_scaling
       .word @vol_sens
+      .word @lfo_sens
    @tab_select:
       plx
       lda mouse_variables::curr_data_1
@@ -191,6 +196,11 @@
       LDA_COMPONENT_MEMBER_ADDRESS checkbox, vol_sensitivity, checked
       sta concerto_synth::instruments::Instrument::operators::vol_sens_vel, x
       rts
+   @lfo_sens:
+      plx
+      LDA_COMPONENT_MEMBER_ADDRESS checkbox, lfo_sensitivity, checked
+      sta concerto_synth::instruments::Instrument::operators::vol_sens_lfo, x
+      rts
    .endproc
 
 
@@ -252,6 +262,9 @@
       ; volume sensitivity
       lda concerto_synth::instruments::Instrument::operators::vol_sens_vel, x
       STA_COMPONENT_MEMBER_ADDRESS checkbox, vol_sensitivity, checked
+      ; LFO sensitivity
+      lda concerto_synth::instruments::Instrument::operators::vol_sens_lfo, x
+      STA_COMPONENT_MEMBER_ADDRESS checkbox, lfo_sensitivity, checked
       rts
    .endproc
 
