@@ -15,7 +15,6 @@
    fine_lb: STR_FORMAT "fn"
    track_lb: STR_FORMAT "track"
    waveform_lb: STR_FORMAT "waveform"
-   lfo_lb: STR_FORMAT "lfo"
    retr_lb: STR_FORMAT "retrig"
    rate_lb: STR_FORMAT "rate"
    lb_attack: STR_FORMAT "att"

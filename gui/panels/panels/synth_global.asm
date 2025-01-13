@@ -15,7 +15,6 @@
    comps:
    .scope comps
       COMPONENT_DEFINITION arrowed_edit, n_envs, px+3, py+6, 1, 3, 1
-      COMPONENT_DEFINITION checkbox, lfo_activate, px+2, py+8, 8, 1
       COMPONENT_DEFINITION checkbox, retrigger, px+2, py+12, 8, 1
       COMPONENT_DEFINITION checkbox, porta_activate, px+2, py+14, 8, 0
       COMPONENT_DEFINITION drag_edit, porta_rate, px+2, py+16, %00000000, 0, 255, 0, 0
@@ -27,8 +26,6 @@
       .word panel_common::lb_global
       .byte (COLOR_IMPORTANT_CAPTION+16*COLOR_BACKGROUND), px+2, py+5 ; number of envelopes label
       .word nenv_lb
-      .byte (COLOR_IMPORTANT_CAPTION+16*COLOR_BACKGROUND), px+4, py+8 ; number of envelopes label
-      .word panel_common::lfo_lb
       .byte CCOLOR_CAPTION, px+4, py+12 ; porta checkbox label
       .word panel_common::retr_lb
       .byte CCOLOR_CAPTION, px+5, py+14 ; porta checkbox label
@@ -69,7 +66,6 @@
       jmp (@jmp_tbl, x)
    @jmp_tbl:
       .word @n_envs
-      .word @n_lfos
       .word @retr_activate
       .word @porta_activate
       .word @porta_rate
@@ -78,11 +74,6 @@
       plx
       LDA_COMPONENT_MEMBER_ADDRESS arrowed_edit, n_envs, value
       sta concerto_synth::instruments::Instrument::n_envs, x
-      rts
-   @n_lfos:
-      plx
-      LDA_COMPONENT_MEMBER_ADDRESS checkbox, lfo_activate, checked
-      sta concerto_synth::instruments::Instrument::n_lfos, x
       rts
    @retr_activate:
       plx
@@ -117,9 +108,6 @@
       ; number of envelopes
       lda concerto_synth::instruments::Instrument::n_envs, x
       STA_COMPONENT_MEMBER_ADDRESS arrowed_edit, n_envs, value
-      ; LFO activate checkbox
-      lda concerto_synth::instruments::Instrument::n_lfos, x
-      STA_COMPONENT_MEMBER_ADDRESS checkbox, lfo_activate, checked
       ; retrigger checkbox
       lda concerto_synth::instruments::Instrument::retrig, x
       STA_COMPONENT_MEMBER_ADDRESS checkbox, retrigger, checked

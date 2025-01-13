@@ -14,6 +14,7 @@
    hg = envelopes::hg
    comps:
    .scope comps
+      COMPONENT_DEFINITION checkbox, lfo_activate, px+2, py, 8, 1
       COMPONENT_DEFINITION combobox, waveform, px+2, py+3, 8, 5, A lfo_waveform_lb, 0
       COMPONENT_DEFINITION checkbox, retrigger, px+12, py+2, 8, 0
       COMPONENT_DEFINITION drag_edit, rate, px+7 , py+5, %00000001, 0, 128, 10, 0
@@ -21,8 +22,8 @@
       COMPONENT_LIST_END
    .endscope
    capts:
-      .byte CCOLOR_CAPTION, px+4, py
-      .word panel_common::lfo_lb
+      .byte (COLOR_IMPORTANT_CAPTION+16*COLOR_BACKGROUND), px+4, py
+      .word lfo_lb
       .byte CCOLOR_CAPTION, px+2, py+2
       .word panel_common::waveform_lb
       .byte CCOLOR_CAPTION, px+14, py+2
@@ -34,6 +35,7 @@
       .byte 0
    ; data specific to the LFO panel
    phase_lb: STR_FORMAT "phase"
+   lfo_lb: STR_FORMAT "software lfo"
    lfo_waveform_lb:
       STR_FORMAT "tri"
       STR_FORMAT "squ"
@@ -65,10 +67,16 @@
       tax
       jmp (@jmp_tbl, x)
    @jmp_tbl:
+      .word @n_lfos
       .word @wave
       .word @retr
       .word @rate
       .word @offs
+   @n_lfos:
+      plx
+      LDA_COMPONENT_MEMBER_ADDRESS checkbox, lfo_activate, checked
+      sta concerto_synth::instruments::Instrument::n_lfos, x
+      rts
    @wave:
       plx
       LDA_COMPONENT_MEMBER_ADDRESS combobox, waveform, selected_entry
@@ -96,6 +104,9 @@
 
    .proc refresh
       ldx gui_variables::current_synth_instrument
+      ; LFO activate checkbox
+      lda concerto_synth::instruments::Instrument::n_lfos, x
+      STA_COMPONENT_MEMBER_ADDRESS checkbox, lfo_activate, checked
       ; LFO waveform
       lda concerto_synth::instruments::Instrument::lfo::wave, x
       STA_COMPONENT_MEMBER_ADDRESS combobox, waveform, selected_entry
