@@ -14,28 +14,24 @@
    hg = 20
    comps:
    .scope comps
-      COMPONENT_DEFINITION arrowed_edit, n_envs, px+3, py+6, 1, 3, 1
-      COMPONENT_DEFINITION checkbox, retrigger, px+2, py+12, 8, 1
-      COMPONENT_DEFINITION checkbox, porta_activate, px+2, py+14, 8, 0
-      COMPONENT_DEFINITION drag_edit, porta_rate, px+2, py+16, %00000000, 0, 255, 0, 0
-      COMPONENT_DEFINITION drag_edit, vibrato_amount, px+7, py+19, %00000000, 0, 76, 0, 0
+      COMPONENT_DEFINITION checkbox, retrigger, px+2, py+2, 8, 1
+      COMPONENT_DEFINITION checkbox, porta_activate, px+2, py+5, 8, 0
+      COMPONENT_DEFINITION drag_edit, porta_rate, px+2, py+7, %00000000, 0, 255, 0, 0
+      COMPONENT_DEFINITION drag_edit, vibrato_amount, px+7, py+10, %00000000, 0, 76, 0, 0
       COMPONENT_LIST_END
    .endscope
    capts:
       .byte CCOLOR_CAPTION, px+3, py
       .word panel_common::lb_global
-      .byte (COLOR_IMPORTANT_CAPTION+16*COLOR_BACKGROUND), px+2, py+5 ; number of envelopes label
-      .word nenv_lb
-      .byte CCOLOR_CAPTION, px+4, py+12 ; porta checkbox label
+      .byte CCOLOR_CAPTION, px+4, py+2 ; porta checkbox label
       .word panel_common::retr_lb
-      .byte CCOLOR_CAPTION, px+5, py+14 ; porta checkbox label
+      .byte CCOLOR_CAPTION, px+5, py+5 ; porta checkbox label
       .word porta_active_lb
-      .byte CCOLOR_CAPTION, px+6, py+16 ; porta rate label
+      .byte CCOLOR_CAPTION, px+6, py+7 ; porta rate label
       .word panel_common::rate_lb
-      .byte CCOLOR_CAPTION, px+2, py+19 ; vibrato amount label
+      .byte CCOLOR_CAPTION, px+2, py+10 ; vibrato amount label
       .word vibrato_lb
       .byte 0
-   nenv_lb: STR_FORMAT "n. envs"
    porta_active_lb: STR_FORMAT "porta" ; portamento activate label
    vibrato_lb: STR_FORMAT "vib."
 
@@ -65,16 +61,10 @@
       tax
       jmp (@jmp_tbl, x)
    @jmp_tbl:
-      .word @n_envs
       .word @retr_activate
       .word @porta_activate
       .word @porta_rate
       .word @vibrato_amount
-   @n_envs:
-      plx
-      LDA_COMPONENT_MEMBER_ADDRESS arrowed_edit, n_envs, value
-      sta concerto_synth::instruments::Instrument::n_envs, x
-      rts
    @retr_activate:
       plx
       LDA_COMPONENT_MEMBER_ADDRESS checkbox, retrigger, checked
@@ -105,9 +95,6 @@
 
    .proc refresh
       ldx gui_variables::current_synth_instrument
-      ; number of envelopes
-      lda concerto_synth::instruments::Instrument::n_envs, x
-      STA_COMPONENT_MEMBER_ADDRESS arrowed_edit, n_envs, value
       ; retrigger checkbox
       lda concerto_synth::instruments::Instrument::retrig, x
       STA_COMPONENT_MEMBER_ADDRESS checkbox, retrigger, checked

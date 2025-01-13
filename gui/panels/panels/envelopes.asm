@@ -15,27 +15,31 @@
    comps:
    .scope comps
       COMPONENT_DEFINITION tab_selector, tab_select, px, py, 3, 0
-      COMPONENT_DEFINITION drag_edit, attack, px+4 , py+4, %00000001, 0, 127, 0, 0
-      COMPONENT_DEFINITION drag_edit, decay, px+9 , py+4, %00000001, 0, 127, 0, 0
-      COMPONENT_DEFINITION drag_edit, sustain, px+14, py+4, %00000000, 0, ENV_PEAK, 0, 0
-      COMPONENT_DEFINITION drag_edit, release, px+18, py+4, %00000001, 0, 127, 0, 0
+      COMPONENT_DEFINITION arrowed_edit, n_envs, px+12, py+2, 1, 3, 1
+      COMPONENT_DEFINITION drag_edit, attack, px+4 , py+5, %00000001, 0, 127, 0, 0
+      COMPONENT_DEFINITION drag_edit, decay, px+9 , py+5, %00000001, 0, 127, 0, 0
+      COMPONENT_DEFINITION drag_edit, sustain, px+14, py+5, %00000000, 0, ENV_PEAK, 0, 0
+      COMPONENT_DEFINITION drag_edit, release, px+18, py+5, %00000001, 0, 127, 0, 0
       COMPONENT_LIST_END
    .endscope
    capts:
       .byte CCOLOR_CAPTION, px+4, py
       .word cp
-      .byte CCOLOR_CAPTION, px+4, py+3
+      .byte (COLOR_IMPORTANT_CAPTION+16*COLOR_BACKGROUND), px+4, py+2 ; number of envelopes label
+      .word nenv_lb
+      .byte CCOLOR_CAPTION, px+4, py+4
       .word panel_common::lb_attack
-      .byte CCOLOR_CAPTION, px+9, py+3
+      .byte CCOLOR_CAPTION, px+9, py+4
       .word lb_decay
-      .byte CCOLOR_CAPTION, px+14, py+3
+      .byte CCOLOR_CAPTION, px+14, py+4
       .word lb_sustain
-      .byte CCOLOR_CAPTION, px+18, py+3
+      .byte CCOLOR_CAPTION, px+18, py+4
       .word panel_common::lb_release
       .byte 0
    ; data specific to the envelope panel
    active_tab: .byte 0
-   cp: STR_FORMAT "envelopes" ; caption of panel
+   nenv_lb: STR_FORMAT "n. envs"
+   cp: STR_FORMAT "software envelopes" ; caption of panel
    lb_decay: STR_FORMAT "dec"
    lb_sustain: STR_FORMAT "sus"
 
@@ -83,6 +87,7 @@
       jmp (@jmp_tbl, x)
    @jmp_tbl:
       .word @tab_select
+      .word @n_envs
       .word @attack
       .word @decay
       .word @sustain
@@ -93,6 +98,12 @@
       sta active_tab
       jsr refresh
       inc gui_variables::request_components_redraw
+      rts
+   @n_envs:
+      plx
+      ldx gui_variables::current_synth_instrument
+      LDA_COMPONENT_MEMBER_ADDRESS arrowed_edit, n_envs, value
+      sta concerto_synth::instruments::Instrument::n_envs, x
       rts
    @attack:
       plx
@@ -161,6 +172,10 @@
       STA_COMPONENT_MEMBER_ADDRESS drag_edit, release, coarse_value
       lda concerto_synth::instruments::Instrument::env::releaseL, x
       STA_COMPONENT_MEMBER_ADDRESS drag_edit, release, fine_value
+      ; number of envelopes
+      ldx gui_variables::current_synth_instrument
+      lda concerto_synth::instruments::Instrument::n_envs, x
+      STA_COMPONENT_MEMBER_ADDRESS arrowed_edit, n_envs, value
       rts
    .endproc
 
