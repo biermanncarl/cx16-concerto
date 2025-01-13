@@ -9,7 +9,7 @@
 ; LFO settings panel
 .scope lfo
    px = envelopes::px+envelopes::wd
-   py = psg_oscillators::py+psg_oscillators::hg
+   py = psg_oscillators::py+psg_oscillators::hg+1
    wd = (synth_global::wd+psg_oscillators::wd-envelopes::wd)
    hg = envelopes::hg
    comps:

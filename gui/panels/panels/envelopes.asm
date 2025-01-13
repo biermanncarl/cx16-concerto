@@ -9,7 +9,7 @@
 ; envelope settings panel
 .scope envelopes
    px = synth_global::px
-   py = psg_oscillators::py+psg_oscillators::hg
+   py = psg_oscillators::py+psg_oscillators::hg+1
    wd = 24
    hg = 8
    comps:

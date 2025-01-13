@@ -11,7 +11,7 @@
    px = 5
    py = envelopes::py+envelopes::hg+1
    wd = 41
-   hg = 18
+   hg = 20
    lfo_x = px + 28
    lfo_y = py
    comps:

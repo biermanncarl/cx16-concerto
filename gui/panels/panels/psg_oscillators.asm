@@ -36,10 +36,10 @@
       COMPONENT_DEFINITION drag_edit, semitones, pitsecx+3, pitsecy+2, %00000100, 128, 127, 0, 0
       COMPONENT_DEFINITION drag_edit, fine_tune, pitsecx+3, pitsecy+3, %00000100, 128, 127, 0, 0
       COMPONENT_DEFINITION checkbox, key_track, pitsecx, pitsecy+5, 7, 0
-      COMPONENT_DEFINITION combobox, pitch1_modsource, modsecx+6, modsecy+2, 8, N_TOT_MODSOURCES+1, A panel_common::modsources_none_option_lb, 0
-      COMPONENT_DEFINITION combobox, pitch2_modsource, modsecx+6, modsecy+3, 8, N_TOT_MODSOURCES+1, A panel_common::modsources_none_option_lb, 0
-      COMPONENT_DEFINITION combobox, pw_modsource, modsecx+6, modsecy+4, 8, N_TOT_MODSOURCES+1, A panel_common::modsources_none_option_lb, 0
-      COMPONENT_DEFINITION combobox, volume_modsource, modsecx+6, modsecy+5, 8, N_TOT_MODSOURCES+1, A panel_common::modsources_none_option_lb, 0
+      COMPONENT_DEFINITION combobox, pitch1_modsource, modsecx+6, modsecy+4, 8, N_TOT_MODSOURCES+1, A panel_common::modsources_none_option_lb, 0
+      COMPONENT_DEFINITION combobox, pitch2_modsource, modsecx+6, modsecy+5, 8, N_TOT_MODSOURCES+1, A panel_common::modsources_none_option_lb, 0
+      COMPONENT_DEFINITION combobox, pw_modsource, modsecx+6, modsecy+2, 8, N_TOT_MODSOURCES+1, A panel_common::modsources_none_option_lb, 0
+      COMPONENT_DEFINITION combobox, volume_modsource, modsecx+6, modsecy+3, 8, N_TOT_MODSOURCES+1, A panel_common::modsources_none_option_lb, 0
       COMPONENT_DEFINITION drag_edit, pitch1_moddepth, modsecx+14, modsecy+4, %10000100, 256-76, 76, 0, 0
       COMPONENT_DEFINITION drag_edit, pitch2_moddepth, modsecx+14, modsecy+5, %10000100, 256-76, 76, 0, 0
       COMPONENT_DEFINITION drag_edit, pw_moddepth, modsecx+14, modsecy+2, %00000100, 256-127, 127, 0, 0

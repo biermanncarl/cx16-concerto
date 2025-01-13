@@ -11,7 +11,7 @@
    px = psg_oscillators::px+psg_oscillators::wd+1
    py = synth_global::py
    wd = 16
-   hg = psg_oscillators::hg+envelopes::hg
+   hg = psg_oscillators::hg+envelopes::hg+1
    comps:
    .scope comps
       COMPONENT_DEFINITION text_field, synth_help, px+2, py+2, wd-4, hg-4, A vram_assets::help_text_synth
