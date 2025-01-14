@@ -99,7 +99,7 @@
    lb_fm_lfo: STR_FORMAT "fm lfo"
    lb_fm_lfo_2: STR_FORMAT " fm lfo  "
    lb_enable: STR_FORMAT "enable"
-   lb_vol_mod: .byte 22, 15, 12, 31, 12, 6, 15, 0 ; vol<-lfo
+   lb_vol_mod: .byte 22, 15, 12, 31, 6, 13, 32, 12, 6, 15, 0 ; vol<-lfo
    ; lb_pitch_mod: .byte 6, 18, 5, 17, 31, 12, 6, 15, 0 ; freq<-lfo
    ; lb_pitch_mod: .byte 16, 9, 20, 3, 8, 31, 12, 6, 15, 0 ; pitch<-lfo
    lb_strength: STR_FORMAT "strength"
@@ -166,6 +166,13 @@
       .word @keytrack
       .word @pmsel ; pitch mod select
       .word @pitchmoddep ; pitch mod depth
+      .word @lfo_enable
+      .word @lfo_wave
+      .word @lfo_freq
+      .word @lfo_vol_strength
+      .word @lfo_pitch_strength
+      .word @lfo_voice_vol_sens
+      .word @lfo_voice_pitch_sens
    @connection:
       LDA_COMPONENT_MEMBER_ADDRESS arrowed_edit, connection, value
       plx
@@ -270,6 +277,41 @@
       jsr concerto_synth::map_twos_complement_to_scale5
       sta concerto_synth::instruments::Instrument::fm_general::pitch_mod_dep, x
       rts
+   @lfo_enable:
+      plx
+      LDA_COMPONENT_MEMBER_ADDRESS checkbox, lfo_enable, checked
+      sta concerto_synth::instruments::Instrument::fm_general::lfo_enable, x
+      rts
+   @lfo_wave:
+      plx
+      LDA_COMPONENT_MEMBER_ADDRESS combobox, lfo_wave, selected_entry
+      sta concerto_synth::instruments::Instrument::fm_general::lfo_waveform, x
+      rts
+   @lfo_freq:
+      plx
+      LDA_COMPONENT_MEMBER_ADDRESS drag_edit, lfo_freq, coarse_value
+      sta concerto_synth::instruments::Instrument::fm_general::lfo_frequency, x
+      rts
+   @lfo_vol_strength:
+      plx
+      LDA_COMPONENT_MEMBER_ADDRESS drag_edit, lfo_vol_strength, coarse_value
+      sta concerto_synth::instruments::Instrument::fm_general::lfo_vol_mod, x
+      rts
+   @lfo_pitch_strength:
+      plx
+      LDA_COMPONENT_MEMBER_ADDRESS drag_edit, lfo_pitch_strength, coarse_value
+      sta concerto_synth::instruments::Instrument::fm_general::lfo_pitch_mod, x
+      rts
+   @lfo_voice_vol_sens:
+      plx
+      LDA_COMPONENT_MEMBER_ADDRESS drag_edit, lfo_voice_vol_sens, coarse_value
+      sta concerto_synth::instruments::Instrument::fm_general::lfo_vol_sens, x
+      rts
+   @lfo_voice_pitch_sens:
+      plx
+      LDA_COMPONENT_MEMBER_ADDRESS drag_edit, lfo_voice_pitch_sens, coarse_value
+      sta concerto_synth::instruments::Instrument::fm_general::lfo_pitch_sens, x
+      rts
    .endproc
 
 
@@ -338,6 +380,21 @@
       lda concerto_synth::instruments::Instrument::fm_general::pitch_mod_dep, x
       jsr concerto_synth::map_scale5_to_twos_complement
       STA_COMPONENT_MEMBER_ADDRESS drag_edit, pitchmod_dep, coarse_value
+      ; LFO settings
+      lda concerto_synth::instruments::Instrument::fm_general::lfo_enable, x
+      STA_COMPONENT_MEMBER_ADDRESS checkbox, lfo_enable, checked
+      lda concerto_synth::instruments::Instrument::fm_general::lfo_waveform, x
+      STA_COMPONENT_MEMBER_ADDRESS combobox, lfo_wave, selected_entry
+      lda concerto_synth::instruments::Instrument::fm_general::lfo_frequency, x
+      STA_COMPONENT_MEMBER_ADDRESS drag_edit, lfo_freq, coarse_value
+      lda concerto_synth::instruments::Instrument::fm_general::lfo_vol_mod, x
+      STA_COMPONENT_MEMBER_ADDRESS drag_edit, lfo_vol_strength, coarse_value
+      lda concerto_synth::instruments::Instrument::fm_general::lfo_pitch_mod, x
+      STA_COMPONENT_MEMBER_ADDRESS drag_edit, lfo_pitch_strength, coarse_value
+      lda concerto_synth::instruments::Instrument::fm_general::lfo_vol_sens, x
+      STA_COMPONENT_MEMBER_ADDRESS drag_edit, lfo_voice_vol_sens, coarse_value
+      lda concerto_synth::instruments::Instrument::fm_general::lfo_pitch_sens, x
+      STA_COMPONENT_MEMBER_ADDRESS drag_edit, lfo_voice_pitch_sens, coarse_value
       rts
    .endproc
 
