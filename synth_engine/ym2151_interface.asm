@@ -1,4 +1,4 @@
-; Copyright 2021-2022 Carl Georg Biermann
+; Copyright 2021-2025, Carl Georg Biermann
 
 
 ; This file contains various routines that help interfacing with the
@@ -76,11 +76,33 @@ invalidate_fm_instruments:
 ; Load an FM instrument onto the YM2151.
 ; Expects voice index in A
 ; Expects note_instrument and note_voice to be set accordingly.
-load_fm_instrument:
+.proc load_fm_instrument
    lfmt_operator_counter = mzpbd
    lfmt_op_en = mzpbc
    pha
    ldx note_instrument
+
+   ; Global LFO settings
+   lda instruments::Instrument::fm_general::lfo_enable, x
+   beq @lfo_global_end
+      ; LFO frequency
+      ldy instruments::Instrument::fm_general::lfo_frequency, x
+      lda #YM_LFRQ
+      jsr write_ym2151
+      ; LFO modulation strengths
+      ldy instruments::Instrument::fm_general::lfo_vol_mod, x
+      lda #YM_PMD_AMD
+      jsr write_ym2151
+      lda instruments::Instrument::fm_general::lfo_pitch_mod, x
+      ora #%10000000
+      tay
+      lda #YM_PMD_AMD
+      jsr write_ym2151
+      ; waveform
+      ldy instruments::Instrument::fm_general::lfo_waveform, x
+      lda #YM_CT_W
+      jsr write_ym2151
+   @lfo_global_end:
 
    ; General parameters
    ; set RL_FL_CON
@@ -96,15 +118,27 @@ load_fm_instrument:
    adc #YM_RL_FL_CON
    jsr write_ym2151
    ; PMS_AMS
-   ; (TODO)
+   clc
+   adc #(YM_PMS_AMS-YM_RL_FL_CON)
+   pha
+   lda instruments::Instrument::fm_general::lfo_pitch_sens, x
+   asl
+   asl
+   asl
+   asl
+   ora instruments::Instrument::fm_general::lfo_vol_sens, x
+   tay
+   pla
+   jsr write_ym2151
+
 
    ; Operator parameters
    ; We use a "running address register". To avoid adding the voice offset
-   ; to an absolute address like YM_RL_FL_CON again and again,
+   ; to an absolute address like with YM_RL_FL_CON above again and again,
    ; we simply add the differences between addresses.
    ; The running address is usually kept at the stack for easy access.
    clc
-   adc #(YM_DT1_MUL-YM_RL_FL_CON)
+   adc #(YM_DT1_MUL-YM_PMS_AMS)
    pha ; push running address
    lda #4
    sta lfmt_operator_counter
@@ -157,7 +191,11 @@ load_fm_instrument:
 
    ; ** AMS-EN_D1R (5 bits D1R)
    ; value
-   ldy instruments::Instrument::operators::d1r, x
+   lda instruments::Instrument::operators::vol_sens_lfo, x
+   lsr
+   ror
+   ora instruments::Instrument::operators::d1r, x
+   tay
    ; address
    pla
    clc
@@ -221,6 +259,7 @@ load_fm_instrument:
    ; pop running address
    pla
    rts
+.endproc
 
 
 ; Sets the volume of an FM voice

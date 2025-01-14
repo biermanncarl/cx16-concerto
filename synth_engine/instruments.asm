@@ -342,12 +342,12 @@ load_default_instrument:
    sta Instrument::fm_general::pitch_mod_dep, x
    ; FM LFO -- todo: select reasonable defaults
    stz Instrument::fm_general::lfo_enable, x
-   stz Instrument::fm_general::lfo_waveform, x
-   stz Instrument::fm_general::lfo_frequency, x
    stz Instrument::fm_general::lfo_vol_sens, x
    stz Instrument::fm_general::lfo_pitch_sens, x
    lda #2
    sta Instrument::fm_general::lfo_waveform, x
+   lda #210
+   sta Instrument::fm_general::lfo_frequency, x
    lda #127
    sta Instrument::fm_general::lfo_vol_mod, x
    sta Instrument::fm_general::lfo_pitch_mod, x
@@ -429,6 +429,7 @@ load_default_instrument:
    sta Instrument::operators::level, x
    lda #1
    sta Instrument::operators::vol_sens_vel, x
+   sta Instrument::operators::vol_sens_lfo, x
    txa
    clc
    adc #N_INSTRUMENTS
