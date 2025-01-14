@@ -14,6 +14,8 @@
    hg = 20
    lfo_x = px + 28
    lfo_y = py
+   modsec_x = px + 13
+   modsec_y = py + 16
    comps:
    .scope comps
       COMPONENT_DEFINITION arrowed_edit, connection, px+13, py+4, 0, 7, 0
@@ -23,16 +25,18 @@
       COMPONENT_DEFINITION checkbox, op3_active, px+21, py+2, 2, 0
       COMPONENT_DEFINITION checkbox, op4_active, px+24, py+2, 2, 0
       COMPONENT_DEFINITION combobox, lr_select, px+13, py+9, 5, 4, A panel_common::channel_select_lb, 0
-      COMPONENT_DEFINITION drag_edit, semitones, px+5, py+14, %00000100, 128, 127, 0, 0
-      COMPONENT_DEFINITION drag_edit, fine_tune, px+5, py+15, %00000100, 128, 127, 0, 0
-      COMPONENT_DEFINITION checkbox, key_track, px+13, py+12, 7, 0
-      COMPONENT_DEFINITION combobox, pitchmod_sel, px+13, py+14, 8, N_TOT_MODSOURCES+1, A panel_common::modsources_none_option_lb, 0
-      COMPONENT_DEFINITION drag_edit, pitchmod_dep, px+21, py+14, %10000100, 256-76, 76, 0, 0
+      COMPONENT_DEFINITION drag_edit, semitones, px+5, py+16, %00000100, 128, 127, 0, 0
+      COMPONENT_DEFINITION drag_edit, fine_tune, px+5, py+17, %00000100, 128, 127, 0, 0
+      COMPONENT_DEFINITION checkbox, key_track, px+13, py+14, 7, 0
+      COMPONENT_DEFINITION combobox, pitchmod_sel, modsec_x, modsec_y, 8, N_TOT_MODSOURCES+1, A panel_common::modsources_none_option_lb, 0
+      COMPONENT_DEFINITION drag_edit, pitchmod_dep, modsec_x+8, modsec_y, %10000100, 256-76, 76, 0, 0
       COMPONENT_DEFINITION checkbox, lfo_enable, lfo_x+2, lfo_y+2, 8, 0
       COMPONENT_DEFINITION combobox, lfo_wave, lfo_x+2, lfo_y+5, 7, 4, A lfo_waveform_lb, 0
       COMPONENT_DEFINITION drag_edit, lfo_freq, lfo_x+2, lfo_y+8, %0, 0, 255, 0, 0
-      COMPONENT_DEFINITION drag_edit, lfo_vol_sens, lfo_x+2, lfo_y+15, %0, 0, 127, 127, 0
-      COMPONENT_DEFINITION drag_edit, lfo_pitch_sens, lfo_x+8, lfo_y+15, %0, 0, 127, 127, 0
+      COMPONENT_DEFINITION drag_edit, lfo_vol_strength, lfo_x+2, lfo_y+15, %0, 0, 127, 127, 0
+      COMPONENT_DEFINITION drag_edit, lfo_pitch_strength, lfo_x+8, lfo_y+15, %0, 0, 127, 127, 0
+      COMPONENT_DEFINITION drag_edit, lfo_voice_vol_sens, px+13, py+11, %0, 0, 3, 0, 0
+      COMPONENT_DEFINITION drag_edit, lfo_voice_pitch_sens, modsec_x+9, modsec_y+1, %0, 0, 7, 0, 0
       COMPONENT_LIST_END
    .endscope
    capts:
@@ -54,17 +58,21 @@
       .word lb_op4
       .byte CCOLOR_CAPTION, px+2, py+9
       .word panel_common::channel_lb
-      .byte CCOLOR_CAPTION, px+2, py+12
-      .word panel_common::pitch_lb
-      .byte CCOLOR_CAPTION, px+15, py+12
-      .word panel_common::track_lb
       .byte CCOLOR_CAPTION, px+2, py+14
+      .word panel_common::pitch_lb
+      .byte CCOLOR_CAPTION, px+15, py+14
+      .word panel_common::track_lb
+      .byte CCOLOR_CAPTION, px+2, py+16
       .word panel_common::semi_lb
-      .byte CCOLOR_CAPTION, px+2, py+15
+      .byte CCOLOR_CAPTION, px+2, py+17
       .word panel_common::fine_lb
+      .byte CCOLOR_CAPTION, px+2, py+11
+      .word lb_vol_mod
+      .byte 0*16+12, modsec_x, modsec_y+1
+      .word lb_fm_lfo_2
       ; global LFO
       .byte CCOLOR_CAPTION, lfo_x+2, lfo_y
-      .word lb_lfo_settings
+      .word lb_fm_lfo
       .byte COLOR_IMPORTANT_CAPTION+16*COLOR_BACKGROUND, lfo_x+4, lfo_y+2
       .word lb_enable
       .byte CCOLOR_CAPTION, lfo_x+2, lfo_y+4
@@ -88,9 +96,12 @@
    lb_op2: STR_FORMAT "2"
    lb_op3: STR_FORMAT "3"
    lb_op4: STR_FORMAT "4"
-   lb_lfo_settings: STR_FORMAT "fm lfo"
+   lb_fm_lfo: STR_FORMAT "fm lfo"
+   lb_fm_lfo_2: STR_FORMAT " fm lfo  "
    lb_enable: STR_FORMAT "enable"
-   lb_global: STR_FORMAT "global"
+   lb_vol_mod: .byte 22, 15, 12, 31, 12, 6, 15, 0 ; vol<-lfo
+   ; lb_pitch_mod: .byte 6, 18, 5, 17, 31, 12, 6, 15, 0 ; freq<-lfo
+   ; lb_pitch_mod: .byte 16, 9, 20, 3, 8, 31, 12, 6, 15, 0 ; pitch<-lfo
    lb_strength: STR_FORMAT "strength"
    lfo_waveform_lb:
       STR_FORMAT "saw"
