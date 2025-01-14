@@ -8,7 +8,7 @@
 
 ; FM general setup (everything that isn't operators)
 .scope fm_general
-   px = 5
+   px = 6
    py = envelopes::py+envelopes::hg+1
    wd = 41
    hg = 20

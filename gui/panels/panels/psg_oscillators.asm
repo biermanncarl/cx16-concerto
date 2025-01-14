@@ -27,7 +27,7 @@
    comps:
    .scope comps
       COMPONENT_DEFINITION tab_selector, tab_select, px, py, MAX_OSCS_PER_VOICE, 0
-      COMPONENT_DEFINITION arrowed_edit, n_oscs, px+12, py+2, 0, MAX_OSCS_PER_VOICE, 1
+      COMPONENT_DEFINITION arrowed_edit, n_oscs, px+14, py+2, 0, MAX_OSCS_PER_VOICE, 1
       COMPONENT_DEFINITION combobox, waveform, wfsecx, wfsecy+1, 8, 4, A waveforms_lb, 0
       COMPONENT_DEFINITION drag_edit, pulse_width, pwsecx, pwsecy+1, %00000000, 0, 63, 0, 0
       COMPONENT_DEFINITION combobox, amp_env, ampsecx, ampsecy+4, 8, N_TOT_MODSOURCES, A panel_common::modsources_lb, 0
@@ -50,7 +50,7 @@
       .byte CCOLOR_CAPTION, px+4, py
       .word cp
       .byte (COLOR_IMPORTANT_CAPTION+16*COLOR_BACKGROUND), px+4, py+2 ; number of oscillators label
-      .word nosc_lb
+      .word panel_common::n_active_lb
       .byte CCOLOR_CAPTION, wfsecx, wfsecy
       .word panel_common::waveform_lb
       .byte CCOLOR_CAPTION, pwsecx, pwsecy
@@ -82,7 +82,6 @@
    ; data specific to the oscillator panel
    active_tab: .byte 0
    cp: STR_FORMAT "psg oscillators" ; caption of panel
-   nosc_lb: STR_FORMAT "n. oscs"
    amp_lb: STR_FORMAT "amp env"
    pulsewidth_lb: STR_FORMAT "pulse width"
    pw_lb: STR_FORMAT "pw"

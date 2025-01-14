@@ -15,7 +15,7 @@
    comps:
    .scope comps
       COMPONENT_DEFINITION tab_selector, tab_select, px, py, 3, 0
-      COMPONENT_DEFINITION arrowed_edit, n_envs, px+12, py+2, 1, 3, 1
+      COMPONENT_DEFINITION arrowed_edit, n_envs, px+14, py+2, 1, 3, 1
       COMPONENT_DEFINITION drag_edit, attack, px+4 , py+5, %00000001, 0, 127, 0, 0
       COMPONENT_DEFINITION drag_edit, decay, px+9 , py+5, %00000001, 0, 127, 0, 0
       COMPONENT_DEFINITION drag_edit, sustain, px+14, py+5, %00000000, 0, ENV_PEAK, 0, 0
@@ -26,7 +26,7 @@
       .byte CCOLOR_CAPTION, px+4, py
       .word cp
       .byte (COLOR_IMPORTANT_CAPTION+16*COLOR_BACKGROUND), px+4, py+2 ; number of envelopes label
-      .word nenv_lb
+      .word panel_common::n_active_lb
       .byte CCOLOR_CAPTION, px+4, py+4
       .word panel_common::lb_attack
       .byte CCOLOR_CAPTION, px+9, py+4
@@ -38,7 +38,6 @@
       .byte 0
    ; data specific to the envelope panel
    active_tab: .byte 0
-   nenv_lb: STR_FORMAT "n. envs"
    cp: STR_FORMAT "software envelopes" ; caption of panel
    lb_decay: STR_FORMAT "dec"
    lb_sustain: STR_FORMAT "sus"
