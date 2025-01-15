@@ -152,6 +152,7 @@
 
     .proc refresh
         ldy song_engine::clips::active_clip_id
+        STY_COMPONENT_MEMBER_ADDRESS listbox, track_select, selected_entry
         jsr song_engine::clips::accessClip
         ldy #song_engine::clips::clip_data::instrument_id
         lda (v32b::entrypointer), y
