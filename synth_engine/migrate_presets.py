@@ -23,6 +23,28 @@ def save_preset(path, header, instrument_data):
     np.concatenate([header, instrument_data[0]], axis=0).tofile(path, sep="")
 
 
+def open_song(path):
+    raw_data = np.fromfile(path, dtype=np.uint8, sep="")
+    header_size = 7
+    old_instrument_data_size = 150
+    num_instruments = 32
+    instrument_data_size = old_instrument_data_size * num_instruments
+    header = raw_data[:header_size]
+    instrument_data = raw_data[header_size : header_size + instrument_data_size]
+    tracks_data = raw_data[header_size + instrument_data_size :]
+    return (
+        header,
+        np.reshape(instrument_data, (old_instrument_data_size, num_instruments)).T,
+        tracks_data,
+    )
+
+
+def save_song(path, header, instrument_data, tracks_data):
+    np.concatenate(
+        [header, instrument_data.T.flatten("C"), tracks_data], axis=0
+    ).tofile(path, sep="")
+
+
 def migrate_v0_v1(instrument_data):
     """Migrates instrument data from version 0 to version 1.
 
@@ -84,3 +106,8 @@ if __name__ == "__main__":
         header, instrument_data = open_preset(preset_path)
         instrument_data = migrate_v0_v1(instrument_data)
         save_preset(preset_path, header, instrument_data)
+
+    for song_path in pathlib.Path(".").glob("*.COS"):
+        header, instrument_data, tracks_data = open_song(song_path)
+        instrument_data = migrate_v0_v1(instrument_data)
+        save_song(song_path, header, instrument_data, tracks_data)
