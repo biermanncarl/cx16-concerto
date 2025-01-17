@@ -59,9 +59,8 @@
    .endproc
 
    .proc write
-      ldx gui_variables::current_synth_instrument
+      ldy gui_variables::current_synth_instrument
       ; now determine which component has been dragged
-      phx
       lda mouse_variables::curr_component_id
       asl
       tax
@@ -73,31 +72,26 @@
       .word @rate
       .word @offs
    @n_lfos:
-      plx
       LDA_COMPONENT_MEMBER_ADDRESS checkbox, lfo_activate, checked
-      sta concerto_synth::instruments::Instrument::n_lfos, x
+      sta concerto_synth::instruments::Instrument::n_lfos, y
       rts
    @wave:
-      plx
       LDA_COMPONENT_MEMBER_ADDRESS combobox, waveform, selected_entry
-      sta concerto_synth::instruments::Instrument::lfo::wave, x
+      sta concerto_synth::instruments::Instrument::lfo::wave, y
       rts
    @retr:
-      plx
       LDA_COMPONENT_MEMBER_ADDRESS checkbox, retrigger, checked
-      sta concerto_synth::instruments::Instrument::lfo::retrig, x
+      sta concerto_synth::instruments::Instrument::lfo::retrig, y
       rts
    @rate:
-      plx
       LDA_COMPONENT_MEMBER_ADDRESS drag_edit, rate, coarse_value
-      sta concerto_synth::instruments::Instrument::lfo::rateH, x
+      sta concerto_synth::instruments::Instrument::lfo::rateH, y
       LDA_COMPONENT_MEMBER_ADDRESS drag_edit, rate, fine_value
-      sta concerto_synth::instruments::Instrument::lfo::rateL, x
+      sta concerto_synth::instruments::Instrument::lfo::rateL, y
       rts
    @offs:
-      plx
       LDA_COMPONENT_MEMBER_ADDRESS drag_edit, phase, coarse_value
-      sta concerto_synth::instruments::Instrument::lfo::offs, x
+      sta concerto_synth::instruments::Instrument::lfo::offs, y
       rts
    .endproc
 

@@ -42,9 +42,8 @@ scale5_mantissa_lut:
 
 ; The following two routines map between scale5 and normal binary
 ; the binary value can assume values from 1 to 76, or the negative values -76 to -1 (NOT zero!)
-; These subroutines preserve .X, but not .A and .Y
 scale5_temp_number: .byte 0
-
+; Preserves .X
 map_scale5_to_twos_complement:
    sta scale5_temp_number
    and #%01110000
@@ -79,21 +78,22 @@ map_scale5_to_twos_complement:
 ; and the low nibble of the result is the number of right-shifts 15 - (X-1) // 5
 ; so that the resulting byte looks like
 ; $ ((X-1) mod 5) (15 - (X-1)//5)
+; Preserves .Y
 map_twos_complement_to_scale5:
    stz scale5_temp_number
    cmp #0
    bpl :+
    eor #%11111111
    inc
-   ldy #128
-   sty scale5_temp_number
-:  ldy #15
+   ldx #128
+   stx scale5_temp_number
+:  ldx #15
    dec
    sec
 @loop:
    sbc #5
    bcc @end_loop
-   dey
+   dex
    bra @loop
 @end_loop:
    ; carry IS clear
@@ -104,7 +104,7 @@ map_twos_complement_to_scale5:
    asl
    adc scale5_temp_number
    sta scale5_temp_number
-   tya
+   txa
    clc
    adc scale5_temp_number
    rts

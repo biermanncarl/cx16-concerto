@@ -53,9 +53,8 @@
    .endproc
 
    .proc write
-      ldx gui_variables::current_synth_instrument
+      ldy gui_variables::current_synth_instrument
       ; now jump to component which has been clicked/dragged
-      phx
       lda mouse_variables::curr_component_id
       asl
       tax
@@ -66,29 +65,25 @@
       .word @porta_rate
       .word @vibrato_amount
    @retr_activate:
-      plx
       LDA_COMPONENT_MEMBER_ADDRESS checkbox, retrigger, checked
-      sta concerto_synth::instruments::Instrument::retrig, x
+      sta concerto_synth::instruments::Instrument::retrig, y
       rts
    @porta_activate:
-      plx
       LDA_COMPONENT_MEMBER_ADDRESS checkbox, porta_activate, checked
-      sta concerto_synth::instruments::Instrument::porta, x
+      sta concerto_synth::instruments::Instrument::porta, y
       rts
    @porta_rate:
-      plx
       LDA_COMPONENT_MEMBER_ADDRESS drag_edit, porta_rate, coarse_value
-      sta concerto_synth::instruments::Instrument::porta_r, x
+      sta concerto_synth::instruments::Instrument::porta_r, y
       rts
    @vibrato_amount:
-      plx
       LDA_COMPONENT_MEMBER_ADDRESS drag_edit, vibrato_amount, coarse_value ; if this value is 0, that means vibrato off, which is represented as a negative value internally
       beq :+
       jsr concerto_synth::map_twos_complement_to_scale5
-      sta concerto_synth::instruments::Instrument::vibrato, x
+      sta concerto_synth::instruments::Instrument::vibrato, y
       rts
    :  lda #$FF
-      sta concerto_synth::instruments::Instrument::vibrato, x
+      sta concerto_synth::instruments::Instrument::vibrato, y
       rts
    .endproc
 

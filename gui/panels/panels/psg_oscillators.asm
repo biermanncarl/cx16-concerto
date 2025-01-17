@@ -124,9 +124,8 @@
       dex
       bra @loop
    @end_loop:
-      tax ; oscillator index is in x
+      tay ; oscillator index is in y
       ; now determine which component has been changed
-      phx
       lda mouse_variables::curr_component_id
       asl
       tax
@@ -151,7 +150,6 @@
       .word @pwmdep ; pw mod depth
       .word @vmdep ; vol mod depth
    @tab_slector:
-      plx
       lda mouse_variables::curr_data_1
       sta active_tab
       jsr refresh
@@ -159,59 +157,53 @@
       rts
    @n_oscs:
       jsr concerto_synth::voices::panic ; If we don't do this, a different number of oscillators might be released than initially acquired by a voice. Safety first.
-      plx
       ldx gui_variables::current_synth_instrument
       LDA_COMPONENT_MEMBER_ADDRESS arrowed_edit, n_oscs, value
       sta concerto_synth::instruments::Instrument::n_oscs, x
       rts
    @waveform:
-      plx
       LDA_COMPONENT_MEMBER_ADDRESS combobox, waveform, selected_entry
       clc
       ror
       ror
       ror
-      sta concerto_synth::instruments::Instrument::osc::waveform, x
+      sta concerto_synth::instruments::Instrument::osc::waveform, y
       rts
    @pulsewidth:
-      plx
       LDA_COMPONENT_MEMBER_ADDRESS drag_edit, pulse_width, coarse_value
-      sta concerto_synth::instruments::Instrument::osc::pulse, x
+      sta concerto_synth::instruments::Instrument::osc::pulse, y
       rts
    @ampsel:
-      plx
       LDA_COMPONENT_MEMBER_ADDRESS combobox, amp_env, selected_entry
-      sta concerto_synth::instruments::Instrument::osc::amp_sel, x
+      sta concerto_synth::instruments::Instrument::osc::amp_sel, y
       rts
    @volume:
-      plx
       LDA_COMPONENT_MEMBER_ADDRESS drag_edit, volume, coarse_value
-      sta concerto_synth::instruments::Instrument::osc::volume, x
+      sta concerto_synth::instruments::Instrument::osc::volume, y
       rts
    @channelsel:
-      plx
       LDA_COMPONENT_MEMBER_ADDRESS combobox, lr_select, selected_entry
       clc
       ror
       ror
       ror
-      sta concerto_synth::instruments::Instrument::osc::lrmid, x
+      sta concerto_synth::instruments::Instrument::osc::lrmid, y
       rts
    @semitones:
-      plx
       ; decide if we need to tune down to compensate for fine tuning (because fine tuning internally only goes up)
-      lda concerto_synth::instruments::Instrument::osc::fine, x
+      lda concerto_synth::instruments::Instrument::osc::fine, y
       php
       LDA_COMPONENT_MEMBER_ADDRESS drag_edit, semitones, coarse_value
       plp
       bmi :+
-      sta concerto_synth::instruments::Instrument::osc::pitch, x
+      sta concerto_synth::instruments::Instrument::osc::pitch, y
       rts
    :  dec
-      sta concerto_synth::instruments::Instrument::osc::pitch, x
+      sta concerto_synth::instruments::Instrument::osc::pitch, y
       rts
    @finetune:
-      plx
+      tya
+      tax
       ; if fine tune is now negative, but was non-negative beforehand, we need to decrement semitones
       ; and the other way round: if fine tune was negative, but now is non-negative, we need to increment semitones
       lda concerto_synth::instruments::Instrument::osc::fine, x
@@ -229,57 +221,48 @@
       sta concerto_synth::instruments::Instrument::osc::fine, x
       rts
    @keytrack:
-      plx
       LDA_COMPONENT_MEMBER_ADDRESS checkbox, key_track, checked
-      sta concerto_synth::instruments::Instrument::osc::track, x
+      sta concerto_synth::instruments::Instrument::osc::track, y
       rts
    @pmsel1:
-      plx
       LDA_COMPONENT_MEMBER_ADDRESS combobox, pitch1_modsource, selected_entry
       jsr panel_common::map_modsource_from_gui
-      sta concerto_synth::instruments::Instrument::osc::pitch_mod_sel1, x
+      sta concerto_synth::instruments::Instrument::osc::pitch_mod_sel1, y
       rts
    @pmsel2:
-      plx
       LDA_COMPONENT_MEMBER_ADDRESS combobox, pitch2_modsource, selected_entry
       jsr panel_common::map_modsource_from_gui
-      sta concerto_synth::instruments::Instrument::osc::pitch_mod_sel2, x
+      sta concerto_synth::instruments::Instrument::osc::pitch_mod_sel2, y
       rts
    @pwmsel:
-      plx
       LDA_COMPONENT_MEMBER_ADDRESS combobox, pw_modsource, selected_entry
       jsr panel_common::map_modsource_from_gui
-      sta concerto_synth::instruments::Instrument::osc::pwm_sel, x
+      sta concerto_synth::instruments::Instrument::osc::pwm_sel, y
       rts
    @volmsel:
-      plx
       LDA_COMPONENT_MEMBER_ADDRESS combobox, volume_modsource, selected_entry
       jsr panel_common::map_modsource_from_gui
-      sta concerto_synth::instruments::Instrument::osc::vol_mod_sel, x
+      sta concerto_synth::instruments::Instrument::osc::vol_mod_sel, y
       rts
    @pitchmoddep1:
-      plx
       LDA_COMPONENT_MEMBER_ADDRESS drag_edit, pitch1_moddepth, coarse_value
       jsr concerto_synth::map_twos_complement_to_scale5
-      sta concerto_synth::instruments::Instrument::osc::pitch_mod_dep1, x
+      sta concerto_synth::instruments::Instrument::osc::pitch_mod_dep1, y
       rts
    @pitchmoddep2:
-      plx
       LDA_COMPONENT_MEMBER_ADDRESS drag_edit, pitch2_moddepth, coarse_value
       jsr concerto_synth::map_twos_complement_to_scale5
-      sta concerto_synth::instruments::Instrument::osc::pitch_mod_dep2, x
+      sta concerto_synth::instruments::Instrument::osc::pitch_mod_dep2, y
       rts
    @pwmdep:
-      plx
       LDA_COMPONENT_MEMBER_ADDRESS drag_edit, pw_moddepth, coarse_value
       jsr panel_common::map_twos_complement_to_signed_7bit
-      sta concerto_synth::instruments::Instrument::osc::pwm_dep, x
+      sta concerto_synth::instruments::Instrument::osc::pwm_dep, y
       rts
    @vmdep:
-      plx
       LDA_COMPONENT_MEMBER_ADDRESS drag_edit, volume_moddepth, coarse_value
       jsr panel_common::map_twos_complement_to_signed_7bit
-      sta concerto_synth::instruments::Instrument::osc::vol_mod_dep, x
+      sta concerto_synth::instruments::Instrument::osc::vol_mod_dep, y
       rts
    .endproc
 

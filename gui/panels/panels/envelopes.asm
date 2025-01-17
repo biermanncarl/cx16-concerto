@@ -72,14 +72,8 @@
       dex
       bra @loop
    @end_loop:
-      tax ; envelope index is in x
-      ; prepare drag edit readout
-      lda mouse_variables::curr_component_ofs
-      clc
-      adc #5 ; 6 because most of the control elements are drag edits anyway
-      tay ; drag edit's coarse value offset is in Y
+      tay ; envelope index is in y
       ; now determine which component has been dragged
-      phx
       lda mouse_variables::curr_component_id
       asl
       tax
@@ -92,49 +86,37 @@
       .word @sustain
       .word @release
    @tab_select:
-      plx
       lda mouse_variables::curr_data_1
       sta active_tab
       jsr refresh
       inc gui_variables::request_components_redraw
       rts
    @n_envs:
-      plx
       ldx gui_variables::current_synth_instrument
       LDA_COMPONENT_MEMBER_ADDRESS arrowed_edit, n_envs, value
       sta concerto_synth::instruments::Instrument::n_envs, x
       rts
    @attack:
-      plx
-      lda comps, y
-      sta concerto_synth::instruments::Instrument::env::attackH, x
-      iny
-      lda comps, y
-      sta concerto_synth::instruments::Instrument::env::attackL, x
+      LDA_COMPONENT_MEMBER_ADDRESS drag_edit, attack, coarse_value
+      sta concerto_synth::instruments::Instrument::env::attackH, y
+      LDA_COMPONENT_MEMBER_ADDRESS drag_edit, attack, fine_value
+      sta concerto_synth::instruments::Instrument::env::attackL, y
       rts
    @decay:
-      plx
-      lda comps, y
-      sta concerto_synth::instruments::Instrument::env::decayH, x
-      iny
-      lda comps, y
-      sta concerto_synth::instruments::Instrument::env::decayL, x
+      LDA_COMPONENT_MEMBER_ADDRESS drag_edit, decay, coarse_value
+      sta concerto_synth::instruments::Instrument::env::decayH, y
+      LDA_COMPONENT_MEMBER_ADDRESS drag_edit, decay, fine_value
+      sta concerto_synth::instruments::Instrument::env::decayL, y
       rts
    @sustain:
-      plx
-      lda comps, y
-      sta concerto_synth::instruments::Instrument::env::sustain, x
+      LDA_COMPONENT_MEMBER_ADDRESS drag_edit, sustain, coarse_value
+      sta concerto_synth::instruments::Instrument::env::sustain, y
       rts
    @release:
-      plx
-      lda comps, y
-      sta concerto_synth::instruments::Instrument::env::releaseH, x
-      iny
-      lda comps, y
-      sta concerto_synth::instruments::Instrument::env::releaseL, x
-      rts
-   @skip:
-      plx
+      LDA_COMPONENT_MEMBER_ADDRESS drag_edit, release, coarse_value
+      sta concerto_synth::instruments::Instrument::env::releaseH, y
+      LDA_COMPONENT_MEMBER_ADDRESS drag_edit, release, fine_value
+      sta concerto_synth::instruments::Instrument::env::releaseL, y
       rts
    .endproc
 

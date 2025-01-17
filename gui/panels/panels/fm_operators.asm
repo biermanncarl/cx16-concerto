@@ -104,9 +104,8 @@
       adc #N_INSTRUMENTS
       bra @loop
    @loop_done:
-      tax
+      tay
       ; now determine which component has been dragged
-      phx
       lda mouse_variables::curr_component_id
       asl
       tax
@@ -126,80 +125,67 @@
       .word @vol_sens
       .word @lfo_sens
    @tab_select:
-      plx
       lda mouse_variables::curr_data_1
       sta active_tab
       jsr refresh
       inc gui_variables::request_components_redraw
       rts
    @attack:
-      plx
       LDA_COMPONENT_MEMBER_ADDRESS drag_edit, attack, coarse_value
-      sta concerto_synth::instruments::Instrument::operators::ar, x
+      sta concerto_synth::instruments::Instrument::operators::ar, y
       rts
    @decay1:
-      plx
       LDA_COMPONENT_MEMBER_ADDRESS drag_edit, decay_1, coarse_value
-      sta concerto_synth::instruments::Instrument::operators::d1r, x
+      sta concerto_synth::instruments::Instrument::operators::d1r, y
       rts
    @decay_level:
-      plx
       sec
       lda #15
       SBC_COMPONENT_MEMBER_ADDRESS drag_edit, decay_level, coarse_value
-      sta concerto_synth::instruments::Instrument::operators::d1l, x
+      sta concerto_synth::instruments::Instrument::operators::d1l, y
       rts
    @decay2:
-      plx
       LDA_COMPONENT_MEMBER_ADDRESS drag_edit, decay_2, coarse_value
-      sta concerto_synth::instruments::Instrument::operators::d2r, x
+      sta concerto_synth::instruments::Instrument::operators::d2r, y
       rts
    @release:
-      plx
       LDA_COMPONENT_MEMBER_ADDRESS drag_edit, release, coarse_value
-      sta concerto_synth::instruments::Instrument::operators::rr, x
+      sta concerto_synth::instruments::Instrument::operators::rr, y
       rts
    @mul:
-      plx
       LDA_COMPONENT_MEMBER_ADDRESS drag_edit, mul, coarse_value
-      sta concerto_synth::instruments::Instrument::operators::mul, x
+      sta concerto_synth::instruments::Instrument::operators::mul, y
       rts
    @fine:
-      plx
       LDA_COMPONENT_MEMBER_ADDRESS drag_edit, fine, coarse_value
       bpl :+
       ; transform -3 ... -0 range to 5 .. 7 (4 is unused, since it does the same thing as 0)
       eor #%11111111
       clc
       adc #5
-   :  sta concerto_synth::instruments::Instrument::operators::dt1, x
+   :  sta concerto_synth::instruments::Instrument::operators::dt1, y
       rts
    @coarse:
-      plx
       LDA_COMPONENT_MEMBER_ADDRESS drag_edit, coarse, coarse_value
-      sta concerto_synth::instruments::Instrument::operators::dt2, x
+      sta concerto_synth::instruments::Instrument::operators::dt2, y
       rts
    @vol:
-      plx
       lda #127
       sec
       SBC_COMPONENT_MEMBER_ADDRESS drag_edit, level, coarse_value
-      sta concerto_synth::instruments::Instrument::operators::level, x
+      sta concerto_synth::instruments::Instrument::operators::level, y
       rts
    @key_scaling:
-      plx
       LDA_COMPONENT_MEMBER_ADDRESS drag_edit, key_scaling, coarse_value
-      sta concerto_synth::instruments::Instrument::operators::ks, x
+      sta concerto_synth::instruments::Instrument::operators::ks, y
       rts
    @vol_sens:
-      plx
       LDA_COMPONENT_MEMBER_ADDRESS checkbox, vol_sensitivity, checked
-      sta concerto_synth::instruments::Instrument::operators::vol_sens_vel, x
+      sta concerto_synth::instruments::Instrument::operators::vol_sens_vel, y
       rts
    @lfo_sens:
-      plx
       LDA_COMPONENT_MEMBER_ADDRESS checkbox, lfo_sensitivity, checked
-      sta concerto_synth::instruments::Instrument::operators::vol_sens_lfo, x
+      sta concerto_synth::instruments::Instrument::operators::vol_sens_lfo, y
       rts
    .endproc
 

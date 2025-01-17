@@ -146,9 +146,8 @@
       jsr concerto_synth::voices::panic
       jsr concerto_synth::voices::invalidate_fm_instruments
       ; do the usual stuff
-      ldx gui_variables::current_synth_instrument
+      ldy gui_variables::current_synth_instrument
       ; now determine which component has been dragged
-      phx
       lda mouse_variables::curr_component_id
       asl
       tax
@@ -175,16 +174,14 @@
       .word @lfo_voice_pitch_sens
    @connection:
       LDA_COMPONENT_MEMBER_ADDRESS arrowed_edit, connection, value
-      plx
-      sta concerto_synth::instruments::Instrument::fm_general::con, x
+      sta concerto_synth::instruments::Instrument::fm_general::con, y
       ; redraw FM algorithm
       sta guiutils::draw_data1
       jsr guiutils::draw_fm_alg
       rts
    @feedback:
       LDA_COMPONENT_MEMBER_ADDRESS drag_edit, feedback, coarse_value
-      plx
-      sta concerto_synth::instruments::Instrument::fm_general::fl, x
+      sta concerto_synth::instruments::Instrument::fm_general::fl, y
       rts
    @op1_active:
       lda #%00000001
@@ -201,47 +198,44 @@
    @op4_active:
       lda #%00001000
       sta wfm_bits
-      bra @op_active_common
    @op_active_common: ; DON'T put this label into jump table ...
-      plx
-      ldy mouse_variables::curr_component_ofs
+      ldx mouse_variables::curr_component_ofs
       ; get checkbox value
-      lda comps + components::checkbox::data_members::checked, y
+      lda comps + components::checkbox::data_members::checked, x
       ; push into carry flag
       lsr
       lda wfm_bits
       bcc :+
       ; checkbox activated
-      ora concerto_synth::instruments::Instrument::fm_general::op_en, x
+      ora concerto_synth::instruments::Instrument::fm_general::op_en, y
       bra :++
    :  ; checkbox deactivated
       eor #%11111111
-      and concerto_synth::instruments::Instrument::fm_general::op_en, x
-   :  sta concerto_synth::instruments::Instrument::fm_general::op_en, x
+      and concerto_synth::instruments::Instrument::fm_general::op_en, y
+   :  sta concerto_synth::instruments::Instrument::fm_general::op_en, y
       rts
    @lr_select:
-      plx
       LDA_COMPONENT_MEMBER_ADDRESS combobox, lr_select, selected_entry
       clc
       ror
       ror
       ror
-      sta concerto_synth::instruments::Instrument::fm_general::lr, x
+      sta concerto_synth::instruments::Instrument::fm_general::lr, y
       rts
    @semitones:
-      plx
       ; decide if we need to tune down to compensate for fine tuning (because fine tuning internally only goes up)
-      lda concerto_synth::instruments::Instrument::fm_general::fine, x
+      lda concerto_synth::instruments::Instrument::fm_general::fine, y
       bmi :+
       LDA_COMPONENT_MEMBER_ADDRESS drag_edit, semitones, coarse_value
-      sta concerto_synth::instruments::Instrument::fm_general::pitch, x
+      sta concerto_synth::instruments::Instrument::fm_general::pitch, y
       rts
    :  LDA_COMPONENT_MEMBER_ADDRESS drag_edit, semitones, coarse_value
       dec
-      sta concerto_synth::instruments::Instrument::fm_general::pitch, x
+      sta concerto_synth::instruments::Instrument::fm_general::pitch, y
       rts
    @finetune:
-      plx
+      tya
+      tax
       ; if fine tune is now negative, but was non-negative beforehand, we need to decrement semitones
       ; and the other way round: if fine tune was negative, but now is non-negative, we need to increment semitones
       LDA_COMPONENT_MEMBER_ADDRESS drag_edit, fine_tune, coarse_value
@@ -261,56 +255,46 @@
       sta concerto_synth::instruments::Instrument::fm_general::fine, x
       rts
    @keytrack:
-      plx
       LDA_COMPONENT_MEMBER_ADDRESS checkbox, key_track, checked
-      sta concerto_synth::instruments::Instrument::fm_general::track, x
+      sta concerto_synth::instruments::Instrument::fm_general::track, y
       rts
    @pmsel:
-      plx
       LDA_COMPONENT_MEMBER_ADDRESS combobox, pitchmod_sel, selected_entry
       jsr panel_common::map_modsource_from_gui
-      sta concerto_synth::instruments::Instrument::fm_general::pitch_mod_sel, x
+      sta concerto_synth::instruments::Instrument::fm_general::pitch_mod_sel, y
       rts
    @pitchmoddep:
-      plx
       LDA_COMPONENT_MEMBER_ADDRESS drag_edit, pitchmod_dep, coarse_value
       jsr concerto_synth::map_twos_complement_to_scale5
-      sta concerto_synth::instruments::Instrument::fm_general::pitch_mod_dep, x
+      sta concerto_synth::instruments::Instrument::fm_general::pitch_mod_dep, y
       rts
    @lfo_enable:
-      plx
       LDA_COMPONENT_MEMBER_ADDRESS checkbox, lfo_enable, checked
-      sta concerto_synth::instruments::Instrument::fm_general::lfo_enable, x
+      sta concerto_synth::instruments::Instrument::fm_general::lfo_enable, y
       rts
    @lfo_wave:
-      plx
       LDA_COMPONENT_MEMBER_ADDRESS combobox, lfo_wave, selected_entry
-      sta concerto_synth::instruments::Instrument::fm_general::lfo_waveform, x
+      sta concerto_synth::instruments::Instrument::fm_general::lfo_waveform, y
       rts
    @lfo_freq:
-      plx
       LDA_COMPONENT_MEMBER_ADDRESS drag_edit, lfo_freq, coarse_value
-      sta concerto_synth::instruments::Instrument::fm_general::lfo_frequency, x
+      sta concerto_synth::instruments::Instrument::fm_general::lfo_frequency, y
       rts
    @lfo_vol_strength:
-      plx
       LDA_COMPONENT_MEMBER_ADDRESS drag_edit, lfo_vol_strength, coarse_value
-      sta concerto_synth::instruments::Instrument::fm_general::lfo_vol_mod, x
+      sta concerto_synth::instruments::Instrument::fm_general::lfo_vol_mod, y
       rts
    @lfo_pitch_strength:
-      plx
       LDA_COMPONENT_MEMBER_ADDRESS drag_edit, lfo_pitch_strength, coarse_value
-      sta concerto_synth::instruments::Instrument::fm_general::lfo_pitch_mod, x
+      sta concerto_synth::instruments::Instrument::fm_general::lfo_pitch_mod, y
       rts
    @lfo_voice_vol_sens:
-      plx
       LDA_COMPONENT_MEMBER_ADDRESS drag_edit, lfo_voice_vol_sens, coarse_value
-      sta concerto_synth::instruments::Instrument::fm_general::lfo_vol_sens, x
+      sta concerto_synth::instruments::Instrument::fm_general::lfo_vol_sens, y
       rts
    @lfo_voice_pitch_sens:
-      plx
       LDA_COMPONENT_MEMBER_ADDRESS drag_edit, lfo_voice_pitch_sens, coarse_value
-      sta concerto_synth::instruments::Instrument::fm_general::lfo_pitch_sens, x
+      sta concerto_synth::instruments::Instrument::fm_general::lfo_pitch_sens, y
       rts
    .endproc
 
