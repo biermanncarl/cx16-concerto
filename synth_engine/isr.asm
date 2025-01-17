@@ -63,6 +63,8 @@ do_tick:
    pha
    lda v32b::entrypointer+1
    pha
+   ; we only back up Data0 so far, and we expect Data0 to be selected at all times when the ISR can be executed
+   ; stz VERA_ctrl  ; not needed as long as Data0 is always selected
    lda VERA_addr_low
    pha
    lda VERA_addr_mid
@@ -76,6 +78,8 @@ do_tick:
    jsr concerto_playback_routine
    ; restore shared variables
    pla
+   ; we only back up Data0 so far, and we expect Data0 to be selected at all times when the ISR can be executed
+   ; stz VERA_ctrl  ; not needed as long as Data0 is always selected
    sta VERA_addr_high
    pla
    sta VERA_addr_mid

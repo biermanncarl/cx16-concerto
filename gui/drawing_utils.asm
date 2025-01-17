@@ -808,6 +808,7 @@ clear_rectangle:
    sta VERA_addr_mid
    lda #$10 ; auto-increment 1, Bank 0
    sta VERA_addr_high
+   stz VERA_ctrl ; without this, before we allow interrupts again, the ISR could mess things up
    plp
 
    ldy #0
