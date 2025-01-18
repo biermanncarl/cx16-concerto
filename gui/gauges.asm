@@ -18,9 +18,12 @@
     playback_marker_pos = concerto_gui::gui_variables::mzpwa
 
     ; playback time indicator
+    lda concerto_gui::panels::global_navigation::active_tab
+    bne :+
     lda song_engine::multitrack_player::detail::active
-    beq @deactivate_playback_marker
-    lda song_engine::multitrack_player::detail::time_stamp
+    bne :++
+:   jmp @deactivate_playback_marker
+:   lda song_engine::multitrack_player::detail::time_stamp
     sec
     sbc concerto_gui::components::dnd::dragables::notes::window_time_stamp
     tax
@@ -30,7 +33,39 @@
     ; zoom level
     ldy concerto_gui::components::dnd::dragables::notes::temporal_zoom
     beq @single_ticks
-
+    @normal_zoom_level:
+        jsr song_engine::timing::disassemble_time_stamp
+        stx playback_marker_pos
+        sta playback_marker_pos+1
+        lda #3
+        sec
+        sbc concerto_gui::components::dnd::dragables::notes::temporal_zoom
+        tay
+        @leftshift_loop:
+            bmi @leftshift_loop_end
+            asl playback_marker_pos
+            rol playback_marker_pos+1
+            bcs @deactivate_playback_marker
+            dey
+            bra @leftshift_loop
+        @leftshift_loop_end:
+        ; add event_edit_pos_x offset
+        lda playback_marker_pos
+        clc
+        adc #<(8*concerto_gui::components::dnd::dragables::notes::detail::event_edit_pos_x)
+        sta playback_marker_pos
+        lda playback_marker_pos+1
+        adc #>(8*concerto_gui::components::dnd::dragables::notes::detail::event_edit_pos_x)
+        @x_border = 8 * (concerto_gui::components::dnd::dragables::notes::detail::event_edit_pos_x + concerto_gui::components::dnd::dragables::notes::detail::event_edit_width)
+        sta playback_marker_pos+1
+        cmp #>@x_border
+        bcc @update_playback_marker
+        bne @deactivate_playback_marker
+        ; high byte equal to border, need to check low byte
+        lda playback_marker_pos
+        cmp #<@x_border
+        bcs @deactivate_playback_marker
+        bra @update_playback_marker
     @single_ticks:
         cmp #0
         bne @deactivate_playback_marker
