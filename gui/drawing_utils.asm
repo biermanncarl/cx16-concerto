@@ -994,6 +994,7 @@ draw_globalnav:
 ; Sets up VERA port 0 to access a sprite of given index. Will position the data pointer at the x position for convenience (not the bitmap address).
 ; Expects the index of the sprite in .A
 ; Expects the offset within the sprite data in .Y. Value must be from 0 to 7 (inclusive).
+; Preserves .X and .Y.
 .proc setupSpriteAccess
    sprite_address_mid = sprite_temp
    sprite_address_offset = sprite_temp+1
