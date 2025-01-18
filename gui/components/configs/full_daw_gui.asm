@@ -1,4 +1,4 @@
-; Copyright 2023 Carl Georg Biermann
+; Copyright 2023-2024 Carl Georg Biermann
 
 .ifndef ::GUI_COMPONENTS_CONFIGS_DEFAULT_ASM
 

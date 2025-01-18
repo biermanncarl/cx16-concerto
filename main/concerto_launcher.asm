@@ -78,7 +78,7 @@ sprt_hflip_off = 0
 
 ; writes a bunch of VRAM registers so that the sprite can be used by just setting the Z-depth and X/Y position
 ; currently only supports bitmap data in low VRAM bank
-.macro SETUP_SPRITE sprite_index, bitmap_address, width, height, bpp_mode, palette_offset, v_flip, h_flip
+.macro SETUP_SPRITE sprite_index, bitmap_address, width, height, bpp_mode, palette_offset, v_flip, h_flip, pos_x, pos_y
     ; messing with a sprite
     .local sprite_offset
     .local sprite_data_address_l
@@ -100,10 +100,13 @@ sprt_hflip_off = 0
     lda #sprite_data_address_h + bpp_mode
     sta VERA_data0
     ; x, y (4 bytes)
-    lda #32
+    lda #<pos_x
     sta VERA_data0
+    lda #>pos_x
     sta VERA_data0
+    lda #<pos_y
     sta VERA_data0
+    lda #>pos_y
     sta VERA_data0
     ; collision mask, z-depth, V-flip, H-flip
     lda #v_flip + h_flip ; + 3*4 ; uncomment activates for inspection
@@ -146,8 +149,14 @@ start:
     sta VERA_data0
 
     ; setup sprites
-    SETUP_SPRITE vram_assets::sprite_index_box_selection_frame_top_left, vram_assets::sprite_data_box_selection_frame_top_left, sprt_width_32px, sprt_height_32px, sprt_mode_4bpp, 2, sprt_vflip_off, sprt_hflip_off
-    SETUP_SPRITE vram_assets::sprite_index_box_selection_frame_bottom_right, vram_assets::sprite_data_box_selection_frame_top_left, sprt_width_32px, sprt_height_32px, sprt_mode_4bpp, 2, sprt_vflip_on, sprt_hflip_on
+    SETUP_SPRITE vram_assets::sprite_index_box_selection_frame_top_left, vram_assets::sprite_data_box_selection_frame_top_left, sprt_width_32px, sprt_height_32px, sprt_mode_4bpp, 2, sprt_vflip_off, sprt_hflip_off, 0, 0
+    SETUP_SPRITE vram_assets::sprite_index_box_selection_frame_bottom_right, vram_assets::sprite_data_box_selection_frame_top_left, sprt_width_32px, sprt_height_32px, sprt_mode_4bpp, 2, sprt_vflip_on, sprt_hflip_on, 0, 0
+    SETUP_SPRITE vram_assets::sprite_index_playback_marker_1, vram_assets::sprite_data_playback_marker, sprt_width_8px, sprt_height_64px, sprt_mode_4bpp, 2, sprt_vflip_off, sprt_hflip_off, 100, 64
+    SETUP_SPRITE vram_assets::sprite_index_playback_marker_2, vram_assets::sprite_data_playback_marker, sprt_width_8px, sprt_height_64px, sprt_mode_4bpp, 2, sprt_vflip_off, sprt_hflip_off, 100, 128
+    SETUP_SPRITE vram_assets::sprite_index_playback_marker_3, vram_assets::sprite_data_playback_marker, sprt_width_8px, sprt_height_64px, sprt_mode_4bpp, 2, sprt_vflip_off, sprt_hflip_off, 100, 192
+    SETUP_SPRITE vram_assets::sprite_index_playback_marker_4, vram_assets::sprite_data_playback_marker, sprt_width_8px, sprt_height_64px, sprt_mode_4bpp, 2, sprt_vflip_off, sprt_hflip_off, 100, 256
+    SETUP_SPRITE vram_assets::sprite_index_playback_marker_5, vram_assets::sprite_data_playback_marker, sprt_width_8px, sprt_height_64px, sprt_mode_4bpp, 2, sprt_vflip_off, sprt_hflip_off, 100, 320
+    SETUP_SPRITE vram_assets::sprite_index_playback_marker_6, vram_assets::sprite_data_playback_marker, sprt_width_8px, sprt_height_64px, sprt_mode_4bpp, 2, sprt_vflip_off, sprt_hflip_off, 100, 368
 
 
 

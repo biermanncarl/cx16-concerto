@@ -1,4 +1,4 @@
-; Copyright 2021-2024 Carl Georg Biermann
+; Copyright 2021-2025 Carl Georg Biermann
 
 
 ; This file contains the mouse controller unit/routines.
@@ -95,8 +95,7 @@ mouse_tick:
    .word do_hold_L
    .word do_hold_other
 end_mouse_tick:
-   jsr gui_routines::handle_component_requests
-   rts
+   jmp gui_routines::handle_component_requests
 
 ; no buttons are pressed. waiting for button presses.
 do_idle:

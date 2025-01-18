@@ -129,13 +129,18 @@ orange_text_color = orange+16*darkgray
 
 ; ----------  DATA  ----------
 
+; Must be aligned with 256 bytes (if not, need to adapt multiplication code to not make that assumption)
+vera_fx_scratchpad:
+    .res 4
+    .res 28 ; padding to give sprite data 32-byte alignment
+
 ; sprite data for box-selection frame
 box_selection_frame_size = 32
 
 sprite_index_box_selection_frame_top_left = 1
 sprite_index_box_selection_frame_bottom_right = 2
 sprite_data_box_selection_frame_top_left:
-    @frame_top_left_color = 1
+    @frame_top_left_color = 1 ; using black at palette position 33 in 4bpp mode, palette offset 2
     @horizontal = @frame_top_left_color << 4 + @frame_top_left_color
     @vertical = @frame_top_left_color << 4
     .repeat box_selection_frame_size / 2
@@ -148,9 +153,22 @@ sprite_data_box_selection_frame_top_left:
         .endrepeat
     .endrepeat
 
-; Must be aligned with 256 bytes (if not, need to adapt multiplication code to not make that assumption)
-vera_fx_scratchpad:
-    .res 4
+; sprite data for playback marker
+sprite_index_playback_marker_1 = sprite_index_box_selection_frame_bottom_right + 1
+sprite_index_playback_marker_2 = sprite_index_playback_marker_1 + 1
+sprite_index_playback_marker_3 = sprite_index_playback_marker_2 + 1
+sprite_index_playback_marker_4 = sprite_index_playback_marker_3 + 1
+sprite_index_playback_marker_5 = sprite_index_playback_marker_4 + 1
+sprite_index_playback_marker_6 = sprite_index_playback_marker_5 + 1
+playback_marker_width = 8
+playback_marker_height = 64
+sprite_data_playback_marker:
+    @black_color = 1 ; using black at palette position 33 in 4bpp mode, palette offset 2
+    @first_pixels = @black_color << 4
+    @other_pixels = background_color
+    .repeat playback_marker_height
+        .byte @first_pixels, @other_pixels, @other_pixels, @other_pixels
+    .endrepeat
 
 ; text screen data
 fm_algs:

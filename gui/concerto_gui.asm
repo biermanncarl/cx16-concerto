@@ -1,4 +1,4 @@
-; Copyright 2021-2024 Carl Georg Biermann
+; Copyright 2021-2025 Carl Georg Biermann
 
 
 ; Include this file to your program to include the concerto synth GUI.
@@ -25,6 +25,7 @@ play_volume:
 .include "file_browsing.asm"
 .include "components/components.asm"
 .include "panels/panels.asm"
+.include "gauges.asm"
 ; higher level routines
 .include "gui_routines.asm"
 .include "keyboard_routines.asm"
@@ -73,7 +74,8 @@ hide:
 ; AFFECTS: A, X, Y
 .proc gui_tick
    jsr keyboard::tick
-   jmp mouse::mouse_tick
+   jsr mouse::mouse_tick
+   jmp gauges::tick
 .endproc
 
 
