@@ -450,6 +450,98 @@ player_start_timestamp:
 .endproc
 
 
+; Processes a single event.
+; The track index must be set in track_index
+; The event is expected in the v5b data registers.
+.proc processEvent
+    track_index = detail::temp_variable_a
+    lda events::event_type
+    beq @note_off ; #events::event_type_note_off
+    cmp #events::event_type_note_on
+    beq @note_on
+    rts ; for now, ignore all events that aren't note-on or note-off
+@note_on:
+    ; Setup access to clip settings
+    ldy track_index
+    lda detail::clip_settings_a, y
+    ldx detail::clip_settings_x, y
+    jsr v32b::accessEntry
+    ; check for drum pad
+    ldy #clips::clip_data::drum_pad
+    lda (v32b::entrypointer), y
+    beq @melodic
+    @drum_pad:
+        ; we assume that the same note can't be played twice (same channel, pitch and instrument)
+        ; So we don't (need to) look for existing one
+        lda events::note_pitch
+        jsr detail::getDrumInstrumentAndPitch
+        stx concerto_synth::note_instrument
+        sta concerto_synth::note_pitch
+        jsr detail::findFreeVoice
+        bcc @start_new_note
+        rts ; no free voice found, go to next event
+@melodic:
+    ; Check for monophonic
+    ldy #clips::clip_data::monophonic
+    lda (v32b::entrypointer), y
+    beq @find_free_voice
+    @monophonic:
+        ; find voice with current channel & pitch --> replace
+        lda track_index
+        ldy events::note_pitch
+        jsr detail::findVoiceChannel
+        bcc @setup_pitch_and_instrument ; jump if note was found --> continue playing the same note
+        ; not found, fall through to finding a voice
+@find_free_voice:
+    jsr detail::findFreeVoice
+    bcc @setup_pitch_and_instrument
+    rts ; no free voice found, go to next event
+@setup_pitch_and_instrument:
+    lda events::note_pitch
+    sta concerto_synth::note_pitch
+    ldy #clips::clip_data::instrument_id
+    lda (v32b::entrypointer), y
+    sta concerto_synth::note_instrument
+@start_new_note:
+    ; .X still contains the voice to be used
+    stx concerto_synth::note_voice
+    lda track_index
+    sta detail::voice_channels, x
+    lda events::note_velocity
+    jsr concerto_synth::play_note
+    rts
+
+@note_off:
+    ; Setup access to clip settings
+    ldy track_index
+    lda detail::clip_settings_a, y
+    ldx detail::clip_settings_x, y
+    jsr v32b::accessEntry
+    ; check for drum pad
+    ldy #clips::clip_data::drum_pad
+    lda (v32b::entrypointer), y
+    beq @melodic_off
+    @drum_pad_off:
+        lda events::note_pitch
+        jsr detail::getDrumInstrumentAndPitch
+        tay
+        lda track_index
+        jsr detail::findVoiceChannelPitchInstrument
+        bcc @stop_note
+        rts ; not found
+@melodic_off:
+    lda track_index
+    ldy events::note_pitch
+    jsr detail::findVoiceChannelPitch
+    bcc @stop_note
+    rts ; not found (e.g. mono-legato --> note's pitch got changed)
+@stop_note:
+    stx concerto_synth::note_voice
+    jsr concerto_synth::release_note
+    rts
+.endproc
+
+
 
 .proc playerTick
     track_index = detail::temp_variable_a
@@ -461,16 +553,14 @@ player_start_timestamp:
 @track_loop:
     stx track_index
     lda detail::next_event_pointer_y, x
-    bne @process_events_loop
-@jmp_to_finish_track:
-    jmp @finish_track
+    beq @finish_track
     @process_events_loop:
         lda detail::next_event_timestamp_l, x
         cmp detail::time_stamp
-        bne @jmp_to_finish_track
+        bne @finish_track
         lda detail::next_event_timestamp_h, x
         cmp detail::time_stamp+1
-        bne @jmp_to_finish_track
+        bne @finish_track
         
         ; it's the current time stamp!
         ; Dispatch current event
@@ -486,87 +576,7 @@ player_start_timestamp:
         phy
         jsr v5b::read_entry
 
-        lda events::event_type
-        beq @note_off ; #events::event_type_note_off
-        cmp #events::event_type_note_on
-        beq @note_on
-        jmp @continue_next_event ; for now, ignore all events that aren't note-on or note-off
-    @note_on:
-        ; Setup access to clip settings
-        ldy track_index
-        lda detail::clip_settings_a, y
-        ldx detail::clip_settings_x, y
-        jsr v32b::accessEntry
-        ; check for drum pad
-        ldy #clips::clip_data::drum_pad
-        lda (v32b::entrypointer), y
-        beq @melodic
-        @drum_pad:
-            ; we assume that the same note can't be played twice (same channel, pitch and instrument)
-            ; So we don't (need to) look for existing one
-            lda events::note_pitch
-            jsr detail::getDrumInstrumentAndPitch
-            stx concerto_synth::note_instrument
-            sta concerto_synth::note_pitch
-            jsr detail::findFreeVoice
-            bcs @continue_next_event ; no free voice found, go to next event
-            bra @start_new_note
-    @melodic:
-        ; Check for monophonic
-        ldy #clips::clip_data::monophonic
-        lda (v32b::entrypointer), y
-        beq @find_free_voice
-        @monophonic:
-            ; find voice with current channel & pitch --> replace
-            lda track_index
-            ldy events::note_pitch
-            jsr detail::findVoiceChannel
-            bcc @setup_pitch_and_instrument ; jump if note was found --> continue playing the same note
-            ; not found, fall through to finding a voice
-    @find_free_voice:
-        jsr detail::findFreeVoice
-        bcs @continue_next_event ; no free voice found, go to next event
-    @setup_pitch_and_instrument:
-        lda events::note_pitch
-        sta concerto_synth::note_pitch
-        ldy #clips::clip_data::instrument_id
-        lda (v32b::entrypointer), y
-        sta concerto_synth::note_instrument
-    @start_new_note:
-        ; .X still contains the voice to be used
-        stx concerto_synth::note_voice
-        lda track_index
-        sta detail::voice_channels, x
-        lda events::note_velocity
-        jsr concerto_synth::play_note
-        bra @continue_next_event
-
-    @note_off:
-        ; Setup access to clip settings
-        ldy track_index
-        lda detail::clip_settings_a, y
-        ldx detail::clip_settings_x, y
-        jsr v32b::accessEntry
-        ; check for drum pad
-        ldy #clips::clip_data::drum_pad
-        lda (v32b::entrypointer), y
-        beq @melodic_off
-        @drum_pad_off:
-            lda events::note_pitch
-            jsr detail::getDrumInstrumentAndPitch
-            tay
-            lda track_index
-            jsr detail::findVoiceChannelPitchInstrument
-            bcs @continue_next_event ; not found
-            bra @stop_note
-    @melodic_off:
-        lda track_index
-        ldy events::note_pitch
-        jsr detail::findVoiceChannelPitch
-        bcs @continue_next_event ; not found (e.g. mono-legato --> note's pitch got changed)
-    @stop_note:
-        stx concerto_synth::note_voice
-        jsr concerto_synth::release_note
+        jsr processEvent
 
     @continue_next_event:
         ply
@@ -593,7 +603,7 @@ player_start_timestamp:
         sta detail::next_event_timestamp_l, x
         lda events::event_time_stamp_h
         sta detail::next_event_timestamp_h, x
-        jmp @process_events_loop
+        bra @process_events_loop
 
     @disable_track:
         ldx track_index
@@ -604,7 +614,7 @@ player_start_timestamp:
     inx
     cpx #MAX_TRACKS+1
     bcs :+
-    jmp @track_loop
+    bra @track_loop
 :
     
     inc detail::time_stamp
