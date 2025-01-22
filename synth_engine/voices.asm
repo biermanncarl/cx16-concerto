@@ -361,8 +361,27 @@ retrigger_note:
    rts
 
 
-; checks if there are enough VERA oscillators and FM voices available
-; and, in that case, reserves them for the new voice.
+; Checks if there are currently enough oscillators available for a voice of specified instrument.
+; Expects instrument index in Y
+; If resources are available, carry will be set. Clear otherwise.
+; Preserves .Y and .X
+.proc checkOscillatorResources
+   lda Oscmap::nfo
+   cmp instruments::Instrument::n_oscs, y ; carry is set if nfo>=non (number of free oscillators >= number of oscillators needed)
+   bcs :+
+   rts ; if there's not enough oscillators left, don't play
+:  ; check if we need an FM voice
+   lda instruments::Instrument::fm_general::op_en, y
+   beq :+ ; no FM voice needed -> enough resources are available
+   lda FMmap::nfv ; check if there's an FM voice available
+   bne :+ ; FM voice is available -> enough resources are available
+   rts
+:  sec
+   rts
+.endproc
+
+
+; Reserves VERA oscillators and FM voices for a new note.
 ; Also resets portamento and vibrato.
 ; expects voice index in X, instrument index in Y
 ; returns A=1 if successful, A=0 otherwise (zero flag set accordingly)
@@ -370,16 +389,9 @@ retrigger_note:
 ; This function is used within play_note.
 start_note:
    stn_loop_counter = mzpbe
-   lda Oscmap::nfo
-   cmp instruments::Instrument::n_oscs, y ; carry is set if nfo>=non (number of free oscillators >= number of oscillators needed)
+   jsr checkOscillatorResources
    bcs :+
-   jmp @unsuccessful    ; if there's not enough oscillators left, don't play
-:  ; check if we need an FM voice
-   lda instruments::Instrument::fm_general::op_en, y
-   beq :+ ; no FM voice needed -> go ahead initializing the voice
-   lda FMmap::nfv ; check if there's an FM voice available
-   bne :+
-   jmp @unsuccessful ; no FM voice available -> can't play note
+   jmp @unsuccessful
 :  ; reset portamento and vibrato
    stz Voice::pitch_slide::active, x
    lda #128

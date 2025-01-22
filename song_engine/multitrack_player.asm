@@ -217,6 +217,65 @@ player_start_timestamp:
     .endproc
 
 
+    ; Looks through the active voices and tries to free resources for a new voice by stealing
+    ; them from voices that are currently in the release phase.
+    ; Prioritizes voices with the same instrument.
+    ; Expects instrument id in concerto_synth::note_instrument
+    ; If successful, carry will be clear. If unsuccessful, it will be set.
+    ; If successful, returns the index of a usable voice in .X
+    .proc stealReleasedVoice
+        ; We also steal the concerto_synth::note_voice register, since it's not used just yet ... hehe
+        ldx #255
+        @same_instrument_loop:
+            ; The advantage with finding a voice of the same instrument is:
+            ; 1. it's relatively likely that another voice of the same instrument just ended
+            ; 2. we know for sure that enough resources will be freed
+            inx
+            cpx #N_VOICES
+            beq @same_instrument_loop_done
+            lda concerto_synth::voices::Voice::instrument, x
+            cmp concerto_synth::note_instrument
+            bne @same_instrument_loop ; voice of same instrument?
+            lda concerto_synth::voices::Voice::env::step, x
+            cmp #4 ; voice in release phase?
+            bne @same_instrument_loop
+            lda concerto_synth::voices::Voice::active, x ; voice active?
+            beq @same_instrument_loop
+        @caught_same:
+            stx concerto_synth::note_voice
+            jsr concerto_synth::stop_note
+            clc
+            ldx concerto_synth::note_voice
+            rts ; job done
+        @same_instrument_loop_done:
+
+        ldx #255
+        ; Relatively crude method: just kill everything currently in the release phase until we got enough resources
+        @generic_loop:
+            inx
+            cpx #N_VOICES
+            beq @generic_loop_done
+            lda concerto_synth::voices::Voice::env::step, x
+            cmp #4 ; voice in release phase?
+            bne @generic_loop
+            lda concerto_synth::voices::Voice::active, x ; voice active?
+            beq @generic_loop
+        @caught_generic:
+            stx concerto_synth::note_voice
+            jsr concerto_synth::stop_note
+            ; check if we were successful
+            ldy concerto_synth::note_instrument
+            jsr concerto_synth::voices::checkOscillatorResources
+            ldx concerto_synth::note_voice
+            bcc @generic_loop ; not successful --> hunt more
+            clc
+            rts ; job done
+        @generic_loop_done:
+        sec
+        rts
+    .endproc
+
+
     ; Expects the pointer to an events vector in .A/.X,
     ; and the time stamp in time_stamp (if more flexibility is needed, timing::timestamp_parameter could be used alternatively).
     ; Returns the first event which comes at the given time stamp or later.
@@ -449,12 +508,16 @@ player_start_timestamp:
     rts
 .endproc
 
+track_index_exp:
+    .byte 0
 
 ; Processes a single event.
 ; The track index must be set in track_index
 ; The event is expected in the v5b data registers.
+; Can be called from ISR and main program.
 .proc processEvent
-    track_index = detail::temp_variable_a
+    ; track_index = concerto_synth::mzpbe
+    track_index = track_index_exp
     lda events::event_type
     beq @note_off ; #events::event_type_note_off
     cmp #events::event_type_note_on
@@ -477,10 +540,14 @@ player_start_timestamp:
         jsr detail::getDrumInstrumentAndPitch
         stx concerto_synth::note_instrument
         sta concerto_synth::note_pitch
-        jsr detail::findFreeVoice
-        bcc @start_new_note
-        rts ; no free voice found, go to next event
+        bra @find_free_voice
 @melodic:
+@setup_pitch_and_instrument:
+    lda events::note_pitch
+    sta concerto_synth::note_pitch
+    ldy #clips::clip_data::instrument_id
+    lda (v32b::entrypointer), y
+    sta concerto_synth::note_instrument
     ; Check for monophonic
     ldy #clips::clip_data::monophonic
     lda (v32b::entrypointer), y
@@ -490,20 +557,22 @@ player_start_timestamp:
         lda track_index
         ldy events::note_pitch
         jsr detail::findVoiceChannel
-        bcc @setup_pitch_and_instrument ; jump if note was found --> continue playing the same note
+        bcc @start_new_note ; jump if note was found --> continue playing the same note
         ; not found, fall through to finding a voice
 @find_free_voice:
-    jsr detail::findFreeVoice
-    bcc @setup_pitch_and_instrument
-    rts ; no free voice found, go to next event
-@setup_pitch_and_instrument:
-    lda events::note_pitch
-    sta concerto_synth::note_pitch
-    ldy #clips::clip_data::instrument_id
-    lda (v32b::entrypointer), y
-    sta concerto_synth::note_instrument
+    ldy concerto_synth::note_instrument
+    jsr concerto_synth::voices::checkOscillatorResources
+    bcs @enough_oscillators_available
+    @need_more_resources:
+        ; not enough oscillators or voices. Hunt for released (but still running) voices.
+        jsr detail::stealReleasedVoice ; returns usable voice in .X if found
+        bcc @start_new_note
+        rts ; could not free the needed resources --> don't play note and go to next event  (TODO: set a signal)
+    @enough_oscillators_available:
+        jsr detail::findFreeVoice
+        bcs @need_more_resources
 @start_new_note:
-    ; .X still contains the voice to be used
+    ; .X contains the voice to be used
     stx concerto_synth::note_voice
     lda track_index
     sta detail::voice_channels, x
@@ -534,7 +603,7 @@ player_start_timestamp:
     ldy events::note_pitch
     jsr detail::findVoiceChannelPitch
     bcc @stop_note
-    rts ; not found (e.g. mono-legato --> note's pitch got changed)
+    rts ; not found (e.g. mono-legato --> voice got stolen)
 @stop_note:
     stx concerto_synth::note_voice
     jsr concerto_synth::release_note
@@ -544,7 +613,7 @@ player_start_timestamp:
 
 
 .proc playerTick
-    track_index = detail::temp_variable_a
+    track_index = processEvent::track_index
     lda detail::active
     bne :+
     rts
