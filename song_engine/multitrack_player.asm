@@ -515,6 +515,12 @@ player_start_timestamp:
 ; The event is expected in the v5b data registers.
 ; Can be called from ISR and main program, but in main program, interrupt must be disabled (track_index could be cluttered)
 .proc processEvent
+    ; Right now, there are only note-on and note-off events.
+    ; In both cases, we are interested in finding a note that is currently playing on the same track, pitch and instrument.
+    ; At note-off events, we would obviously like to end it.
+    ; At note-on events, we have to end it, too, and replace it with the new note.
+    ; (Otherwise, note-off events wouldn't be guaranteed to be assigned to the correct one of several identical notes.)
+    ; So, finding an already playing note with the specified parameters is what we have to do first.
     lda events::event_type
     beq @note_off ; #events::event_type_note_off
     cmp #events::event_type_note_on
@@ -617,6 +623,9 @@ track_index:
     bne :+
     rts
 :
+    lda #3
+    sta event_threshold
+@start_track_loop:
     ldx #0
 @track_loop:
     stx track_index
@@ -643,10 +652,11 @@ track_index:
         phx
         phy
         jsr v5b::read_entry
-
+        ; check if we're in the correct phase
+        lda event_threshold
+        cmp events::event_type
+        bcc @finish_track_phase
         jsr processEvent
-
-    @continue_next_event:
         ply
         plx
         pla
@@ -676,20 +686,35 @@ track_index:
     @disable_track:
         ldx track_index
         stz detail::next_event_pointer_y, x
-
-    @finish_track:
+        bra @finish_track
+    @finish_track_phase:
+    ply
+    plx
+    pla
+@finish_track:
     ldx track_index
     inx
     cpx #MAX_TRACKS+1
     bcs :+
     bra @track_loop
 :
-    
+    lda event_threshold
+    cmp #3
+    bne @finish_tick
+    lda #255
+    sta event_threshold
+    jmp @start_track_loop ; second time iterating through all tracks
+
+@finish_tick:
     inc detail::time_stamp
     bne :+
     inc detail::time_stamp+1
 :
     rts
+event_threshold:
+    ; phase 3 means note-offs only (to potentially free up voices)
+    ; phase 255 means note-ons (and in the future, potentially effects)
+    .byte 0
 .endproc
 
 
