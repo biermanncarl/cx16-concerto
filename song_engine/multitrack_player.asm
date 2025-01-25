@@ -568,7 +568,7 @@ player_start_timestamp:
         jsr detail::findVoiceChannelPitch
         bcs :+
         stx concerto_synth::note_voice
-    :   bra @check_event_type
+    :
 @check_event_type:
     ; This section expects the following "inputs":
     ; If a voice has been selected (to be released or replaced), it should be stored in concerto_synth::note_voice,
@@ -577,10 +577,19 @@ player_start_timestamp:
     lda events::event_type
     bne @note_on  ; the only non-zero event currently is note-on
 @note_off: ; #events::event_type_note_off
-    lda concerto_synth::note_voice
-    bmi :+ ; note to be released could not be found --> either the note wasn't played or the voice got stolen
-    jsr concerto_synth::release_note
-:   rts
+    ldx concerto_synth::note_voice
+    bmi @return ; note to be released could not be found --> either the note wasn't played or the voice got stolen
+    ; Check for monophonic (there we must only release notes of the correct pitch)
+    ldy #clips::clip_data::monophonic
+    lda (v32b::entrypointer), y
+    beq :+
+    ; compare pitch
+    lda concerto_synth::voices::Voice::pitch, x
+    cmp concerto_synth::note_pitch
+    bne @return
+:   jsr concerto_synth::release_note
+@return:
+    rts
 @note_on:
     lda concerto_synth::note_voice
     bmi @no_voice_selected
