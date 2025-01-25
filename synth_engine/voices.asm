@@ -375,6 +375,7 @@ retrigger_note:
    beq :+ ; no FM voice needed -> enough resources are available
    lda FMmap::nfv ; check if there's an FM voice available
    bne :+ ; FM voice is available -> enough resources are available
+   clc
    rts
 :  sec
    rts

@@ -508,16 +508,13 @@ player_start_timestamp:
     rts
 .endproc
 
-track_index_exp:
-    .byte 0
+
 
 ; Processes a single event.
 ; The track index must be set in track_index
 ; The event is expected in the v5b data registers.
-; Can be called from ISR and main program.
+; Can be called from ISR and main program, but in main program, interrupt must be disabled (track_index could be cluttered)
 .proc processEvent
-    ; track_index = concerto_synth::mzpbe
-    track_index = track_index_exp
     lda events::event_type
     beq @note_off ; #events::event_type_note_off
     cmp #events::event_type_note_on
@@ -608,10 +605,12 @@ track_index_exp:
     stx concerto_synth::note_voice
     jsr concerto_synth::release_note
     rts
+track_index:
+    .byte 0
 .endproc
 
 
-
+; ISR only
 .proc playerTick
     track_index = processEvent::track_index
     lda detail::active
