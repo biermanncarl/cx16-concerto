@@ -141,7 +141,6 @@ player_start_timestamp:
     ; .Y : pitch
     ; Returns voice index in .X
     ; If no voice was found, carry will be set, otherwise clear.
-    ; TODO: also look for instrument id (support drum pad)
     .proc findVoiceChannelPitchInstrument
         channel = detail::temp_variable_b
         instrument = detail::temp_variable_c
@@ -521,12 +520,10 @@ player_start_timestamp:
     ; At note-on events, we have to end it, too, and replace it with the new note.
     ; (Otherwise, note-off events wouldn't be guaranteed to be assigned to the correct one of several identical notes.)
     ; So, finding an already playing note with the specified parameters is what we have to do first.
-    lda events::event_type
-    beq @note_off ; #events::event_type_note_off
-    cmp #events::event_type_note_on
-    beq @note_on
-    rts ; for now, ignore all events that aren't note-on or note-off
-@note_on:
+
+    lda #$ff
+    sta concerto_synth::note_voice ; invalidate voice index
+
     ; Setup access to clip settings
     ldy track_index
     lda detail::clip_settings_a, y
@@ -536,80 +533,94 @@ player_start_timestamp:
     ldy #clips::clip_data::drum_pad
     lda (v32b::entrypointer), y
     beq @melodic
-    @drum_pad:
-        ; we assume that the same note can't be played twice (same channel, pitch and instrument)
-        ; So we don't (need to) look for existing one
+    @find_drum_note:
         lda events::note_pitch
         jsr detail::getDrumInstrumentAndPitch
-        stx concerto_synth::note_instrument
-        sta concerto_synth::note_pitch
-        bra @find_free_voice
+        stx concerto_synth::note_instrument ; not needed for note-offs, but doesn't hurt, either
+        sta concerto_synth::note_pitch ; not needed for note-offs, but doesn't hurt, either
+        tay
+        lda track_index
+        jsr detail::findVoiceChannelPitchInstrument
+        bcs @check_event_type
+        stx concerto_synth::note_voice
+        bra @check_event_type
 @melodic:
 @setup_pitch_and_instrument:
     lda events::note_pitch
-    sta concerto_synth::note_pitch
+    sta concerto_synth::note_pitch ; not needed for note-offs, but doesn't hurt, either
     ldy #clips::clip_data::instrument_id
     lda (v32b::entrypointer), y
-    sta concerto_synth::note_instrument
+    sta concerto_synth::note_instrument ; not needed for note-offs, but doesn't hurt, either
     ; Check for monophonic
     ldy #clips::clip_data::monophonic
     lda (v32b::entrypointer), y
-    beq @find_free_voice
-    @monophonic:
+    beq @polyphonic_find
+    @monophonic_find:
         ; find voice with current channel & pitch --> replace
         lda track_index
-        ldy events::note_pitch
         jsr detail::findVoiceChannel
-        bcc @start_new_note ; jump if note was found --> continue playing the same note
-        ; not found, fall through to finding a voice
-@find_free_voice:
+        bcs :+
+        stx concerto_synth::note_voice
+    :   bra @check_event_type
+    @polyphonic_find:
+        lda track_index
+        ldy events::note_pitch
+        jsr detail::findVoiceChannelPitch
+        bcs :+
+        stx concerto_synth::note_voice
+    :   bra @check_event_type
+@check_event_type:
+    ; This section expects the following "inputs":
+    ; If a voice has been selected (to be released or replaced), it should be stored in concerto_synth::note_voice,
+    ; otherwise that variable should sit at 255.
+    ; If a new note is to be played, concerto_synth::note_instrument and note_pitch should be set to the correct values. (?)
+    lda events::event_type
+    bne @note_on  ; the only non-zero event currently is note-on
+@note_off: ; #events::event_type_note_off
+    lda concerto_synth::note_voice
+    bmi :+ ; note to be released could not be found --> either the note wasn't played or the voice got stolen
+    jsr concerto_synth::release_note
+:   rts
+@note_on:
+    lda concerto_synth::note_voice
+    bmi @no_voice_selected
+    ; voice already selected
+    ldy #clips::clip_data::monophonic
+    lda (v32b::entrypointer), y ; is clip monophonic?
+    beq @stop_note
+    @monophonic:
+        ; check if currently playing mono-note is still going or already in release phase
+        ldx concerto_synth::note_voice
+        lda concerto_synth::voices::Voice::env::step, x
+        cmp #4
+        beq @stop_note ; if in release phase, stop note and start new one
+        bra @play_note
+    @stop_note:
+        jsr concerto_synth::stop_note
+@no_voice_selected:
+@check_oscillators:
     ldy concerto_synth::note_instrument
     jsr concerto_synth::voices::checkOscillatorResources
     bcs @enough_oscillators_available
     @need_more_resources:
         ; not enough oscillators or voices. Hunt for released (but still running) voices.
         jsr detail::stealReleasedVoice ; returns usable voice in .X if found
-        bcc @start_new_note
+        bcc :+
         rts ; could not free the needed resources --> don't play note and go to next event  (TODO: set a signal)
+        stx concerto_synth::note_voice
+        bra @play_note
     @enough_oscillators_available:
+        lda concerto_synth::note_voice
+        bpl @play_note
         jsr detail::findFreeVoice
         bcs @need_more_resources
-@start_new_note:
-    ; .X contains the voice to be used
-    stx concerto_synth::note_voice
+        stx concerto_synth::note_voice
+@play_note:
+    ; concerto_synth::note_voice contains the voice to be used
     lda track_index
     sta detail::voice_channels, x
     lda events::note_velocity
     jsr concerto_synth::play_note
-    rts
-
-@note_off:
-    ; Setup access to clip settings
-    ldy track_index
-    lda detail::clip_settings_a, y
-    ldx detail::clip_settings_x, y
-    jsr v32b::accessEntry
-    ; check for drum pad
-    ldy #clips::clip_data::drum_pad
-    lda (v32b::entrypointer), y
-    beq @melodic_off
-    @drum_pad_off:
-        lda events::note_pitch
-        jsr detail::getDrumInstrumentAndPitch
-        tay
-        lda track_index
-        jsr detail::findVoiceChannelPitchInstrument
-        bcc @stop_note
-        rts ; not found
-@melodic_off:
-    lda track_index
-    ldy events::note_pitch
-    jsr detail::findVoiceChannelPitch
-    bcc @stop_note
-    rts ; not found (e.g. mono-legato --> voice got stolen)
-@stop_note:
-    stx concerto_synth::note_voice
-    jsr concerto_synth::release_note
     rts
 track_index:
     .byte 0
