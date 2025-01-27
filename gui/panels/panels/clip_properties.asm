@@ -180,7 +180,11 @@
         rts
     @move_up:
         jsr song_engine::multitrack_player::stopPlayback
-        ; TODO
+        ldy song_engine::clips::active_clip_id
+        beq @end_move_up
+            ; TODO: swap two clips (need new DLL function for that)
+            jmp gui_routines__draw_gui
+        @end_move_up:
         rts
     @move_down:
         jsr song_engine::multitrack_player::stopPlayback
