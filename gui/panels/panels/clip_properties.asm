@@ -51,30 +51,13 @@
         rts
     .endproc
 
-    .proc write
-        ldy song_engine::clips::active_clip_id
-        jsr song_engine::clips::accessClip
-
-        lda mouse_variables::curr_component_id
-        asl
-        tax
-        jmp (@jmp_tbl, x)
-    @jmp_tbl:
-        .word @track_select
-        .word @instrument
-        .word @mono
-        .word @drum_pad
-        .word @track_name
-        .word @new_track
-        .word @del_track
-        .word @move_up
-        .word @move_down
-    @track_select:
-        ; TODO -- factor this out into its own function
-        ; move all events back into the list of clips
+    .proc selectTrack
+        ; move all events back into the clip
         php
         sei
         jsr song_engine::event_selection::unselectAllEvents
+        ldy song_engine::clips::active_clip_id
+        jsr song_engine::clips::accessClip
         ldy #song_engine::clips::clip_data::event_ptr
         lda song_engine::event_selection::unselected_events_vector
         sta (v32b::entrypointer),y
@@ -83,9 +66,11 @@
         sta (v32b::entrypointer),y
 
         ; update playback
-        ; we only need to update the track that is being unselected
+        ; We need to update the track that is being unselected, as well as the "selection player"
         lda song_engine::clips::active_clip_id
         inc
+        jsr song_engine::multitrack_player::updateTrackPlayer
+        lda #0
         jsr song_engine::multitrack_player::updateTrackPlayer
 
         ; update to new clip
@@ -96,7 +81,7 @@
         dec
         STA_COMPONENT_MEMBER_ADDRESS listbox, track_select, selected_entry
     :   sta song_engine::clips::active_clip_id
-        jsr refresh ; calls accessClip on new clip, so we don't have to
+        jsr refresh ; calls accessClip on new clip, so we don't have to.
         ; move events of new clip into the GUI
         ldy #song_engine::clips::clip_data::event_ptr
         lda (v32b::entrypointer),y
@@ -105,8 +90,27 @@
         lda (v32b::entrypointer),y
         sta song_engine::event_selection::unselected_events_vector+1
         plp
-        jsr gui_routines__draw_gui
-        rts
+        jmp gui_routines__draw_gui
+    .endproc
+
+    .proc write
+        ldy song_engine::clips::active_clip_id
+        jsr song_engine::clips::accessClip
+
+        lda mouse_variables::curr_component_id
+        asl
+        tax
+        jmp (@jmp_tbl, x)
+    @jmp_tbl:
+        .word selectTrack
+        .word @instrument
+        .word @mono
+        .word @drum_pad
+        .word @track_name
+        .word @new_track
+        .word @del_track
+        .word @move_up
+        .word @move_down
     @instrument:
         LDA_COMPONENT_MEMBER_ADDRESS drag_edit, instrument_sel, coarse_value
         ldy #song_engine::clips::clip_data::instrument_id
@@ -142,9 +146,44 @@
         inc gui_variables::request_components_redraw
         rts
     @del_track:
+        jsr song_engine::multitrack_player::stopPlayback
+        ; TODO: popup "are you sure?"
+        lda song_engine::clips::number_of_clips
+        cmp #1
+        beq @end_delete ; don't delete if there's only one track left
+            ; unselect the track to be deleted
+            lda song_engine::clips::active_clip_id
+            pha ; remember the track
+            beq :+
+                dec
+                bra :++
+            :   inc
+            :   STA_COMPONENT_MEMBER_ADDRESS listbox, track_select, selected_entry
+            jsr selectTrack
+            ply ; recall track to be deleted
+            phy
+            jsr song_engine::clips::getClipEventVector
+            jsr v5b::destroy
+            lda song_engine::clips::clips_vector
+            ldx song_engine::clips::clips_vector+1
+            ply ; recall the track to be deleted
+            jsr dll::getElementByIndex
+            jsr dll::delete_element
+            dec song_engine::clips::number_of_clips
+            ; Now need to update unselected_events_vector, since we might have invalidated the current pointer
+            ldy song_engine::clips::active_clip_id
+            jsr song_engine::clips::getClipEventVector
+            sta song_engine::event_selection::unselected_events_vector
+            stx song_engine::event_selection::unselected_events_vector+1
+            jmp gui_routines__draw_gui
+        @end_delete:
+        rts
     @move_up:
+        jsr song_engine::multitrack_player::stopPlayback
         ; TODO
+        rts
     @move_down:
+        jsr song_engine::multitrack_player::stopPlayback
         ; TODO
         rts
     .endproc

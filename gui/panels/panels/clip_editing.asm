@@ -113,6 +113,8 @@
       jsr gui_routines__draw_gui
       rts
    @load_song:
+      jsr song_engine::multitrack_player::stopPlayback
+      jsr song_engine::event_selection::unselectAllEvents
       ; open the file browser popup on the GUI stack
       lda #file_browsing::file_type::song
       sta file_browsing::current_file_type
