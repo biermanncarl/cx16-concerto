@@ -638,7 +638,6 @@ track_index:
 
 ; ISR only
 .proc playerTick
-    track_index = processEvent::track_index
     lda detail::active
     bne :+
     rts
@@ -648,7 +647,7 @@ track_index:
 @start_track_loop:
     ldx #0
 @track_loop:
-    stx track_index
+    stx track_counter
     lda detail::next_event_pointer_y, x
     beq @finish_track
     @process_events_loop:
@@ -661,7 +660,7 @@ track_index:
         
         ; it's the current time stamp!
         ; Dispatch current event
-        ldx track_index
+        ldx track_counter
         ldy detail::next_event_pointer_y, x
         lda detail::next_event_pointer_x, x
         pha
@@ -676,6 +675,11 @@ track_index:
         lda event_threshold
         cmp events::event_type
         bcc @finish_track_phase
+        lda track_counter
+        bne :+
+        lda clips::active_clip_id ; if the player id is 0 (player of selected events), we treat the event as part of the parent clip
+        inc
+    :   sta processEvent::track_index
         jsr processEvent
         ply
         plx
@@ -686,7 +690,7 @@ track_index:
         pha
         phy
         phx
-        ldx track_index
+        ldx track_counter
         sta detail::next_event_pointer_a, x
         tya
         sta detail::next_event_pointer_y, x
@@ -696,7 +700,7 @@ track_index:
         ply
         pla
         jsr v5b::read_entry
-        ldx track_index
+        ldx track_counter
         lda events::event_time_stamp_l
         sta detail::next_event_timestamp_l, x
         lda events::event_time_stamp_h
@@ -704,7 +708,7 @@ track_index:
         bra @process_events_loop
 
     @disable_track:
-        ldx track_index
+        ldx track_counter
         stz detail::next_event_pointer_y, x
         bra @finish_track
     @finish_track_phase:
@@ -712,11 +716,11 @@ track_index:
     plx
     pla
 @finish_track:
-    ldx track_index
+    ldx track_counter
     inx
     cpx #MAX_TRACKS+1
     bcs :+
-    bra @track_loop
+    jmp @track_loop
 :
     lda event_threshold
     cmp #3
@@ -734,6 +738,8 @@ track_index:
 event_threshold:
     ; phase 3 means note-offs only (to potentially free up voices)
     ; phase 255 means note-ons (and in the future, potentially effects)
+    .byte 0
+track_counter:
     .byte 0
 .endproc
 
