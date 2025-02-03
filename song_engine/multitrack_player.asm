@@ -616,7 +616,7 @@ player_start_timestamp:
         jsr detail::stealReleasedVoice ; returns usable voice in .X if found
         bcc :+
         rts ; could not free the needed resources --> don't play note and go to next event  (TODO: set a signal)
-        stx concerto_synth::note_voice
+    :   stx concerto_synth::note_voice
         bra @play_note
     @enough_oscillators_available:
         lda concerto_synth::note_voice
