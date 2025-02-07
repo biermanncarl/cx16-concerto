@@ -27,7 +27,14 @@
    request_program_exit: .byte 0
 
    ; Which instrument is currently viewed in the synth page.
+
+
+   ; musical keyboard state
+   musical_kbd_velocity: .byte 63
    current_synth_instrument: .byte 0
+   musical_kbd_mono: .byte 0
+   musical_kbd_drum: .byte 0
+   musical_kbd_basenote: .byte 0
 
 
    ; These are variables located at the zero page.

@@ -10,8 +10,6 @@
 
 .scope concerto_gui
 
-play_volume:
-   .byte 63
 
 ; macros
 .include "../common/x16.asm"

@@ -40,7 +40,7 @@
         bmi @finish ; filter out irrelevant keys
 
         clc
-        adc kbd_variables::musical_keyboard_base_pitch
+        adc gui_variables::musical_kbd_basenote
 
         ldy key_down
         beq @key_up
@@ -57,7 +57,7 @@
         sta song_engine::multitrack_player::detail::voice_channels, x
         lda concerto_gui::gui_variables::current_synth_instrument
         sta concerto_synth::note_instrument
-        lda concerto_gui::play_volume
+        lda concerto_gui::gui_variables::musical_kbd_velocity
         jsr concerto_synth::play_note
         bra @finish
     @key_up:

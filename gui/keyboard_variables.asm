@@ -23,8 +23,6 @@
 
     original_keyboard_handler:
         .word 0
-    musical_keyboard_base_pitch:
-        .byte 60
     musical_keyboard_bypass:
         .byte 0
     musical_keyboard_channel = $FF

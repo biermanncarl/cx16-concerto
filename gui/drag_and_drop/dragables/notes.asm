@@ -1324,7 +1324,7 @@ height = 2 * detail::event_edit_height
    adc window_pitch
    sta song_engine::events::note_pitch
    ; note velocity
-   lda concerto_gui::play_volume
+   lda concerto_gui::gui_variables::musical_kbd_velocity
    sta song_engine::events::note_velocity
    ; add note-on
    lda #song_engine::events::event_type_note_on

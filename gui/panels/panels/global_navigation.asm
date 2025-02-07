@@ -66,7 +66,7 @@
       rts
    @set_kbd_volume:
       LDA_COMPONENT_MEMBER_ADDRESS drag_edit, keyboard_volume, coarse_value
-      sta play_volume
+      sta gui_variables::musical_kbd_velocity
       rts
    @set_kbd_instrument:
    @set_kbd_mono:
@@ -143,21 +143,21 @@
          rts
 
    @keyboard_z:
-      lda kbd_variables::musical_keyboard_base_pitch
+      lda gui_variables::musical_kbd_basenote
       beq :+
       sec
       sbc #12
-      sta kbd_variables::musical_keyboard_base_pitch
+      sta gui_variables::musical_kbd_basenote
       lda #kbd_variables::musical_keyboard_channel
       jsr song_engine::multitrack_player::stopVoicesOnChannel
    :  rts
    @keyboard_x:
-      lda kbd_variables::musical_keyboard_base_pitch
+      lda gui_variables::musical_kbd_basenote
       cmp #108
       beq :+
       clc
       adc #12
-      sta kbd_variables::musical_keyboard_base_pitch
+      sta gui_variables::musical_kbd_basenote
       lda #kbd_variables::musical_keyboard_channel
       jsr song_engine::multitrack_player::stopVoicesOnChannel
    :  rts
