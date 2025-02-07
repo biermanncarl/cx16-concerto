@@ -9,7 +9,7 @@
 ; global synth settings panel
 .scope synth_global
    px = 13
-   py = 8
+   py = 7
    wd = 12
    hg = 20
    comps:
