@@ -24,15 +24,15 @@
       COMPONENT_LIST_END
    .endscope
    capts:
-      .byte CCOLOR_CAPTION, 6, 58
+      .byte 16*11+12, 6, 58
       .word kbd_base_lb
-      .byte CCOLOR_CAPTION, 24, 58
+      .byte 16*11+12, 24, 58
       .word panel_common::lb_instrument
-      .byte CCOLOR_CAPTION, 40, 58
+      .byte 16*11+12, 40, 58
       .word velocity_lb
-      .byte CCOLOR_CAPTION, 56, 58
+      .byte 16*11+12, 56, 58
       .word panel_common::lb_mono
-      .byte CCOLOR_CAPTION, 70, 58
+      .byte 16*11+12, 70, 58
       .word panel_common::lb_drum
       .byte 0
    ; data specific to the synth-navigation panel
