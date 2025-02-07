@@ -1,4 +1,4 @@
-; Copyright 2023 Carl Georg Biermann
+; Copyright 2023-2025 Carl Georg Biermann
 
 .ifndef ::GUI_PANELS_PANELS_GLOBAL_NAVIGATION_ASM
 
@@ -10,18 +10,35 @@
 .scope global_navigation
    px = 0
    py = 12
-   wd = 3
+   wd = 80
    hg = 60-py
    comps:
    .scope comps
+      COMPONENT_DEFINITION drag_edit, keyboard_basenote, 19, 58, %00000000, 0, 108, 60, 0
+      COMPONENT_DEFINITION drag_edit, keyboard_volume, 49, 58, %00000000, 0, 63, 63, 0
+      COMPONENT_DEFINITION drag_edit, keyboard_instrument, 35, 58, %00000000, 0, N_INSTRUMENTS-1, N_INSTRUMENTS-1, 0
+      COMPONENT_DEFINITION checkbox, keyboard_monophonic, 54, 58, 12, 0
+      COMPONENT_DEFINITION checkbox, keyboard_drum_pad, 68, 58, 10, 0
       COMPONENT_DEFINITION dummy, click_catcher, 0, 0, 3, 60
       COMPONENT_DEFINITION text_field, concerto_banner, 1, 1, 19, 6, A vram_assets::concerto_banner
       COMPONENT_LIST_END
    .endscope
    capts:
+      .byte CCOLOR_CAPTION, 6, 58
+      .word kbd_base_lb
+      .byte CCOLOR_CAPTION, 24, 58
+      .word panel_common::lb_instrument
+      .byte CCOLOR_CAPTION, 40, 58
+      .word velocity_lb
+      .byte CCOLOR_CAPTION, 56, 58
+      .word panel_common::lb_mono
+      .byte CCOLOR_CAPTION, 70, 58
+      .word panel_common::lb_drum
       .byte 0
    ; data specific to the synth-navigation panel
    active_tab: .byte 1
+   velocity_lb: STR_FORMAT "velocity"
+   kbd_base_lb: STR_FORMAT "kbd basenote"
 
    .proc draw
       lda active_tab
@@ -33,6 +50,29 @@
 
 
    .proc write
+      ; prepare jump
+      lda mouse_variables::curr_component_id
+      asl
+      tax
+      jmp (@jmp_tbl, x)
+   @jmp_tbl:
+      .word @set_kbd_basenote
+      .word @set_kbd_volume
+      .word @set_kbd_instrument
+      .word @set_kbd_mono
+      .word @set_kbd_drum
+      .word @select_tab
+   @set_kbd_basenote:
+      rts
+   @set_kbd_volume:
+      LDA_COMPONENT_MEMBER_ADDRESS drag_edit, keyboard_volume, coarse_value
+      sta play_volume
+      rts
+   @set_kbd_instrument:
+   @set_kbd_mono:
+   @set_kbd_drum:
+      rts
+   @select_tab:
       lda mouse_variables::curr_data_2 ; y position in multiples of 8 pixels
       ; tabs start at row 28 and are 16 high each
       sec
@@ -53,7 +93,11 @@
       jmp gui_routines__load_clip_gui
    .endproc
 
-   refresh = panel_common::dummy_subroutine
+   .proc refresh
+      lda gui_variables::current_synth_instrument
+      STA_COMPONENT_MEMBER_ADDRESS drag_edit, keyboard_instrument, coarse_value
+      rts
+   .endproc
 
    .proc keypress
       ; The keyboard handling was moved from the main loop to this place here.

@@ -1,4 +1,4 @@
-; Copyright 2021, 2023 Carl Georg Biermann
+; Copyright 2021-2025 Carl Georg Biermann
 
 .ifndef ::GUI_PANELS_PANELS_SYNTH_NAV_ASM
 
@@ -11,7 +11,7 @@
    px = 10
    py = 0
    wd = 70
-   hg = 60
+   hg = 10
    comps:
    .scope comps
       COMPONENT_DEFINITION arrowed_edit, instrument_select, 45, 1, 0, N_INSTRUMENTS-1, 0
@@ -19,21 +19,17 @@
       COMPONENT_DEFINITION button, save_preset, 52, 0, 13, A save_preset_lb
       COMPONENT_DEFINITION button, copy_preset, 37, 2, 6, A copy_preset_lb
       COMPONENT_DEFINITION button, paste_preset, 44, 2, 7, A paste_preset_lb
-      COMPONENT_DEFINITION drag_edit, keyboard_volume, 43, 5, %00000000, 0, 63, 63, 0
       COMPONENT_LIST_END
    .endscope
    capts:
       .byte CCOLOR_CAPTION, 34, 1
       .word panel_common::lb_instrument
-      .byte CCOLOR_CAPTION, 34, 5
-      .word velocity_lb
       .byte 0
    ; data specific to the synth-navigation panel
    load_preset_lb: STR_FORMAT " load preset"
    save_preset_lb: STR_FORMAT " save preset"
    copy_preset_lb: STR_FORMAT " copy"
    paste_preset_lb: STR_FORMAT " paste"
-   velocity_lb: STR_FORMAT "velocity"
 
    ; No special action required (yet)
    draw = panel_common::dummy_subroutine
@@ -50,7 +46,6 @@
       .word @save_preset
       .word @copy_preset
       .word @paste_preset
-      .word @set_play_volume
    @instrument_selector:
       ; read data from component string and write it to the Instrument setting
       LDA_COMPONENT_MEMBER_ADDRESS arrowed_edit, instrument_select, value
@@ -93,10 +88,6 @@
       jsr concerto_synth::instruments::copy_paste
       jsr gui_routines__refresh_gui
       plp
-      rts
-   @set_play_volume:
-      LDA_COMPONENT_MEMBER_ADDRESS drag_edit, keyboard_volume, coarse_value
-      sta play_volume
       rts
    .endproc
 

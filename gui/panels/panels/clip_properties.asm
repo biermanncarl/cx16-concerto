@@ -31,13 +31,11 @@
         .byte CCOLOR_CAPTION, px, py+17
         .word panel_common::lb_instrument
         .byte CCOLOR_CAPTION, px+2, py+19
-        .word lb_mono
+        .word panel_common::lb_mono
         .byte CCOLOR_CAPTION, px+2, py+21
-        .word lb_drum
+        .word panel_common::lb_drum
         .byte 0
 
-    lb_mono: STR_FORMAT "monophonic"
-    lb_drum: STR_FORMAT "drum pad"
     lb_new: STR_FORMAT " new"
     lb_delete: STR_FORMAT "delete"
     lb_up: STR_FORMAT "  up"

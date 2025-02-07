@@ -27,6 +27,8 @@
    lb_global: STR_FORMAT "global"
    n_active_lb: STR_FORMAT "n. active"
    channel_lb: .byte 12, 47, 18, 0 ; L/R
+   lb_mono: STR_FORMAT "monophonic"
+   lb_drum: STR_FORMAT "drum pad"
 
    modsources_none_option_lb:
       .byte 32, 45, 45, 0
