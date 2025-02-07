@@ -34,7 +34,7 @@
    current_synth_instrument: .byte 0
    musical_kbd_mono: .byte 0
    musical_kbd_drum: .byte 0
-   musical_kbd_basenote: .byte 0
+   musical_kbd_basenote: .byte 60
 
 
    ; These are variables located at the zero page.

@@ -14,9 +14,9 @@
    hg = 60-py
    comps:
    .scope comps
-      COMPONENT_DEFINITION drag_edit, keyboard_basenote, 19, 58, %00000000, 0, 108, 60, 0
       COMPONENT_DEFINITION drag_edit, keyboard_volume, 49, 58, %00000000, 0, 63, 63, 0
       COMPONENT_DEFINITION drag_edit, keyboard_instrument, 35, 58, %00000000, 0, N_INSTRUMENTS-1, N_INSTRUMENTS-1, 0
+      COMPONENT_DEFINITION drag_edit, keyboard_basenote, 19, 58, %00000000, 0, 108, 60, 0
       COMPONENT_DEFINITION checkbox, keyboard_monophonic, 54, 58, 12, 0
       COMPONENT_DEFINITION checkbox, keyboard_drum_pad, 68, 58, 10, 0
       COMPONENT_DEFINITION dummy, click_catcher, 0, 0, 3, 60
@@ -56,21 +56,35 @@
       tax
       jmp (@jmp_tbl, x)
    @jmp_tbl:
-      .word @set_kbd_basenote
       .word @set_kbd_volume
       .word @set_kbd_instrument
+      .word @set_kbd_basenote
       .word @set_kbd_mono
       .word @set_kbd_drum
       .word @select_tab
-   @set_kbd_basenote:
-      rts
    @set_kbd_volume:
       LDA_COMPONENT_MEMBER_ADDRESS drag_edit, keyboard_volume, coarse_value
       sta gui_variables::musical_kbd_velocity
       rts
    @set_kbd_instrument:
+      lda #kbd_variables::musical_keyboard_channel
+      jsr song_engine::multitrack_player::stopVoicesOnChannel
+      LDA_COMPONENT_MEMBER_ADDRESS drag_edit, keyboard_instrument, coarse_value
+      sta gui_variables::current_synth_instrument
+      jsr refresh
+      jsr gui_routines__draw_gui
+      rts
+   @set_kbd_basenote:
    @set_kbd_mono:
    @set_kbd_drum:
+      lda #kbd_variables::musical_keyboard_channel
+      jsr song_engine::multitrack_player::stopVoicesOnChannel
+      LDA_COMPONENT_MEMBER_ADDRESS checkbox, keyboard_monophonic, checked
+      sta gui_variables::musical_kbd_mono
+      LDA_COMPONENT_MEMBER_ADDRESS checkbox, keyboard_drum_pad, checked
+      sta gui_variables::musical_kbd_drum
+      LDA_COMPONENT_MEMBER_ADDRESS drag_edit, keyboard_basenote, coarse_value
+      sta gui_variables::musical_kbd_basenote
       rts
    @select_tab:
       lda mouse_variables::curr_data_2 ; y position in multiples of 8 pixels
@@ -94,8 +108,17 @@
    .endproc
 
    .proc refresh
-      lda gui_variables::current_synth_instrument
+      lda gui_variables::current_synth_instrument      
       STA_COMPONENT_MEMBER_ADDRESS drag_edit, keyboard_instrument, coarse_value
+      lda gui_variables::musical_kbd_mono
+      STA_COMPONENT_MEMBER_ADDRESS checkbox, keyboard_monophonic, checked
+      lda gui_variables::musical_kbd_drum
+      STA_COMPONENT_MEMBER_ADDRESS checkbox, keyboard_drum_pad, checked
+      lda gui_variables::musical_kbd_basenote
+      STA_COMPONENT_MEMBER_ADDRESS drag_edit, keyboard_basenote, coarse_value
+      ; There's nothing else messing with these
+      ; lda gui_variables::musical_kbd_velocity
+      ; STA_COMPONENT_MEMBER_ADDRESS drag_edit, keyboard_volume, coarse_value
       rts
    .endproc
 
@@ -144,24 +167,33 @@
 
    @keyboard_z:
       lda gui_variables::musical_kbd_basenote
-      beq :+
       sec
       sbc #12
+      bcc @end_keychecks
       sta gui_variables::musical_kbd_basenote
-      lda #kbd_variables::musical_keyboard_channel
-      jsr song_engine::multitrack_player::stopVoicesOnChannel
-   :  rts
+      bra @housekeeping
    @keyboard_x:
       lda gui_variables::musical_kbd_basenote
-      cmp #108
-      beq :+
       clc
       adc #12
+      cmp #110
+      bcs @end_keychecks
       sta gui_variables::musical_kbd_basenote
+   @housekeeping:
       lda #kbd_variables::musical_keyboard_channel
       jsr song_engine::multitrack_player::stopVoicesOnChannel
-   :  rts
+      ; fall through to refreshMusicalKeyboard
    .endproc
+   .proc refreshMusicalKeyboard
+      jsr refresh
+      inc gui_variables::request_components_redraw
+      ; this is a hack since normally, the mouse requests redrawings
+      lda #panels__ids__global_navigation
+      sta mouse_variables::curr_panel
+      rts
+   .endproc
+
+
 .endscope
 
 .endif ; .ifndef ::GUI_PANELS_PANELS_GLOBAL_NAVIGATION_ASM

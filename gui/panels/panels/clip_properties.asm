@@ -114,17 +114,19 @@
         ldy #song_engine::clips::clip_data::instrument_id
         sta (v32b::entrypointer), y
         sta gui_variables::current_synth_instrument
-        rts
+        jmp panels__global_navigation__refreshMusicalKeyboard
     @mono:
         LDA_COMPONENT_MEMBER_ADDRESS checkbox, monophonic, checked
         ldy #song_engine::clips::clip_data::monophonic
         sta (v32b::entrypointer), y
-        rts
+        sta gui_variables::musical_kbd_mono
+        jmp panels__global_navigation__refreshMusicalKeyboard
     @drum_pad:
         LDA_COMPONENT_MEMBER_ADDRESS checkbox, drum_pad, checked
         ldy #song_engine::clips::clip_data::drum_pad
         sta (v32b::entrypointer), y
-        rts
+        sta gui_variables::musical_kbd_drum
+        jmp panels__global_navigation__refreshMusicalKeyboard
     @track_name:
         ; set string pointer to clip name
         lda RAM_BANK
