@@ -688,6 +688,8 @@ player_index:
     highest_relevant_keycode = $29 ; single quote on english keyboard, rightmost key on second row of letters
 
     ; move updated musical keyboard settings to the place where the multitrack player expects them
+    ; This could be done whenever panels__global_navigation__redrawMusicalKeyboardSettings is called.
+    ; #optimize-for-speed
     lda musical_keyboard::musical_kbd_settings_a
     ldx musical_keyboard::musical_kbd_settings_x
     jsr v32b::accessEntry

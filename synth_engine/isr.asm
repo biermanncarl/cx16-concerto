@@ -1,4 +1,4 @@
-; Copyright 2021-2022 Carl Georg Biermann
+; Copyright 2021-2025 Carl Georg Biermann
 
 
 ; This file contains the custom ISR which calls the synth engine.
@@ -75,6 +75,7 @@ do_tick:
    jsr synth_engine::synth_tick
    ; call playback routine (done after the synth tick to reduce jitter caused by fluctuating computational load inside the playback routine.
    ; Jitter hasn't been a problem so far, this move was done in anticipation of jitter)
+   jsr concerto_gui__gauges__tick_isr
    jsr concerto_playback_routine
    ; restore shared variables
    pla

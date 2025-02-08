@@ -2,16 +2,42 @@
 
 ; The various gauges
 ; What I intend to do ...
-; * playback time indicator
-; * number of Concerto voices used
-; * number of VERA oscillators used
-; * number of FM voices used
-; * overload indicator(s)
+; * CPU overload indicator(s)
 ; * FM LFO clash
 ; * memory usage
 
 
 .scope gauges
+
+concerto_voices_gauge_x = 1
+concerto_voices_gauge_y = 9
+vera_voices_gauge_x = 3
+vera_voices_gauge_y = 7
+fm_voices_gauge_x = 5
+fm_voices_gauge_y = 13
+
+
+; Draws a vertical bar gauge.
+; Expects cur_x and cur_y to be set to bottom of gauge
+; Expects total height in draw_height
+; Expects number of filled-in dots in draw_data1
+.proc drawGauge
+    ldy #0
+    @loop:
+        jsr guiutils::set_cursor
+        lda #81
+        sta VERA_data0
+        lda #16*11
+        cpy guiutils::draw_data1
+        bcs :+
+        lda #16*11+13
+    :   sta VERA_data0
+        dec guiutils::cur_y
+        iny
+        cpy guiutils::draw_height
+        bne @loop
+    rts
+.endproc
 
 .proc tick
     ; can use gui_variables zeropage stuff, e.g. concerto_gui::gui_variables::mzpwa
@@ -114,8 +140,59 @@
         bne @deactivate_sprites_loop        
 
 @playback_marker_done:
+    ; concerto voices used
+    lda #concerto_voices_gauge_x
+    sta guiutils::cur_x
+    lda #concerto_voices_gauge_y+N_VOICES
+    sta guiutils::cur_y
+    lda #N_VOICES
+    sta guiutils::draw_height
+    ; need to count voices used, actually
+    ldy #0
+    ldx #0
+    @counting_loop:
+        lda concerto_synth::voices::Voice::active, x
+        beq :+
+        iny
+    :   inx
+        cpx #N_VOICES
+        bcc @counting_loop
+    sty guiutils::draw_data1
+    jsr drawGauge
+
+    ; VERA voices used
+    lda #vera_voices_gauge_x
+    sta guiutils::cur_x
+    lda #vera_voices_gauge_y+N_OSCILLATORS
+    sta guiutils::cur_y
+    lda #N_OSCILLATORS
+    sta guiutils::draw_height
+    lda #N_OSCILLATORS
+    sec
+    sbc concerto_synth::voices::Oscmap::nfo
+    sta guiutils::draw_data1
+    jsr drawGauge
+
+    ; fm voices used
+    lda #fm_voices_gauge_x
+    sta guiutils::cur_x
+    lda #fm_voices_gauge_y+N_FM_VOICES
+    sta guiutils::cur_y
+    lda #N_FM_VOICES
+    sta guiutils::draw_height
+    sec
+    sbc concerto_synth::voices::FMmap::nfv
+    sta guiutils::draw_data1
+    jsr drawGauge
+
     rts
 .endproc
 
+
+; Lightweight ISR subroutine to cooldown flashing signals
+.proc tick_isr
+    ; TODO
+    rts
+.endproc
 
 .endscope

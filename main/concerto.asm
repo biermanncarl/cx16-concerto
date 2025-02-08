@@ -25,6 +25,8 @@
 ; include the X16 header
 .include "../common/x16.asm"
 
+.include "global_backwards_definitions.asm"
+
 
 start:
    jsr concerto_synth::initialize

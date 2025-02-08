@@ -34,11 +34,20 @@
       .word panel_common::lb_mono
       .byte 16*11+12, 70, 58
       .word panel_common::lb_drum
+      .byte CCOLOR_CAPTION, 1, 27
+      .word synth_lb
+      .byte CCOLOR_CAPTION, 3, 25
+      .word vera_lb
+      .byte CCOLOR_CAPTION, 5, 23
+      .word fm_lb
       .byte 0
    ; data specific to the synth-navigation panel
    active_tab: .byte 1
    velocity_lb: STR_FORMAT "velocity"
    kbd_base_lb: STR_FORMAT "kbd basenote"
+   synth_lb: STR_FORMAT "synth"
+   vera_lb: STR_FORMAT "vera"
+   fm_lb: STR_FORMAT "fm"
 
    .proc draw
       lda active_tab
