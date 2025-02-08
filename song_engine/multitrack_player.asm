@@ -659,8 +659,13 @@ player_start_timestamp:
         ; not enough oscillators or voices. Hunt for released (but still running) voices.
         jsr detail::stealReleasedVoice ; returns usable voice in .X if found
         bcc :+
-        rts ; could not free the needed resources --> don't play note and go to next event  (TODO: set a signal)
+        ; could not free the needed resources --> set signal
+        lda #concerto_gui__gauges__flash_duration_ticks
+        sta concerto_gui__gauges__cooldown_note_drop
+        rts
     :   stx concerto_synth::note_voice
+        lda #concerto_gui__gauges__flash_duration_ticks
+        sta concerto_gui__gauges__cooldown_note_steal
         bra @play_note
     @enough_oscillators_available:
         lda concerto_synth::note_voice

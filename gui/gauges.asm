@@ -9,12 +9,22 @@
 
 .scope gauges
 
+flash_duration_ticks = 25
+
+cooldown_note_steal: .byte 0
+cooldown_note_drop: .byte 0
+
+
 concerto_voices_gauge_x = 1
 concerto_voices_gauge_y = 9
 vera_voices_gauge_x = 3
 vera_voices_gauge_y = 7
 fm_voices_gauge_x = 5
 fm_voices_gauge_y = 13
+note_steal_signal_x = 3
+note_steal_signal_y = 29
+note_drop_signal_x = 4
+note_drop_signal_y = 31
 
 
 ; Draws a vertical bar gauge.
@@ -185,13 +195,48 @@ fm_voices_gauge_y = 13
     sta guiutils::draw_data1
     jsr drawGauge
 
+    ; note steal
+    lda #note_steal_signal_x
+    sta guiutils::cur_x
+    lda #note_steal_signal_y
+    sta guiutils::cur_y
+    jsr guiutils::set_cursor
+    lda #81
+    sta VERA_data0
+    lda #16*11+0
+    ldx cooldown_note_steal
+    beq :+
+    lda #16*11+7
+:   sta VERA_data0
+
+    ; note drop
+    lda #note_drop_signal_x
+    sta guiutils::cur_x
+    lda #note_drop_signal_y
+    sta guiutils::cur_y
+    jsr guiutils::set_cursor
+    lda #81
+    sta VERA_data0
+    lda #16*11+0
+    ldx cooldown_note_drop
+    beq :+
+    lda #16*11+8
+:   sta VERA_data0
+
     rts
 .endproc
 
 
 ; Lightweight ISR subroutine to cooldown flashing signals
 .proc tick_isr
-    ; TODO
+    lda cooldown_note_steal
+    beq :+
+    dec cooldown_note_steal
+:
+    lda cooldown_note_drop
+    beq :+
+    dec cooldown_note_drop
+:
     rts
 .endproc
 

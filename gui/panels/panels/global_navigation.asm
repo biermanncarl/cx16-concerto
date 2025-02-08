@@ -40,6 +40,10 @@
       .word vera_lb
       .byte CCOLOR_CAPTION, 5, 23
       .word fm_lb
+      .byte CCOLOR_CAPTION, 5, 29
+      .word steal_lb
+      .byte CCOLOR_CAPTION, 6, 31
+      .word drop_lb
       .byte 0
    ; data specific to the synth-navigation panel
    active_tab: .byte 1
@@ -48,6 +52,8 @@
    synth_lb: STR_FORMAT "synth"
    vera_lb: STR_FORMAT "vera"
    fm_lb: STR_FORMAT "fm"
+   steal_lb: STR_FORMAT "steal"
+   drop_lb: STR_FORMAT "drop"
 
    .proc draw
       lda active_tab
