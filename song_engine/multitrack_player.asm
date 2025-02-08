@@ -8,6 +8,21 @@
 player_start_timestamp:
     .word 0
 
+.scope musical_keyboard
+    ; Musical keyboard stuff
+    velocity: .byte 63
+    instrument: .byte 0
+    mono: .byte 0
+    drum: .byte 0
+    basenote: .byte 60
+    buffer_size = 4
+    buffer_num_events:
+        .byte 0
+    buffer:
+        .res buffer_size
+    musical_keyboard_channel = $00
+.endscope
+
 .scope detail
     active: .byte 0
     time_stamp: .word 0
@@ -392,6 +407,8 @@ musical_kbd_settings_x = detail::clip_settings_x
     sta (v32b::entrypointer), y ; set to polyphonic
     iny
     sta (v32b::entrypointer), y ; disable drum pad
+    ; clear musical keyboard buffer
+    stz musical_keyboard::buffer_num_events
     rts
 .endproc
 
@@ -660,8 +677,99 @@ player_index:
 .endproc
 
 
+; Looks through our keyboard buffer and handles key presses.
+; ISR only.
+.proc handleMusicalKeyboard
+    ; keycodes can be found here: https://github.com/X16Community/x16-rom/blob/master/inc/keycode.inc
+    lowest_relevant_keycode = $12 ; keycode for "w" key
+    highest_relevant_keycode = $29 ; single quote on english keyboard, rightmost key on second row of letters
+
+    lda musical_keyboard::buffer_num_events
+    bne :+
+    rts
+:   stz kbd_event_index
+
+    @kbd_event_loop:
+        ldx kbd_event_index
+        lda musical_keyboard::buffer, x
+        cmp #128
+        ldx #0
+        bcs :+
+        inx
+    :   stx key_down
+        and #$7F
+        sec
+        sbc #lowest_relevant_keycode
+        cmp #(highest_relevant_keycode + 1 - lowest_relevant_keycode) ; this and higher key codes are irrelevant for musical keyboard
+        bcs @finish_event
+        tax
+        lda key_pitch_map_lut, x
+        bmi @finish_event ; filter out irrelevant keys
+
+        clc
+        adc musical_keyboard::basenote
+
+        ldy key_down
+        beq @key_up
+    @key_down:
+        sta song_engine::events::note_pitch
+        lda musical_keyboard::velocity
+        sta song_engine::events::note_velocity
+        lda #song_engine::events::event_type_note_on
+        sta song_engine::events::event_type
+        lda #musical_keyboard::musical_keyboard_channel
+        sta processEvent::player_index
+        jsr processEvent
+        bra @finish_event
+    @key_up:
+        sta song_engine::events::note_pitch
+        lda #song_engine::events::event_type_note_off
+        sta song_engine::events::event_type
+        lda #musical_keyboard::musical_keyboard_channel
+        sta processEvent::player_index
+        jsr processEvent
+    @finish_event:
+        inc kbd_event_index
+        ldx kbd_event_index
+        cpx musical_keyboard::buffer_num_events
+        bne @kbd_event_loop
+    stz musical_keyboard::buffer_num_events
+    rts
+
+    kbd_event_index = detail::temp_variable_a
+    key_down:
+        .byte 0
+    key_pitch_map_lut:
+        .byte 1 ; w
+        .byte 3 ; e
+        .byte $FF ; r
+        .byte 6 ; t
+        .byte 8 ; z
+        .byte 10 ; u
+        .byte $FF ; i
+        .byte 13 ; o
+        .byte 15 ; p
+        .byte $FF ; [
+        .byte $FF ; ]
+        .byte $FF ; \
+        .byte $FF ; caps lock
+        .byte 0 ; a
+        .byte 2 ; s
+        .byte 4 ; d
+        .byte 5 ; f
+        .byte 7 ; g
+        .byte 9 ; h
+        .byte 11 ; j
+        .byte 12 ; k
+        .byte 14 ; l
+        .byte 16 ; ;
+        .byte 17 ; '
+.endproc
+
+
 ; ISR only
 .proc playerTick
+    jsr handleMusicalKeyboard
     lda detail::active
     bne :+
     rts

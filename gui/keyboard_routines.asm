@@ -12,99 +12,27 @@
 .scope detail
 
 
-    ; This handler could be called, even while another ISR is running (because keyboard interrupts can happen any time)!
+    ; Apparently, since this keyboard handler is an ISR, it never occurs simultaneously with the concerto synth/player tick.
+    ; We therefore (probably, from experience) don't have to worry about ISR compatibility of this keyboard handler.
+    ; Its run time is of bigger concern. PS/2 communication might suffer if it takes too long. (Can result in glitchy mouse)
+    ; Therefore, we use a small buffer to store keyboard events and let our ISR do the rest.
     .proc musicalKbdHandler
-        ; keycodes can be found here: https://github.com/X16Community/x16-rom/blob/master/inc/keycode.inc
-        lowest_relevant_keycode = $12 ; keycode for "w" key
-        highest_relevant_keycode = $29 ; single quote on english keyboard, rightmost key on second row
+        ; We need to preserve .A and .X.
 
         ; check bypass
         ldy kbd_variables::musical_keyboard_bypass
         bne @finish_direct
 
-        ; save .A and .X for original keyboard handler, and RAM bank
-        pha
-        phx
-        ldx RAM_BANK
-        phx
+        ldy song_engine::multitrack_player::musical_keyboard::buffer_num_events
+        cpy #song_engine::multitrack_player::musical_keyboard::buffer_size ; keyboard event buffer full?
+        bcs @finish_direct
+        ; put keyboard event into buffer
+        sta song_engine::multitrack_player::musical_keyboard::buffer, y
+        inc song_engine::multitrack_player::musical_keyboard::buffer_num_events
 
-        cmp #128
-        ldx #0
-        bcs :+
-        inx
-    :   stx key_down
-        and #$7F
-        sec
-        sbc #lowest_relevant_keycode
-        cmp #(highest_relevant_keycode + 1 - lowest_relevant_keycode) ; this and higher key codes are irrelevant for musical keyboard
-        bcs @finish
-        tax
-        lda key_pitch_map_lut, x
-        bmi @finish ; filter out irrelevant keys
-
-        clc
-        adc gui_variables::musical_kbd_basenote
-
-        ldy key_down
-        beq @key_up
-    @key_down:
-        php
-        sei
-        sta song_engine::events::note_pitch
-        lda gui_variables::musical_kbd_velocity
-        sta song_engine::events::note_velocity
-        lda #song_engine::events::event_type_note_on
-        sta song_engine::events::event_type
-        lda #kbd_variables::musical_keyboard_channel
-        sta song_engine::multitrack_player::processEvent::player_index
-        jsr song_engine::multitrack_player::processEvent
-        plp
-        bra @finish
-    @key_up:
-        php
-        sei
-        sta song_engine::events::note_pitch
-        lda #song_engine::events::event_type_note_off
-        sta song_engine::events::event_type
-        lda #kbd_variables::musical_keyboard_channel
-        sta song_engine::multitrack_player::processEvent::player_index
-        jsr song_engine::multitrack_player::processEvent
-        plp
-    @finish:
-        ; restore .A and .X for original keyboard handler, and RAM bank
-        plx
-        stx RAM_BANK
-        plx
-        pla
     @finish_direct:
         jmp (kbd_variables::original_keyboard_handler)
-    key_down:
-        .byte 0
-    key_pitch_map_lut:
-        .byte 1 ; w
-        .byte 3 ; e
-        .byte $FF ; r
-        .byte 6 ; t
-        .byte 8 ; z
-        .byte 10 ; u
-        .byte $FF ; i
-        .byte 13 ; o
-        .byte 15 ; p
-        .byte $FF ; [
-        .byte $FF ; ]
-        .byte $FF ; \
-        .byte $FF ; caps lock
-        .byte 0 ; a
-        .byte 2 ; s
-        .byte 4 ; d
-        .byte 5 ; f
-        .byte 7 ; g
-        .byte 9 ; h
-        .byte 11 ; j
-        .byte 12 ; k
-        .byte 14 ; l
-        .byte 16 ; ;
-        .byte 17 ; '
+
     .endproc
 .endscope
 

@@ -64,25 +64,25 @@
       .word @select_tab
    @set_kbd_volume:
       LDA_COMPONENT_MEMBER_ADDRESS drag_edit, keyboard_volume, coarse_value
-      sta gui_variables::musical_kbd_velocity
+      sta song_engine::multitrack_player::musical_keyboard::velocity
       rts
    @set_kbd_instrument:
-      lda #kbd_variables::musical_keyboard_channel
+      lda #song_engine::multitrack_player::musical_keyboard::musical_keyboard_channel
       jsr song_engine::multitrack_player::stopVoicesOnChannel
       LDA_COMPONENT_MEMBER_ADDRESS drag_edit, keyboard_instrument, coarse_value
-      sta gui_variables::current_synth_instrument
+      sta song_engine::multitrack_player::musical_keyboard::instrument
       jmp refreshMusicalKeyboard
    @set_kbd_basenote:
    @set_kbd_mono:
    @set_kbd_drum:
-      lda #kbd_variables::musical_keyboard_channel
+      lda #song_engine::multitrack_player::musical_keyboard::musical_keyboard_channel
       jsr song_engine::multitrack_player::stopVoicesOnChannel
       LDA_COMPONENT_MEMBER_ADDRESS checkbox, keyboard_monophonic, checked
-      sta gui_variables::musical_kbd_mono
+      sta song_engine::multitrack_player::musical_keyboard::mono
       LDA_COMPONENT_MEMBER_ADDRESS checkbox, keyboard_drum_pad, checked
-      sta gui_variables::musical_kbd_drum
+      sta song_engine::multitrack_player::musical_keyboard::drum
       LDA_COMPONENT_MEMBER_ADDRESS drag_edit, keyboard_basenote, coarse_value
-      sta gui_variables::musical_kbd_basenote
+      sta song_engine::multitrack_player::musical_keyboard::basenote
       rts
    @select_tab:
       lda mouse_variables::curr_data_2 ; y position in multiples of 8 pixels
@@ -106,16 +106,16 @@
    .endproc
 
    .proc refresh
-      lda gui_variables::current_synth_instrument      
+      lda song_engine::multitrack_player::musical_keyboard::instrument
       STA_COMPONENT_MEMBER_ADDRESS drag_edit, keyboard_instrument, coarse_value
-      lda gui_variables::musical_kbd_mono
+      lda song_engine::multitrack_player::musical_keyboard::mono
       STA_COMPONENT_MEMBER_ADDRESS checkbox, keyboard_monophonic, checked
-      lda gui_variables::musical_kbd_drum
+      lda song_engine::multitrack_player::musical_keyboard::drum
       STA_COMPONENT_MEMBER_ADDRESS checkbox, keyboard_drum_pad, checked
-      lda gui_variables::musical_kbd_basenote
+      lda song_engine::multitrack_player::musical_keyboard::basenote
       STA_COMPONENT_MEMBER_ADDRESS drag_edit, keyboard_basenote, coarse_value
       ; There's nothing else messing with velocity yet
-      ; lda gui_variables::musical_kbd_velocity
+      ; lda song_engine::multitrack_player::musical_keyboard::velocity
       ; STA_COMPONENT_MEMBER_ADDRESS drag_edit, keyboard_volume, coarse_value
       rts
    .endproc
@@ -164,21 +164,21 @@
          rts
 
    @keyboard_z:
-      lda gui_variables::musical_kbd_basenote
+      lda song_engine::multitrack_player::musical_keyboard::basenote
       sec
       sbc #12
       bcc @end_keychecks
-      sta gui_variables::musical_kbd_basenote
+      sta song_engine::multitrack_player::musical_keyboard::basenote
       bra @housekeeping
    @keyboard_x:
-      lda gui_variables::musical_kbd_basenote
+      lda song_engine::multitrack_player::musical_keyboard::basenote
       clc
       adc #12
       cmp #110
       bcs @end_keychecks
-      sta gui_variables::musical_kbd_basenote
+      sta song_engine::multitrack_player::musical_keyboard::basenote
    @housekeeping:
-      lda #kbd_variables::musical_keyboard_channel
+      lda #song_engine::multitrack_player::musical_keyboard::musical_keyboard_channel
       jsr song_engine::multitrack_player::stopVoicesOnChannel
       ; fall through to refreshMusicalKeyboard
    .endproc
@@ -193,13 +193,13 @@
       ldx song_engine::multitrack_player::musical_kbd_settings_x
       jsr v32b::accessEntry
       ldy #song_engine::clips::clip_data::instrument_id
-      lda gui_variables::current_synth_instrument
+      lda song_engine::multitrack_player::musical_keyboard::instrument
       sta (v32b::entrypointer), y ; set instrument id
       iny
-      lda gui_variables::musical_kbd_mono
+      lda song_engine::multitrack_player::musical_keyboard::mono
       sta (v32b::entrypointer), y ; set mono/poly
       iny
-      lda gui_variables::musical_kbd_drum
+      lda song_engine::multitrack_player::musical_keyboard::drum
       sta (v32b::entrypointer), y ; set drum pad
       rts
    .endproc
