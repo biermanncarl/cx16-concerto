@@ -93,7 +93,6 @@ player_start_timestamp:
     ; .Y : pitch
     ; Returns voice index in .X
     ; If no voice was found, carry will be set, otherwise clear.
-    ; TODO: also look for instrument id (support drum pad)
     .proc findVoiceChannelPitch
         channel = detail::temp_variable_b
         sta channel
@@ -730,12 +729,21 @@ player_index:
         beq @key_up
     @key_down:
         sta song_engine::events::note_pitch
-        lda musical_keyboard::velocity
+        ; Counteract the keyboard's autorepeat function:
+        ; Before we proceed we check whether another unreleased voice of the same pitch already exists.
+        tay
+        lda #musical_keyboard::musical_keyboard_channel
+        sta processEvent::player_index
+        jsr detail::findVoiceChannelPitch
+        bcs :+
+        ; note was found, check if in release phase
+        lda concerto_synth::voices::Voice::env::step, x
+        cmp #4
+        bne @finish_event ; not in release phase --> autorepeat is triggering new notes all the time. Skip.
+    :   lda musical_keyboard::velocity
         sta song_engine::events::note_velocity
         lda #song_engine::events::event_type_note_on
         sta song_engine::events::event_type
-        lda #musical_keyboard::musical_keyboard_channel
-        sta processEvent::player_index
         jsr processEvent
         bra @finish_event
     @key_up:
