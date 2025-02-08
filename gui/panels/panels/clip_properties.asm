@@ -49,6 +49,21 @@
         rts
     .endproc
 
+    .proc copyClipSettingsToMusicalKeyboard
+        ldy song_engine::clips::active_clip_id
+        jsr song_engine::clips::accessClip
+        ldy #song_engine::clips::clip_data::instrument_id
+        lda (v32b::entrypointer),y
+        sta song_engine::multitrack_player::musical_keyboard::instrument
+        iny
+        lda (v32b::entrypointer),y
+        sta song_engine::multitrack_player::musical_keyboard::mono
+        iny
+        lda (v32b::entrypointer),y
+        sta song_engine::multitrack_player::musical_keyboard::drum
+        jmp panels__global_navigation__redrawMusicalKeyboardSettings
+    .endproc
+
     .proc selectTrack
         ; move all events back into the clip
         php
@@ -88,6 +103,7 @@
         lda (v32b::entrypointer),y
         sta song_engine::event_selection::unselected_events_vector+1
         plp
+        jsr copyClipSettingsToMusicalKeyboard
         jmp gui_routines__draw_gui
     .endproc
 
@@ -113,14 +129,17 @@
         LDA_COMPONENT_MEMBER_ADDRESS drag_edit, instrument_sel, coarse_value
         ldy #song_engine::clips::clip_data::instrument_id
         sta (v32b::entrypointer), y
+        jmp copyClipSettingsToMusicalKeyboard
     @mono:
         LDA_COMPONENT_MEMBER_ADDRESS checkbox, monophonic, checked
         ldy #song_engine::clips::clip_data::monophonic
         sta (v32b::entrypointer), y
+        jmp copyClipSettingsToMusicalKeyboard
     @drum_pad:
         LDA_COMPONENT_MEMBER_ADDRESS checkbox, drum_pad, checked
         ldy #song_engine::clips::clip_data::drum_pad
         sta (v32b::entrypointer), y
+        jmp copyClipSettingsToMusicalKeyboard
     @track_name:
         ; set string pointer to clip name
         lda RAM_BANK
