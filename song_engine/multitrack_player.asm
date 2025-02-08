@@ -383,6 +383,8 @@ player_start_timestamp:
     buffer:
         .res buffer_size
     musical_keyboard_channel = $00
+    last_key_down:
+        .byte 0
 
     ; pointer to musical keyboard settings
     ; While we could handle the musical keyboard entirely separately from the multitrack player, using the
@@ -728,26 +730,24 @@ player_index:
         ldy key_down
         beq @key_up
     @key_down:
+        cmp musical_keyboard::last_key_down ; check for keyboard autorepeat
+        beq @finish_event
         sta song_engine::events::note_pitch
-        ; Counteract the keyboard's autorepeat function:
-        ; Before we proceed we check whether another unreleased voice of the same pitch already exists.
-        tay
+        sta musical_keyboard::last_key_down
         lda #musical_keyboard::musical_keyboard_channel
         sta processEvent::player_index
-        jsr detail::findVoiceChannelPitch
-        bcs :+
-        ; note was found, check if in release phase
-        lda concerto_synth::voices::Voice::env::step, x
-        cmp #4
-        bne @finish_event ; not in release phase --> autorepeat is triggering new notes all the time. Skip.
-    :   lda musical_keyboard::velocity
+        lda musical_keyboard::velocity
         sta song_engine::events::note_velocity
         lda #song_engine::events::event_type_note_on
         sta song_engine::events::event_type
         jsr processEvent
         bra @finish_event
     @key_up:
-        sta song_engine::events::note_pitch
+        cmp musical_keyboard::last_key_down
+        bne :+
+        ldx #$ff
+        stx musical_keyboard::last_key_down
+    :   sta song_engine::events::note_pitch
         lda #song_engine::events::event_type_note_off
         sta song_engine::events::event_type
         lda #musical_keyboard::musical_keyboard_channel
