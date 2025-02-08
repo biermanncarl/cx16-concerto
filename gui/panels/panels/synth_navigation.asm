@@ -50,8 +50,7 @@
       ; read data from component string and write it to the Instrument setting
       LDA_COMPONENT_MEMBER_ADDRESS arrowed_edit, instrument_select, value
       sta gui_variables::current_synth_instrument
-      jsr gui_routines__refresh_gui
-      jmp panels__global_navigation__refreshMusicalKeyboard
+      jmp gui_routines__refresh_gui
    @load_preset:
       ; open the file browser popup on the GUI stack
       lda #file_browsing::file_type::instrument

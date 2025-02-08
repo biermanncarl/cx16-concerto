@@ -71,7 +71,7 @@
       jsr song_engine::multitrack_player::stopVoicesOnChannel
       LDA_COMPONENT_MEMBER_ADDRESS drag_edit, keyboard_instrument, coarse_value
       sta song_engine::multitrack_player::musical_keyboard::instrument
-      jmp refreshMusicalKeyboard
+      rts
    @set_kbd_basenote:
    @set_kbd_mono:
    @set_kbd_drum:
@@ -180,27 +180,14 @@
    @housekeeping:
       lda #song_engine::multitrack_player::musical_keyboard::musical_keyboard_channel
       jsr song_engine::multitrack_player::stopVoicesOnChannel
-      ; fall through to refreshMusicalKeyboard
+      ; fall through to redrawMusicalKeyboardSettings
    .endproc
-   .proc refreshMusicalKeyboard
+   .proc redrawMusicalKeyboardSettings
       jsr refresh
       inc gui_variables::request_components_redraw
       ; this is a hack since normally, the mouse requests redrawings
       lda #panels__ids__global_navigation
       sta mouse_variables::curr_panel
-      ; move updated musical keyboard settings to the place where the multitrack player expects them
-      lda song_engine::multitrack_player::musical_kbd_settings_a
-      ldx song_engine::multitrack_player::musical_kbd_settings_x
-      jsr v32b::accessEntry
-      ldy #song_engine::clips::clip_data::instrument_id
-      lda song_engine::multitrack_player::musical_keyboard::instrument
-      sta (v32b::entrypointer), y ; set instrument id
-      iny
-      lda song_engine::multitrack_player::musical_keyboard::mono
-      sta (v32b::entrypointer), y ; set mono/poly
-      iny
-      lda song_engine::multitrack_player::musical_keyboard::drum
-      sta (v32b::entrypointer), y ; set drum pad
       rts
    .endproc
 

@@ -8,21 +8,6 @@
 player_start_timestamp:
     .word 0
 
-.scope musical_keyboard
-    ; Musical keyboard stuff
-    velocity: .byte 63
-    instrument: .byte 0
-    mono: .byte 0
-    drum: .byte 0
-    basenote: .byte 60
-    buffer_size = 4
-    buffer_num_events:
-        .byte 0
-    buffer:
-        .res buffer_size
-    musical_keyboard_channel = $00
-.endscope
-
 .scope detail
     active: .byte 0
     time_stamp: .word 0
@@ -386,31 +371,48 @@ player_start_timestamp:
 .endscope
 
 
-; pointer to musical keyboard settings
-; While we could handle the musical keyboard entirely separately from the multitrack player, using the
-; multitrack-player function "processEvent" has some advantages:
-; It handles mono/polyphony, drum pad and voice stealing.
-; On the downside, we have to provide a pointer to the settings -- essentially an invisible "clip"
-musical_kbd_settings_a = detail::clip_settings_a
-musical_kbd_settings_x = detail::clip_settings_x
+.scope musical_keyboard
+    ; Musical keyboard stuff
+    velocity: .byte 63
+    instrument: .byte 0
+    mono: .byte 0
+    drum: .byte 0
+    basenote: .byte 60
+    buffer_size = 4
+    buffer_num_events:
+        .byte 0
+    buffer:
+        .res buffer_size
+    musical_keyboard_channel = $00
 
-; Initializes the musical keyboard, which is now handled by the multitrack-player, as well.
-.proc initialize
-    jsr v32b::new
-    sta musical_kbd_settings_a
-    stx musical_kbd_settings_x
-    jsr v32b::accessEntry
-    ldy #clips::clip_data::instrument_id
-    lda #0
-    sta (v32b::entrypointer), y ; set instrument id to zero
-    iny
-    sta (v32b::entrypointer), y ; set to polyphonic
-    iny
-    sta (v32b::entrypointer), y ; disable drum pad
-    ; clear musical keyboard buffer
-    stz musical_keyboard::buffer_num_events
-    rts
-.endproc
+    ; pointer to musical keyboard settings
+    ; While we could handle the musical keyboard entirely separately from the multitrack player, using the
+    ; multitrack-player function "processEvent" has some advantages:
+    ; It handles mono/polyphony, drum pad and voice stealing.
+    ; On the downside, we have to provide a pointer to the settings -- essentially an invisible "clip"
+    musical_kbd_settings_a = detail::clip_settings_a
+    musical_kbd_settings_x = detail::clip_settings_x
+
+
+    ; Initializes the musical keyboard, which is now handled by the multitrack-player, as well.
+    .proc initialize
+        jsr v32b::new
+        sta musical_kbd_settings_a
+        stx musical_kbd_settings_x
+        jsr v32b::accessEntry
+        ldy #clips::clip_data::instrument_id
+        lda #0
+        sta (v32b::entrypointer), y ; set instrument id to zero
+        iny
+        sta (v32b::entrypointer), y ; set to polyphonic
+        iny
+        sta (v32b::entrypointer), y ; disable drum pad
+        ; clear musical keyboard buffer
+        stz musical_keyboard::buffer_num_events
+        rts
+    .endproc
+.endscope
+
 
 
 ; Expects channel id in .A
@@ -684,6 +686,21 @@ player_index:
     lowest_relevant_keycode = $12 ; keycode for "w" key
     highest_relevant_keycode = $29 ; single quote on english keyboard, rightmost key on second row of letters
 
+    ; move updated musical keyboard settings to the place where the multitrack player expects them
+    lda musical_keyboard::musical_kbd_settings_a
+    ldx musical_keyboard::musical_kbd_settings_x
+    jsr v32b::accessEntry
+    ldy #clips::clip_data::instrument_id
+    lda musical_keyboard::instrument
+    sta (v32b::entrypointer), y ; set instrument id
+    iny
+    lda musical_keyboard::mono
+    sta (v32b::entrypointer), y ; set mono/poly
+    iny
+    lda musical_keyboard::drum
+    sta (v32b::entrypointer), y ; set drum pad
+
+    ; check for new key down/up events
     lda musical_keyboard::buffer_num_events
     bne :+
     rts
