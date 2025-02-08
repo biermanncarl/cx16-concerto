@@ -71,9 +71,7 @@
       jsr song_engine::multitrack_player::stopVoicesOnChannel
       LDA_COMPONENT_MEMBER_ADDRESS drag_edit, keyboard_instrument, coarse_value
       sta gui_variables::current_synth_instrument
-      jsr refresh
-      jsr gui_routines__draw_gui
-      rts
+      jmp refreshMusicalKeyboard
    @set_kbd_basenote:
    @set_kbd_mono:
    @set_kbd_drum:
@@ -116,7 +114,7 @@
       STA_COMPONENT_MEMBER_ADDRESS checkbox, keyboard_drum_pad, checked
       lda gui_variables::musical_kbd_basenote
       STA_COMPONENT_MEMBER_ADDRESS drag_edit, keyboard_basenote, coarse_value
-      ; There's nothing else messing with these
+      ; There's nothing else messing with velocity yet
       ; lda gui_variables::musical_kbd_velocity
       ; STA_COMPONENT_MEMBER_ADDRESS drag_edit, keyboard_volume, coarse_value
       rts
@@ -190,6 +188,19 @@
       ; this is a hack since normally, the mouse requests redrawings
       lda #panels__ids__global_navigation
       sta mouse_variables::curr_panel
+      ; move updated musical keyboard settings to the place where the multitrack player expects them
+      lda song_engine::multitrack_player::musical_kbd_settings_a
+      ldx song_engine::multitrack_player::musical_kbd_settings_x
+      jsr v32b::accessEntry
+      ldy #song_engine::clips::clip_data::instrument_id
+      lda gui_variables::current_synth_instrument
+      sta (v32b::entrypointer), y ; set instrument id
+      iny
+      lda gui_variables::musical_kbd_mono
+      sta (v32b::entrypointer), y ; set mono/poly
+      iny
+      lda gui_variables::musical_kbd_drum
+      sta (v32b::entrypointer), y ; set drum pad
       rts
    .endproc
 

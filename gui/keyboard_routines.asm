@@ -12,6 +12,7 @@
 .scope detail
 
 
+    ; This handler could be called, even while another ISR is running (because keyboard interrupts can happen any time)!
     .proc musicalKbdHandler
         ; keycodes can be found here: https://github.com/X16Community/x16-rom/blob/master/inc/keycode.inc
         lowest_relevant_keycode = $12 ; keycode for "w" key
@@ -21,8 +22,10 @@
         ldy kbd_variables::musical_keyboard_bypass
         bne @finish_direct
 
-        ; save .A and .X for original keyboard handler
+        ; save .A and .X for original keyboard handler, and RAM bank
         pha
+        phx
+        ldx RAM_BANK
         phx
 
         cmp #128
@@ -45,30 +48,32 @@
         ldy key_down
         beq @key_up
     @key_down:
-        sta concerto_synth::note_pitch
-        tay
+        php
+        sei
+        sta song_engine::events::note_pitch
+        lda gui_variables::musical_kbd_velocity
+        sta song_engine::events::note_velocity
+        lda #song_engine::events::event_type_note_on
+        sta song_engine::events::event_type
         lda #kbd_variables::musical_keyboard_channel
-        jsr song_engine::multitrack_player::detail::findVoiceChannelPitch
-        bcc @finish
-        jsr song_engine::multitrack_player::detail::findFreeVoice
-        bcs @finish
-        stx concerto_synth::note_voice
-        lda #kbd_variables::musical_keyboard_channel
-        sta song_engine::multitrack_player::detail::voice_channels, x
-        lda concerto_gui::gui_variables::current_synth_instrument
-        sta concerto_synth::note_instrument
-        lda concerto_gui::gui_variables::musical_kbd_velocity
-        jsr concerto_synth::play_note
+        sta song_engine::multitrack_player::processEvent::player_index
+        jsr song_engine::multitrack_player::processEvent
+        plp
         bra @finish
     @key_up:
-        tay
+        php
+        sei
+        sta song_engine::events::note_pitch
+        lda #song_engine::events::event_type_note_off
+        sta song_engine::events::event_type
         lda #kbd_variables::musical_keyboard_channel
-        jsr song_engine::multitrack_player::detail::findVoiceChannelPitch
-        bcs @finish ; not found
-        stx concerto_synth::note_voice
-        jsr concerto_synth::release_note
+        sta song_engine::multitrack_player::processEvent::player_index
+        jsr song_engine::multitrack_player::processEvent
+        plp
     @finish:
-        ; restore .A and .X for original keyboard handler
+        ; restore .A and .X for original keyboard handler, and RAM bank
+        plx
+        stx RAM_BANK
         plx
         pla
     @finish_direct:

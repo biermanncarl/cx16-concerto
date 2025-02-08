@@ -51,7 +51,7 @@
       LDA_COMPONENT_MEMBER_ADDRESS arrowed_edit, instrument_select, value
       sta gui_variables::current_synth_instrument
       jsr gui_routines__refresh_gui
-      rts
+      jmp panels__global_navigation__refreshMusicalKeyboard
    @load_preset:
       ; open the file browser popup on the GUI stack
       lda #file_browsing::file_type::instrument

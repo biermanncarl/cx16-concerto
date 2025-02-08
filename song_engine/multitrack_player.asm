@@ -27,6 +27,8 @@ player_start_timestamp:
 
     ; state for each event player
     ; player with index 0 is for the currently selected events, players 1-MAX are the clips (and the unselected events of the currently edited clip)
+    ; Note that we "route" the actual events from event player 0 into the track that is currently selected in the GUI.
+    ; We also pass the corresponding player id to processEvent, so that player id 0 can be used for the musical keyboard.
     num_players = MAX_TRACKS + 1 ; we need one extra player for the selected events in the current clip edit view
     next_event_timestamp_l:
         .res num_players
@@ -38,6 +40,7 @@ player_start_timestamp:
         .res num_players
     next_event_pointer_y: ; this variable doubles as the "active" switch. If zero (NULL pointer), the player is inactive.
         .res num_players
+    ; For the clip settings, index 0 contains the settings of the musical keyboard, which are read by processEvent.
     clip_settings_a:
         .res num_players
     clip_settings_x:
@@ -368,6 +371,31 @@ player_start_timestamp:
 .endscope
 
 
+; pointer to musical keyboard settings
+; While we could handle the musical keyboard entirely separately from the multitrack player, using the
+; multitrack-player function "processEvent" has some advantages:
+; It handles mono/polyphony, drum pad and voice stealing.
+; On the downside, we have to provide a pointer to the settings -- essentially an invisible "clip"
+musical_kbd_settings_a = detail::clip_settings_a
+musical_kbd_settings_x = detail::clip_settings_x
+
+; Initializes the musical keyboard, which is now handled by the multitrack-player, as well.
+.proc initialize
+    jsr v32b::new
+    sta musical_kbd_settings_a
+    stx musical_kbd_settings_x
+    jsr v32b::accessEntry
+    ldy #clips::clip_data::instrument_id
+    lda #0
+    sta (v32b::entrypointer), y ; set instrument id to zero
+    iny
+    sta (v32b::entrypointer), y ; set to polyphonic
+    iny
+    sta (v32b::entrypointer), y ; disable drum pad
+    rts
+.endproc
+
+
 ; Expects channel id in .A
 .proc stopVoicesOnChannel
     ldx #0
@@ -445,7 +473,7 @@ player_start_timestamp:
 ; New, multitrack capable version
 ; Possible adaptation later: start from time stamp
 .proc startPlayback
-    track_index = detail::temp_variable_a
+    player_index = detail::temp_variable_a
     temp = detail::temp_variable_b
     php
     sei
@@ -469,23 +497,18 @@ player_start_timestamp:
 
     ; Initialize player for selected events (player index 0)
     ; Set up pointer to clip options data. (Selected events use the same settings as the currently visible clip)
-    ldy clips::active_clip_id
-    lda clips::clips_vector
-    ldx clips::clips_vector+1
-    jsr dll::getElementByIndex ; returns pointer in .A/.X
-    sta detail::clip_settings_a ; player index 0, no offset needed
-    stx detail::clip_settings_x
     lda #0
     jsr updateTrackPlayer
+    ; We leave the clip_settings for index 0 untouched because they contain the settings of the musical keyboard
 
 
     ; Copy the track settings pointers into the player
-    stz track_index
+    stz player_index ; actually, in the first half of below loop, this variable is treated as clip index
 @track_loop:
-    ldy track_index
+    ldy player_index
     jsr clips::accessClip ; this is not very efficient, but small code...
-    inc track_index
-    ldx track_index
+    inc player_index ; converts from clip index to player index
+    ldx player_index
     lda RAM_BANK
     sta detail::clip_settings_a, x
     lda v32b::entrypointer_h
@@ -510,9 +533,10 @@ player_start_timestamp:
 
 
 ; Processes a single event.
-; The track index must be set in track_index
+; The track index must be set in player_index.
 ; The event is expected in the v5b data registers.
-; Can be called from ISR and main program, but in main program, interrupt must be disabled (track_index could be cluttered)
+; Can be called from ISR and main program, but in main program, interrupt must be disabled (player_index could be cluttered)
+; NOTE: player_index is not the clip index, but the index into the player-internal array of pointers clip_settings_a/x.
 .proc processEvent
     ; Right now, there are only note-on and note-off events.
     ; In both cases, we are interested in finding a note that is currently playing on the same track, pitch and instrument.
@@ -525,7 +549,7 @@ player_start_timestamp:
     sta concerto_synth::note_voice ; invalidate voice index
 
     ; Setup access to clip settings
-    ldy track_index
+    ldy player_index
     lda detail::clip_settings_a, y
     ldx detail::clip_settings_x, y
     jsr v32b::accessEntry
@@ -539,7 +563,7 @@ player_start_timestamp:
         stx concerto_synth::note_instrument ; not needed for note-offs, but doesn't hurt, either
         sta concerto_synth::note_pitch ; not needed for note-offs, but doesn't hurt, either
         tay
-        lda track_index
+        lda player_index
         jsr detail::findVoiceChannelPitchInstrument
         bcs @check_event_type
         stx concerto_synth::note_voice
@@ -557,13 +581,13 @@ player_start_timestamp:
     beq @polyphonic_find
     @monophonic_find:
         ; find voice with current channel & pitch --> replace
-        lda track_index
+        lda player_index
         jsr detail::findVoiceChannel
         bcs :+
         stx concerto_synth::note_voice
     :   bra @check_event_type
     @polyphonic_find:
-        lda track_index
+        lda player_index
         ldy events::note_pitch
         jsr detail::findVoiceChannelPitch
         bcs :+
@@ -626,12 +650,12 @@ player_start_timestamp:
         stx concerto_synth::note_voice
 @play_note:
     ; concerto_synth::note_voice contains the voice to be used
-    lda track_index
+    lda player_index
     sta detail::voice_channels, x
     lda events::note_velocity
     jsr concerto_synth::play_note
     rts
-track_index:
+player_index:
     .byte 0
 .endproc
 
@@ -647,7 +671,7 @@ track_index:
 @start_track_loop:
     ldx #0
 @track_loop:
-    stx track_counter
+    stx player_counter
     lda detail::next_event_pointer_y, x
     beq @finish_track
     @process_events_loop:
@@ -660,7 +684,7 @@ track_index:
         
         ; it's the current time stamp!
         ; Dispatch current event
-        ldx track_counter
+        ldx player_counter
         ldy detail::next_event_pointer_y, x
         lda detail::next_event_pointer_x, x
         pha
@@ -675,11 +699,11 @@ track_index:
         lda event_threshold
         cmp events::event_type
         bcc @finish_track_phase
-        lda track_counter
+        lda player_counter
         bne :+
         lda clips::active_clip_id ; if the player id is 0 (player of selected events), we treat the event as part of the parent clip
         inc
-    :   sta processEvent::track_index
+    :   sta processEvent::player_index
         jsr processEvent
         ply
         plx
@@ -690,7 +714,7 @@ track_index:
         pha
         phy
         phx
-        ldx track_counter
+        ldx player_counter
         sta detail::next_event_pointer_a, x
         tya
         sta detail::next_event_pointer_y, x
@@ -700,7 +724,7 @@ track_index:
         ply
         pla
         jsr v5b::read_entry
-        ldx track_counter
+        ldx player_counter
         lda events::event_time_stamp_l
         sta detail::next_event_timestamp_l, x
         lda events::event_time_stamp_h
@@ -708,7 +732,7 @@ track_index:
         bra @process_events_loop
 
     @disable_track:
-        ldx track_counter
+        ldx player_counter
         stz detail::next_event_pointer_y, x
         bra @finish_track
     @finish_track_phase:
@@ -716,7 +740,7 @@ track_index:
     plx
     pla
 @finish_track:
-    ldx track_counter
+    ldx player_counter
     inx
     cpx #MAX_TRACKS+1
     bcs :+
@@ -739,7 +763,7 @@ event_threshold:
     ; phase 3 means note-offs only (to potentially free up voices)
     ; phase 255 means note-ons (and in the future, potentially effects)
     .byte 0
-track_counter:
+player_counter:
     .byte 0
 .endproc
 

@@ -25,7 +25,7 @@
         .word 0
     musical_keyboard_bypass:
         .byte 0
-    musical_keyboard_channel = $FF
+    musical_keyboard_channel = $00
 .endscope
 
 .endif ; .ifndef ::GUI_KEYBOARD_VARIABLES_ASM

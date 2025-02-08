@@ -43,6 +43,7 @@ initialize:
    jsr gui_routines::load_synth_gui
    jsr mouse::mouse_init
    jsr song_engine::clips::initialize
+   jsr song_engine::multitrack_player::initialize
    jsr file_browsing::initialize
    jsr panels::file_save_popup::initialize
    jsr panels::file_load_popup::initialize
