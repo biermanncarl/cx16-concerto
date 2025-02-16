@@ -351,9 +351,9 @@ destroy = dll::destroy_list
 .endproc
 
 
-; Checks if a given element is the last one of a vector.
+; Checks if a given element is the first one of a vector.
 ; Expects the pointer to the element in .A/.X/.Y
-; If it's the last element, carry is set. Otherwise clear.
+; If it's the first element, carry is set. Otherwise clear.
 ; Preserves .A/.X/.Y
 .proc is_first_entry
    cmp #0
@@ -762,6 +762,113 @@ destroy = dll::destroy_list
    bne @loop
    rts
 .endproc
+
+
+; Splits a vector in two at the given location. The pointed at entry will end up in the second part, except if it is the first entry.
+; (TODO: maybe putting it in the first vector is more consistent? Let's see if this becomes an issue...)
+; Expects the direct pointer to a valid entry in .A/.X/.Y.
+; Returns the pointer to the new vector in .A/.X
+; If the given entry is the first entry within the vector, the vector remains unchanged and NULL is returned.
+; If the operation cannot be performed due to full memory, carry will be set. Clear otherwise.
+; CAUTION: Do not use in ISR!
+.proc splitVectorBeforeEntry
+   jsr is_first_entry
+   bcc @not_first
+   ; first entry, return NULL
+   ldy #0
+   clc
+   rts
+@not_first:
+   ; First in chunk?
+   cmp #0
+   bne @not_first_in_chunk
+   ; No copy operation needed, we'll just split right here.
+   tya
+   jsr dll::get_previous_element
+   jsr dll::splitListAfterElement
+   ; carry will be clear already
+   rts
+@not_first_in_chunk:
+   ; Need to copy data to new chunk.
+   ; Remember address of pointed at entry.
+   sta value_0
+   stx value_1
+   sty value_2
+
+   tya ; get DLL pointer in .A/.X
+   jsr dll::splitListAfterElement ; returns pointer to first element of second list
+   jsr dll::insert_element_before
+   bcc :+
+   rts
+:  
+   ; set up new chunk with correct size
+   sta zp_pointer_2 ; remember address of new chunk
+   stx zp_pointer_2+1
+   ; calculate number of entries to be copied
+   ldy value_2
+   sty RAM_BANK
+   ldy value_1
+   sty zp_pointer+1
+   stz zp_pointer
+   ldy #4
+   lda (zp_pointer), y
+   sec
+   sbc value_0
+   pha ; remember number of entries to be copied
+   lda value_0
+   sta (zp_pointer), y ; set new size of old chunk
+   pla ; recall number of entries to be copied
+   ; ldx zp_pointer_2+1 ; not needed because .X wasn't cluttered
+   stx zp_pointer+1
+   ldy zp_pointer_2
+   sty RAM_BANK
+   ldy #4
+   sta (zp_pointer), y ; set size of new chunk
+
+   ; set up loop variable inside the stack
+   sta @cmp_selfmod_target+1 ; self-modifying code
+   stz loop_counter
+
+   lda value_0
+   ldx value_1
+   ldy value_2
+   @copy_loop:
+      pha
+      phx
+      phy
+      jsr read_entry
+      ldy zp_pointer_2
+      ldx zp_pointer_2+1
+      lda loop_counter
+      jsr write_entry
+
+      lda loop_counter
+      inc ; move to next entry in target chunk
+      @cmp_selfmod_target:
+      cmp #0
+      beq @copy_loop_end
+      sta loop_counter
+
+      ply
+      plx
+      pla
+      inc ; move to next entry in original chunk
+      bra @copy_loop
+   @copy_loop_end:
+   pla
+   pla
+   pla
+   ; return address of new vector (2nd part)
+   lda zp_pointer_2
+   ldx zp_pointer_2+1
+   clc
+   rts
+loop_counter:
+   .byte 0
+.endproc
+
+
+mergeVectors = dll::mergeLists
 
 
 ; Converts an entry from "direct pointer" representation to the "vector+index" representation.

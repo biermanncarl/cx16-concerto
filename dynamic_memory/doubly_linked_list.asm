@@ -529,7 +529,7 @@ copyElement = detail::copyElement
 
 
 ; Splits a list in two at the specified element. (Untested)
-; Expects pointer (B/H) to an element in .A/.X
+; Expects pointer (B/H) to an element in .A/.X. This will be the last element of the first list.
 ; Returns the pointer to the second "half" of the list in .A/.X
 ; If the current element is the last element, that pointer will be NULL, and carry will be set.
 ; Carry will be clear otherwise.
