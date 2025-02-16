@@ -214,11 +214,13 @@ copyElement = detail::copyElement
 ; Returns pointer to the last element .A/.X (never NULL)
 .proc get_last_element
 @loop:
-   jsr is_last_element
-   bcs @end_loop
+   sta zp_pointer_2
+   stx zp_pointer_2+1
    jsr get_next_element
-   bra @loop
+   bne @loop
 @end_loop:
+   lda zp_pointer_2
+   ldx zp_pointer_2+1
    rts
 .endproc
 
@@ -559,6 +561,12 @@ copyElement = detail::copyElement
    sta (zp_pointer)
    tya ; recall B component of successor
    clc
+   rts
+.endproc
+
+
+
+.proc mergeLists
    rts
 .endproc
 
