@@ -212,15 +212,20 @@ copyElement = detail::copyElement
 
 ; Expects (non-NULL) pointer (B/H) to an element in .A/.X
 ; Returns pointer to the last element .A/.X (never NULL)
+; Preserves zp_pointer_2
 .proc get_last_element
+   pha
+   phx
 @loop:
-   sta zp_pointer_2
-   stx zp_pointer_2+1
+   ply
+   ply
+   pha
+   phx
    jsr get_next_element
    bne @loop
 @end_loop:
-   lda zp_pointer_2
-   ldx zp_pointer_2+1
+   plx
+   pla
    rts
 .endproc
 
@@ -547,7 +552,7 @@ copyElement = detail::copyElement
    stz zp_pointer
    ; set predecessor to NULL
    lda #0
-   ldy #3
+   ldy #2
    sta (zp_pointer), y
 
    ; set successor to NULL
@@ -565,8 +570,35 @@ copyElement = detail::copyElement
 .endproc
 
 
-
+; Joins two doubly linked lists.
+; Expects pointer (B/H) to an element of the first list in .A/.X
+; Expects pointer (B/H) to the beginning of the second list in zp_pointer_2
+; The joined list will have the same starting point as the first list.
 .proc mergeLists
+   ; set up access to first list's last element
+   jsr get_last_element
+   pha ; remember pointer to that element
+   phx
+   sta RAM_BANK
+   stx zp_pointer+1
+   ; stz zp_pointer ; already done by get_last_element
+   ; set successor of first list
+   lda zp_pointer_2
+   sta (zp_pointer)
+   tax
+   ldy #1
+   lda zp_pointer_2+1
+   sta (zp_pointer), y
+   ; set up access to start of second list
+   sta zp_pointer+1
+   stx RAM_BANK
+   ; set predecessor of second list
+   ldy #3
+   pla
+   sta (zp_pointer), y
+   dey
+   pla
+   sta (zp_pointer), y
    rts
 .endproc
 
