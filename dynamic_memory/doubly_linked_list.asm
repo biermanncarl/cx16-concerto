@@ -521,6 +521,48 @@ copyElement = detail::copyElement
 .endproc
 
 
+; Splits a list in two at the specified element. (Untested)
+; Expects pointer (B/H) to an element in .A/.X
+; Returns the pointer to the second "half" of the list in .A/.X
+; If the current element is the last element, that pointer will be NULL, and carry will be set.
+; Carry will be clear otherwise.
+.proc splitListAfterElement
+   pha
+   phx
+   jsr get_next_element
+   bne @do_split
+   ; we're at end of list. Return NULL and set carry.
+   plx
+   pla
+   lda #0
+   sec
+   rts
+@do_split:
+   ; Not last element, we got actual work to do.
+   ; .A/.X contains pointer to successor of argument. Need to set predecessor to NULL.
+   sta RAM_BANK
+   stx zp_pointer+1
+   stz zp_pointer
+   ; set predecessor to NULL
+   lda #0
+   ldy #3
+   sta (zp_pointer), y
+
+   ; set successor to NULL
+   ; .X still contains H component of pointer to successor
+   pla
+   sta zp_pointer+1
+   pla
+   ldy RAM_BANK ; remember B component of successor
+   sta RAM_BANK
+   lda #0
+   sta (zp_pointer)
+   tya ; recall B component of successor
+   clc
+   rts
+.endproc
+
+
 
 .if 0
 ; Deletes any element from a list. *Slightly* optimized but much less readable version.

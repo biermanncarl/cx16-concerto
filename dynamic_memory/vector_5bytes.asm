@@ -447,7 +447,7 @@ destroy = dll::destroy_list
 ; Expects the pointer to a valid entry in .A/.X/.Y
 ; Expects the values in value_0 through value_h
 ; When it fails due to full heap, exits with carry set. Otherwise carry will be clear upon exit.
-; Returns the pointer to the inserted entry in .A/.X/.Y (!!Untested!!)
+; Returns the pointer to the inserted entry in .A/.X/.Y
 ; Caution! The pointer to the inserted entry isn't necessarily the same as the argument!
 ; Entries can have been moved around.
 .proc insert_entry
