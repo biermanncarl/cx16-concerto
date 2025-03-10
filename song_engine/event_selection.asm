@@ -1,4 +1,4 @@
-; Copyright 2023-2024 Carl Georg Biermann
+; Copyright 2023-2025 Carl Georg Biermann
 
 ; This file implements work with selections. There are two vectors, vector A and vector B,
 ; which can broadly be imagined as a vector of selected and unselected events, respectively.
@@ -20,6 +20,7 @@ SONG_DATA_EVENT_SELECTION_ASM = 1
 
 .scope event_selection
 
+.include "pre_parsing.asm"
 
 .pushseg
 .zeropage

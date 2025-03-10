@@ -1,4 +1,4 @@
-; Copyright 2024 Carl Georg Biermann
+; Copyright 2024-2025 Carl Georg Biermann
 
 .ifndef ::SONG_ENGINE_MULTITRACK_PLAYER_ASM
 ::SONG_ENGINE_MULTITRACK_PLAYER_ASM = 1
