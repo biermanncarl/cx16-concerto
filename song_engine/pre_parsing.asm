@@ -21,8 +21,6 @@ notes_active:
     ; TODO: some/all of these variables could reuse v5b ZP variables
     target_timestamp:
         .word 0
-    current_timestamp:
-        .word 0
     zp_pointer_1:
         .word 0
     zp_pointer_2:

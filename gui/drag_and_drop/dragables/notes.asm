@@ -366,10 +366,7 @@ note_data_changed: ; flag set within drag&drop operations to signal if playback 
    dex
    bpl @clear_column_buffer_loop
 
-   ; event sources: unselected and selected events
-   SET_VECTOR_A song_engine::event_selection::selected_events_vector
-   SET_VECTOR_B song_engine::event_selection::unselected_events_vector
-   jsr song_engine::event_selection::resetStream
+
 
    ; initialize the hitbox list
    lda #dragables__ids__notes
@@ -389,57 +386,51 @@ note_data_changed: ; flag set within drag&drop operations to signal if playback 
 
    stz end_of_data
 
-   ; get first entry
-   jsr song_engine::event_selection::streamGetNextEvent
-   bcs @pre_parsing_end_of_data
-@clip_is_not_empty:
-   ; we have at least one event. get that event's time stamp
-   jsr v5b::read_entry
 
+   ; event sources: unselected and selected events
+   SET_VECTOR_A song_engine::event_selection::selected_events_vector
+   SET_VECTOR_B song_engine::event_selection::unselected_events_vector
+   jsr song_engine::event_selection::resetStream
 
    ; PARSING EVENTS BEFORE THE DISPLAYED TIME WINDOW
    ; This serves two purposes:
    ; 1. finding the first events in the unselected and selected event vector, respectively, that are relevant for the current view
    ; 2. register any notes which begin off-screen but continue into the view
    ; =============================================================================================================================
-@pre_parsing_loop:
-   lda running_time_stamp_h ; running time stamp is kept at the left border's time stamp during pre-parsing
-   cmp song_engine::events::event_time_stamp_h
-   bcc @end_pre_parsing_loop ; if time stamp's high is bigger than reference, we must end
-   bne @continue_pre_parsing_loop ; if they're not equal, (and implicitly not bigger), it must be smaller -> we can continue
-   lda song_engine::events::event_time_stamp_l ; high bytes are equal --> need to check low byte
-   cmp running_time_stamp_l
-   bcs @end_pre_parsing_loop ; if time stamp's low byte is equal or higher than threshold, we end
-@continue_pre_parsing_loop:
-   ; interpret current event
-   ; we assume the current event is already in the API variables
-   ; calculate row (before knowing the event type, to reduce code duplication, could be optimized for speed)
-   jsr detail::calculateRowAndCheckBounds
-   bcc @pre_parsing_next_event ; when outside the view vertically, continue to next event
-   ; check event type
-   lda song_engine::events::event_type
-   beq @pre_parsing_note_off
-   cmp #song_engine::events::event_type_note_on
-   bne @pre_parsing_next_event
-@pre_parsing_note_on:
-   jsr detail::startNoteHitbox
-   lda #2 ; for the purpose of pre-parsing, this is much simpler than in the actual parsing (just toggle on-off). Set to 2 so they won't look like they start at the left border of the time window
-   bra @pre_parsing_write_to_buffer
-@pre_parsing_note_off:
-   lda #column_buffer_no_note ; as the hitbox already ends off-screen, we don't need to register it at all, just switch the row "off"
-@pre_parsing_write_to_buffer:
-   sta detail::column_buffer, x
-@pre_parsing_next_event:
-   ; get next event
+   lda window_time_stamp
+   sta song_engine::event_selection::pre_parsing::target_timestamp
+   lda window_time_stamp+1
+   sta song_engine::event_selection::pre_parsing::target_timestamp+1
+
+   lda song_engine::event_selection::selected_events_vector
+   ldx song_engine::event_selection::selected_events_vector+1
+   jsr song_engine::event_selection::pre_parsing::findActiveNotesAtTimestamp
+   bcc :+
+   ldy #0 ; signal no more event available in this vector
+:  sta song_engine::event_selection::next_event_a
+   stx song_engine::event_selection::next_event_a+1
+   sty song_engine::event_selection::next_event_a+2
+   ; TODO: copy active notes to the buffer
+
+   lda song_engine::event_selection::unselected_events_vector
+   ldx song_engine::event_selection::unselected_events_vector+1
+   jsr song_engine::event_selection::pre_parsing::findActiveNotesAtTimestamp
+   bcc :+
+   ldy #0 ; signal no more event available in this vector
+:  sta song_engine::event_selection::next_event_b
+   stx song_engine::event_selection::next_event_b+1
+   sty song_engine::event_selection::next_event_b+2
+   ; TODO: copy active notes to the buffer
+
+   ; get first entry from the stream
    jsr song_engine::event_selection::streamGetNextEvent
-   bcs @pre_parsing_end_of_data
-   jsr v5b::read_entry
-   bra @pre_parsing_loop
-
-@pre_parsing_end_of_data:
+   bcc @clip_is_not_empty
    inc end_of_data
-@end_pre_parsing_loop:
-
+   bra @end_pre_parsing
+@clip_is_not_empty:
+   ; we have at least one event. get that event's time stamp
+   jsr v5b::read_entry
+@end_pre_parsing:
 
 
    ; DRAWING THE TIME WINDOW
