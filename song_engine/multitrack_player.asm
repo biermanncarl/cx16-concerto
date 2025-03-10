@@ -46,30 +46,6 @@ player_start_timestamp:
     clip_settings_x:
         .res num_players
 
-    ; if no more events available, carry is set upon return
-    .proc getNextEventAndTimeStamp
-        jsr event_selection::streamGetNextEvent
-        bcc :+
-        ; loop back to beginning
-        stz time_stamp
-        stz time_stamp+1
-        jsr event_selection::resetStream
-        jsr event_selection::streamGetNextEvent
-        bcc :+
-        ; if we still don't get any new events, there are none. deactivate player
-        stz active
-        rts
-    :   sta next_event
-        stx next_event+1
-        sty next_event+2
-        jsr v5b::read_entry
-        lda events::event_time_stamp_l
-        sta next_time_stamp
-        lda events::event_time_stamp_h
-        sta next_time_stamp+1
-        clc
-        rts
-    .endproc
 
     ; Looks through the 16 voices and tries to find a free one.
     ; Returns the index of the voice in .X
