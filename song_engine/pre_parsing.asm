@@ -156,7 +156,7 @@ notes_active:
         lda target_timestamp+1
         cmp (zp_pointer_1), y
         bcc @end_final_block
-        bne @final_block_interpret_event
+        bne @final_block_interpret_event_2
         lda target_timestamp
         dey
         cmp (zp_pointer_1), y
@@ -174,6 +174,7 @@ notes_active:
             ; fall through to event interpretation
         @final_block_interpret_event:
             iny
+        @final_block_interpret_event_2:
             iny
             lda (zp_pointer_1), y
             beq @final_block_note_off

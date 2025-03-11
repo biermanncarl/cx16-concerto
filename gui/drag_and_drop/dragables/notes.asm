@@ -402,25 +402,53 @@ note_data_changed: ; flag set within drag&drop operations to signal if playback 
    lda window_time_stamp+1
    sta song_engine::event_selection::pre_parsing::target_timestamp+1
 
-   lda song_engine::event_selection::selected_events_vector
-   ldx song_engine::event_selection::selected_events_vector+1
-   jsr song_engine::event_selection::pre_parsing::findActiveNotesAtTimestamp
-   bcc :+
-   ldy #0 ; signal no more event available in this vector
-:  sta song_engine::event_selection::next_event_a
-   stx song_engine::event_selection::next_event_a+1
-   sty song_engine::event_selection::next_event_a+2
-   ; TODO: copy active notes to the buffer
-
+   ; unselected events
    lda song_engine::event_selection::unselected_events_vector
    ldx song_engine::event_selection::unselected_events_vector+1
    jsr song_engine::event_selection::pre_parsing::findActiveNotesAtTimestamp
    bcc :+
-   ldy #0 ; signal no more event available in this vector
+   ldy #0 ; signal no more events available in this vector
 :  sta song_engine::event_selection::next_event_b
    stx song_engine::event_selection::next_event_b+1
    sty song_engine::event_selection::next_event_b+2
-   ; TODO: copy active notes to the buffer
+   ; copy active notes to the column buffer
+   ldy window_pitch
+   ldx #(detail::event_edit_height - 1)
+   @unselected_offscreen_loop:
+      lda song_engine::event_selection::pre_parsing::notes_active, y
+      beq :+
+      lda #2 ; 2 to make it not appear to start at the left border
+      sta detail::column_buffer, x
+      stz detail::note_is_selected, x
+      ; TODO: note id --> find it, set it
+   :  iny
+      dex
+      cpx #255
+      bne @unselected_offscreen_loop
+
+   ; selected events
+   lda song_engine::event_selection::selected_events_vector
+   ldx song_engine::event_selection::selected_events_vector+1
+   jsr song_engine::event_selection::pre_parsing::findActiveNotesAtTimestamp
+   bcc :+
+   ldy #0 ; signal no more events available in this vector
+:  sta song_engine::event_selection::next_event_a
+   stx song_engine::event_selection::next_event_a+1
+   sty song_engine::event_selection::next_event_a+2
+   ; copy active notes to the column buffer
+   ldy window_pitch
+   ldx #(detail::event_edit_height - 1)
+   @selected_offscreen_loop:
+      lda song_engine::event_selection::pre_parsing::notes_active, y
+      beq :+
+      lda #2
+      sta detail::column_buffer, x
+      sta detail::note_is_selected, x
+      ; TODO: note id --> find it, set it
+   :  iny
+      dex
+      cpx #255
+      bne @selected_offscreen_loop
 
    ; get first entry from the stream
    jsr song_engine::event_selection::streamGetNextEvent
