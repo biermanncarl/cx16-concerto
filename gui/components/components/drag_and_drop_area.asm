@@ -110,11 +110,11 @@
         ; We got a hit!
     @hit_right_end:
         lda #dnd::hitboxes::hitbox_handle::right_end
-        bra :+
+        bra @set_event_pointer
     @hit_bulk:
         lda #dnd::hitboxes::hitbox_handle::bulk
+    @set_event_pointer:
         sta mouse_variables::curr_data_1 ; signal that the mouse does point at a hitbox
-    :   ; get the event pointer
         ply
         plx
         pla
