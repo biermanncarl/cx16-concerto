@@ -293,6 +293,50 @@ note_data_changed: ; flag set within drag&drop operations to signal if playback 
 .endscope
 
 
+.macro INIT_EVENT_VECTOR_DRAWING start_pointer, is_selected
+   .local @starting_offscreen_loop
+   jsr song_engine::event_selection::pre_parsing::findActiveNotesAtTimestamp
+   bcc :+
+   ldy #0 ; signal no more events available in this vector
+:  sta start_pointer
+   stx start_pointer+1
+   sty start_pointer+2
+   ; copy active notes to the column buffer
+   ldy window_pitch
+   ldx #(detail::event_edit_height - 1)
+   @starting_offscreen_loop:
+      lda song_engine::event_selection::pre_parsing::notes_active, y
+      beq :+
+      lda #2 ; 2 to make it not appear to start at the left border
+      sta detail::column_buffer, x
+      .if is_selected
+         sta detail::note_is_selected, x
+      .else
+         stz detail::note_is_selected, x
+      .endif
+      tya
+      sta song_engine::event_selection::findNoteOn::pitch
+      phy
+      phx
+      lda start_pointer
+      ldx start_pointer+1
+      ldy start_pointer+2
+      jsr song_engine::event_selection::findNoteOn
+      stx detail::current_event_ptr+1
+      plx
+      sta detail::note_pointer_a, x
+      tya
+      sta detail::note_pointer_y, x
+      lda detail::current_event_ptr+1
+      sta detail::note_pointer_x, x
+      ply
+   :  iny
+      dex
+      cpx #255
+      bne @starting_offscreen_loop
+.endmacro
+
+
 ; Draws the editing area of notes within a clip. (Later perhaps effects, too)
 ; Expects pointer to unselected events in unselected_events_vector, selected events in selected_events_vector
 .proc draw
@@ -407,80 +451,12 @@ note_data_changed: ; flag set within drag&drop operations to signal if playback 
    ; unselected events
    lda song_engine::event_selection::unselected_events_vector
    ldx song_engine::event_selection::unselected_events_vector+1
-   jsr song_engine::event_selection::pre_parsing::findActiveNotesAtTimestamp
-   bcc :+
-   ldy #0 ; signal no more events available in this vector
-:  sta song_engine::event_selection::next_event_b
-   stx song_engine::event_selection::next_event_b+1
-   sty song_engine::event_selection::next_event_b+2
-   ; copy active notes to the column buffer
-   ldy window_pitch
-   ldx #(detail::event_edit_height - 1)
-   @unselected_offscreen_loop:
-      lda song_engine::event_selection::pre_parsing::notes_active, y
-      beq :+
-      lda #2 ; 2 to make it not appear to start at the left border
-      sta detail::column_buffer, x
-      stz detail::note_is_selected, x
-      tya
-      sta song_engine::event_selection::findNoteOn::pitch
-      phy
-      phx
-      lda song_engine::event_selection::next_event_b
-      ldx song_engine::event_selection::next_event_b+1
-      ldy song_engine::event_selection::next_event_b+2
-      jsr song_engine::event_selection::findNoteOn
-      stx detail::current_event_ptr+1
-      plx
-      sta detail::note_pointer_a, x
-      tya
-      sta detail::note_pointer_y, x
-      lda detail::current_event_ptr+1
-      sta detail::note_pointer_x, x
-      ply
-   :  iny
-      dex
-      cpx #255
-      bne @unselected_offscreen_loop
+   INIT_EVENT_VECTOR_DRAWING song_engine::event_selection::next_event_b, 0
 
    ; selected events
    lda song_engine::event_selection::selected_events_vector
    ldx song_engine::event_selection::selected_events_vector+1
-   jsr song_engine::event_selection::pre_parsing::findActiveNotesAtTimestamp
-   bcc :+
-   ldy #0 ; signal no more events available in this vector
-:  sta song_engine::event_selection::next_event_a
-   stx song_engine::event_selection::next_event_a+1
-   sty song_engine::event_selection::next_event_a+2
-   ; copy active notes to the column buffer
-   ldy window_pitch
-   ldx #(detail::event_edit_height - 1)
-   @selected_offscreen_loop:
-      lda song_engine::event_selection::pre_parsing::notes_active, y
-      beq :+
-      lda #2
-      sta detail::column_buffer, x
-      sta detail::note_is_selected, x
-      tya
-      sta song_engine::event_selection::findNoteOn::pitch
-      phy
-      phx
-      lda song_engine::event_selection::next_event_a
-      ldx song_engine::event_selection::next_event_a+1
-      ldy song_engine::event_selection::next_event_a+2
-      jsr song_engine::event_selection::findNoteOn
-      stx detail::current_event_ptr+1
-      plx
-      sta detail::note_pointer_a, x
-      tya
-      sta detail::note_pointer_y, x
-      lda detail::current_event_ptr+1
-      sta detail::note_pointer_x, x
-      ply
-   :  iny
-      dex
-      cpx #255
-      bne @selected_offscreen_loop
+   INIT_EVENT_VECTOR_DRAWING song_engine::event_selection::next_event_a, 1
 
    ; get first entry from the stream
    jsr song_engine::event_selection::streamGetNextEvent
