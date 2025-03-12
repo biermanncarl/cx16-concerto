@@ -422,7 +422,22 @@ note_data_changed: ; flag set within drag&drop operations to signal if playback 
       lda #2 ; 2 to make it not appear to start at the left border
       sta detail::column_buffer, x
       stz detail::note_is_selected, x
-      ; TODO: note id --> find it, set it
+      tya
+      sta song_engine::event_selection::findNoteOn::pitch
+      phy
+      phx
+      lda song_engine::event_selection::next_event_b
+      ldx song_engine::event_selection::next_event_b+1
+      ldy song_engine::event_selection::next_event_b+2
+      jsr song_engine::event_selection::findNoteOn
+      stx detail::current_event_ptr+1
+      plx
+      sta detail::note_pointer_a, x
+      tya
+      sta detail::note_pointer_y, x
+      lda detail::current_event_ptr+1
+      sta detail::note_pointer_x, x
+      ply
    :  iny
       dex
       cpx #255
@@ -446,7 +461,22 @@ note_data_changed: ; flag set within drag&drop operations to signal if playback 
       lda #2
       sta detail::column_buffer, x
       sta detail::note_is_selected, x
-      ; TODO: note id --> find it, set it
+      tya
+      sta song_engine::event_selection::findNoteOn::pitch
+      phy
+      phx
+      lda song_engine::event_selection::next_event_a
+      ldx song_engine::event_selection::next_event_a+1
+      ldy song_engine::event_selection::next_event_a+2
+      jsr song_engine::event_selection::findNoteOn
+      stx detail::current_event_ptr+1
+      plx
+      sta detail::note_pointer_a, x
+      tya
+      sta detail::note_pointer_y, x
+      lda detail::current_event_ptr+1
+      sta detail::note_pointer_x, x
+      ply
    :  iny
       dex
       cpx #255

@@ -132,11 +132,37 @@ pitch:
 .endproc
 
 
-; Given the pointer to a note-off event in .A/.X/.Y, finds the corresponding note-on event by linear search.
+; Given the pointer to an event in .A/.X/.Y, finds a pre-ceeding note-on event by linear search.
+; The pitch of the note-on has to be passed in findNoteOn::pitch.
 ; If no matching note-on is found, carry will be set, otherwise clear.
 .proc findNoteOn
-    ; TODO
     ; Question: do we tolerate other note-offs in between? Maybe we shouldn't, maybe it doesn't matter.
+    pitch = findNoteOff::pitch  ; simply reusing that variable
+@loop:
+    jsr v5b::get_previous_entry
+    bcs @end ; search failed, end reached before the note-off was found
+    pha
+    phx
+    phy
+    jsr v5b::read_entry
+    lda events::event_type
+    cmp #events::event_type_note_on
+    bne @continue_loop
+    lda events::note_pitch
+    cmp pitch
+    beq @success
+@continue_loop:
+    ply
+    plx
+    pla
+    bra @loop
+@success:
+    ; recover the pointer from the stack
+    ply
+    plx
+    pla
+    clc
+@end:
     rts
 .endproc
 
