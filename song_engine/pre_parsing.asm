@@ -13,6 +13,7 @@
 ; .include "../../../common/x16.asm"
 ; .include "../../../dynamic_memory/vector_5bytes.asm"
 
+; TODO: maybe we could put this buffer in golden RAM?
 notes_active:
     .res 256
 

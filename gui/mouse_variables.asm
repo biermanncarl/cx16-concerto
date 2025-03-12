@@ -32,7 +32,9 @@
     ; e.g. the current tab selected, which arrow is clicked etc.
     curr_data_1: .byte 0
     curr_data_2: .byte 0 ; also used to store dragging distance (y direction) (use a different variable for that if necessary)
-    curr_data_3: .byte 0
+    curr_data_3: .byte 0 ; so far only used for hitbox communication
+    curr_data_4: .byte 0 ; so far only used for hitbox communication
+    curr_data_5: .byte 0 ; so far only used for hitbox communication
     ; distance since last tick
     delta_x: .byte 0
     delta_y: .byte 0

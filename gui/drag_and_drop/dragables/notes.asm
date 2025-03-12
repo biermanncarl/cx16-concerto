@@ -35,7 +35,7 @@ note_data_changed: ; flag set within drag&drop operations to signal if playback 
       .res 2
    selection_shortest_note_length = selection_min_time_stamp ; used in the same way during note resize operations
 
-   pointed_at_event: ; which event is the mouse pointer pointing at
+   pointed_at_event: ; which event is the mouse pointer pointing at, persists over an entire mouse drag&drop operation
       .res 3
 
    ; Temporary variables
@@ -48,6 +48,8 @@ note_data_changed: ; flag set within drag&drop operations to signal if playback 
       .res 1
    temp_variable_c:
       .res 1
+   current_event_ptr:
+      .res 3
    .popseg
 
 
@@ -71,8 +73,9 @@ note_data_changed: ; flag set within drag&drop operations to signal if playback 
    .define DND_NOTES_COLUMN_BUFFERS \
       column_buffer, event_edit_height, \
       note_is_selected, event_edit_height, \
-      note_id_low, event_edit_height, \
-      note_id_high, event_edit_height
+      note_pointer_a, event_edit_height, \
+      note_pointer_x, event_edit_height, \
+      note_pointer_y, event_edit_height
    .define DND_NOTES_TEMP_VARIABLES \
       temp_variable_z, 1, \
       temp_variable_y, 1, \
@@ -120,18 +123,12 @@ note_data_changed: ; flag set within drag&drop operations to signal if playback 
    .proc startNoteHitbox
       lda song_engine::event_selection::most_recent_event_source
       sta note_is_selected, x
-      bne @selected
-   @unselected:
-      lda song_engine::event_selection::most_recent_id_b
-      ldy song_engine::event_selection::most_recent_id_b+1
-      bra @store_id
-   @selected:
-      lda song_engine::event_selection::most_recent_id_a
-      ldy song_engine::event_selection::most_recent_id_a+1
-   @store_id:
-      sta note_id_low, x
-      tya
-      sta note_id_high, x
+      lda current_event_ptr
+      sta note_pointer_a, x
+      lda current_event_ptr+1
+      sta note_pointer_x, x
+      lda current_event_ptr+2
+      sta note_pointer_y, x
       rts
    .endproc
 
@@ -170,40 +167,43 @@ note_data_changed: ; flag set within drag&drop operations to signal if playback 
       adc #detail::event_edit_pos_y
       asl
       sta hitboxes__hitbox_pos_y
-      ; hitbox object id
-      lda note_id_low, x
-      sta hitboxes__object_id_l
-      lda note_id_high, x
-      ora note_is_selected, x  ; maybe we could do this in startNoteHitbox and save the note_is_selected buffer? Let's see if we'll need them separate at all.
-      sta hitboxes__object_id_h
+      ; append first entry
+      jsr hitboxes__add_hitbox_data
 
-      ; append the entry
-      phx
-      jsr hitboxes__add_hitbox
-      plx
+      ; hitbox pointer
+      lda note_pointer_a, x
+      sta hitboxes__hitbox_event_a
+      lda note_pointer_x, x
+      sta hitboxes__hitbox_event_x
+      lda note_pointer_y, x
+      sta hitboxes__hitbox_event_y
+      lda note_is_selected, x
+      sta hitboxes__hitbox_event_selected
+      ; append second entry
+      jsr hitboxes__add_hitbox_data
       rts
    .endproc
 
    ; Given a hitbox' object id (inclusive the selected bit in the high byte), return the pointer to the respective entry
    ; Expects the hitbox id in v5b::value_0/v5b::value_1 (low/high) (not preserved!)
    ; Returns the entry pointer in .A/.X/.Y
-   .proc getEntryFromHitboxObjectId
-      lda v5b::value_1
-      bmi @load_selected
-   @load_unselected:
-      ldy song_engine::event_selection::unselected_events_vector
-      ldx song_engine::event_selection::unselected_events_vector+1
-      bra @continue
-   @load_selected:
-      ldy song_engine::event_selection::selected_events_vector
-      ldx song_engine::event_selection::selected_events_vector+1
-      and #$7F ; remove the selected bit
-   @continue:
-      sta v5b::value_1
-      tya
-      jsr v5b::convert_vector_and_index_to_direct_pointer
-      rts
-   .endproc
+   ; .proc getEntryFromHitboxObjectId
+   ;    lda v5b::value_1
+   ;    bmi @load_selected
+   ; @load_unselected:
+   ;    ldy song_engine::event_selection::unselected_events_vector
+   ;    ldx song_engine::event_selection::unselected_events_vector+1
+   ;    bra @continue
+   ; @load_selected:
+   ;    ldy song_engine::event_selection::selected_events_vector
+   ;    ldx song_engine::event_selection::selected_events_vector+1
+   ;    and #$7F ; remove the selected bit
+   ; @continue:
+   ;    sta v5b::value_1
+   ;    tya
+   ;    jsr v5b::convert_vector_and_index_to_direct_pointer
+   ;    rts
+   ; .endproc
 
 
    ; Given an event, grid motion and maximal allowed left motion, figures out the number of ticks the event is shifted.
@@ -280,8 +280,10 @@ note_data_changed: ; flag set within drag&drop operations to signal if playback 
    .endproc
 
    ; * In move_action, expects the action to be done on the original event (one of moveEventToA::action options).
-   .proc selectWithHitboxId
-      jsr detail::getEntryFromHitboxObjectId
+   .proc selectEvent
+      lda hitboxes__hitbox_event_a
+      ldx hitboxes__hitbox_event_x
+      ldy hitboxes__hitbox_event_y
       jsr song_engine::event_selection::moveEventToA
       sta detail::pointed_at_event
       stx detail::pointed_at_event+1
@@ -457,6 +459,9 @@ note_data_changed: ; flag set within drag&drop operations to signal if playback 
    bra @end_pre_parsing
 @clip_is_not_empty:
    ; we have at least one event. get that event's time stamp
+   sta detail::current_event_ptr
+   stx detail::current_event_ptr+1
+   sty detail::current_event_ptr+2
    jsr v5b::read_entry
 @end_pre_parsing:
 
@@ -702,6 +707,9 @@ note_data_changed: ; flag set within drag&drop operations to signal if playback 
    jsr song_engine::event_selection::streamGetNextEvent
    bcs :+ ; new data available?
    ; new data available.
+   sta detail::current_event_ptr
+   stx detail::current_event_ptr+1
+   sty detail::current_event_ptr+2
    jsr v5b::read_entry
    jmp @main_parse_events_loop
 :  inc end_of_data
@@ -1512,17 +1520,20 @@ height = 2 * detail::event_edit_height
 
       ; selection logic
       lda mouse_variables::curr_data_2
-      sta v5b::value_0
+      sta hitboxes__hitbox_event_a
       lda mouse_variables::curr_data_3
-      sta v5b::value_1
-      bmi @already_selected
+      sta hitboxes__hitbox_event_x
+      lda mouse_variables::curr_data_4
+      sta hitboxes__hitbox_event_y
+      lda mouse_variables::curr_data_5 ; event selected or not
+      bne @already_selected
       @not_yet_selected:
          lda kbd_variables::shift_key_pressed
          beq :+
          ; SHIFT was pressed --> allow multiple selection
          SET_VECTOR_A song_engine::event_selection::selected_events_vector
          stz song_engine::event_selection::move_action ; #event_selection::moveEventToA::action::delete_original
-         jsr detail::selectWithHitboxId
+         jsr detail::selectEvent
          inc note_data_changed
          rts
       :
@@ -1531,13 +1542,15 @@ height = 2 * detail::event_edit_height
          ; Therefore, we first need to select the clicked-at event into temp, before unselecting all others.
          SET_VECTOR_A temp_events
          stz song_engine::event_selection::move_action ; #event_selection::moveEventToA::action::delete_original
-         jsr detail::selectWithHitboxId
+         jsr detail::selectEvent
          jsr song_engine::event_selection::unselectAllEvents
          ; now, swap selected with temp vector, as they have the correct contents already
          SWAP_VECTORS temp_events, song_engine::event_selection::selected_events_vector
          jmp commonLeftClick
       @already_selected:
-         jsr detail::getEntryFromHitboxObjectId
+         lda hitboxes__hitbox_event_a
+         ldx hitboxes__hitbox_event_x
+         ldy hitboxes__hitbox_event_y
          sta detail::pointed_at_event
          stx detail::pointed_at_event+1
          sty detail::pointed_at_event+2
@@ -1668,9 +1681,9 @@ height = 2 * detail::event_edit_height
    bcc @hitbox_loop
    rts
 @hitbox_loop:
-   pha
-   phx
-   phy
+   sta detail::current_event_ptr
+   stx detail::current_event_ptr+1
+   sty detail::current_event_ptr+2
 
    jsr v5b::read_entry
 
@@ -1700,12 +1713,19 @@ height = 2 * detail::event_edit_height
    ; to stay unchanged. We will delete all invalidated events later on.
    lda #song_engine::event_selection::moveEventToA::action::invalidate_original
    sta song_engine::event_selection::move_action
-   jsr detail::selectWithHitboxId
+   lda detail::current_event_ptr
+   ldx detail::current_event_ptr+1
+   ldy detail::current_event_ptr+2
+   jsr v5b::get_next_entry
+   jsr v5b::read_entry
+   jsr detail::selectEvent
 
 @go_to_next_hitbox:
-   ply
-   plx
-   pla
+   ; restore pointer to the first entry belonging to the hitbox, and advance twice to get to the next one
+   lda detail::current_event_ptr
+   ldx detail::current_event_ptr+1
+   ldy detail::current_event_ptr+2
+   jsr v5b::get_next_entry
    jsr v5b::get_next_entry
    bcc @hitbox_loop
    ; end of loop

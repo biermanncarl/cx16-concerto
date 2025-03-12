@@ -1,4 +1,4 @@
-; Copyright 2023-2024 Carl Georg Biermann
+; Copyright 2023-2025 Carl Georg Biermann
 
 .ifndef ::GUI_DRAG_AND_DROP_DRAG_AND_DROP_DEFINITIONS_ASM
 ::GUI_DRAG_AND_DROP_DRAG_AND_DROP_DEFINITIONS_ASM = 1
@@ -14,13 +14,20 @@
    right_end = 2
 .endscope
 
-; variables to communicate hitboxes which are stored in the hitbox lists
-object_id_l = v5b::value_0 ; identifier (low)
-object_id_h = v5b::value_1 ; identifier (high)  most significant bit is 1 if the event is in the vector of currently selected events
-hitbox_pos_x = v5b::value_2 ; on-screen-position in multiples of 4 pixels
-hitbox_pos_y = v5b::value_3 ; on-screen-position in multiples of 4 pixels
-hitbox_width = v5b::value_4 ; on-screen width in multiples of 4 pixels (height is implied by dragables::active_type)
-; note: having the object_id_l/h at values_0/1 is chosen because then the id coincides with the v5b API for index-based access.
+
+; Hitbox lists make use of the v5b infrastructure.
+; However, since the information about a hitbox doesn't fit inside 5 bytes, two consecutive entries
+; correspond to one hitbox.
+; First entry
+hitbox_pos_x = v5b::value_0 ; on-screen-position in multiples of 4 pixels
+hitbox_pos_y = v5b::value_1 ; on-screen-position in multiples of 4 pixels
+hitbox_width = v5b::value_2 ; on-screen width in multiples of 4 pixels (height is implied by dragables::active_type)
+; Second entry
+hitbox_event_a = v5b::value_0 ; pointer to the note-on event
+hitbox_event_x = v5b::value_1 ; pointer to the note-on event
+hitbox_event_y = v5b::value_2 ; pointer to the note-on event
+hitbox_event_selected = v5b::value_3 ; boolean whether the corresponding event is currently selected or not
+
 
 .scope detail
    ; addresses to vectors of hitboxes which can be dragged (B/H)
@@ -73,12 +80,16 @@ hitbox_width = v5b::value_4 ; on-screen width in multiples of 4 pixels (height i
 .endproc
 
 
-; Add a hitbox to a list
+; Add hitbox information to a list.
+; Two calls to this are necessary to create a hitbox (first time: position and size, second time: pointer to corresponding event)
 ; Expects hitbox data in the API variables.
 ; If successful, carry is clear. Carry is set when the operation failed due to full heap.
-.proc add_hitbox
+; Preserves .X
+.proc add_hitbox_data
+   phx
    jsr load_hitbox_list
    jsr v5b::append_new_entry
+   plx
    rts
 .endproc
 

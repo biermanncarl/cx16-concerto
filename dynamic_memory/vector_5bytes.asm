@@ -13,15 +13,9 @@
 ; Empty chunks within the vector are not allowed, unless the vector is empty.
 ; In that case, the vector consists of a single empty chunk.
 ;
-; Individual entries can be addressed via two different ways:
-; * "Direct pointer": 3-byte pointer: B/H (2-byte pointer to a chunk) and the index inside the chunk. This is the addressing used by most of the functions.
-;   The order of bytes is I,H,B
-;   When communicating with registers, .A is index inside the chunk, .Y/.X is the B/H pointer (B is in .Y, H in .X)
-; * "Vector+Index": 2-byte B/H pointer to first chunk and 2-byte global index in the entire vector
-; Those two modes could be converted into each other.
+; Individual entries can be addressed via a 3-byte pointer: B/H (2-byte pointer to a chunk) and the index inside the chunk.
+; .A is index inside the chunk, .Y/.X is the B/H pointer (B is in .Y, H in .X)
 ; As for the doubly linked list, a B value of zero indicates an invalid (null) pointer.
-; Please note that of the upper 16-bit index, only 15 bits are supported. The most significant bit must be zero.
-; Possibly, one part of the address will be implicitly given during some operations (e.g. by previous operations)
 
 
 ; POTENTIAL OPTIMIZATIONS:
@@ -673,69 +667,6 @@ destroy = dll::destroy_list
    rts
 .endproc
 
-; stores away the API registers, so that another function may use them
-; .proc push_api_registers
-;    lda value_0
-;    pha
-;    lda value_1
-;    pha
-;    lda value_2
-;    pha
-;    lda value_3
-;    pha
-;    lda value_4
-;    pha
-;    rts
-; .endproc
-
-
-; Converts an entry from the "vector+index" representation to "direct pointer" representation.
-; Expects the pointer to the vector (B/H) in .A/.X.
-; Expects the 16-bit index in value_0, value_1 (low, high).
-; Returns the direct pointer to a valid entry in .A/.X/.Y.
-; The index in value_0 and value_1 is NOT preserved.
-; If the access is out of range, carry is set, otherwise clear.
-.proc convert_vector_and_index_to_direct_pointer
-   ; set up read access to vector
-   sta RAM_BANK
-   stx zp_pointer+1
-   stz zp_pointer
-   
-   ; search for the correct chunk
-@chunk_search:
-   ldy #4
-   lda value_0
-   sec
-   sbc (zp_pointer), y
-   sta value_0
-   bcs :+
-   dec value_1
-   bmi @end_of_chunk_search
-:  ; continue on to the next chunk
-   lda RAM_BANK
-   ldx zp_pointer+1
-   jsr dll::get_next_element ; could be optimized for speed by doing the transition "manually"
-   cmp #0
-   beq @out_of_range
-   sta RAM_BANK
-   stx zp_pointer+1
-   bra @chunk_search
-
-@out_of_range:
-   sec
-   rts
-
-@end_of_chunk_search:
-   ; we created an overflow in value_0. Need to add back what we subtracted to know the index into the chunk.
-   ;lda value_0 ; - can be optimized away ... value is still in .A
-   clc
-   adc (zp_pointer), y ; that's the index into the chunk done.
-   ldy RAM_BANK
-   ldx zp_pointer+1
-   clc
-   rts
-.endproc
-
 
 .proc readEntryFromCHRIN
    ldx #0
@@ -869,16 +800,6 @@ loop_counter:
 
 
 mergeVectors = dll::mergeLists
-
-
-; Converts an entry from "direct pointer" representation to the "vector+index" representation.
-; Expects the direct pointer to a valid entry in .A/.X/.Y.
-; Returns the pointer to the vector in value_0, value_1 (B/H).
-; Returns the 16-bit index in value_0, value_1 (low, high).
-.proc convert_direct_pointer_to_vector_and_index
-   ; TODO
-   rts
-.endproc
 
 
 ; Defragments a vector, i.e. moves data inside a vector such that no chunk except the last one has empty space in it.

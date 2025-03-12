@@ -39,7 +39,7 @@
     ; If the mouse is inside the editing area, carry will be set, otherwise clear.
     ; If the mouse touches a dragable object,
     ; * mouse_variables::curr_data_1 will contain hitbox_handle::bulk or hitbox_handle::right_end depending on where it is
-    ; * mouse_variables::curr_data_2 and _3 will contain the id of the hitbox (curr_data_3's MSB signals whether the hitbox is a selected or unselected one)
+    ; * mouse_variables::curr_data_2 to _5 will contain information about the corresponding event,
     ; and if not, mouse_variables::curr_data_1 will contain hitbox_handle::none.
     .proc check_mouse
         temp_zp = gui_variables::mzpbf
@@ -65,7 +65,7 @@
         sbc dnd::dragables::edit_positions_y, x
         cmp dnd::dragables::edit_height, x
         bcs @out
-        ; We're in.
+        ; Mouse pointer is inside the editing area.
 
         ; Doing hitbox detection ...
         jsr dnd::hitboxes::load_hitbox_list
@@ -99,6 +99,7 @@
         ply
         plx
         pla
+        jsr v5b::get_next_entry ; skip the entry with event pointer
         jsr v5b::get_next_entry
         bcc @loop
     @no_hit:
@@ -112,16 +113,22 @@
         bra :+
     @hit_bulk:
         lda #dnd::hitboxes::hitbox_handle::bulk
-    :   ; tidy up the stack
-        ply
-        ply
-        ply
-        ; load the hitbox the mouse points at into mouse registers
         sta mouse_variables::curr_data_1 ; signal that the mouse does point at a hitbox
-        lda dnd::hitboxes::object_id_l
+    :   ; get the event pointer
+        ply
+        plx
+        pla
+        jsr v5b::get_next_entry
+        jsr v5b::read_entry
+        ; load the hitbox the mouse points at into mouse registers
+        lda dnd::hitboxes::hitbox_event_a
         sta mouse_variables::curr_data_2
-        lda dnd::hitboxes::object_id_h
+        lda dnd::hitboxes::hitbox_event_x
         sta mouse_variables::curr_data_3
+        lda dnd::hitboxes::hitbox_event_y
+        sta mouse_variables::curr_data_4
+        lda dnd::hitboxes::hitbox_event_selected
+        sta mouse_variables::curr_data_5
         sec
         rts
     .endproc

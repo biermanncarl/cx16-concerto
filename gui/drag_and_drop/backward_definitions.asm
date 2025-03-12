@@ -9,10 +9,12 @@
 hitboxes__hitbox_pos_x = hitboxes::hitbox_pos_x
 hitboxes__hitbox_pos_y = hitboxes::hitbox_pos_y
 hitboxes__hitbox_width = hitboxes::hitbox_width
-hitboxes__object_id_l = hitboxes::object_id_l
-hitboxes__object_id_h = hitboxes::object_id_h
+hitboxes__hitbox_event_a = hitboxes::hitbox_event_a
+hitboxes__hitbox_event_x = hitboxes::hitbox_event_x
+hitboxes__hitbox_event_y = hitboxes::hitbox_event_y
+hitboxes__hitbox_event_selected = hitboxes::hitbox_event_selected
 hitboxes__clear_hitboxes = hitboxes::clear_hitboxes
-hitboxes__add_hitbox = hitboxes::add_hitbox
+hitboxes__add_hitbox_data = hitboxes::add_hitbox_data
 hitboxes__load_hitbox_list = hitboxes::load_hitbox_list
 hitboxes__hitbox_handle__none = hitboxes::hitbox_handle::none
 hitboxes__hitbox_handle__bulk = hitboxes::hitbox_handle::bulk

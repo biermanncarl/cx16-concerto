@@ -22,7 +22,7 @@
 ; region also known as "golden RAM" from $0400 to $07FF
 .define SCRATCHPAD_START $0400
 ; we don't use the entire region (yet), maybe we'll need some space for other things, too
-.define SCRATCHPAD_SIZE $0100
+.define SCRATCHPAD_SIZE $0180
 
 .macro SCRATCHPAD_VARIABLES_HELPER offset, variable_1, size_1, PARAMETER_LIST
     .if .blank(variable_1) && .blank(size_1)

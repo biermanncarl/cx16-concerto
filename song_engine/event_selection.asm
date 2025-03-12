@@ -37,12 +37,8 @@ event_vector_b: ; data not owned by this module
 ; other variables (no pointers)
 next_event_a:
     .res 3
-most_recent_id_a:
-    .res 2
 next_event_b:
     .res 3
-most_recent_id_b:
-    .res 2
 most_recent_event_source:
     .res 1
 .popseg
@@ -249,12 +245,6 @@ pitch:
 ; Expects the event_vector_a and event_vector_b pointers to be set to the respective vectors.
 ; TODO: actually, we can just keep the event_vector_a vector, and receive the first event of vector B in .A/.X/.Y ... TBD (#dataOwnership)
 .proc resetStream
-    ; reset id counters
-    lda #$ff
-    sta most_recent_id_a
-    sta most_recent_id_a+1
-    sta most_recent_id_b
-    sta most_recent_id_b+1
     ; reset the event pointers to the beginning
     lda event_vector_a
     ldx event_vector_a+1
@@ -372,7 +362,6 @@ pitch:
 ; If no more events are available, carry is set upon return, clear otherwise.
 ; If another event is available, its pointer is returned in .A/.X/.Y
 ; If another event is available, the content of most_recent_event_source is set to 0 in case the last event was vector_b, or $80 if it was vector_a
-; The respective id (most_recent_id_a/most_recent_id_b) is advanced accordingly.
 .proc streamGetNextEvent
     ; Check if more events are available
     ldy next_event_a+2
@@ -394,10 +383,7 @@ pitch:
 @next_vector_a:
     lda #$80
     sta most_recent_event_source
-    inc most_recent_id_a
-    bne :+
-    inc most_recent_id_a+1
-:   jsr detail::loadNextEventInA
+    jsr detail::loadNextEventInA
     pha
     phx
     phy
@@ -405,10 +391,7 @@ pitch:
     bra @return_pointer
 @next_vector_b:
     stz most_recent_event_source
-    inc most_recent_id_b
-    bne :+
-    inc most_recent_id_b+1
-:   jsr detail::loadNextEventInB
+    jsr detail::loadNextEventInB
     pha
     phx
     phy
