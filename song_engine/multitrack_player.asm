@@ -348,9 +348,9 @@ player_start_timestamp:
     pla
 @find_event:
     ; Event vector is in .A/.X
-    ldy player_start_timestamp
+    ldy detail::time_stamp
     sty timing::time_stamp_parameter
-    ldy player_start_timestamp+1
+    ldy detail::time_stamp+1
     sty timing::time_stamp_parameter+1
     jsr event_selection::findEventAtTimeStamp
     bcc :+

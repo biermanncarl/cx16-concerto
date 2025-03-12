@@ -80,9 +80,9 @@ notes_active:
         beq @fast_loop_end ; no next block --> finish fast loop
         sta RAM_BANK ; access to next block established
         sta next_ram_bank ; remember for easy access
-        lda target_timestamp+1
-        cmp (zp_pointer_2), y
-        bcs @fast_parse
+        lda (zp_pointer_2), y
+        cmp target_timestamp+1
+        bcc @fast_parse
         bne @fast_loop_end
         lda (zp_pointer_2)
         cmp target_timestamp
