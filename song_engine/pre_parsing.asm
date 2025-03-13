@@ -33,6 +33,18 @@ notes_active:
 .popseg
 
 
+; Resets the notes_active buffer to all zeros.
+.proc clearActiveNotes
+    ; Could use some speedcode in the future, but since it's constant time, I'll leave it for now.
+    ldx #0
+    @clear_loop:
+        stz notes_active, x
+        inx
+        bne @clear_loop
+    rts
+.endproc
+
+
 ; Parses through an event vector in order to find out which notes are active at a given time stamp.
 ; Expects the pointer to the event vector in .A/.X.
 ; Expects the target time stamp in target_timestamp.
@@ -41,13 +53,8 @@ notes_active:
 ; NOTE: note-off events AT the time stamp are included in the parsing, note-on events at the time stamp are ignored.
 .proc findActiveNotesAtTimestamp
     ; Clear the return array.
-    ; Could use some speedcode in the future, but since it's constant time, I'll leave it for now.
     phx
-    ldx #0
-    @clear_loop:
-        stz notes_active, x
-        inx
-        bne @clear_loop
+    jsr clearActiveNotes
     plx
 
     jsr v5b::is_empty

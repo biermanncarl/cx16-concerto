@@ -32,6 +32,8 @@ event_vector_a: ; data not owned by this module
     .res 2
 event_vector_b: ; data not owned by this module
     .res 2
+; No ownership means: other modules are responsible for populating these pointers with a valid vector before calling subroutines from this file.
+; Subroutines in this file may still change these pointers, but always leave valid vector pointers behind.
 
 ; NOT PART OF API
 ; other variables (no pointers)
@@ -41,6 +43,10 @@ next_event_b:
     .res 3
 most_recent_event_source:
     .res 1
+temp_vector_x:
+    .res 3
+temp_vector_y:
+    .res 3
 .popseg
 
 ; reuse some variables for function calls
@@ -83,6 +89,13 @@ move_action = most_recent_event_source
     bcc :+
     rts
 :   jsr detail::storeNextEventInA
+    rts
+.endproc
+
+; Swaps the vector_a and vector_b.
+; This is useful to unselect items.
+.proc swapVectorsAB
+    SWAP_VECTORS event_vector_a, event_vector_b
     rts
 .endproc
 .endscope
@@ -490,10 +503,6 @@ pitch:
 .endmacro
 
 ; maybe move into v5b?
-; Caution: this may only be used if the vectors are either
-; * swapped back immediately afterwards (usually with some operation in between), or
-; * if none of the operands is an "unselected events" vector (e.g. typically the event vector of clips)
-; In other words, event data which is accessed by other entities MUST NOT be invalidated with this macro, EXCEPT the selected events vector.
 .macro SWAP_VECTORS vector_a, vector_b
     pha
     phy
@@ -508,14 +517,6 @@ pitch:
     ply
     pla
 .endmacro
-
-
-; Swaps the vector_a and vector_b.
-; This is useful to unselect items.
-.proc swapVectorsAB
-    SWAP_VECTORS event_vector_a, event_vector_b
-    rts
-.endproc
 
 
 
@@ -665,23 +666,249 @@ pitch:
 ; * In move_action, expects the action to be done on the original event (one of moveEventToA::action options).
 ; If the object is a note-on, the corresponding note-off is automatically moved, too.
 .proc moveEventToB
-    jsr swapVectorsAB
+    jsr detail::swapVectorsAB
     jsr moveEventToA
-    jsr swapVectorsAB
+    jsr detail::swapVectorsAB
     rts
 .endproc
 
 
 ; Merges all events from vector_b into vector_a.
-; For the other direction, call swapVectorsAB before and after this function.
+; Caution: This subroutine may alter the location of the vectors. After calling this, you need to read back event_vector_a and event_vector_b.
 .proc moveAllEventsFromBToA_new
     ; This is a more efficient implementation than the first one, especially for a large disparity in vector sizes.
     ; It only does timestamp-based merging of the two vectors on the section necessary (overlapping time stamps)
     ; and splices the other parts.
 
-    ; TODO
-    rts
+    jsr resetStream
+    jsr streamGetNextEvent  ; just used to get info about the first events. Stream will be re-initialized before actual merge.
+    bcc @at_least_one_vector_not_empty
+    @finish_early:
+        ; both vectors empty, nothing to do
+        rts
+    @at_least_one_vector_not_empty:
+
+    ; Check if vector B is empty, because then we don't need to do anything.
+    lda next_event_b+2
+    beq @finish_early
+    ; We can't finish early if vector A is empty because we still need to make sure that the notes in B aren't self-overlapping.
+
+    ; The goal of this block is to have in
+    ; * event_vector_a  all relevant events for the merge (events starting with )
+    ; * event_vector_b  as provided by the caller
+    ; * temp_vector_x   all events which come before those in vector B. If there are none, it shall be NULL
+    ; Pre-parsing shall be run up to the point where merging starts.
+    lda most_recent_event_source
+    beq @vector_b_first
+    @vector_a_first:
+        ; Since A is trusted, we can cut it at the first time stamp of B and start parsing events from there.
+        ; get first timestamp of vector B
+        lda next_event_b
+        ldx next_event_b+1
+        ldy next_event_b+2
+        jsr v5b::read_entry
+        lda events::event_time_stamp_l
+        sta pre_parsing::target_timestamp
+        lda events::event_time_stamp_h
+        sta pre_parsing::target_timestamp+1
+        ; do the split
+        lda event_vector_a
+        ldx event_vector_a+1
+        jsr pre_parsing::findActiveNotesAtTimestamp ; also returns the next event at that time stamp
+        bcc @split_needed
+        @no_split_needed:
+            ; no events after that time stamp, no split needed
+            lda event_vector_a
+            ldx event_vector_a+1
+            sta temp_vector_x
+            stx temp_vector_x+1
+            ; Create a new empty vector
+            jsr v5b::new
+            sta event_vector_a
+            stx event_vector_a+1
+            bra @which_first_done
+        @split_needed:
+            ; .A/.X/.Y contain the pointer to the next event after the time stamp
+            jsr v5b::splitVectorBeforeEntry ; returns the second half of the split
+            cmp #0
+            beq @no_split_needed ; This can only happen when both vectors start at the same timestamp.
+            jsr v5b::get_first_entry
+            sta next_event_a
+            stx next_event_a+1
+            sty next_event_a+2
+            ; Move the first part of the split vector to temp_vector_x
+            lda event_vector_a
+            ldx event_vector_a+1
+            sta temp_vector_x
+            stx temp_vector_x+1
+            ; Replace former event_vector_a by the second half of its split
+            lda next_event_a+2
+            ldx next_event_a+1
+            sta event_vector_a
+            stx event_vector_a+1
+            bra @which_first_done
+    @vector_b_first:
+        ; B comes first, we have to start parsing events normally from the beginning.
+        ; Set temp_vector_x to NULL so we don't do an unnecessary concatenation later.
+        stz temp_vector_x
+        ; Since we start parsing directly from the beginning of both vectors, there are no active notes.
+        jsr pre_parsing::clearActiveNotes
+    @which_first_done:
+
+    ; Set up new vector for events to be written to
+    ; We don't just append to temp_vector_x because then we would have to find its end for every event we want to add.
+    ; We have to do the same with the new vector, but it's likely much shorter.
+    jsr v5b::new
+    sta temp_vector_y
+    stx temp_vector_y+1
+
+    jsr resetStream
+    @merge_loop:
+        jsr streamGetNextEvent
+        ; no need to check carry because we check for empty vectors ourselves
+        jsr v5b::read_entry
+        lda events::event_type
+        beq @note_off
+        cmp #events::event_type_note_on
+        bne @do_copy
+        @note_on:
+            ; check if there is already a note active at the same pitch
+            ldx events::note_pitch
+            lda pre_parsing::notes_active, x
+            inc
+            cmp #1 ; would after this note-on be exactly one note at this pitch be active?
+            sta pre_parsing::notes_active, x
+            ; yes? --> all good, copy the note-on
+            beq @do_copy
+            ; no? Uh-oh, we've got overlapping notes.
+            ; It would be nice to insert a note-off and retain the note-on.
+            ; But there are two problems which make it more complicated than it seems:
+            ; * We need to ensure that in the target vector, all note-offs within a time stamp preceed note-ons.
+            ; * There is a possibility that we are creating a note of zero length.
+            ; We could cope with these problems, but for now, the safest and easiest solution is to just omit the surplus note-on.
+            bra @merge_loop
+        @note_off:
+            ; check if there is already a note active at the same pitch
+            ldx events::note_pitch
+            dec pre_parsing::notes_active, x
+            ; Zero-flag denotes whether before this note-off, there would have been exactly one note active.
+            ; If yes, we take the note-on, otherwise we've got overlapping notes and omit the note-off.
+            beq @do_copy
+            bra @merge_loop
+        @do_copy:
+        lda temp_vector_y
+        ldx temp_vector_y+1
+        jsr v5b::append_new_entry
+
+        ; check if we arrived at the end of vector B (if vector B ends before A, we splice in the tail of A because A is the trusted vector)
+        lda next_event_b+2
+        bne @merge_loop
+    @end_merge_loop:
+
+    ; Our merge strategy of omitting any events as long as there are overlapping notes ensures that we won't have
+    ; any dangling note-off events in the remaining events that haven't been parsed.
+
+    ; Vector A                    o---------------o     o---o ....
+    ; Vector B                           o---o                       (note-off is last event in Vector B, merge loop will stop here)
+    ; Result                      o------x---x-...                   (events in Vector B discarded, note-off in Vector A remains and matches still active note)
+
+    ; Vector A                           o--------o     o---o ....
+    ; Vector B                    o----------o                       (note-off is last event in Vector B, merge loop will stop here)
+    ; Result                      o------x---x-...                   (events during overlap discarded, note-off in Vector A remains and matches still active note)
+
+    ; Vector A                           o---o          o---o ....
+    ; Vector B                    o---------------o                  (note-off is last event in Vector B, merge loop will stop here)
+    ; Result                      o------x---x----o                  (events in Vector A discarded, no dangling note-off, no active note)
+
+    ; The current solution should even be able to cope with overlapping notes within a single vector (e.g. after resizing operation)
+
+    ; We've copied all events from vector B, so let's empty it.
+    lda event_vector_b
+    ldx event_vector_b+1
+    jsr v5b::clear
+
+    ; Check if vector A still contains events, and if yes, append them to temp_vector_y.
+    ldy next_event_a+2
+    beq @vector_a_already_used_up
+        ; Need to cut vector a and append to temp_vector_y
+        lda next_event_a
+        ldx next_event_a+1
+        jsr v5b::splitVectorBeforeEntry
+        cmp #0
+        bne @vector_a_was_split
+        @vector_a_wasnt_split:
+            ; the event was the first one, i.e. all events in vector B came earlier than those from vector A
+            ; Append entire vector A to temp_vector_y
+            lda event_vector_a
+            ldx event_vector_a+1
+            sta v5b::zp_pointer_2
+            stx v5b::zp_pointer_2+1
+            lda temp_vector_y
+            ldx temp_vector_y+1
+            jsr v5b::mergeVectors
+            ; No cleanup of vector A needed as it continues to exist inside temp_vector_y.
+            bra @splice_end_done
+        @vector_a_was_split:
+            ; Could be optimized for size (couple of common code lines with block above)
+            sta v5b::zp_pointer_2
+            stx v5b::zp_pointer_2+1
+            lda temp_vector_y
+            ldx temp_vector_y+1
+            jsr v5b::mergeVectors
+            ; Fall through to vector_a_already_used_up
+    @vector_a_already_used_up:
+        ; Cleanup the part of A that was already merged earlier.
+        lda event_vector_a
+        ldx event_vector_a+1
+        jsr v5b::destroy
+    @splice_end_done:
+    ; Pointer in event_vector_a may be overwritten now.
+
+
+    ; merge temp_vector_x with temp_vector_y and copy result to event_vector_a
+    lda temp_vector_x
+    beq @no_merge_needed
+    @do_merge:
+        ldx temp_vector_x+1
+        ; already set event_vector_a to the beginning of the merged new vector
+        sta event_vector_a
+        stx event_vector_a+1
+        ; Do the merge
+        ldy temp_vector_y
+        sty v5b::zp_pointer_2
+        ldy temp_vector_y+1
+        sty v5b::zp_pointer_2+1
+        jmp v5b::mergeVectors
+    @no_merge_needed:
+        ; Nothing in temp_vector_x, just use temp_vector_y.
+        lda temp_vector_y
+        ldx temp_vector_y+1
+        sta event_vector_a
+        stx event_vector_a+1
+        rts
 .endproc
+
+
+; Moves all events from vector b to vector a.
+; The contents of vector b are checked for self-overlapping notes, and the two vectors are cross-checked for overlaps.
+; Overlapping notes are joined into one long note.
+; Caution: The addresses of the vectors may change. In other words, this macro assumes temporary ownership of the vectors.
+;          Other copies of the pointer need to be updated.
+; Parameters: vector_a absolute address of B/H pointer to an event vector
+;             vector_b absolute address of B/H pointer to another event vector
+.macro MOVE_EVENTS_FROM_B_TO_A vector_a, vector_b
+    SET_VECTOR_A vector_a
+    SET_VECTOR_B vector_b
+    jsr moveAllEventsFromBToA_new
+    lda event_vector_a
+    ldx event_vector_a+1
+    sta vector_a
+    stx vector_a+1
+    lda event_vector_b
+    ldx event_vector_b+1
+    sta vector_b
+    stx vector_b+1
+.endmacro
 
 
 ; TODO: move this into .if 0 section
@@ -738,12 +965,12 @@ pitch:
 
 
 ; Merges all events from both vector A and vector B into vector B.
-.proc moveAllEventsFromAToB
-    jsr swapVectorsAB
-    jsr moveAllEventsFromBToA
-    jsr swapVectorsAB
-    rts
-.endproc
+; .proc moveAllEventsFromAToB
+;     jsr swapVectorsAB
+;     jsr moveAllEventsFromBToA
+;     jsr swapVectorsAB
+;     rts
+; .endproc
 
 ; Deletes all invalid events from an event vector.
 ; Expects the pointer to the vector in .A/.X
@@ -789,10 +1016,11 @@ selected_events_vector:
 .popseg
 
 
+; Assumes that unselected_events_vector is free of overlapping notes, but
+; removes note overlap from within selected_events_vector and between it and the unselected events.
+; Overlapping notes will be merged into one long note.
 .proc unselectAllEvents
-    SET_VECTOR_A selected_events_vector
-    SET_VECTOR_B unselected_events_vector
-    jsr moveAllEventsFromAToB
+    MOVE_EVENTS_FROM_B_TO_A unselected_events_vector, selected_events_vector
     rts
 .endproc
 
