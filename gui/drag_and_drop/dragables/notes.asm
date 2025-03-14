@@ -1469,7 +1469,7 @@ height = 2 * detail::event_edit_height
    jsr v5b::get_next_entry
    bcc @duplicate_loop
 @end_duplicate:
-   MOVE_EVENTS_FROM_B_TO_A temp_events, song_engine::event_selection::unselected_events_vector
+   MOVE_EVENTS_FROM_B_TO_A song_engine::event_selection::unselected_events_vector, temp_events
    lda #drag_action::drag
    sta drag_action_state
 @done:
