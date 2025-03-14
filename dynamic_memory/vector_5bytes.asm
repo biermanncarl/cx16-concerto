@@ -728,10 +728,17 @@ destroy = dll::destroy_list
 
    tya ; get DLL pointer in .A/.X
    jsr dll::splitListAfterElement ; returns pointer to first element of second list
-   jsr dll::insert_element_before
-   bcc :+
-   rts
-:  
+   cmp #0
+   bne @second_part_exists
+   @second_part_needs_to_be_created:
+      ; when the chunk was the last one in the vector, we need to make a new one
+      jsr new
+      bra @new_element_done
+   @second_part_exists:
+      jsr dll::insert_element_before
+      bcc @new_element_done
+      rts
+   @new_element_done:
    ; set up new chunk with correct size
    sta zp_pointer_2 ; remember address of new chunk
    stx zp_pointer_2+1

@@ -612,7 +612,7 @@ pitch:
 ; Caution: This subroutine may alter the location of the vectors. After calling this, you need to read back event_vector_a and event_vector_b.
 ; Solves "merge conflicts" (e.g. overlapping notes) between the two vectors.
 ; Therefore best used in conjunction with the macro MOVE_EVENTS_FROM_B_TO_A.
-.proc moveAllEventsFromBToA_new
+.proc moveAllEventsFromBToA
     ; This is a more efficient implementation than the first one, especially for a large disparity in vector sizes.
     ; It only does timestamp-based merging of the two vectors on the section necessary (overlapping time stamps)
     ; and splices the other parts.
@@ -851,7 +851,7 @@ pitch:
 ; TODO: move this into .if 0 section
 ; Merges all events from vector_b into vector_a.
 ; For the other direction, call swapVectorsAB before and after this function.
-.proc moveAllEventsFromBToA
+.proc moveAllEventsFromBToA_old
     ; Using stream API.
     ; Basically stream them, but instead of just "consuming" the event, it gets inserted into vector A.
     ; We need to do some more book-keeping to not break the stream API's illusion that it's just normally streaming.
