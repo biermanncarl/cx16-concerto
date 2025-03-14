@@ -279,12 +279,15 @@ note_data_changed: ; flag set within drag&drop operations to signal if playback 
       rts
    .endproc
 
+   ; Moves the event currently selected by the "hitbox registers" into the vector of selected events, and stores its new location in the pointed_at_event pointer.
+   ; If the moved event cannot be found, pointed_at_event will be set to NULL.
    ; * In move_action, expects the action to be done on the original event (one of moveEventToA::action options).
-   .proc selectEvent
+   .proc selectNote
       lda hitboxes__hitbox_event_a
       ldx hitboxes__hitbox_event_x
       ldy hitboxes__hitbox_event_y
-      jsr song_engine::event_selection::moveEventToA
+      jsr song_engine::event_selection::selectNoteFindNewLocation
+      ; TODO: cope with NULL?
       sta detail::pointed_at_event
       stx detail::pointed_at_event+1
       sty detail::pointed_at_event+2
@@ -1247,8 +1250,7 @@ height = 2 * detail::event_edit_height
 @events_loop_end:
 
    ; now merge the moved note-off events back into the selected_events_vector
-   SET_VECTOR_B temp_events
-   jsr song_engine::event_selection::moveAllEventsFromBToA
+   MOVE_EVENTS_FROM_B_TO_A song_engine::event_selection::selected_events_vector, temp_events
 
    inc gui_variables::request_components_redraw
    rts
@@ -1435,14 +1437,24 @@ height = 2 * detail::event_edit_height
    ID_GENERATOR 0, none, scroll, zoom, box_select, drag, resize, velocity_edit
 .endscope
 
+; Function called on left click at the beginning of a left-click dragging operation,
+; where a note is being dragged.
 .proc commonLeftClick
    inc note_data_changed ; always set to true because in the calling code the note data was already changed
+   ; Check if currently pointed at note exists
+   lda detail::pointed_at_event+2
+   bne @pointed_at_note_exists
+      ; Pointed at note got lost somehow (e.g. "merge conflict")
+      stz dnd::drag_action_state ; #drag_action::none
+      rts
+   @pointed_at_note_exists:
+
    ; duplicate?
    lda kbd_variables::ctrl_key_pressed
    beq @check_delete
    lda song_engine::event_selection::selected_events_vector
    ldx song_engine::event_selection::selected_events_vector+1
-   jsr v5b::get_first_entry ; since we just selected an event, I don't deal with the case that there's nothing in this vector
+   jsr v5b::get_first_entry
 @duplicate_loop:
    pha
    phx
@@ -1457,17 +1469,16 @@ height = 2 * detail::event_edit_height
    jsr v5b::get_next_entry
    bcc @duplicate_loop
 @end_duplicate:
-   SET_VECTOR_A temp_events
-   jsr song_engine::event_selection::moveAllEventsFromAToB
+   MOVE_EVENTS_FROM_B_TO_A temp_events, song_engine::event_selection::unselected_events_vector
    lda #drag_action::drag
    sta drag_action_state
+@done:
    rts
 
 @check_delete:
    ; delete?
    lda kbd_variables::alt_key_pressed
-   bne @do_delete
-   rts
+   beq @done
 @do_delete:
    lda song_engine::event_selection::selected_events_vector
    ldx song_engine::event_selection::selected_events_vector+1
@@ -1536,22 +1547,20 @@ height = 2 * detail::event_edit_height
       @not_yet_selected:
          lda kbd_variables::shift_key_pressed
          beq :+
-         ; SHIFT was pressed --> allow multiple selection
-         SET_VECTOR_A song_engine::event_selection::selected_events_vector
-         stz song_engine::event_selection::move_action ; #event_selection::moveEventToA::action::delete_original
-         jsr detail::selectEvent
-         inc note_data_changed
-         rts
-      :
+            ; SHIFT was pressed --> allow multiple selection
+            stz song_engine::event_selection::move_action ; #event_selection::moveEventToA::action::delete_original
+            jsr detail::selectNote
+            inc note_data_changed
+            rts
+         :
          ; event wasn't selected yet --> we want to unselect all, and select the clicked-at one
-         ; This is difficult because the moment we unselect all events, the pointer to the clicked-at event becomes unusable.
-         ; Therefore, we first need to select the clicked-at event into temp, before unselecting all others.
-         SET_VECTOR_A temp_events
-         stz song_engine::event_selection::move_action ; #event_selection::moveEventToA::action::delete_original
-         jsr detail::selectEvent
-         jsr song_engine::event_selection::unselectAllEvents
-         ; now, swap selected with temp vector, as they have the correct contents already
+         ; This is difficult because the moment we unselect all events, the pointer to the clicked-at event becomes invalid.
+         ; Therefore, we first swap the selected events with the empty temp_events, select the clicked-at event,
+         ; and then flush all previously selected events from temp_events to unselected.
          SWAP_VECTORS temp_events, song_engine::event_selection::selected_events_vector
+         stz song_engine::event_selection::move_action ; #event_selection::moveEventToA::action::delete_original
+         jsr detail::selectNote ; moves the selected event into "temp_events"
+         MOVE_EVENTS_FROM_B_TO_A song_engine::event_selection::unselected_events_vector, temp_events
          jmp commonLeftClick
       @already_selected:
          lda hitboxes__hitbox_event_a
@@ -1562,10 +1571,10 @@ height = 2 * detail::event_edit_height
          sty detail::pointed_at_event+2
          lda kbd_variables::shift_key_pressed
          beq :+
-         SET_VECTOR_A song_engine::event_selection::selected_events_vector
-         stz song_engine::event_selection::move_action ; #event_selection::moveEventToA::action::delete_original
-         lda detail::pointed_at_event
-         jsr song_engine::event_selection::moveEventToB
+            ; unselect event
+            stz song_engine::event_selection::move_action ; #event_selection::moveEventToA::action::delete_original
+            lda detail::pointed_at_event
+            MOVE_EVENT_TO_VECTOR song_engine::event_selection::unselected_events_vector
       :  jmp commonLeftClick
 @right_button:
    lda mouse_variables::curr_data_1
@@ -1591,8 +1600,6 @@ height = 2 * detail::event_edit_height
 
 .proc doDrag
    ; preparations
-   SET_VECTOR_A song_engine::event_selection::selected_events_vector
-   SET_VECTOR_B song_engine::event_selection::unselected_events_vector
    stz note_data_changed
 
    lda mouse_variables::drag_start
@@ -1679,9 +1686,6 @@ height = 2 * detail::event_edit_height
    ; * Then, depending on whether shift has held or not, unselect all selected events.
    ; * Merge all temp events into selected.
 
-   ; Don't need to set the unselected events vector as the moveEventToA routine doesn't require the source vector to be set.
-   SET_VECTOR_A temp_events
-
    jsr hitboxes__load_hitbox_list
    jsr v5b::get_first_entry
    bcc @hitbox_loop
@@ -1715,7 +1719,7 @@ height = 2 * detail::event_edit_height
    ; we're in. select the event
 @select_hitbox:
    ; here, we copy selected events to the selected events vector and then invalidate the originals.
-   ; This is in order to preserve the addresses of all events as long as we still need the ids
+   ; This is in order to preserve the addresses of all events as long as we still need the event addresses
    ; to stay unchanged. We will delete all invalidated events later on.
    lda #song_engine::event_selection::moveEventToA::action::invalidate_original
    sta song_engine::event_selection::move_action
@@ -1724,7 +1728,7 @@ height = 2 * detail::event_edit_height
    ldy detail::current_event_ptr+2
    jsr v5b::get_next_entry
    jsr v5b::read_entry
-   jsr detail::selectEvent
+   jsr detail::selectNote
 
 @go_to_next_hitbox:
    ; restore pointer to the first entry belonging to the hitbox, and advance twice to get to the next one
@@ -1747,21 +1751,25 @@ height = 2 * detail::event_edit_height
    ; get rid of invalid hitboxes for safety (will be re-generated when redraw happens)
    jsr hitboxes__clear_hitboxes
 
-   ; move all events which were previously selected.
-   ; Normally move them into the unselected events vector,
-   ; but if SHIFT is pressed, we move them into the temp vector, which will eventually become the new selected vector.
-   SET_VECTOR_B song_engine::event_selection::unselected_events_vector
-   SET_VECTOR_A song_engine::event_selection::selected_events_vector
-   lda kbd_variables::shift_key_pressed
-   beq :+
-   SET_VECTOR_B temp_events
-:  jsr song_engine::event_selection::moveAllEventsFromAToB
-
-   SWAP_VECTORS song_engine::event_selection::selected_events_vector, temp_events
-
+   ; Cleanup before final branch (saves 1 byte for one less bra instruction)
    inc gui_variables::request_components_redraw
    stz dnd::drag_action_state ; #drag_action::none
-   rts
+
+   ; Now handle the three groups of events:
+   ; * previously and currently unselected events    (unselected_events_vector)
+   ; * newly box-selected events                     (temp_events)
+   ; * previously, but not currently selected events (selected_events_vector)
+   lda kbd_variables::shift_key_pressed
+   beq @no_shift_box_select
+   @shift_box_select:
+      ; Basically merge newly box-selected events with previously selected ones.
+      MOVE_EVENTS_FROM_B_TO_A song_engine::event_selection::selected_events_vector, temp_events
+      rts
+   @no_shift_box_select:
+      ; Unselect all previously selected, only keep newly selected
+      jsr song_engine::event_selection::unselectAllEvents
+      SWAP_VECTORS temp_events, song_engine::event_selection::selected_events_vector
+      rts
 .endproc
 
 

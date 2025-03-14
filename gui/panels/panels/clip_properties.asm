@@ -68,15 +68,7 @@
         ; move all events back into the clip
         php
         sei
-        jsr song_engine::event_selection::unselectAllEvents
-        ldy song_engine::clips::active_clip_id
-        jsr song_engine::clips::accessClip
-        ldy #song_engine::clips::clip_data::event_ptr
-        lda song_engine::event_selection::unselected_events_vector
-        sta (v32b::entrypointer),y
-        iny
-        lda song_engine::event_selection::unselected_events_vector+1
-        sta (v32b::entrypointer),y
+        jsr song_engine::clips::flushClip
 
         ; update playback
         ; We need to update the track that is being unselected, as well as the "selection player"
@@ -94,14 +86,10 @@
         dec
         STA_COMPONENT_MEMBER_ADDRESS listbox, track_select, selected_entry
     :   sta song_engine::clips::active_clip_id
-        jsr refresh ; calls accessClip on new clip, so we don't have to.
+        jsr refresh
         ; move events of new clip into the GUI
-        ldy #song_engine::clips::clip_data::event_ptr
-        lda (v32b::entrypointer),y
-        sta song_engine::event_selection::unselected_events_vector
-        iny
-        lda (v32b::entrypointer),y
-        sta song_engine::event_selection::unselected_events_vector+1
+        ldy song_engine::clips::active_clip_id
+        jsr song_engine::clips::loadClip
         plp
         jsr copyClipSettingsToMusicalKeyboard
         jmp gui_routines__draw_gui
@@ -183,11 +171,6 @@
             jsr dll::getElementByIndex
             jsr dll::delete_element
             dec song_engine::clips::number_of_clips
-            ; Now need to update unselected_events_vector, since we might have invalidated the current pointer
-            ldy song_engine::clips::active_clip_id
-            jsr song_engine::clips::getClipEventVector
-            sta song_engine::event_selection::unselected_events_vector
-            stx song_engine::event_selection::unselected_events_vector+1
             jmp gui_routines__draw_gui
         @end_delete:
         rts

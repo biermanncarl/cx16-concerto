@@ -6,7 +6,7 @@
 .scope song_data
 
     .proc changeSongTempo
-        jsr event_selection::unselectAllEvents
+        jsr clips::flushClip
         jsr timing::detail::recalculateTimingValues
         ; recalculate ALL time stamps (lossy for sub-1/32 values, and if events move beyond what is representable by 16 bits)
         ldy #0
@@ -71,7 +71,7 @@
     ; Assumes that a file is opened for writing.
     ; Dumps all the song data into the file.
     .proc saveSong
-        jsr event_selection::unselectAllEvents
+        jsr clips::flushClip
         ; Fixed data size stuff
         ; ---------------------
         ; Song tempo

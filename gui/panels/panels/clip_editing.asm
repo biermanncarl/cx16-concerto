@@ -114,7 +114,7 @@
       rts
    @load_song:
       jsr song_engine::multitrack_player::stopPlayback
-      jsr song_engine::event_selection::unselectAllEvents
+      jsr song_engine::clips::flushClip
       ; open the file browser popup on the GUI stack
       lda #file_browsing::file_type::song
       sta file_browsing::current_file_type

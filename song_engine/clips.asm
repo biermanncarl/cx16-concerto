@@ -205,6 +205,42 @@ default_name:
     rts
 .endproc
 
+; Copies a clip's event pointer to the unselected_events_vector.
+; expects index of clip in .Y
+.proc loadClip
+    ; Put event pointer of clip into event_selection::unselected_events_vector
+    php
+    sei
+    jsr accessClip
+    ldy #clip_data::event_ptr
+    lda (v32b::entrypointer), y
+    sta event_selection::unselected_events_vector
+    iny
+    lda (v32b::entrypointer), y
+    sta event_selection::unselected_events_vector+1
+    plp
+    rts
+.endproc
+
+; Copies the pointer of the unselected_events_vector back into the clip data.
+; This is necessary because the address of the vector may change while it's being worked on.
+.proc flushClip
+    ; move all events back into the clip
+    php
+    sei
+    jsr event_selection::unselectAllEvents
+    ldy active_clip_id
+    jsr accessClip
+    ldy #clip_data::event_ptr
+    lda event_selection::unselected_events_vector
+    sta (v32b::entrypointer),y
+    iny
+    lda event_selection::unselected_events_vector+1
+    sta (v32b::entrypointer),y
+    plp
+    rts
+.endproc
+
 ; Expects that access to the clip has already been established.
 ; Returns vector in .A/.X
 getCurrentEventVector = getClipEventVector+3

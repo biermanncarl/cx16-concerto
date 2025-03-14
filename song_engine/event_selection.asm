@@ -90,13 +90,6 @@ move_action = most_recent_event_source
 :   jsr detail::storeNextEventInA
     rts
 .endproc
-
-; Swaps the vector_a and vector_b.
-; This is useful to unselect items.
-.proc swapVectorsAB
-    SWAP_VECTORS event_vector_a, event_vector_b
-    rts
-.endproc
 .endscope
 
 ; Given the pointer to a note-on event in .A/.X/.Y, finds the corresponding note-off event by linear search.
@@ -602,20 +595,21 @@ pitch:
 .macro MOVE_EVENT_TO_VECTOR target_vector
     pha
     lda target_vector
-    sta event_vector_a
+    sta song_engine::event_selection::event_vector_a
     lda target_vector+1
-    sta event_vector_a+1
+    sta song_engine::event_selection::event_vector_a+1
     pla
-    jsr moveEventToA
-    lda event_vector_a
+    jsr song_engine::event_selection::moveEventToA
+    lda song_engine::event_selection::event_vector_a
     sta target_vector
-    lda event_vector_a+1
+    lda song_engine::event_selection::event_vector_a+1
     sta target_vector+1
 .endmacro
 
 
 ; Merges all events from vector_b into vector_a.
 ; Caution: This subroutine may alter the location of the vectors. After calling this, you need to read back event_vector_a and event_vector_b.
+; Solves "merge conflicts" (e.g. overlapping notes) between the two vectors.
 ; Therefore best used in conjunction with the macro MOVE_EVENTS_FROM_B_TO_A.
 .proc moveAllEventsFromBToA_new
     ; This is a more efficient implementation than the first one, especially for a large disparity in vector sizes.
@@ -841,13 +835,13 @@ pitch:
 .macro MOVE_EVENTS_FROM_B_TO_A vector_a, vector_b
     SET_VECTOR_A vector_a
     SET_VECTOR_B vector_b
-    jsr moveAllEventsFromBToA  ; ToDo: use the new implementation
-    lda event_vector_a
-    ldx event_vector_a+1
+    jsr song_engine::event_selection::moveAllEventsFromBToA  ; ToDo: use the new implementation
+    lda song_engine::event_selection::event_vector_a
+    ldx song_engine::event_selection::event_vector_a+1
     sta vector_a
     stx vector_a+1
-    lda event_vector_b
-    ldx event_vector_b+1
+    lda song_engine::event_selection::event_vector_b
+    ldx song_engine::event_selection::event_vector_b+1
     sta vector_b
     stx vector_b+1
 .endmacro
@@ -906,14 +900,6 @@ pitch:
 .endproc
 
 
-; Merges all events from both vector A and vector B into vector B.
-; .proc moveAllEventsFromAToB
-;     jsr swapVectorsAB
-;     jsr moveAllEventsFromBToA
-;     jsr swapVectorsAB
-;     rts
-; .endproc
-
 ; Deletes all invalid events from an event vector.
 ; Expects the pointer to the vector in .A/.X
 .proc deleteAllInvalidEvents
@@ -963,6 +949,67 @@ selected_events_vector:
 ; Overlapping notes will be merged into one long note.
 .proc unselectAllEvents
     MOVE_EVENTS_FROM_B_TO_A unselected_events_vector, selected_events_vector
+    rts
+.endproc
+
+
+; Moves a note-on in .A/.X/.Y into the vector of selected events, and returns its new location in .A/.X/.Y.
+; Also moves the corresponding note-off.
+; If the moved note-on cannot be found, pointed_at_event will be set to NULL. (E.g. during "merge conflicts")
+; In move_action, expects the action to be done on the original event (one of moveEventToA::action options).
+.proc selectNoteFindNewLocation
+    pitch = next_event_b
+    ; remember timestamp and pitch of note-on so we can find it later (We'll just assume it's a note-on for now, so only need to remember pitch)
+    jsr detail::storeNextEventInA
+    jsr v5b::read_entry
+    lda events::note_pitch
+    pha
+    lda events::event_time_stamp_l
+    pha
+    lda events::event_time_stamp_h
+    pha
+
+    ; Move the note
+    jsr detail::loadNextEventInA
+    MOVE_EVENT_TO_VECTOR song_engine::event_selection::selected_events_vector
+    
+    ; Find its new location
+    pla
+    sta song_engine::timing::time_stamp_parameter+1
+    pla
+    sta song_engine::timing::time_stamp_parameter
+    pla
+    sta pitch
+    lda song_engine::event_selection::selected_events_vector
+    ldx song_engine::event_selection::selected_events_vector+1
+    jsr song_engine::event_selection::findEventAtTimeStamp
+    bcs @not_found
+    @check_loop:
+        jsr detail::storeNextEventInA
+        jsr v5b::read_entry
+        ; make sure it's the same time stamp (if not, search is guaranteed to fail)
+        lda events::event_time_stamp_l
+        cmp song_engine::timing::time_stamp_parameter
+        bne @not_found
+        lda events::event_time_stamp_h
+        cmp song_engine::timing::time_stamp_parameter+1
+        bne @not_found
+        ; check if its the same event
+        lda events::note_pitch
+        cmp pitch
+        bne @goto_next
+        lda events::event_type
+        cmp #events::event_type_note_on
+        bne @goto_next
+            ; It's the right one!
+            jmp detail::loadNextEventInA ; done!
+        @goto_next:
+        jsr detail::loadNextEventInA
+        jsr v5b::get_next_entry
+        bcc @check_loop
+        ; fall through to not_found
+@not_found:
+    ldy #0
     rts
 .endproc
 
