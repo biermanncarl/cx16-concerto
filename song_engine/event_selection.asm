@@ -668,7 +668,11 @@ pitch:
             ; .A/.X/.Y contain the pointer to the next event after the time stamp
             jsr v5b::splitVectorBeforeEntry ; returns the second half of the split
             cmp #0
-            beq @no_split_needed ; This can only happen when both vectors start at the same timestamp.
+            bne @split_really_needed ; This can only happen when both vectors start at the same timestamp.
+            @no_split_needed_2:
+                stz temp_vector_x
+                bra @which_first_done
+            @split_really_needed:
             jsr v5b::get_first_entry
             sta next_event_a
             stx next_event_a+1
@@ -836,7 +840,7 @@ pitch:
 .macro MOVE_EVENTS_FROM_B_TO_A vector_a, vector_b
     SET_VECTOR_A vector_a
     SET_VECTOR_B vector_b
-    jsr song_engine::event_selection::moveAllEventsFromBToA  ; ToDo: use the new implementation
+    jsr song_engine::event_selection::moveAllEventsFromBToA
     lda song_engine::event_selection::event_vector_a
     ldx song_engine::event_selection::event_vector_a+1
     sta vector_a
