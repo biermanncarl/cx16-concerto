@@ -27,13 +27,12 @@ SONG_DATA_EVENT_SELECTION_ASM = 1
 ; these variables are only here in ZP for speed and code size, could be moved out if needed
 
 ; PART OF API
-; pointers to the 5-byte vectors with events
+; pointers to the 5-byte vectors with events.
+; Mostly input variables, sometimes output, as well.
 event_vector_a: ; data not owned by this module
     .res 2
 event_vector_b: ; data not owned by this module
     .res 2
-; No ownership means: other modules are responsible for populating these pointers with a valid vector before calling subroutines from this file.
-; Subroutines in this file may still change these pointers, but always leave valid vector pointers behind.
 
 ; NOT PART OF API
 ; other variables (no pointers)
@@ -528,57 +527,44 @@ pitch:
 ; and can be used fully independently from each other).
 
 
-; Moves an event from an event vector to vector_a.
+; Moves an event from an event vector to event_vector_a and merges potentially overlapping notes.
+; event_vector_b will be cluttered, event_vector_a may be relocated.
 ; * In .A/.X/.Y, expects the pointer to the object to be moved,
 ; * In move_action, expects the action to be done on the original event (one of moveEventToA::action options).
 ; If the object is a note-on, the corresponding note-off is automatically moved, too.
-; Returns in .A/.X/.Y the address of the newly moved event.
+; Best used in conjunction with the macro
 .proc moveEventToA
     .scope action
         ID_GENERATOR 0, delete_original, invalidate_original, keep_original
     .endscope
-    jsr detail::storeNextEventInB
-    lda event_vector_a
-    ldx event_vector_a+1
-    jsr v5b::get_first_entry
-    bcc :+
-    ldy #0 ; set .A/.X/.Y pointer to NULL if event doesn't exist
-:   jsr detail::storeNextEventInA
-    jsr insertInVectorA
-    pha ; remember address of the newly moved event
-    phx
-    phy
-    beq @handle_note_off ; if it wasn't a note-on, we can go straight to deleting this event
-    jsr detail::loadNextEventInB
-@handle_original:
+    ; Append event(s) to new temporary vector.
+    jsr detail::storeNextEventInA ; save event pointer
+    jsr v5b::read_entry
+    jsr v5b::new
+    sta event_vector_b
+    stx event_vector_b+1
+    jsr v5b::append_new_entry
+    ; Deal with potential note-off
+    lda events::event_type
+    bne @note_off_done
+        jsr detail::loadNextEventInA
+        jsr findNoteOff
+        jsr detail::storeNextEventInB
+        jsr v5b::read_entry
+        lda event_vector_b
+        ldx event_vector_b+1
+        jsr v5b::append_new_entry
+        jsr detail::loadNextEventInB
+        jsr handleOriginal
+    @note_off_done:
+    jsr detail::loadNextEventInA
     jsr handleOriginal
-    ; pull the address of the newly moved event from the stack
-    ply
-    plx
-    pla
-    rts
-
-@handle_note_off:
-    ; As the event was a note-on, need to also select note-off.
-    ; save the position of the recently moved event
-    jsr detail::storeNextEventInA
-    ; first, save the currently moved element, so we can deal with it later (delete/invalidate/keep)
-    jsr detail::loadNextEventInB
-    pha
-    phx
-    phy
-    ; copy the note-off to vector A
-    jsr findNoteOff
-    jsr detail::storeNextEventInB
-    jsr insertInVectorA
-    ; delete note-off first because then we know for sure where the remaining note-on is (the other way round we wouldn't know for sure)
-    jsr detail::loadNextEventInB
-    jsr handleOriginal
-    ; deal with note-on
-    ply
-    plx
-    pla
-    bra @handle_original
+    ; Now merge the temporary vector into event_vector_a
+    jsr moveAllEventsFromBToA
+    ; Destroy temporary vector
+    lda event_vector_b
+    ldx event_vector_b+1
+    jmp v5b::destroy
 
     ; performs the desired action on the originally selected event.
     ; In .A/.X/.Y, expects the pointer to the originally selected event.
@@ -609,72 +595,28 @@ pitch:
         jsr v5b::write_entry
         rts
     .endproc
-
-    ; sub routine which does the insertion of a single event in vector A.
-    ; Expects:
-    ;   * in next_event_b, pointer event to be copied
-    ;   * in next_event_a, pointer to any event known to come before the given event (WRT time stamps)
-    ;     in vector B, or NULL if such an event is not contained
-    ; Returns:
-    ;   * in zero flag, whether the event was a note-on (z=1 if yes, z=0 if not)
-    ;   * in .A/.X/.Y, the position of the copied event where it has been inserted
-    ;   * next_event_b is preserved
-    .proc insertInVectorA
-    @search_loop:
-        ldy next_event_a+2
-        beq @append ; append if next event in vector A is NULL
-        jsr compareEvents
-        bcc @insert_position_found
-        jsr detail::loadNextEventInA
-        jsr v5b::get_next_entry
-        bcs @append
-        jsr detail::storeNextEventInA
-        bra @search_loop
-
-    @append:
-        jsr readEventAndCheckNoteOn
-        php
-        lda event_vector_a ; alternatively, we could use the values in next_event_a and thus make it independent from event_vector_a being set correctly.
-        ldx event_vector_a+1 ; This could allow for efficient "selection" into varying vectors.
-        jsr v5b::append_new_entry
-        lda event_vector_a
-        ldx event_vector_a+1
-        jsr v5b::get_last_entry
-        plp
-        rts
-    @insert_position_found:
-        jsr readEventAndCheckNoteOn
-        php
-        jsr detail::loadNextEventInA
-        jsr v5b::insert_entry
-        plp
-        rts
-
-        .proc readEventAndCheckNoteOn
-            jsr detail::loadNextEventInB
-            jsr v5b::read_entry
-            lda events::event_type
-            cmp #events::event_type_note_on
-            rts
-        .endproc
-    .endproc
 .endproc
 
 
-; Moves an event to vector_b.
-; * In .A/.X/.Y, expects the pointer to the object to be moved,
-; * In move_action, expects the action to be done on the original event (one of moveEventToA::action options).
-; If the object is a note-on, the corresponding note-off is automatically moved, too.
-.proc moveEventToB
-    jsr detail::swapVectorsAB
+; Expects pointer to event in .A/.X/.Y
+.macro MOVE_EVENT_TO_VECTOR target_vector
+    pha
+    lda target_vector
+    sta event_vector_a
+    lda target_vector+1
+    sta event_vector_a+1
+    pla
     jsr moveEventToA
-    jsr detail::swapVectorsAB
-    rts
-.endproc
+    lda event_vector_a
+    sta target_vector
+    lda event_vector_a+1
+    sta target_vector+1
+.endmacro
 
 
 ; Merges all events from vector_b into vector_a.
 ; Caution: This subroutine may alter the location of the vectors. After calling this, you need to read back event_vector_a and event_vector_b.
+; Therefore best used in conjunction with the macro MOVE_EVENTS_FROM_B_TO_A.
 .proc moveAllEventsFromBToA_new
     ; This is a more efficient implementation than the first one, especially for a large disparity in vector sizes.
     ; It only does timestamp-based merging of the two vectors on the section necessary (overlapping time stamps)
@@ -894,12 +836,12 @@ pitch:
 ; Overlapping notes are joined into one long note.
 ; Caution: The addresses of the vectors may change. In other words, this macro assumes temporary ownership of the vectors.
 ;          Other copies of the pointer need to be updated.
-; Parameters: vector_a absolute address of B/H pointer to an event vector
-;             vector_b absolute address of B/H pointer to another event vector
+; Parameters: vector_a absolute address of B/H pointer to an event vector (all events will be merged into this one)
+;             vector_b absolute address of B/H pointer to another event vector (this vector will be empty afterwards)
 .macro MOVE_EVENTS_FROM_B_TO_A vector_a, vector_b
     SET_VECTOR_A vector_a
     SET_VECTOR_B vector_b
-    jsr moveAllEventsFromBToA_new
+    jsr moveAllEventsFromBToA  ; ToDo: use the new implementation
     lda event_vector_a
     ldx event_vector_a+1
     sta vector_a
