@@ -222,13 +222,10 @@ default_name:
     rts
 .endproc
 
-; Copies the pointer of the unselected_events_vector back into the clip data.
-; This is necessary because the address of the vector may change while it's being worked on.
-.proc flushClip
-    ; move all events back into the clip
+.proc flushEventPointer
     php
     sei
-    jsr event_selection::unselectAllEvents
+sneak_entry:
     ldy active_clip_id
     jsr accessClip
     ldy #clip_data::event_ptr
@@ -239,6 +236,16 @@ default_name:
     sta (v32b::entrypointer),y
     plp
     rts
+.endproc
+
+; Copies the pointer of the unselected_events_vector back into the clip data.
+; This is necessary because the address of the vector may change while it's being worked on.
+.proc flushClip
+    ; move all events back into the clip
+    php
+    sei
+    jsr event_selection::unselectAllEvents
+    jmp flushEventPointer::sneak_entry
 .endproc
 
 ; Expects that access to the clip has already been established.

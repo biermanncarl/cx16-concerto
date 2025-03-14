@@ -1638,7 +1638,7 @@ height = 2 * detail::event_edit_height
    lda dnd::drag_action_state
    cmp #drag_action::box_select
    beq :+
-   rts
+   jmp song_engine::clips::flushEventPointer
 :
    inc note_data_changed
    ; hide "box"
@@ -1725,11 +1725,11 @@ height = 2 * detail::event_edit_height
    ; to stay unchanged. We will delete all invalidated events later on.
    lda #song_engine::event_selection::moveEventToA::action::invalidate_original
    sta song_engine::event_selection::move_action
-   lda detail::current_event_ptr
+   lda detail::current_event_ptr ; actually hitbox pointer, not the event yet
    ldx detail::current_event_ptr+1
    ldy detail::current_event_ptr+2
    jsr v5b::get_next_entry
-   jsr v5b::read_entry
+   jsr v5b::read_entry ; get the event pointer
    jsr detail::selectNote
 
 @go_to_next_hitbox:
@@ -1753,10 +1753,6 @@ height = 2 * detail::event_edit_height
    ; get rid of invalid hitboxes for safety (will be re-generated when redraw happens)
    jsr hitboxes__clear_hitboxes
 
-   ; Cleanup before final branch (saves 1 byte for one less bra instruction)
-   inc gui_variables::request_components_redraw
-   stz dnd::drag_action_state ; #drag_action::none
-
    ; Now handle the three groups of events:
    ; * previously and currently unselected events    (unselected_events_vector)
    ; * newly box-selected events                     (selected_events_vector)
@@ -1766,11 +1762,16 @@ height = 2 * detail::event_edit_height
    @shift_box_select:
       ; Basically merge newly box-selected events with previously selected ones.
       MOVE_EVENTS_FROM_B_TO_A song_engine::event_selection::selected_events_vector, temp_events
-      rts
+      bra @moving_events_done
    @no_shift_box_select:
       ; Unselect all previously selected
       MOVE_EVENTS_FROM_B_TO_A song_engine::event_selection::unselected_events_vector, temp_events
-      rts
+   @moving_events_done:
+
+   ; Cleanup
+   inc gui_variables::request_components_redraw
+   stz dnd::drag_action_state ; #drag_action::none
+   jmp song_engine::clips::flushEventPointer
 .endproc
 
 
