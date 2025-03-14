@@ -287,7 +287,7 @@ note_data_changed: ; flag set within drag&drop operations to signal if playback 
       ldx hitboxes__hitbox_event_x
       ldy hitboxes__hitbox_event_y
       jsr song_engine::event_selection::selectNoteFindNewLocation
-      ; TODO: cope with NULL?
+      ; May be NULL
       sta detail::pointed_at_event
       stx detail::pointed_at_event+1
       sty detail::pointed_at_event+2
@@ -1686,6 +1686,8 @@ height = 2 * detail::event_edit_height
    ; * Then, depending on whether shift has held or not, unselect all selected events.
    ; * Merge all temp events into selected.
 
+   SWAP_VECTORS temp_events, song_engine::event_selection::selected_events_vector 
+
    jsr hitboxes__load_hitbox_list
    jsr v5b::get_first_entry
    bcc @hitbox_loop
@@ -1757,8 +1759,8 @@ height = 2 * detail::event_edit_height
 
    ; Now handle the three groups of events:
    ; * previously and currently unselected events    (unselected_events_vector)
-   ; * newly box-selected events                     (temp_events)
-   ; * previously, but not currently selected events (selected_events_vector)
+   ; * newly box-selected events                     (selected_events_vector)
+   ; * previously, but not currently selected events (temp_events)
    lda kbd_variables::shift_key_pressed
    beq @no_shift_box_select
    @shift_box_select:
@@ -1766,9 +1768,8 @@ height = 2 * detail::event_edit_height
       MOVE_EVENTS_FROM_B_TO_A song_engine::event_selection::selected_events_vector, temp_events
       rts
    @no_shift_box_select:
-      ; Unselect all previously selected, only keep newly selected
-      jsr song_engine::event_selection::unselectAllEvents
-      SWAP_VECTORS temp_events, song_engine::event_selection::selected_events_vector
+      ; Unselect all previously selected
+      MOVE_EVENTS_FROM_B_TO_A song_engine::event_selection::unselected_events_vector, temp_events
       rts
 .endproc
 

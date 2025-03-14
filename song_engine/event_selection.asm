@@ -539,6 +539,7 @@ pitch:
     jsr v5b::append_new_entry
     ; Deal with potential note-off
     lda events::event_type
+    cmp #events::event_type_note_on
     bne @note_off_done
         jsr detail::loadNextEventInA
         jsr findNoteOff
