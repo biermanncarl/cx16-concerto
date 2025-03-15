@@ -1730,7 +1730,10 @@ height = 2 * detail::event_edit_height
    ldy detail::current_event_ptr+2
    jsr v5b::get_next_entry
    jsr v5b::read_entry ; get the event pointer
-   jsr detail::selectNote
+   lda hitboxes__hitbox_event_a
+   ldx hitboxes__hitbox_event_x
+   ldy hitboxes__hitbox_event_y
+   jsr song_engine::event_selection::selectEvent
 
 @go_to_next_hitbox:
    ; restore pointer to the first entry belonging to the hitbox, and advance twice to get to the next one

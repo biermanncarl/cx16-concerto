@@ -905,6 +905,12 @@ selected_events_vector:
 .endproc
 
 
+.proc selectEvent
+    MOVE_EVENT_TO_VECTOR song_engine::event_selection::selected_events_vector
+    rts
+.endproc
+
+
 ; Moves a note-on in .A/.X/.Y into the vector of selected events, and returns its new location in .A/.X/.Y.
 ; Also moves the corresponding note-off.
 ; If the moved note-on cannot be found, pointed_at_event will be set to NULL. (E.g. during "merge conflicts")
@@ -923,7 +929,7 @@ selected_events_vector:
 
     ; Move the note
     jsr detail::loadNextEventInA
-    MOVE_EVENT_TO_VECTOR song_engine::event_selection::selected_events_vector
+    jsr selectEvent
     
     ; Find its new location
     pla
