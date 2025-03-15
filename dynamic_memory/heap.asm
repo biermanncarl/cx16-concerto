@@ -145,9 +145,9 @@ first_unused_chunk:
 @skip_byte_advance:
    sta local_byte ; save bit mask
    inc detail::first_unused_chunk
-   lda detail::first_unused_chunk+1
-   adc #0
-   sta detail::first_unused_chunk+1
+   bne :+
+   inc detail::first_unused_chunk+1
+:  lda detail::first_unused_chunk+1
    ; now we need to check for memory full...
    cmp #(detail::num_chunks / 256)
    bne @check_if_free ; this could be optimized, as the branch condition is assumed to be rare
