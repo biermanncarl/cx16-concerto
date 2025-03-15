@@ -1042,11 +1042,7 @@ next_osc:
 
 
    ; do oscillator waveform control
-   lda instruments::Instrument::osc::waveform, y
-   sta osc_wave
-   beq :+
-   jmp @end_pwm
-:  ; pulse width modulation
+   ; pulse width/XOR modulation
    ; load pulse width
    lda instruments::Instrument::osc::pulse, y
    sta osc_wave
@@ -1060,18 +1056,18 @@ next_osc:
    adc osc_wave   ; add static pulse width to mpdulation signal
    ; clamp to valid range
    cmp #63
-   bcs :+   ; if carry clear, we are in valid range
-   sta osc_wave
-   bra @end_pwm
-:  ; if carry set, we have to clamp range
+   bcc @end_pwm   ; if carry clear, we are in valid range
+   ; if carry set, we have to clamp range
    ; if we're below 159, set to 63. if we're above 159, set to 0
    cmp #159
    bcc :+ ; if carry set, we set 0
-   stz osc_wave
+   lda #0
    bra @end_pwm
 :  lda #63  ; if carry clear, we set 63
-   sta osc_wave
+   clc
 @end_pwm:
+   adc instruments::Instrument::osc::waveform, y
+   sta osc_wave
 
    ; do oscillator's PSG voice control
    ldx osc_offset

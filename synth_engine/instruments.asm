@@ -386,7 +386,7 @@ load_default_instrument:
    sta Instrument::osc::lrmid, x
    lda #50
    sta Instrument::osc::volume, x
-   lda #40
+   lda #63
    sta Instrument::osc::pulse, x
    ; select no modulation source
    lda #128
