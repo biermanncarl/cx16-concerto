@@ -544,7 +544,7 @@ note_data_changed: ; flag set within drag&drop operations to signal if playback 
       @do_draw:
          ; Do drawing
          inc playback_start_drawn
-         lda #105
+         lda #62
          bra @draw_playback_start_end
    @draw_no_playback_start:
    lda #32
