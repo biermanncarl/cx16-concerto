@@ -86,7 +86,8 @@ note_data_changed: ; flag set within drag&drop operations to signal if playback 
       temp_variable_t, 1, \
       temp_variable_s, 1, \
       temp_variable_r, 1, \
-      temp_variable_q, 1
+      temp_variable_q, 1, \
+      temp_variable_p, 1
    .linecont - ; switch off line continuation with "\" (default)
    SCRATCHPAD_VARIABLES DND_NOTES_COLUMN_BUFFERS, DND_NOTES_TEMP_VARIABLES
 
@@ -359,7 +360,7 @@ note_data_changed: ; flag set within drag&drop operations to signal if playback 
    bars_count = detail::temp_variable_s ; may overflow; we are interested in divisibility by low powers of 2
    grid_line = detail::temp_variable_r ; 0 is no grid line, 1 means normal grid line, 2 or higher means emphasized grid line
    playback_start_drawn = detail::temp_variable_q ; if the playback start cursor has already been drawn
-
+   stride_residual = detail::temp_variable_p ; needed to get "nearest neighbor" rounding for note positions (instead of notes aligning to the left)
 
    ; column data format
    ; The high bit of the row's byte indicates whether the note is selected or not.
@@ -384,6 +385,7 @@ note_data_changed: ; flag set within drag&drop operations to signal if playback 
    jsr song_engine::timing::thirtysecondthsToBarsAndResidual
    sta thirtysecondths_since_last_bar
    stx bars_count
+   stz stride_residual
 
    ; column stride
    ldx temporal_zoom
@@ -490,18 +492,41 @@ note_data_changed: ; flag set within drag&drop operations to signal if playback 
 
    ; Calculate relevant end time stamp for current column (up to which point do we need to register events for the current column)
    ; ====================================================
-   ; get the length of the next column in ticks
-   ; add it to the running time stamp (TODO: keep copy of it, but use a time stamp that was only advanced by half the column duration to achieve "nearest neighbor rounding")
+   ; Get the length of the next column in ticks and update running time stamp accordingly.
+   ; In order to get nearest-neighbor rounding for the note positions (instead of always aligned to left), we need to keep
+   ; the running time stamp always half a column "too low".
+   ; Because columns can have different numbers of ticks inside them, we need to add
+   ; the residual of the previous column and than half of the current column, and keep track of the remaining half.
 
-   lda temporal_zoom
-   ldx thirtysecondths_since_last_bar
-   jsr song_engine::timing::get_note_duration_ticks
+   ; Add previous half time stamp
+   lda stride_residual
    clc
    adc running_time_stamp_l
    sta running_time_stamp_l
    bcc :+
    inc running_time_stamp_h
 :
+   ; Get column length
+   lda temporal_zoom
+   ldx thirtysecondths_since_last_bar
+   jsr song_engine::timing::get_note_duration_ticks
+   pha
+
+   ; add half of it to current time stamp
+   lsr
+   adc #0 ; round up
+   clc
+   adc running_time_stamp_l
+   sta running_time_stamp_l
+   bcc :+
+   inc running_time_stamp_h
+:
+   ; Keep track of residual
+   pla
+   lsr
+   sta stride_residual
+   
+
    ; Handle playback start cursor
    ; ----------------------------
    lda column_index
