@@ -852,59 +852,6 @@ pitch:
 .endmacro
 
 
-; TODO: move this into .if 0 section
-; Merges all events from vector_b into vector_a.
-; For the other direction, call swapVectorsAB before and after this function.
-.proc moveAllEventsFromBToA_old
-    ; Using stream API.
-    ; Basically stream them, but instead of just "consuming" the event, it gets inserted into vector A.
-    ; We need to do some more book-keeping to not break the stream API's illusion that it's just normally streaming.
-    ; One thing we don't do here is to correct the "most recent ids" as they are not needed here.
-    jsr resetStream
-@merge_loop:
-    jsr streamGetNextEvent
-    bcs @merge_loop_end ; returns event pointer in .A/.X/.Y
-    pha
-    ; is the next event already in vector A?
-    lda most_recent_event_source
-    bpl @insert_event ; action required
-    ; already in vector A, no action required --> go to next
-    pla
-    bra @merge_loop
-
-@insert_event:
-    ; insert event into vector A
-    pla
-    jsr v5b::read_entry
-
-    ldy next_event_a+2
-    beq @append_event ; are we already at the end of vector A?
-    ; vector A isn't empty: insert before next_event_a
-    lda next_event_a
-    ldx next_event_a+1
-    jsr v5b::insert_entry
-    ; Use the fact that v5b::insert_entry returns the new position of the inserted entry:
-    jsr v5b::get_next_entry
-    bcc :+
-    ldy #0 ; set to nullptr if next event in vector A doesn't exist
-:   jsr detail::storeNextEventInA
-    bra @merge_loop
-@append_event:
-    lda event_vector_a
-    ldx event_vector_a+1
-    jsr v5b::append_new_entry
-    ; don't need to deal with next_event_a, since it is already nullptr, which is what we want in this case
-    bra @merge_loop
-
-@merge_loop_end:
-    ; remove all events vector B
-    lda event_vector_b
-    ldx event_vector_b+1
-    jsr v5b::clear
-    rts
-.endproc
-
-
 ; Deletes all invalid events from an event vector.
 ; Expects the pointer to the vector in .A/.X
 .proc deleteAllInvalidEvents
@@ -1020,34 +967,55 @@ selected_events_vector:
 
 
 .if 0
-    ; Earlier attempt at writing this functionality (not sure if finished)
-    ; Merges all unselected events into the selected events vector.
-    ; To unselect all, call swapVectorsAB before and after this function.
-    .proc moveAllEventsFromBToA
-        ; This function is implemented for small code size.
-        ; Should it become a bottleneck, this could be implemented without calling moveEventToA.
-        ; The main point of optimization would be that we don't have to delete the events from the
-        ; unselected vector individually (an expensive operation), but could discard them at the
-        ; end at once. We would also not need to care about finding matching note-offs, as they
-        ; will always be contained in "all".
+    ; Previous (functional) version, but without resolving merge conflicts and without splicing.
+    ; Merges all events from vector_b into vector_a.
+    ; For the other direction, call swapVectorsAB before and after this function.
+    .proc moveAllEventsFromBToA_old
+        ; Using stream API.
+        ; Basically stream them, but instead of just "consuming" the event, it gets inserted into vector A.
+        ; We need to do some more book-keeping to not break the stream API's illusion that it's just normally streaming.
+        ; One thing we don't do here is to correct the "most recent ids" as they are not needed here.
+        jsr resetStream
+    @merge_loop:
+        jsr streamGetNextEvent
+        bcs @merge_loop_end ; returns event pointer in .A/.X/.Y
+        pha
+        ; is the next event already in vector A?
+        lda most_recent_event_source
+        bpl @insert_event ; action required
+        ; already in vector A, no action required --> go to next
+        pla
+        bra @merge_loop
 
-        ; Initialization
+    @insert_event:
+        ; insert event into vector A
+        pla
+        jsr v5b::read_entry
+
+        ldy next_event_a+2
+        beq @append_event ; are we already at the end of vector A?
+        ; vector A isn't empty: insert before next_event_a
+        lda next_event_a
+        ldx next_event_a+1
+        jsr v5b::insert_entry
+        ; Use the fact that v5b::insert_entry returns the new position of the inserted entry:
+        jsr v5b::get_next_entry
+        bcc :+
+        ldy #0 ; set to nullptr if next event in vector A doesn't exist
+    :   jsr detail::storeNextEventInA
+        bra @merge_loop
+    @append_event:
         lda event_vector_a
         ldx event_vector_a+1
-        jsr v5b::get_first_entry
-        jsr detail::storeNextEventInA
-        ; we basically grab the first event over and over again (as they get deleted one by one)
-    @merge_loop:
+        jsr v5b::append_new_entry
+        ; don't need to deal with next_event_a, since it is already nullptr, which is what we want in this case
+        bra @merge_loop
+
+    @merge_loop_end:
+        ; remove all events vector B
         lda event_vector_b
         ldx event_vector_b+1
-        jsr v5b::get_first_entry
-        bcs @end_merge_loop
-
-        
-        bra @merge_loop
-    @end_merge_loop:
-
-
+        jsr v5b::clear
         rts
     .endproc
 
