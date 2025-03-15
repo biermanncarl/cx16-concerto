@@ -839,7 +839,7 @@ clear_rectangle:
 ; Position fixed by macros @alg_x, @alg_y
 .proc draw_fm_alg
    @alg_x = 26
-   @alg_y = 45
+   @alg_y = 41
    lda #@alg_x
    sta draw_x
    lda #@alg_y
