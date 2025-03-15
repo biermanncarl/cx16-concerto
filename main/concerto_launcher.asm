@@ -158,6 +158,60 @@ start:
     SETUP_SPRITE vram_assets::sprite_index_playback_marker_5, vram_assets::sprite_data_playback_marker, sprt_width_8px, sprt_height_64px, sprt_mode_4bpp, 2, sprt_vflip_off, sprt_hflip_off, 100, 320
     SETUP_SPRITE vram_assets::sprite_index_playback_marker_6, vram_assets::sprite_data_playback_marker, sprt_width_8px, sprt_height_64px, sprt_mode_4bpp, 2, sprt_vflip_off, sprt_hflip_off, 100, 368
 
+    ; modify <> characters
+    lda #1 + 16 ; select high bank, increment by 1
+    sta VERA_addr_high
+    ; Default tile map address: $1:F000-$1:F7FF
+    ; offset ">": 496
+    address_greater = $f000 + $1F0
+    ; offset "<": 480
+    address_lower = $f000 + $1E0
+
+    ; new greater than sign
+    lda #>address_greater
+    sta VERA_addr_mid
+    lda #<address_greater
+    sta VERA_addr_low
+    lda #%01000000
+    sta VERA_data0
+    lda #%01110000
+    sta VERA_data0
+    lda #%01111100
+    sta VERA_data0
+    lda #%01111110
+    sta VERA_data0
+    lda #%01111100
+    sta VERA_data0
+    lda #%01110000
+    sta VERA_data0
+    lda #%01000000
+    sta VERA_data0
+    lda #%00000000
+    sta VERA_data0
+
+    ; new lower than sign
+    lda #>address_lower
+    sta VERA_addr_mid
+    lda #<address_lower
+    sta VERA_addr_low
+    lda #%00000010
+    sta VERA_data0
+    lda #%00001110
+    sta VERA_data0
+    lda #%00111110
+    sta VERA_data0
+    lda #%01111110
+    sta VERA_data0
+    lda #%00111110
+    sta VERA_data0
+    lda #%00001110
+    sta VERA_data0
+    lda #%00000010
+    sta VERA_data0
+    lda #%00000000
+    sta VERA_data0
+
+
 
 
     PRINT_MESSAGE message_loading_concerto
