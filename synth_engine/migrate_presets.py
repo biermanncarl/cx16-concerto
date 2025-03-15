@@ -7,8 +7,8 @@ import numpy as np
 import pathlib
 
 
-CURRENT_VERSION = 0
-TARGET_VERSION = 1
+CURRENT_VERSION = 1
+TARGET_VERSION = 2
 
 
 def open_preset(path):
@@ -101,13 +101,67 @@ def migrate_v0_v1(instrument_data):
     return np.concatenate(new_data_segments, axis=1)
 
 
+def migrate_v1_v2(instrument_data):
+    """Migrates instrument data from version 0 to version 1.
+
+    Version 1: commit d073c18ce289b18fb108fbc706fbdec9c44e790f
+    Version 2: commit 728d42e61203b4c16a7fd58e23a2bbd56f5dd544
+    Changes:
+    * For triangle and sawtooth, PWM now has an effect
+    * Set PW to 63 for all sawtooth and triangle oscillators
+    * Deactivate PWM for sawtooth and triangle oscillators
+
+    Args:
+        instrument_data (np.NDarray): array of uint8, shaped (num_instruments, bytes_per_instrument)
+
+    Returns:
+        updated byte array with shape (num_instruments, new_bytes_per_instrument)
+    """
+
+    num_oscillators = 4
+
+    osc_waveform_offset = 81
+    osc_pulse_offset = 85
+    osc_pwm_sel_offset = 89
+
+    # Which oscillators are affected
+    waveforms = instrument_data[
+        :, osc_waveform_offset : osc_waveform_offset + num_oscillators
+    ]
+    oscillator_mask = np.logical_or(waveforms == 1 * 64, waveforms == 2 * 64)
+
+    # Update pulse width
+    old_pulse_width = instrument_data[
+        :, osc_pulse_offset : osc_pulse_offset + num_oscillators
+    ]
+    instrument_data[:, osc_pulse_offset : osc_pulse_offset + num_oscillators] = (
+        np.where(oscillator_mask, 63, old_pulse_width)
+    )
+
+    # Update PWM
+    old_pwm_sources = instrument_data[
+        :, osc_pwm_sel_offset : osc_pwm_sel_offset + num_oscillators
+    ]
+    instrument_data[:, osc_pwm_sel_offset : osc_pwm_sel_offset + num_oscillators] = (
+        np.where(oscillator_mask, 128, old_pwm_sources)
+    )
+
+    return instrument_data
+
+
 if __name__ == "__main__":
+    assert TARGET_VERSION == CURRENT_VERSION + 1
+    if TARGET_VERSION == 1:
+        migrate = migrate_v0_v1
+    elif TARGET_VERSION == 2:
+        migrate = migrate_v1_v2
+
     for preset_path in pathlib.Path(".").glob("*.COP"):
         header, instrument_data = open_preset(preset_path)
-        instrument_data = migrate_v0_v1(instrument_data)
+        instrument_data = migrate(instrument_data)
         save_preset(preset_path, header, instrument_data)
 
     for song_path in pathlib.Path(".").glob("*.COS"):
         header, instrument_data, tracks_data = open_song(song_path)
-        instrument_data = migrate_v0_v1(instrument_data)
+        instrument_data = migrate(instrument_data)
         save_song(song_path, header, instrument_data, tracks_data)
