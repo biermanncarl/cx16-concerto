@@ -1275,7 +1275,7 @@ height = 2 * detail::event_edit_height
 @events_loop_end:
 
    ; now merge the moved note-off events back into the selected_events_vector
-   MOVE_EVENTS_FROM_B_TO_A song_engine::event_selection::selected_events_vector, temp_events
+   MOVE_EVENTS_FROM_B_TO_A_SIMPLE song_engine::event_selection::selected_events_vector, temp_events
 
    inc gui_variables::request_components_redraw
    rts

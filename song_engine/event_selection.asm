@@ -830,6 +830,61 @@ pitch:
 .endproc
 
 
+
+
+; Previous (functional) version, but without resolving merge conflicts and without splicing.
+; Merges all events from vector_b into vector_a.
+; For the other direction, call swapVectorsAB before and after this function.
+.proc moveAllEventsFromBToA_simple
+    ; Using stream API.
+    ; Basically stream them, but instead of just "consuming" the event, it gets inserted into vector A.
+    ; We need to do some more book-keeping to not break the stream API's illusion that it's just normally streaming.
+    ; One thing we don't do here is to correct the "most recent ids" as they are not needed here.
+    jsr resetStream
+@merge_loop:
+    jsr streamGetNextEvent
+    bcs @merge_loop_end ; returns event pointer in .A/.X/.Y
+    pha
+    ; is the next event already in vector A?
+    lda most_recent_event_source
+    bpl @insert_event ; action required
+    ; already in vector A, no action required --> go to next
+    pla
+    bra @merge_loop
+
+@insert_event:
+    ; insert event into vector A
+    pla
+    jsr v5b::read_entry
+
+    ldy next_event_a+2
+    beq @append_event ; are we already at the end of vector A?
+    ; vector A isn't empty: insert before next_event_a
+    lda next_event_a
+    ldx next_event_a+1
+    jsr v5b::insert_entry
+    ; Use the fact that v5b::insert_entry returns the new position of the inserted entry:
+    jsr v5b::get_next_entry
+    bcc :+
+    ldy #0 ; set to nullptr if next event in vector A doesn't exist
+:   jsr detail::storeNextEventInA
+    bra @merge_loop
+@append_event:
+    lda event_vector_a
+    ldx event_vector_a+1
+    jsr v5b::append_new_entry
+    ; don't need to deal with next_event_a, since it is already nullptr, which is what we want in this case
+    bra @merge_loop
+
+@merge_loop_end:
+    ; remove all events vector B
+    lda event_vector_b
+    ldx event_vector_b+1
+    jsr v5b::clear
+    rts
+.endproc
+
+
 ; Moves all events from vector b to vector a.
 ; The contents of vector b are checked for self-overlapping notes, and the two vectors are cross-checked for overlaps.
 ; Overlapping notes are joined into one long note.
@@ -841,6 +896,21 @@ pitch:
     SET_VECTOR_A vector_a
     SET_VECTOR_B vector_b
     jsr song_engine::event_selection::moveAllEventsFromBToA
+    lda song_engine::event_selection::event_vector_a
+    ldx song_engine::event_selection::event_vector_a+1
+    sta vector_a
+    stx vector_a+1
+    lda song_engine::event_selection::event_vector_b
+    ldx song_engine::event_selection::event_vector_b+1
+    sta vector_b
+    stx vector_b+1
+.endmacro
+
+
+.macro MOVE_EVENTS_FROM_B_TO_A_SIMPLE vector_a, vector_b
+    SET_VECTOR_A vector_a
+    SET_VECTOR_B vector_b
+    jsr song_engine::event_selection::moveAllEventsFromBToA_simple
     lda song_engine::event_selection::event_vector_a
     ldx song_engine::event_selection::event_vector_a+1
     sta vector_a
@@ -971,61 +1041,6 @@ selected_events_vector:
     rts
 .endproc
 
-
-.if 0
-    ; Previous (functional) version, but without resolving merge conflicts and without splicing.
-    ; Merges all events from vector_b into vector_a.
-    ; For the other direction, call swapVectorsAB before and after this function.
-    .proc moveAllEventsFromBToA_old
-        ; Using stream API.
-        ; Basically stream them, but instead of just "consuming" the event, it gets inserted into vector A.
-        ; We need to do some more book-keeping to not break the stream API's illusion that it's just normally streaming.
-        ; One thing we don't do here is to correct the "most recent ids" as they are not needed here.
-        jsr resetStream
-    @merge_loop:
-        jsr streamGetNextEvent
-        bcs @merge_loop_end ; returns event pointer in .A/.X/.Y
-        pha
-        ; is the next event already in vector A?
-        lda most_recent_event_source
-        bpl @insert_event ; action required
-        ; already in vector A, no action required --> go to next
-        pla
-        bra @merge_loop
-
-    @insert_event:
-        ; insert event into vector A
-        pla
-        jsr v5b::read_entry
-
-        ldy next_event_a+2
-        beq @append_event ; are we already at the end of vector A?
-        ; vector A isn't empty: insert before next_event_a
-        lda next_event_a
-        ldx next_event_a+1
-        jsr v5b::insert_entry
-        ; Use the fact that v5b::insert_entry returns the new position of the inserted entry:
-        jsr v5b::get_next_entry
-        bcc :+
-        ldy #0 ; set to nullptr if next event in vector A doesn't exist
-    :   jsr detail::storeNextEventInA
-        bra @merge_loop
-    @append_event:
-        lda event_vector_a
-        ldx event_vector_a+1
-        jsr v5b::append_new_entry
-        ; don't need to deal with next_event_a, since it is already nullptr, which is what we want in this case
-        bra @merge_loop
-
-    @merge_loop_end:
-        ; remove all events vector B
-        lda event_vector_b
-        ldx event_vector_b+1
-        jsr v5b::clear
-        rts
-    .endproc
-
-.endif
 
 .endscope
 
