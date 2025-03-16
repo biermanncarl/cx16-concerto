@@ -1514,7 +1514,13 @@ height = 2 * detail::event_edit_height
 ; This routine does all the stuff necessary at the start of a drag operation.
 ; It has to distinguish between all the different things one can do with the mouse in the notes DnD area.
 .proc dragStart
-   ; start of a dragging operation. figure out what we're actually doing
+   ; First, prevent shift and control at the same time (bad things might happen)
+   lda kbd_variables::shift_key_pressed
+   beq :+
+   stz kbd_variables::ctrl_key_pressed ; shift has priority over ctrl
+   :
+
+   ; Start of a dragging operation. figure out what we're actually doing
    lda mouse_variables::curr_buttons
    and #1 ; check for left button
    bne @left_button
