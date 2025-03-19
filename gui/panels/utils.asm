@@ -74,4 +74,13 @@
     sbc comps::name + components::type::data_members::member
 .endmacro
 
+.macro DEC_COMPONENT_MEMBER_ADDRESS type, name, member
+    dec comps::name + components::type::data_members::member
+.endmacro
+
+.macro INC_COMPONENT_MEMBER_ADDRESS type, name, member
+    inc comps::name + components::type::data_members::member
+.endmacro
+
+
 .endif ; .ifndef ::GUI_PANELS_UTILS_ASM

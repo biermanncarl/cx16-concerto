@@ -177,15 +177,27 @@
     @move_up:
         jsr song_engine::multitrack_player::stopPlayback
         ldy song_engine::clips::active_clip_id
-        beq @end_move_up
-            ; TODO: swap two clips (need new DLL function for that)
-            jmp gui_routines__draw_gui
-        @end_move_up:
+        beq @end_move_track
+            jsr song_engine::clips::getClipPointer
+            jsr dll::get_previous_element
+            jsr dll::swapWithSuccessor
+            DEC_COMPONENT_MEMBER_ADDRESS listbox, track_select, selected_entry
+            dec song_engine::clips::active_clip_id
+            jmp selectTrack
+        @end_move_track:
         rts
     @move_down:
         jsr song_engine::multitrack_player::stopPlayback
-        ; TODO
-        rts
+        ldy song_engine::clips::active_clip_id
+        iny ; account for id starting at 0
+        cpy song_engine::clips::number_of_clips
+        bcs @end_move_track
+            dey
+            jsr song_engine::clips::getClipPointer
+            jsr dll::swapWithSuccessor
+            INC_COMPONENT_MEMBER_ADDRESS listbox, track_select, selected_entry
+            inc song_engine::clips::active_clip_id
+            jmp selectTrack
     .endproc
 
 

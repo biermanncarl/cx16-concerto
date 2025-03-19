@@ -185,12 +185,16 @@ default_name:
 
 
 ; expects index of clip in .Y
-.proc accessClip
+.proc getClipPointer
     lda clips_vector
     ldx clips_vector+1
-    jsr dll::getElementByIndex
-    jsr v32b::accessEntry
-    rts
+    jmp dll::getElementByIndex
+.endproc
+
+; expects index of clip in .Y
+.proc accessClip
+    jsr getClipPointer
+    jmp v32b::accessEntry
 .endproc
 
 ; expects index of clip in .Y

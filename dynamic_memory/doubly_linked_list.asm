@@ -603,6 +603,48 @@ copyElement = detail::copyElement
 .endproc
 
 
+; Swaps the contents of two list elements.
+; Optimized for small code size. (?)
+; Expects pointer to a valid list element in .A/.X.
+; If the element has no successor, this is a no-op.
+.proc swapWithSuccessor
+   jsr is_last_element
+   bcs @end
+   ; Set up conditions for the loop (same as what detail::copyElementInternal wants)
+   stx zp_pointer_2+1
+   stz zp_pointer_2
+   pha
+   jsr get_next_element
+   stx zp_pointer+1
+   ; stz zp_pointer  ; already done by get_next_element
+   sta RAM_BANK
+   plx
+
+   ldy #4 ; start with payload
+   @copy_loop:
+      lda (zp_pointer), y
+      sta memory_backup
+      lda RAM_BANK ; remember V.B
+      stx RAM_BANK ; set up W.B
+      tax ; remember V.B
+      lda (zp_pointer_2), y ; load byte from Element W
+      pha
+      lda memory_backup
+      sta (zp_pointer_2), y
+      lda RAM_BANK ; remember W.B
+      stx RAM_BANK ; set up V.B
+      tax ; remember W.B
+      pla
+      sta (zp_pointer), y ; write byte to Element V
+      iny
+      bne @copy_loop
+@end:
+   rts
+memory_backup:
+   .byte 0
+.endproc
+
+
 
 .if 0
 ; Deletes any element from a list. *Slightly* optimized but much less readable version.
