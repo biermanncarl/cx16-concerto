@@ -1695,7 +1695,9 @@ height = 2 * detail::event_edit_height
    clc
    lda guiutils::box_select_right
    adc #(4-1)
-   lsr guiutils::box_select_right+1
+   bcc :+
+   inc guiutils::box_select_right+1
+:  lsr guiutils::box_select_right+1
    ror
    lsr guiutils::box_select_right+1
    ror
@@ -1704,11 +1706,14 @@ height = 2 * detail::event_edit_height
    clc
    lda guiutils::box_select_bottom
    adc #(4-1)
-   lsr guiutils::box_select_bottom+1
+   bcc :+
+   inc guiutils::box_select_bottom+1
+:  lsr guiutils::box_select_bottom+1
    ror
    lsr guiutils::box_select_bottom+1
    ror
    sta guiutils::box_select_bottom
+
 
    ; now the box boundaries are contained in the low bytes of each variable, respectively
 
