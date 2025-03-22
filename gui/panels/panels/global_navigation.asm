@@ -40,9 +40,9 @@
       .word vera_lb
       .byte CCOLOR_CAPTION, 5, 23
       .word fm_lb
-      .byte CCOLOR_CAPTION, 5, 29
+      .byte CCOLOR_CAPTION, 4, 29
       .word steal_lb
-      .byte CCOLOR_CAPTION, 6, 31
+      .byte CCOLOR_CAPTION, 5, 31
       .word drop_lb
       .byte 0
    ; data specific to the synth-navigation panel

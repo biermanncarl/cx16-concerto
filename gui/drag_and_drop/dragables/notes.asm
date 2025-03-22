@@ -410,6 +410,100 @@ note_data_changed: ; flag set within drag&drop operations to signal if playback 
    sta @draw_playback_start_end+4
 
 
+   ; calculate offset of piano roll of topmost note in the view
+   lda window_pitch
+   clc
+   adc #(detail::event_edit_height - 1)
+   sec
+   ldx #255
+@divide_by_twelve_loop:
+   inx
+   sbc #12
+   bcs @divide_by_twelve_loop
+   adc #12
+   sta piano_roll_offset
+   ; .X contains octave
+
+
+   ; pitch indicators on the left side
+   phx ; save octave
+   jsr guiutils::set_cursor ; Just for drawing initialization. We'll set the position later.
+   ldy song_engine::clips::active_clip_id
+   jsr song_engine::clips::accessClip
+   ldy #song_engine::clips::clip_data::drum_pad
+   lda (v32b::entrypointer), y
+   bne @drum_pad_pitch_indicator
+   @normal_pitch_indicator:
+      ldy #detail::event_edit_pos_y
+      ldx piano_roll_offset
+      inx
+      @normal_pitch_indicator_loop:
+         sty VERA_addr_mid
+         lda #2 * (detail::event_edit_pos_x - 1)
+         sta VERA_addr_low
+         dex
+         bpl @pi_draw_space
+            tya
+            dec
+            sta VERA_addr_mid ; set cursor to line above
+            pla ; recall octave
+            dec
+            pha ; store octave
+            inc
+            and #$0f  ; no extra code for upper octaves ... not worth it, sorry
+            cmp #10
+            bcc :+
+            clc
+            adc #199
+         :  adc #48
+            sta VERA_data0
+            lda #CCOLOR_CAPTION
+            sta VERA_data0
+            lda #2 * (detail::event_edit_pos_x - 1)
+            sta VERA_addr_low
+            sty VERA_addr_mid
+            ldx #11
+            lda #99
+            bra @pi_do_draw
+         @pi_draw_space:
+            lda #32
+         @pi_do_draw:
+         sta VERA_data0
+         lda #CCOLOR_CAPTION
+         sta VERA_data0
+         iny
+         cpy #detail::event_edit_pos_y + detail::event_edit_height
+         bne @normal_pitch_indicator_loop
+      bra @end_pitch_indicator
+   @drum_pad_pitch_indicator:
+      ldy #detail::event_edit_pos_y
+      lda window_pitch
+      clc
+      adc #(detail::event_edit_height - 1)
+      and #$0f
+      tax
+      @drum_pad_pitch_indicator_loop:
+         sty VERA_addr_mid
+         lda #2 * (detail::event_edit_pos_x - 1)
+         sta VERA_addr_low
+         dex
+         bpl :+
+            ldx #15
+            lda #100
+            bra :++
+         :
+            lda #32
+         :
+         sta VERA_data0
+         lda #CCOLOR_CAPTION
+         sta VERA_data0
+         iny
+         cpy #detail::event_edit_pos_y + detail::event_edit_height
+         bne @drum_pad_pitch_indicator_loop
+   @end_pitch_indicator:
+   pla ; discard octave
+
+
    ; clear the column buffer (don't need to clear the hitbox buffers because if the column_buffer is cleared, the others won't get read)
    ldx #(detail::event_edit_height-1)
 @clear_column_buffer_loop:
@@ -423,17 +517,6 @@ note_data_changed: ; flag set within drag&drop operations to signal if playback 
    lda #dragables__ids__notes
    sta dragables__active_hitbox_type
    jsr hitboxes__clear_hitboxes
-
-   ; calculate offset of piano roll of topmost note in the view
-   lda window_pitch
-   clc
-   adc #(detail::event_edit_height - 1)
-   sec
-@divide_by_twelve_loop:
-   sbc #12
-   bcs @divide_by_twelve_loop
-   adc #12
-   sta piano_roll_offset
 
    stz end_of_data
 
