@@ -168,6 +168,7 @@ start:
     address_lower = $f000 + $1E0
 
     address_block_up_left = $f000 + 126*8
+    address_spade = $f000 + 65*8
 
     ; new greater than sign
     lda #>address_greater
@@ -213,7 +214,7 @@ start:
     lda #%00000000
     sta VERA_data0
 
-    ; special character used in Concerto banner
+    ; special characters used in Concerto banner
     lda #>address_block_up_left
     sta VERA_addr_mid
     lda #<address_block_up_left
@@ -233,6 +234,27 @@ start:
     lda #%11100000
     sta VERA_data0
     lda #%10000000
+    sta VERA_data0
+
+    lda #>address_spade
+    sta VERA_addr_mid
+    lda #<address_spade
+    sta VERA_addr_low
+    lda #%00011000
+    sta VERA_data0
+    lda #%00011000
+    sta VERA_data0
+    lda #%00011000
+    sta VERA_data0
+    lda #%00011000
+    sta VERA_data0
+    lda #%00011000
+    sta VERA_data0
+    lda #%00000000
+    sta VERA_data0
+    lda #%00000000
+    sta VERA_data0
+    lda #%00000000
     sta VERA_data0
 
 

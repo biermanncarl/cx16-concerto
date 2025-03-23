@@ -336,7 +336,7 @@ concerto_banner:
     CURVE_UP_RIGHT @banner_color
     HORIZONTAL_LINE @banner_color
     SPACES 1, @background
-    VERTICAL_LINE @banner_color
+    .byte $41, @banner_color
     SPACES 1, @background
     CURVE_UP_RIGHT @banner_color
     CURVE_UP_RIGHT @banner_color
@@ -345,13 +345,7 @@ concerto_banner:
     ; fifth line
     SPACES 6, @background
     VERTICAL_LINE @banner_color
-    SPACES 6, @background
-    .byte 22, normal_text_color
-    .byte 48, normal_text_color
-    .byte 46, normal_text_color
-    .byte 54, normal_text_color
-    .byte 46, normal_text_color
-    .byte 48, normal_text_color
+    SPACES 12, @background
     ; sixth line
     SPACES 5, @background
     .byte $A0, @banner_color
