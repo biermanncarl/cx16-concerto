@@ -46,7 +46,7 @@
       .word drop_lb
       .byte 0
    ; data specific to the synth-navigation panel
-   active_tab: .byte 1
+   active_tab: .byte 0
    velocity_lb: STR_FORMAT "velocity"
    kbd_base_lb: STR_FORMAT "kbd basenote"
    synth_lb: STR_FORMAT "synth"

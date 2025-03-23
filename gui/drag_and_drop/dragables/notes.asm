@@ -457,7 +457,7 @@ note_data_changed: ; flag set within drag&drop operations to signal if playback 
             adc #199
          :  adc #48
             sta VERA_data0
-            lda #CCOLOR_CAPTION
+            lda #16*COLOR_BACKGROUND+12
             sta VERA_data0
             lda #2 * (detail::event_edit_pos_x - 1)
             sta VERA_addr_low

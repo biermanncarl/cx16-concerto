@@ -40,7 +40,6 @@ initialize:
    stz gui_variables::request_program_exit
    lda VERA_L1_mapbase
    sta guiutils::original_map_base
-   jsr gui_routines::load_synth_gui
    jsr mouse::mouse_init
    jsr song_engine::clips::initialize
    jsr song_engine::multitrack_player::musical_keyboard::initialize
@@ -52,6 +51,7 @@ initialize:
    jsr components::dnd::hitboxes::initialize
    jsr components::drag_and_drop_area::initialize
 .endif
+   jsr gui_routines::load_clip_gui
    rts
 
 ; concerto_gui::hide_gui
