@@ -27,22 +27,6 @@
         .byte 0
 
     .proc clearArea
-        lda #box_x-1
-        sta guiutils::draw_x
-        lda #box_y-1
-        sta guiutils::draw_y
-        lda #box_width+2
-        sta guiutils::draw_width
-        lda #box_height+2
-        sta guiutils::draw_height
-        lda #(16*COLOR_BACKGROUND)
-        sta guiutils::color
-        jmp guiutils::clear_rectangle
-    .endproc
-
-    .proc draw
-        ; #optimize-for-size because this is almost the same code as for other popups
-        jsr clearArea
         lda #box_x
         sta guiutils::draw_x
         lda #box_y
@@ -51,9 +35,12 @@
         sta guiutils::draw_width
         lda #box_height
         sta guiutils::draw_height
-        stz guiutils::draw_data1
-        jmp guiutils::draw_frame
+        lda #(16*COLOR_BACKGROUND)
+        sta guiutils::color
+        jmp guiutils::clear_rectangle
     .endproc
+
+    draw = clearArea
 
     .proc write
         ; close popup
