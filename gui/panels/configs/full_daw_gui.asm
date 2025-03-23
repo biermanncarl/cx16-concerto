@@ -21,6 +21,7 @@
 .include "panels/song_tempo_popup.asm"
 .include "panels/synth_info.asm"
 .include "panels/synth_navigation.asm"
+.include "panels/about_popup.asm"
 
 .linecont + ; switch on line continuation with "\"
 .define ALL_PANEL_SCOPES \
@@ -40,7 +41,8 @@
     synth_info, \
     fm_general, \
     fm_operators, \
-    global_navigation
+    global_navigation, \
+    about_popup
 .linecont - ; switch off line continuation with "\" (default)
 
 .endif ; .ifndef ::GUI_PANELS_CONFIGS_DAW_GUI_ASM

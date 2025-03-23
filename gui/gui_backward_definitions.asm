@@ -30,6 +30,7 @@ panels__ids__ok_cancel_popup = panels::ids::ok_cancel_popup
 panels__ids__track_name_popup = panels::ids::track_name_popup
 panels__ids__song_tempo_popup = panels::ids::song_tempo_popup
 panels__ids__global_navigation = panels::ids::global_navigation
+panels__ids__about_popup = panels::ids::about_popup
 panels__px = panels::px
 panels__py = panels::py
 gui_routines__refresh_gui = gui_routines::refresh_gui

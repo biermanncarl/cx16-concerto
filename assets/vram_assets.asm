@@ -53,6 +53,7 @@ color_alg_operator = lightgreen+16*black
 normal_text_color = lightgray+16*darkgray
 darker_text_color = midgray+16*darkgray
 orange_text_color = orange+16*darkgray
+white_text_color = white+16*darkgray
 
 .macro PADDED_TEXT length, color, str
     ; stolen from the STR_FORMAT macro
@@ -432,6 +433,61 @@ change_tempo_hint:
     PADDED_TEXT @text_width, normal_text_color, "timings.           "
     PADDED_TEXT @text_width, normal_text_color, "maximum song length"
     PADDED_TEXT @text_width, normal_text_color, "is 8:36 min.       "
+
+about_text:
+    @text_width = 36
+    PADDED_TEXT @text_width, white_text_color , "           concerto 0.6.0           "
+    PADDED_TEXT @text_width, normal_text_color, "                                    "
+    PADDED_TEXT @text_width, normal_text_color, "   by carl biermann  (kliepatsch)   "
+    PADDED_TEXT @text_width, normal_text_color, "                                    "
+    PADDED_TEXT @text_width, normal_text_color, "                                    "
+    PADDED_TEXT @text_width, white_text_color , "praise the lord by blowing trumpets."
+    PADDED_TEXT @text_width, white_text_color , "praise him with harps and lyres.    "
+    PADDED_TEXT @text_width, white_text_color , "praise him with tambourines         "
+    PADDED_TEXT @text_width, normal_text_color, "               and dancing.         "
+    PADDED_TEXT @text_width, white_text_color , "praise him with stringed instruments"
+    PADDED_TEXT @text_width, normal_text_color, "               and flutes.          "
+    PADDED_TEXT @text_width, white_text_color , "let everything that has breath      "
+    PADDED_TEXT @text_width, normal_text_color, "               praise the lord.     "
+    PADDED_TEXT @text_width, normal_text_color, "                    - from psalm 150"
+    PADDED_TEXT @text_width, normal_text_color, "                                    "
+    PADDED_TEXT @text_width, normal_text_color, "                                    "
+    PADDED_TEXT @text_width, white_text_color , "god says: i made the earth and      "
+    PADDED_TEXT @text_width, normal_text_color, "               created man on it;   "
+    PADDED_TEXT @text_width, white_text_color , "it was my hands that stretched out  "
+    PADDED_TEXT @text_width, normal_text_color, "               the heavens,         "
+    PADDED_TEXT @text_width, white_text_color , "and i commanded all their host.     "
+    PADDED_TEXT @text_width, normal_text_color, "                    - from isaiah 45"
+    PADDED_TEXT @text_width, normal_text_color, "                                    "
+    PADDED_TEXT @text_width, normal_text_color, "                                    "
+    PADDED_TEXT @text_width, white_text_color , "seek the lord while he may be found;"
+    PADDED_TEXT @text_width, normal_text_color, "       call on him while he is near."
+    PADDED_TEXT @text_width, white_text_color , "let the wicked forsake their ways   "
+    PADDED_TEXT @text_width, normal_text_color, " and the unrighteous their thoughts."
+    PADDED_TEXT @text_width, white_text_color , "let them turn to the lord,          "
+    PADDED_TEXT @text_width, normal_text_color, "     and he will have mercy on them,"
+    PADDED_TEXT @text_width, normal_text_color, "and to our god,"
+    PADDED_TEXT @text_width, white_text_color , "     for he will freely pardon."
+    PADDED_TEXT @text_width, normal_text_color, "                    - from isaiah 55"
+
+
+
+; From Psalm 150, NIRV
+; praise the lord by blowing trumpets.
+; praise him with harps and lyres.
+; praise him with tambourines and dancing.
+; praise him with stringed instruments and flutes.
+; let everything that has breath praise the lord.
+
+
+; Isaiah 45,12 ESV
+; god says: i made the earth and created man on it; it was my hands that stretched out the heavens, and i commanded all their host.
+
+
+; Isaiah 55,6-7 NIV
+; seek the Lord while he may be found; call on him while he is near.
+; let the wicked forsake their ways and the unrighteous their thoughts. 
+; let them turn to the Lord, and he will have mercy on them, and to our god, for he will freely pardon.
 
 
 .endscope

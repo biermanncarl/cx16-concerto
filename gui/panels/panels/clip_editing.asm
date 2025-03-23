@@ -36,6 +36,7 @@
       COMPONENT_DEFINITION button, load_song, 31, 0, 9, A load_song_lb
       COMPONENT_DEFINITION button, save_song, 41, 0, 9, A save_song_lb
       COMPONENT_DEFINITION dummy, start_of_playback_ruler, event_edit_pos_x, event_edit_pos_y-1, event_edit_width, 1
+      COMPONENT_DEFINITION button, about, 23, 0, 7, A about_lb
       COMPONENT_DEFINITION text_field, clip_help, help_box_x+2, help_box_y+2, help_box_width-4, help_box_height-4, A vram_assets::help_text_note_edit
       COMPONENT_LIST_END
    .endscope
@@ -60,6 +61,7 @@
    tempo_caption: STR_FORMAT "song tempo"
    load_song_lb: STR_FORMAT "load song"
    save_song_lb: STR_FORMAT "save song"
+   about_lb: STR_FORMAT " about"
 
    .proc draw
       ; help frame
@@ -100,6 +102,7 @@
       .word @load_song
       .word @save_song
       .word @set_start_of_playback
+      .word @about
    @zoom_level:
       lda comps, y
       sta components::dnd::dragables::notes::temporal_zoom
@@ -110,8 +113,7 @@
       lda #panels__ids__song_tempo_popup
       sta panels__panels_stack, x
       inc panels__panels_stack_pointer
-      jsr gui_routines__draw_gui
-      rts
+      jmp gui_routines__draw_gui
    @load_song:
       jsr song_engine::multitrack_player::stopPlayback
       jsr song_engine::clips::flushClip
@@ -123,8 +125,7 @@
       lda #panels__ids__file_load_popup
       sta panels__panels_stack, x
       inc panels__panels_stack_pointer
-      jsr gui_routines__draw_gui
-      rts
+      jmp gui_routines__draw_gui
    @save_song:
       ; open the file browser popup on the GUI stack
       lda #file_browsing::file_type::song
@@ -134,8 +135,7 @@
       lda #panels__ids__file_save_popup
       sta panels__panels_stack, x
       inc panels__panels_stack_pointer
-      jsr gui_routines__draw_gui
-      rts
+      jmp gui_routines__draw_gui
    @set_start_of_playback:
       lda mouse_variables::curr_data_1
       sec
@@ -147,8 +147,14 @@
       sta song_engine::multitrack_player::player_start_timestamp
       lda song_engine::timing::time_stamp_parameter+1
       sta song_engine::multitrack_player::player_start_timestamp+1
-      jsr gui_routines__draw_gui
-      rts
+      jmp gui_routines__draw_gui
+   @about:
+      ; TODO: factor out the GUI stack operation
+      ldx panels__panels_stack_pointer
+      lda #panels__ids__about_popup
+      sta panels__panels_stack, x
+      inc panels__panels_stack_pointer
+      jmp gui_routines__draw_gui
    .endproc
 
 
