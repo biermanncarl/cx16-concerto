@@ -24,6 +24,8 @@
    ; The redraw is done after event handling (mouse and keyboard) is finished within a tick.
    request_components_redraw: .byte 0
 
+   request_components_refresh_and_redraw: .byte 0
+
    request_program_exit: .byte 0
 
    ; Which instrument is currently viewed in the synth page.

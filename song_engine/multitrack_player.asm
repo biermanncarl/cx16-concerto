@@ -636,7 +636,13 @@ player_index:
         lda #song_engine::events::event_type_note_on
         sta song_engine::events::event_type
         jsr processEvent
-        bra @finish_event
+        ; in case of a drum pad event, we want to update the instrument shown in the GUI accordingly
+        lda concerto_synth::note_instrument
+        cmp concerto_gui__gui_variables__current_synth_instrument
+        beq @finish_event
+            sta concerto_gui__gui_variables__current_synth_instrument
+            inc concerto_gui__gui_variables__request_components_refresh_and_redraw
+            bra @finish_event
     @key_up:
         cmp musical_keyboard::last_key_down
         bne :+

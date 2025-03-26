@@ -152,13 +152,21 @@
    tax
    INDEXED_JSR panels::jump_table_write, @end_write_request
 @end_write_request:
+   ; check if component wants a refresh and redraw
+   lda gui_variables::request_components_refresh_and_redraw
+   beq @no_refresh
+      stz gui_variables::request_components_refresh_and_redraw
+      stz gui_variables::request_components_redraw
+      jsr refresh_gui
+      jmp draw_gui
+   @no_refresh:
    ; check if component wants a redraw
    lda gui_variables::request_components_redraw
    beq @end_redraw_request
-   lda mouse_variables::curr_panel
-   jsr panels::draw_components
-   stz gui_variables::request_components_redraw
-@end_redraw_request:
+      stz gui_variables::request_components_redraw
+      lda mouse_variables::curr_panel
+      jmp panels::draw_components
+   @end_redraw_request:
    rts
 .endproc   
 

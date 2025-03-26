@@ -4,3 +4,5 @@ concerto_gui__gauges__tick_isr = concerto_gui::gauges::tick_isr
 concerto_gui__gauges__cooldown_note_drop = concerto_gui::gauges::cooldown_note_drop
 concerto_gui__gauges__cooldown_note_steal = concerto_gui::gauges::cooldown_note_steal
 concerto_gui__gauges__flash_duration_ticks = concerto_gui::gauges::flash_duration_ticks
+concerto_gui__gui_variables__current_synth_instrument = concerto_gui::gui_variables::current_synth_instrument
+concerto_gui__gui_variables__request_components_refresh_and_redraw = concerto_gui::gui_variables::request_components_refresh_and_redraw
