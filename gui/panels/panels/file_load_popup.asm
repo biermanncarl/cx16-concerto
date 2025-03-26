@@ -86,8 +86,7 @@
          bra @close_file
       @load_song:
          jsr song_engine::song_data::loadSong
-         ; STZ_COMPONENT_MEMBER_ADDRESS listbox, track_select, selected_entry    in the clip_properties panel
-         stz clip_properties::comps::track_select + components::listbox::data_members::selected_entry
+         jsr panels__clip_properties__copyClipSettingsToMusicalKeyboard
       @close_file:
       jsr file_browsing::closeFile
    :  plp

@@ -21,6 +21,7 @@ panels__file_save_popup__doFileOperation = panels::file_save_popup::doFileOperat
 panels__ok_cancel_popup__string_bank = panels::ok_cancel_popup::string_bank
 panels__ok_cancel_popup__string_address = panels::ok_cancel_popup::string_address
 panels__global_navigation__redrawMusicalKeyboardSettings = panels::global_navigation::redrawMusicalKeyboardSettings
+panels__clip_properties__copyClipSettingsToMusicalKeyboard = panels::clip_properties::copyClipSettingsToMusicalKeyboard
 panels__panels_stack = panels::panels_stack
 panels__panels_stack_pointer = panels::panels_stack_pointer
 panels__ids__combobox_popup = panels::ids::combobox_popup

@@ -51,8 +51,9 @@
       LDA_COMPONENT_MEMBER_ADDRESS arrowed_edit, instrument_select, value
       sta gui_variables::current_synth_instrument
       sta song_engine::multitrack_player::musical_keyboard::instrument
-      jsr panels__global_navigation__redrawMusicalKeyboardSettings
-      jmp gui_routines__refresh_gui
+      stz song_engine::multitrack_player::musical_keyboard::drum
+      jsr gui_routines__refresh_gui
+      jmp panels__global_navigation__redrawMusicalKeyboardSettings
    @load_preset:
       ; open the file browser popup on the GUI stack
       lda #file_browsing::file_type::instrument

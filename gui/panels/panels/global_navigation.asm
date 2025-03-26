@@ -14,23 +14,20 @@
    hg = 60-py
    comps:
    .scope comps
-      COMPONENT_DEFINITION drag_edit, keyboard_volume, 49, 58, %00000000, 0, 63, 63, 0
-      COMPONENT_DEFINITION drag_edit, keyboard_instrument, 35, 58, %00000000, 0, N_INSTRUMENTS-1, N_INSTRUMENTS-1, 0
-      COMPONENT_DEFINITION drag_edit, keyboard_basenote, 19, 58, %00000000, 0, 108, 60, 0
-      COMPONENT_DEFINITION checkbox, keyboard_monophonic, 54, 58, 12, 0
+      COMPONENT_DEFINITION drag_edit, keyboard_volume, 47, 58, %00000000, 0, 63, 63, 0
+      COMPONENT_DEFINITION drag_edit, keyboard_basenote, 32, 58, %00000000, 0, 108, 60, 0
+      COMPONENT_DEFINITION checkbox, keyboard_monophonic, 53, 58, 12, 0
       COMPONENT_DEFINITION checkbox, keyboard_drum_pad, 68, 58, 10, 0
       COMPONENT_DEFINITION dummy, click_catcher, 0, 0, 3, 60
       COMPONENT_DEFINITION text_field, concerto_banner, 1, 1, 19, 6, A vram_assets::concerto_banner
       COMPONENT_LIST_END
    .endscope
    capts:
-      .byte 16*11+12, 6, 58
+      .byte 16*11+12, 11, 58
       .word kbd_base_lb
-      .byte 16*11+12, 24, 58
-      .word panel_common::lb_instrument
-      .byte 16*11+12, 40, 58
+      .byte 16*11+12, 38, 58
       .word velocity_lb
-      .byte 16*11+12, 56, 58
+      .byte 16*11+12, 55, 58
       .word panel_common::lb_mono
       .byte 16*11+12, 70, 58
       .word panel_common::lb_drum
@@ -48,7 +45,7 @@
    ; data specific to the synth-navigation panel
    active_tab: .byte 0
    velocity_lb: STR_FORMAT "velocity"
-   kbd_base_lb: STR_FORMAT "kbd basenote"
+   kbd_base_lb: STR_FORMAT "musical kbd basenote"
    synth_lb: STR_FORMAT "synth"
    vera_lb: STR_FORMAT "vera"
    fm_lb: STR_FORMAT "fm"
@@ -72,7 +69,6 @@
       jmp (@jmp_tbl, x)
    @jmp_tbl:
       .word @set_kbd_volume
-      .word @set_kbd_instrument
       .word @set_kbd_basenote
       .word @set_kbd_mono
       .word @set_kbd_drum
@@ -80,12 +76,6 @@
    @set_kbd_volume:
       LDA_COMPONENT_MEMBER_ADDRESS drag_edit, keyboard_volume, coarse_value
       sta song_engine::multitrack_player::musical_keyboard::velocity
-      rts
-   @set_kbd_instrument:
-      lda #song_engine::multitrack_player::musical_keyboard::musical_keyboard_channel
-      jsr song_engine::multitrack_player::stopVoicesOnChannel
-      LDA_COMPONENT_MEMBER_ADDRESS drag_edit, keyboard_instrument, coarse_value
-      sta song_engine::multitrack_player::musical_keyboard::instrument
       rts
    @set_kbd_basenote:
    @set_kbd_mono:
@@ -121,8 +111,6 @@
    .endproc
 
    .proc refresh
-      lda song_engine::multitrack_player::musical_keyboard::instrument
-      STA_COMPONENT_MEMBER_ADDRESS drag_edit, keyboard_instrument, coarse_value
       lda song_engine::multitrack_player::musical_keyboard::mono
       STA_COMPONENT_MEMBER_ADDRESS checkbox, keyboard_monophonic, checked
       lda song_engine::multitrack_player::musical_keyboard::drum
