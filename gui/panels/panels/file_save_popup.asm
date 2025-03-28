@@ -22,7 +22,7 @@
    comps:
    .scope comps
       COMPONENT_DEFINITION listbox, file_select, box_x+2, box_y + 2, box_width-4, box_height-7, A 0, 0, 255, 0
-      COMPONENT_DEFINITION text_edit, file_name_edit, box_x+2, box_y + box_height-4, box_width-4, A 0, 0, 0
+      COMPONENT_DEFINITION text_edit, file_name_edit, box_x+2, box_y + box_height-4, MAX_FILENAME_LENGTH+1, A 0, 0, 0
       COMPONENT_DEFINITION button, ok, 41, box_y + box_height - 3, 6, A lb_save
       COMPONENT_DEFINITION button, cancel, 33, box_y + box_height - 3, 6, A panel_common::lb_cancel
       COMPONENT_LIST_END
@@ -57,6 +57,9 @@
    .proc draw
       inc kbd_variables::musical_keyboard_bypass
       jsr file_popups_common::clearAndDrawFrame
+      ; fall through to refresh
+   .endproc
+   .proc refresh
       ; prepare file listing
       ldx #file_browsing::file_type::instrument
       jsr file_browsing::getFiles
@@ -126,6 +129,12 @@
       inc gui_variables::request_components_redraw
       rts
    button_ok:
+      lda file_browsing::current_selection_is_directory
+      beq :+
+         lda save_file_name
+         ldx save_file_name+1
+         jmp file_browsing::changeFolder
+      :
       jsr doFileOperation
       bcs file_exists
       ; fall through to button_cancel, which closes the popup
@@ -154,8 +163,6 @@
       jsr gui_routines__draw_gui
       rts
    .endproc
-
-   refresh = panel_common::dummy_subroutine
 
    .proc keypress
       lda kbd_variables::current_key

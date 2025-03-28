@@ -45,6 +45,9 @@
    .proc draw
       inc kbd_variables::musical_keyboard_bypass
       jsr file_popups_common::clearAndDrawFrame
+      ; fall through to refresh
+   .endproc
+   .proc refresh
       ; prepare file listing
       ldx #file_browsing::file_type::instrument
       jsr file_browsing::getFiles
@@ -76,6 +79,10 @@
       jsr file_browsing::checkIfFolderAndRemovePadding
       plx
       pla
+      ldy file_browsing::current_selection_is_directory
+      beq :+
+         jmp file_browsing::changeFolder
+      :
       ; open file
       ldy #0 ; open for reading
       php
@@ -101,11 +108,8 @@
       ; close popup
       jsr file_popups_common::clearArea
       dec panels_stack_pointer
-      jsr gui_routines__draw_gui
-      rts
+      jmp gui_routines__draw_gui
    .endproc
-
-   refresh = panel_common::dummy_subroutine
 
    .proc keypress
       lda kbd_variables::current_key

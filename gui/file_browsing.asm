@@ -1,4 +1,4 @@
-; Copyright 2024 Carl Georg Biermann
+; Copyright 2024-2025 Carl Georg Biermann
 
 ; Routines needed by the Concerto file browser.
 
@@ -10,6 +10,8 @@
 .include "../common/x16.asm"
 
 .scope file_browsing
+
+.define MAX_FILENAME_LENGTH 21
 
 .scope file_type
     ID_GENERATOR 0, instrument, song
@@ -260,6 +262,9 @@ delete_me:
     bne :+
         jmp @end_directory_read
     :
+    ; read and discard file size (16 bit binary number)
+    jsr CHRIN
+    jsr CHRIN
     ; setup line read
     lda #2
     sta reading_file_name
@@ -294,7 +299,7 @@ delete_me:
         phy
         jsr CHRIN
         ply
-        cmp #32   ; spaces and numbers
+        cmp #32   ; skip spaces
         beq @parse_line_end_loop_1
     ; We assume if the byte is "d" we have a directory.  ("dir". Files are "prg", I think. At least nothing starting with d)
     cmp #'d'
@@ -310,16 +315,16 @@ delete_me:
     bne @is_file
     @is_directory:
         ; Check if it's "." --> skip
-        dey
+        cpy #3 ; check length with padding
         bne @keep_folder ; longer than one character --> can't be "."
+        dey
         lda (v32b::entrypointer), y
         cmp #'.'
         beq @delete_current_entry
         @keep_folder:
             ; mark as folder with special byte
-            iny
             ldy #0
-            lda #83+64 ; 147, mark as folder
+            lda #83+64 ; 147, mark as folder & set folder icon in string
             sta (v32b::entrypointer), y
             bra @keep_entry
     @is_file:
@@ -327,7 +332,7 @@ delete_me:
         ldx #3 ; length of extension minus one (4 characters including ".")
     @check_extension_loop:
         dey
-        bmi @delete_current_entry
+        ; bmi @delete_current_entry  ; what was this for?
         lda (v32b::entrypointer), y
         cmp detail::extension, x
         bne @delete_current_entry
@@ -374,7 +379,7 @@ command:
 .endproc
 
 
-; Expects pointer to entry with padded file/folder name in .A/.X.
+; Expects pointer to entry with padded file/folder name in .A/.X (pointer to v32b entry).
 ; Clears the padding and sets current_selection_is_directory to zero if it's a normal file, otherwise nonzero.
 .proc checkIfFolderAndRemovePadding
     jsr v32b::accessEntry
@@ -394,6 +399,45 @@ command:
         cmp #0 ; end of string?
         bne @move_loop
     rts
+.endproc
+
+
+; Expects pointer to entry with folder name in .A/.X (pointer to v32b entry).
+; Issues the DOS command to change the folder.
+.proc changeFolder
+    jsr v32b::accessEntry
+    ldy #0
+    @copy_loop:
+        lda (v32b::entrypointer), y
+        sta file_name, y
+        iny
+        cmp #0
+        bne @copy_loop
+    ; setnam
+    tya ; command length
+    adc #1 ; takes set carry into account
+    ldx #<command
+    ldy #>command
+    jsr SETNAM
+    ; setlfs
+    lda #1 ; logical file
+    ldx #8 ; device number
+    ldy #15 ; 0=load, 1=save, 2-14=generic, 15=DOS command
+    jsr SETLFS
+    jsr OPEN
+    ldx #1 ; logical file number
+    jsr CHKIN
+    @reply_loop:
+        jsr CHRIN
+        cmp #$0D  ; return marks end of status message
+        bne @reply_loop
+    jsr closeFile
+    inc concerto_gui__gui_variables__request_components_refresh_and_redraw
+    rts
+command:
+    .byte "cd:"
+file_name:
+    .res MAX_FILENAME_LENGTH + 1
 .endproc
 
 
