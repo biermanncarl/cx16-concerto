@@ -204,7 +204,7 @@ delete_me:
 
 ; Populates the files vector with files from the current directory and given file type.
 ; In current_file_type, expects one of the ids in the file_type scope (instrument, bank or song)
-; so the directory listing is filtered for that type (.COP, .COB and .COS extension, respectively)
+; so the directory listing is filtered for that type (.COP and .COS extension, respectively)
 .proc getFiles
     reading_file_name = detail::temp_variable_a
     character = detail::temp_variable_b
@@ -241,68 +241,121 @@ delete_me:
     ldx files+1
     jsr v32b::accessEntry ; there's only one entry at this point
 @read_files_loop:
+    ; The logic for reading lines is as follows:
+    ; * We ignore anything before the first " symbol
+    ; * Between the first and the second " we record the file name into a string
+    ; * We parse the rest of the line
+    ; * If end of line says "dir". We check if it's "." --> discard, otherwise keep as directory.
+    ; * If not directory, we check the end of the file name for the expected extension. If conform, we keep.
+    ; * Otherwise discard string.
+    ; Whatever the file name is, it will be stored in the first byte: 32 for regular file, and ?? for folder
+
+
     ; read link (pointer to next line) -- discarded except for NULL check
     jsr CHRIN
     jsr CHRIN
     cmp #0
-    beq @end_directory_read
-    ; read file size -- discarded
-    jsr CHRIN
-    jsr CHRIN
+    bne :+
+        jmp @end_directory_read
+    :
     ; setup line read
-    stz reading_file_name
-    ldy #0
+    lda #2
+    sta reading_file_name
+    ldy #2
     @read_line_loop:
         ; TODO: detect folders and treat them separately
         phy
         jsr CHRIN
         ply
         sta character
-        cmp #0 ; end of line
-        beq @read_line_loop_end
+        cmp #0 ; end of line -- some lines don't contain ""s
+        beq @read_files_loop
         cmp #34 ; quotation mark "
         bne @no_quotation_mark
         @quotation_mark:
-            inc reading_file_name
+            dec reading_file_name
+            beq @parse_line_end
             bra @read_line_loop
         @no_quotation_mark:
             lda reading_file_name
-            and #1
-            beq :+
+            cmp #1
+            bne @read_line_loop
             lda character
             sta (v32b::entrypointer), y
             iny
-        :   bra @read_line_loop
-    @read_line_loop_end:
+            bra @read_line_loop
+@parse_line_end:
     ; finish up line with zero byte
     lda #0
     sta (v32b::entrypointer), y
-    ; check if file name has the extension we are looking for
-    ldx #3 ; length of extension minus one (4 characters including ".")
-@check_extension_loop:
-    dey
-    bmi @delete_current_file_name
-    lda (v32b::entrypointer), y
-    cmp detail::extension, x
-    bne @delete_current_file_name
-    dex
-    bmi @keep_current_file_name
-    bra @check_extension_loop
-@delete_current_file_name = @read_files_loop ; no action required, we simply overwrite the file name with the next one
-@keep_current_file_name:
-    ; chop off the extension
-    lda #0
-    sta (v32b::entrypointer), y
-    ; create new file name buffer
-    lda RAM_BANK
-    pha
-    lda files
-    ldx files+1
-    jsr v32b::append_new_entry
-    pla
-    sta RAM_BANK
-    jsr v32b::accessNextEntry
-    bra @read_files_loop
+    ; Check if it's a directory
+    @parse_line_end_loop_1:
+        phy
+        jsr CHRIN
+        ply
+        cmp #32   ; spaces and numbers
+        beq @parse_line_end_loop_1
+    ; We assume if the byte is "d" we have a directory.  ("dir". Files are "prg", I think. At least nothing starting with d)
+    cmp #'d'
+    php ; remember result
+    ; read the remainder of the line
+    @parse_line_end_loop_2:
+        phy
+        jsr CHRIN
+        ply
+        cmp #0 ; wait for end of line
+        bne @parse_line_end_loop_2
+    plp
+    bne @is_file
+    @is_directory:
+        ; Check if it's "." --> skip
+        dey
+        bne @keep_folder ; longer than one character --> can't be "."
+        lda (v32b::entrypointer), y
+        cmp #'.'
+        beq @delete_current_entry
+        @keep_folder:
+            ; mark as folder with special byte
+            iny
+            ldy #0
+            lda #83+64 ; mark as folder
+            sta (v32b::entrypointer), y
+            bra @keep_entry
+    @is_file:
+        ; check if file name has the extension we are looking for
+        ldx #3 ; length of extension minus one (4 characters including ".")
+    @check_extension_loop:
+        dey
+        bmi @delete_current_entry
+        lda (v32b::entrypointer), y
+        cmp detail::extension, x
+        bne @delete_current_entry
+        dex
+        bmi @keep_current_file_name
+        bra @check_extension_loop
+    @keep_current_file_name:
+        ; chop off the extension, and mark as normal file
+        lda #0
+        sta (v32b::entrypointer), y ; end of string
+        ldy #0
+        lda #32
+        sta (v32b::entrypointer), y ; mark as file
+    @keep_entry:
+        ; space before file/folder name
+        iny
+        lda #32
+        sta (v32b::entrypointer), y
+        ; create new file name buffer
+        lda RAM_BANK
+        pha
+        lda files
+        ldx files+1
+        jsr v32b::append_new_entry
+        pla
+        sta RAM_BANK
+        jsr v32b::accessNextEntry
+        jmp @read_files_loop
+    @delete_current_entry = @read_files_loop ; no action required, we simply overwrite the file name with the next one
 
 @end_directory_read:
     jsr closeFile

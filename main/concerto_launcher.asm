@@ -170,6 +170,7 @@ start:
     address_block_up_left = $f000 + 126*8
     address_spade = $f000 + 65*8
     address_diamond = $f000 + 90*8
+    address_heart = $f000 + 83*8
 
     ; new greater than sign
     lda #>address_greater
@@ -235,6 +236,28 @@ start:
     lda #%00000000
     sta VERA_data0
     lda #%00000000
+    sta VERA_data0
+    lda #%00000000
+    sta VERA_data0
+
+    ; turn heart to folder icon
+    lda #>address_heart
+    sta VERA_addr_mid
+    lda #<address_heart
+    sta VERA_addr_low
+    lda #%00000000
+    sta VERA_data0
+    lda #%00000111
+    sta VERA_data0
+    lda #%00111111
+    sta VERA_data0
+    lda #%01000001
+    sta VERA_data0
+    lda #%01000001
+    sta VERA_data0
+    lda #%01000001
+    sta VERA_data0
+    lda #%00111110
     sta VERA_data0
     lda #%00000000
     sta VERA_data0
