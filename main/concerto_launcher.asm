@@ -169,6 +169,7 @@ start:
 
     address_block_up_left = $f000 + 126*8
     address_spade = $f000 + 65*8
+    address_diamond = $f000 + 90*8
 
     ; new greater than sign
     lda #>address_greater
@@ -210,6 +211,30 @@ start:
     lda #%00001110
     sta VERA_data0
     lda #%00000010
+    sta VERA_data0
+    lda #%00000000
+    sta VERA_data0
+
+    ; turn diamond to triangle down
+    lda #>address_diamond
+    sta VERA_addr_mid
+    lda #<address_diamond
+    sta VERA_addr_low
+    lda #%00000000
+    sta VERA_data0
+    lda #%00000000
+    sta VERA_data0
+    lda #%01111111
+    sta VERA_data0
+    lda #%00111110
+    sta VERA_data0
+    lda #%00011100
+    sta VERA_data0
+    lda #%00001000
+    sta VERA_data0
+    lda #%00000000
+    sta VERA_data0
+    lda #%00000000
     sta VERA_data0
     lda #%00000000
     sta VERA_data0
