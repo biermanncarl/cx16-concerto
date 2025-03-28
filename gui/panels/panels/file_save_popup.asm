@@ -119,6 +119,10 @@
       ldy save_file_name+1
       sty dll::zp_pointer+1
       jsr dll::copyElement
+      ; remove first two characters from file name while checking for directory
+      lda save_file_name
+      ldx save_file_name+1
+      jsr file_browsing::checkIfFolderAndRemovePadding
       inc gui_variables::request_components_redraw
       rts
    button_ok:

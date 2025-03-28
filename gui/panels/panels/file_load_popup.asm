@@ -71,6 +71,11 @@
       cpy #255
       beq button_cancel ; don't open invalid file
       jsr dll::getElementByIndex
+      pha
+      phx
+      jsr file_browsing::checkIfFolderAndRemovePadding
+      plx
+      pla
       ; open file
       ldy #0 ; open for reading
       php

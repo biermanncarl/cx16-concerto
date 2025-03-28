@@ -21,6 +21,8 @@ open_file_name:
     .word 0
 current_file_type:
     .byte 0
+current_selection_is_directory:
+    .byte 0
 
 .scope detail
     temp_variable_a:
@@ -248,7 +250,7 @@ delete_me:
     ; * If end of line says "dir". We check if it's "." --> discard, otherwise keep as directory.
     ; * If not directory, we check the end of the file name for the expected extension. If conform, we keep.
     ; * Otherwise discard string.
-    ; Whatever the file name is, it will be stored in the first byte: 32 for regular file, and ?? for folder
+    ; Whatever the file name is, it will be stored in the first byte: 32 for regular file, and 147 for folder (doubles as "petscii" character for folder icon)
 
 
     ; read link (pointer to next line) -- discarded except for NULL check
@@ -263,7 +265,6 @@ delete_me:
     sta reading_file_name
     ldy #2
     @read_line_loop:
-        ; TODO: detect folders and treat them separately
         phy
         jsr CHRIN
         ply
@@ -318,7 +319,7 @@ delete_me:
             ; mark as folder with special byte
             iny
             ldy #0
-            lda #83+64 ; mark as folder
+            lda #83+64 ; 147, mark as folder
             sta (v32b::entrypointer), y
             bra @keep_entry
     @is_file:
@@ -370,6 +371,29 @@ delete_me:
     rts
 command:
     .byte "$"
+.endproc
+
+
+; Expects pointer to entry with padded file/folder name in .A/.X.
+; Clears the padding and sets current_selection_is_directory to zero if it's a normal file, otherwise nonzero.
+.proc checkIfFolderAndRemovePadding
+    jsr v32b::accessEntry
+    lda (v32b::entrypointer)
+    sec
+    sbc #32  ; will be zero only if it's a file, and therefore non-zero if it's a directory
+    sta file_browsing::current_selection_is_directory
+    ldy #2
+    @move_loop:
+        lda (v32b::entrypointer), y
+        dey
+        dey
+        sta (v32b::entrypointer), y
+        iny
+        iny
+        iny
+        cmp #0 ; end of string?
+        bne @move_loop
+    rts
 .endproc
 
 
