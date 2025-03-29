@@ -99,6 +99,8 @@
       @load_song:
          jsr song_engine::song_data::loadSong
          jsr panels__clip_properties__copyClipSettingsToMusicalKeyboard
+         lda #$ff
+         sta concerto_synth::instruments::detail::copying
       @close_file:
       jsr file_browsing::closeFile
    :  plp
