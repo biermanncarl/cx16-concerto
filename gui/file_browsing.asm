@@ -432,7 +432,7 @@ command:
         cmp #$0D  ; return marks end of status message
         bne @reply_loop
     jsr closeFile
-    inc concerto_gui__gui_variables__request_components_refresh_and_redraw
+    jsr gui_routines__draw_gui
     rts
 command:
     .byte "cd:"
