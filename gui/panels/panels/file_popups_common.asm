@@ -9,7 +9,7 @@
 
 .scope file_popups_common
     ; where the actual popup appears
-    box_width = 26
+    box_width = MAX_FILENAME_LENGTH + 7
     box_height = 25
     box_x = (80 - box_width) / 2
     box_y = (60 - box_height) / 2
