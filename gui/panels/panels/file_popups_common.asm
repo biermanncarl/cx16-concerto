@@ -1,4 +1,4 @@
-; Copyright 2024 Carl Georg Biermann
+; Copyright 2024-2025 Carl Georg Biermann
 
 .ifndef ::GUI_PANELS_PANELS_FILE_POPUPS_COMMON_ASM
 

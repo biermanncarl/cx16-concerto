@@ -1,4 +1,4 @@
-; Copyright 2021-2023 Carl Georg Biermann
+; Copyright 2021-2025 Carl Georg Biermann
 
 
 .ifndef ::GUI_GUI_VARIABLES_ASM

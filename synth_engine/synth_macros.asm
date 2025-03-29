@@ -1,4 +1,4 @@
-; Copyright 2021 Carl Georg Biermann
+; Copyright 2021-2025 Carl Georg Biermann
 
 
 ; This file contains a range of macros used by the synth engine.

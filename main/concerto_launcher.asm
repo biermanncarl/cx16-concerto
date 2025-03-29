@@ -1,4 +1,4 @@
-; Copyright 2024 Carl Georg Biermann
+; Copyright 2024-2025 Carl Georg Biermann
 
 ; This program loads assets and the main program and then proceeds to launch the main program.
 
