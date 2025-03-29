@@ -28,9 +28,9 @@ examples: example_01 example_02 example_03 example_04 example_05 example_06 exam
 .PHONY: copy_presets
 copy_presets:
 	cp -r presets/* build/
-	mkdir build/INSTRUMENTS-USER
-	mkdir build/SONGS-DEMOS
-	mkdir build/SONGS-USER
+	mkdir -p build/INSTRUMENTS-USER
+	mkdir -p build/SONGS-DEMOS
+	mkdir -p build/SONGS-USER
 
 example_01: build_folder unspecified_dependencies
 	cl65 -t cx16 -o build/EXAMPLE01.PRG -C cx16-asm.cfg -u __EXEHDR__ "examples/example_01_hello_world_concerto.asm"

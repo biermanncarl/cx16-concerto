@@ -176,6 +176,9 @@
       lda #>comps
       sta components::components_common::data_pointer+1
       jsr components::text_edit::keyboard_edit
+      bcc :+
+         stz file_browsing::current_selection_is_directory
+      :
       stz kbd_variables::current_key
       rts
    .endproc

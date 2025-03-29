@@ -152,6 +152,7 @@
     ; Keyboard editing
     ; Expects kbd_variables::current_key to be populated with recent key stroke.
     ; Expects (components_common::data_pointer),y to access the first data member
+    ; If string was modified, carry will be set. Clear otherwise.
     .proc keyboard_edit
         offset = gui_variables::mzpbh
         cursor_pos = gui_variables::mzpbf
@@ -199,28 +200,30 @@
         dey
         cmp (components_common::data_pointer), y
         bne :+
+        clc
         rts
     :   iny
         inc
         sta (components_common::data_pointer), y
-        bra @done
+        bra @done_no_change
     @cursor_left:
         lda cursor_pos
         bne :+
+        clc
         rts
     :   dec
         sta (components_common::data_pointer), y
-        bra @done
+        bra @done_no_change
     @home:
         lda #0
         sta (components_common::data_pointer), y
-        bra @done
+        bra @done_no_change
     @line_end:
         dey
         lda (components_common::data_pointer), y
         iny
         sta (components_common::data_pointer), y
-        bra @done
+        bra @done_no_change
     @backspace:
         dec cursor_pos
         ; fall through to delete
@@ -231,6 +234,7 @@
         cmp (components_common::data_pointer), y ; compare with line length
         bcc :+
         ply
+        clc
         rts
     :   ; proceed with deletion of character
         ldy cursor_pos
@@ -245,14 +249,19 @@
         ply
         lda cursor_pos
         sta (components_common::data_pointer), y
-        dey
         ; new string length will be calculated in draw routine
+        sec
         bra @done
 
+    @done_no_change:
+        clc
     @done:
+        php
         ldy offset
-        jmp draw
-    
+        jsr draw
+        plp
+        rts
+
     @other:
         lda kbd_variables::current_key
         cmp #$60 ; cannot use characters above $60
@@ -286,6 +295,7 @@
         lda cursor_pos
         inc
         sta (components_common::data_pointer), y
+        sec
         bra @done
     .endproc
 .endscope
