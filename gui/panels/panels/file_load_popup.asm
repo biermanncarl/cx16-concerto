@@ -101,6 +101,10 @@
          jsr panels__clip_properties__copyClipSettingsToMusicalKeyboard
          lda #$ff
          sta concerto_synth::instruments::detail::copying
+         stz song_engine::multitrack_player::player_start_timestamp
+         stz song_engine::multitrack_player::player_start_timestamp+1
+         stz components::dnd::dragables::notes::window_time_stamp
+         stz components::dnd::dragables::notes::window_time_stamp+1
       @close_file:
       jsr file_browsing::closeFile
    :  plp

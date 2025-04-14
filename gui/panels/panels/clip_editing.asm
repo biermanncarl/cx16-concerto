@@ -6,7 +6,6 @@
 
 .include "../../gui_macros.asm"
 .include "common.asm"
-.include "../../drag_and_drop/drag_and_drop.asm"
 
 ; editing area for clips
 .scope clip_editing
