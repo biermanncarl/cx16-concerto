@@ -164,7 +164,32 @@
       rts
    .endproc
 
-   keypress = panel_common::dummy_subroutine
+   .proc keypress
+      php
+      sei
+      ; Handle clipboard (Copy/Cut/Paste)
+      lda kbd_variables::ctrl_key_pressed
+      beq @end ; only continue if CTRL is being pressed
+      lda kbd_variables::current_key
+      cmp #$03 ; Ctrl+C
+      bne @skip_ctrl_c
+      @ctrl_c:
+         jsr components::dnd::dragables::notes::clipboardCopy
+         bra @end
+      @skip_ctrl_c:
+      cmp #$16 ; Ctrl+V
+      bne @skip_ctrl_v
+         jsr components::dnd::dragables::notes::clipboardPaste
+         bra @end
+      @skip_ctrl_v:
+      cmp #$18 ; Ctrl+X
+      bne @end
+      @ctrl_x:
+         jsr components::dnd::dragables::notes::clipboardCut
+   @end:
+      plp
+      rts
+   .endproc
 .endscope
 
 .endif ; .ifndef ::GUI_PANELS_PANELS_CLIP_EDITING_ASM

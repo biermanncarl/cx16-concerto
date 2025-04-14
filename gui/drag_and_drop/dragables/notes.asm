@@ -294,6 +294,55 @@ note_data_changed: ; flag set within drag&drop operations to signal if playback 
       sty detail::pointed_at_event+2
       rts
    .endproc
+
+
+   ; Copies the content of the clipboard to the selected events vector while shifting all events so that they start
+   ; at the current playback start marker.
+   .proc aligningClipboardDuplicate
+      time_stamp_diff_l = temp_variable_a
+      time_stamp_diff_h = temp_variable_b
+      lda clipboard_events
+      ldx clipboard_events+1
+      jsr v5b::get_first_entry
+      bcc :+
+      rts
+   :  pha
+      phx
+      phy
+      jsr v5b::read_entry
+      ; calculate time diff
+      lda song_engine::multitrack_player::player_start_timestamp
+      sec
+      sbc song_engine::events::event_time_stamp_l
+      sta time_stamp_diff_l
+      lda song_engine::multitrack_player::player_start_timestamp+1
+      sbc song_engine::events::event_time_stamp_h
+      sta time_stamp_diff_h
+      bra @shift_loop_mid_entry
+   @copy_shift_loop:
+      pha
+      phx
+      phy
+      jsr v5b::read_entry
+      @shift_loop_mid_entry:
+      lda song_engine::events::event_time_stamp_l
+      clc
+      adc time_stamp_diff_l
+      sta song_engine::events::event_time_stamp_l
+      lda song_engine::events::event_time_stamp_h
+      adc time_stamp_diff_h
+      sta song_engine::events::event_time_stamp_h
+      lda song_engine::event_selection::selected_events_vector
+      ldx song_engine::event_selection::selected_events_vector+1
+      jsr v5b::append_new_entry
+      ply
+      plx
+      pla
+      jsr v5b::get_next_entry
+      bcc @copy_shift_loop
+   @end_copy_shift_loop:
+      rts
+   .endproc
 .endscope
 
 
@@ -1897,6 +1946,50 @@ height = 2 * detail::event_edit_height
 .endproc
 
 
+
+.proc clipboardCopy
+   lda clipboard_events
+   ldx clipboard_events+1
+   jsr v5b::clear
+
+   SWAP_VECTORS clipboard_events, song_engine::event_selection::selected_events_vector
+   jsr detail::aligningClipboardDuplicate
+   SWAP_VECTORS clipboard_events, song_engine::event_selection::selected_events_vector
+
+   rts
+.endproc
+
+
+.proc clipboardCut
+   inc gui_variables::request_components_redraw
+   ; mute track
+   lda song_engine::clips::active_clip_id
+   inc
+   jsr song_engine::multitrack_player::stopVoicesOnChannel
+
+   lda clipboard_events
+   ldx clipboard_events+1
+   jsr v5b::clear
+
+   SWAP_VECTORS clipboard_events, song_engine::event_selection::selected_events_vector
+   ; update player
+update_track_player:
+   ; #optimize-for-size  I think this sequence is being done elsewhere, too.
+   lda song_engine::clips::active_clip_id
+   inc
+   jsr song_engine::multitrack_player::updateTrackPlayer
+   lda #0
+   jmp song_engine::multitrack_player::updateTrackPlayer
+.endproc
+
+
+.proc clipboardPaste
+   inc gui_variables::request_components_redraw
+
+   jsr song_engine::event_selection::unselectAllEvents
+   jsr detail::aligningClipboardDuplicate
+   bra clipboardCut::update_track_player
+.endproc
 
 
 .endscope

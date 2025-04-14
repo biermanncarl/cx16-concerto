@@ -52,6 +52,9 @@ initialize:
    jsr components::drag_and_drop_area::initialize
 .endif
    jsr gui_routines::load_clip_gui
+   ; prevent emulator from intercepting Ctrl+V because we want to use it ourselves
+   lda #1
+   sta $9FB7
    rts
 
 ; concerto_gui::hide_gui

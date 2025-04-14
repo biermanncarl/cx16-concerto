@@ -957,7 +957,7 @@ pitch:
 ; Vectors of currently processed events on the GUI.
 ; unselected_events_vector will typically be pointed at the event vector of a clip, so it's a "non-owning" pointer.
 ; selected_events_vector is initialized as an empty vector, so events can be selected into and unselected from it. It's an "owning" pointer of all currently selected events.
-.pushseg
+.pushseg ; why on zeropage??
 .zeropage
 unselected_events_vector:
    .res 2
