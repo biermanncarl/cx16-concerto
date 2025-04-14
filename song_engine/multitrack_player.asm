@@ -327,7 +327,7 @@ player_start_timestamp:
     bne :+
     rts
 :   sta track_index
-    jsr stopVoicesOnChannel
+    ; jsr stopVoicesOnChannel  ; commented out for now. I think all notes stopping on a track on all sorts of occasions is a major annoyance, and maybe not necessary at all.
     ldy track_index
     bne @track_player
 @selected_events_player:
