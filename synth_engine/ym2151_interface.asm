@@ -46,6 +46,7 @@ write_ym2151:
    nop
    nop
    nop
+   nop
    sty YM_data
 .ifdef ::concerto_enable_zsound_recording
    pha
