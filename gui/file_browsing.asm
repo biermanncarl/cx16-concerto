@@ -133,28 +133,30 @@ current_selection_is_directory:
     beq @open_for_read
 @open_for_write:
     ; query DOS status to see if the file already exists
-    ; The same query can also be done by opening another logical file on device 8 with secondary address 15 with empty file name
-    ; and then reading back the bytes using CHRIN instead of ACPTR,
-    ; but below method is more compact.
-    lda #8 ; device number
-	jsr LISTEN
-	lda #15 ; secondary address
-	jsr SECOND
-	jsr UNLSN
-    lda #8 ; device number
-    jsr TALK
+    lda #0 ; length zero
+    jsr SETNAM
+    lda #15 ; logical file
+    ldx #8 ; device number
+    ldy #15 ; secondary address: 15=command channel
+    jsr SETLFS
+    jsr OPEN
+    ldx #15
+    jsr CHKIN
     ; read first two characters of status message (which contain the error code)
     ; umm, actually no, just read the first character ... (if "6" we assume the file exists, if "0" we assume it doesn't)
-    jsr ACPTR
+    jsr CHRIN
     pha ; save first character of status
 @read_loop:
-    jsr ACPTR ; we still need to read the entire status message, otherwise we'll get a SYNTAX ERROR next time we use the DOS
-    cmp #$0D
+    jsr CHRIN ; we still need to read the entire status message, otherwise we'll get a SYNTAX ERROR next time we use the DOS
+    cmp #$0D ; compare with newline (which is the end of the status message)
     bne @read_loop 
-    jsr UNTLK
-    ; "00" = $30, $30 = OK
-    ; "63" = $36, $33 = FILE EXISTS
-    ; "30" = $33, $30 = SYNTAX ERROR
+    lda #15
+    jsr CLOSE
+    jsr CLRCHN
+
+    ; "00" = $30, OK
+    ; "63" = $36, FILE EXISTS
+    ; "30" = $33, SYNTAX ERROR
     ; ...
     ; We expect either OK or FILE EXISTS
     ; Interpret DOS status
