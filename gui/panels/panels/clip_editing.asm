@@ -29,13 +29,15 @@
    .scope comps
       COMPONENT_DEFINITION drag_and_drop_area, notes_edit, components::dnd::dragables::ids::notes
       COMPONENT_DEFINITION combobox, zoom_level_indicator, zoom_level_indicator_x, zoom_level_indicator_y, 6, 5, A zoom_select_lb, 0
-      COMPONENT_DEFINITION button, play_start, 34, 4, 3, A play_caption
-      COMPONENT_DEFINITION button, play_stop, 38, 4, 3, A stop_caption
+      COMPONENT_DEFINITION button, play_start, 34, 5, 3, A play_caption
+      COMPONENT_DEFINITION button, play_stop, 38, 5, 3, A stop_caption
       COMPONENT_DEFINITION button, song_tempo, 51, 0, 10, A tempo_caption
       COMPONENT_DEFINITION button, load_song, 31, 0, 9, A load_song_lb
       COMPONENT_DEFINITION button, save_song, 41, 0, 9, A save_song_lb
       COMPONENT_DEFINITION dummy, start_of_playback_ruler, event_edit_pos_x, event_edit_pos_y-1, event_edit_width, 1
       COMPONENT_DEFINITION button, about, 23, 0, 7, A about_lb
+      COMPONENT_DEFINITION button, insert_time, 38, 2, 11, A insert_time_lb
+      COMPONENT_DEFINITION button, delete_time, 50, 2, 11, A delete_time_lb
       COMPONENT_DEFINITION text_field, clip_help, help_box_x+2, help_box_y+2, help_box_width-4, help_box_height-4, A vram_assets::help_text_note_edit
       COMPONENT_LIST_END
    .endscope
@@ -61,6 +63,8 @@
    load_song_lb: STR_FORMAT "load song"
    save_song_lb: STR_FORMAT "save song"
    about_lb: STR_FORMAT " about"
+   insert_time_lb: STR_FORMAT "insert time"
+   delete_time_lb: STR_FORMAT "delete time"
 
    .proc draw
       ; help frame
@@ -102,6 +106,8 @@
       .word @save_song
       .word @set_start_of_playback
       .word @about
+      .word @insert_time
+      .word @delete_time
    @zoom_level:
       lda comps, y
       sta components::dnd::dragables::notes::temporal_zoom
@@ -154,6 +160,10 @@
       sta panels__panels_stack, x
       inc panels__panels_stack_pointer
       jmp gui_routines__draw_gui
+   @insert_time:
+   @delete_time:
+      ; TODO
+      rts
    .endproc
 
 

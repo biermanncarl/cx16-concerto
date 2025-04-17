@@ -151,12 +151,12 @@ start:
     ; setup sprites
     SETUP_SPRITE vram_assets::sprite_index_box_selection_frame_top_left, vram_assets::sprite_data_box_selection_frame_top_left, sprt_width_32px, sprt_height_32px, sprt_mode_4bpp, 2, sprt_vflip_off, sprt_hflip_off, 0, 0
     SETUP_SPRITE vram_assets::sprite_index_box_selection_frame_bottom_right, vram_assets::sprite_data_box_selection_frame_top_left, sprt_width_32px, sprt_height_32px, sprt_mode_4bpp, 2, sprt_vflip_on, sprt_hflip_on, 0, 0
-    SETUP_SPRITE vram_assets::sprite_index_playback_marker_1, vram_assets::sprite_data_playback_marker, sprt_width_8px, sprt_height_64px, sprt_mode_4bpp, 2, sprt_vflip_off, sprt_hflip_off, 100, 64
-    SETUP_SPRITE vram_assets::sprite_index_playback_marker_2, vram_assets::sprite_data_playback_marker, sprt_width_8px, sprt_height_64px, sprt_mode_4bpp, 2, sprt_vflip_off, sprt_hflip_off, 100, 128
-    SETUP_SPRITE vram_assets::sprite_index_playback_marker_3, vram_assets::sprite_data_playback_marker, sprt_width_8px, sprt_height_64px, sprt_mode_4bpp, 2, sprt_vflip_off, sprt_hflip_off, 100, 192
-    SETUP_SPRITE vram_assets::sprite_index_playback_marker_4, vram_assets::sprite_data_playback_marker, sprt_width_8px, sprt_height_64px, sprt_mode_4bpp, 2, sprt_vflip_off, sprt_hflip_off, 100, 256
-    SETUP_SPRITE vram_assets::sprite_index_playback_marker_5, vram_assets::sprite_data_playback_marker, sprt_width_8px, sprt_height_64px, sprt_mode_4bpp, 2, sprt_vflip_off, sprt_hflip_off, 100, 320
-    SETUP_SPRITE vram_assets::sprite_index_playback_marker_6, vram_assets::sprite_data_playback_marker, sprt_width_8px, sprt_height_64px, sprt_mode_4bpp, 2, sprt_vflip_off, sprt_hflip_off, 100, 368
+    SETUP_SPRITE vram_assets::sprite_index_playback_marker_1, vram_assets::sprite_data_playback_marker, sprt_width_8px, sprt_height_64px, sprt_mode_4bpp, 2, sprt_vflip_off, sprt_hflip_off, 100, 72
+    SETUP_SPRITE vram_assets::sprite_index_playback_marker_2, vram_assets::sprite_data_playback_marker, sprt_width_8px, sprt_height_64px, sprt_mode_4bpp, 2, sprt_vflip_off, sprt_hflip_off, 100, 136
+    SETUP_SPRITE vram_assets::sprite_index_playback_marker_3, vram_assets::sprite_data_playback_marker, sprt_width_8px, sprt_height_64px, sprt_mode_4bpp, 2, sprt_vflip_off, sprt_hflip_off, 100, 200
+    SETUP_SPRITE vram_assets::sprite_index_playback_marker_4, vram_assets::sprite_data_playback_marker, sprt_width_8px, sprt_height_64px, sprt_mode_4bpp, 2, sprt_vflip_off, sprt_hflip_off, 100, 264
+    SETUP_SPRITE vram_assets::sprite_index_playback_marker_5, vram_assets::sprite_data_playback_marker, sprt_width_8px, sprt_height_64px, sprt_mode_4bpp, 2, sprt_vflip_off, sprt_hflip_off, 100, 328
+    SETUP_SPRITE vram_assets::sprite_index_playback_marker_6, vram_assets::sprite_data_playback_marker, sprt_width_8px, sprt_height_64px, sprt_mode_4bpp, 2, sprt_vflip_off, sprt_hflip_off, 100, 392
 
     ; modify <> characters
     lda #1 + 16 ; select high bank, increment by 1
