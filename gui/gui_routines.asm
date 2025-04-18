@@ -83,6 +83,15 @@
    .endproc
 .endif
 
+; Opens a popup panel.
+; Expects the panel ID in .A.
+.proc openPopup
+   ldx panels__panels_stack_pointer
+   sta panels__panels_stack, x
+   inc panels__panels_stack_pointer
+   ; fall through to draw_gui
+.endproc
+; Needs draw_gui directly below vv
 
 ; reads through the stack and draws everything
 .proc draw_gui

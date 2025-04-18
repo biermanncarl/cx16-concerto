@@ -58,25 +58,16 @@
       ; open the file browser popup on the GUI stack
       lda #file_browsing::file_type::instrument
       sta file_browsing::current_file_type
-      ; TODO: factor out the GUI stack operation
-      ldx panels__panels_stack_pointer
       lda #panels__ids__file_load_popup
-      sta panels__panels_stack, x
-      inc panels__panels_stack_pointer
-      jsr gui_routines__draw_gui
-      rts
+   @do_open_popup: ; BRAing to this is 1 byte shorter than doing a JMP, and unnoticeably slower
+      jmp gui_routines__openPopup
 
    @save_preset:
       ; open the file browser popup on the GUI stack
       lda #file_browsing::file_type::instrument
       sta file_browsing::current_file_type
-      ; TODO: factor out the GUI stack operation
-      ldx panels__panels_stack_pointer
       lda #panels__ids__file_save_popup
-      sta panels__panels_stack, x
-      inc panels__panels_stack_pointer
-      jsr gui_routines__draw_gui
-      rts
+      bra @do_open_popup
 
    @copy_preset:
       lda gui_variables::current_synth_instrument

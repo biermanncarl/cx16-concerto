@@ -136,12 +136,8 @@
         sta track_name_popup::string_address
         lda v32b::entrypointer+1
         sta track_name_popup::string_address+1
-        ; TODO: factor out the GUI stack operation
-        ldx panels__panels_stack_pointer
         lda #panels__ids__track_name_popup
-        sta panels__panels_stack, x
-        inc panels__panels_stack_pointer
-        jmp gui_routines__draw_gui
+        jmp gui_routines__openPopup
     @new_track:
         jsr song_engine::multitrack_player::stopPlayback
         jsr song_engine::clips::addClip

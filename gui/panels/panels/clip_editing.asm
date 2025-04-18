@@ -113,34 +113,23 @@
       sta components::dnd::dragables::notes::temporal_zoom
       rts
    @song_tempo:
-      ; TODO: factor out the GUI stack operation
-      ldx panels__panels_stack_pointer
       lda #panels__ids__song_tempo_popup
-      sta panels__panels_stack, x
-      inc panels__panels_stack_pointer
-      jmp gui_routines__draw_gui
+      bra @do_open_popup
    @load_song:
       jsr song_engine::multitrack_player::stopPlayback
       jsr song_engine::clips::flushClip
       ; open the file browser popup on the GUI stack
       lda #file_browsing::file_type::song
       sta file_browsing::current_file_type
-      ; TODO: factor out the GUI stack operation
-      ldx panels__panels_stack_pointer
       lda #panels__ids__file_load_popup
-      sta panels__panels_stack, x
-      inc panels__panels_stack_pointer
-      jmp gui_routines__draw_gui
+      bra @do_open_popup
    @save_song:
       ; open the file browser popup on the GUI stack
       lda #file_browsing::file_type::song
       sta file_browsing::current_file_type
-      ; TODO: factor out the GUI stack operation
-      ldx panels__panels_stack_pointer
       lda #panels__ids__file_save_popup
-      sta panels__panels_stack, x
-      inc panels__panels_stack_pointer
-      jmp gui_routines__draw_gui
+   @do_open_popup: ; BRAing to this is 1 byte shorter than doing a JMP, and unnoticeably slower
+      jmp gui_routines__openPopup
    @set_start_of_playback:
       lda mouse_variables::curr_data_1
       sec
@@ -153,17 +142,14 @@
       lda song_engine::timing::time_stamp_parameter+1
       sta song_engine::multitrack_player::player_start_timestamp+1
       jmp gui_routines__draw_gui
-   @about:
-      ; TODO: factor out the GUI stack operation
-      ldx panels__panels_stack_pointer
-      lda #panels__ids__about_popup
-      sta panels__panels_stack, x
-      inc panels__panels_stack_pointer
-      jmp gui_routines__draw_gui
    @insert_time:
    @delete_time:
       ; TODO
-      rts
+      lda #panels__ids__time_insert_delete_popup
+      bra @do_open_popup
+   @about:
+      lda #panels__ids__about_popup
+      bra @do_open_popup
    .endproc
 
 
