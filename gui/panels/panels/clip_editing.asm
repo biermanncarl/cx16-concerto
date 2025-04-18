@@ -143,8 +143,13 @@
       sta song_engine::multitrack_player::player_start_timestamp+1
       jmp gui_routines__draw_gui
    @insert_time:
+      lda #1
+      bra @time_insert_delete_popup
    @delete_time:
       ; TODO
+      lda #0
+   @time_insert_delete_popup:
+      jsr panels__time_insert_delete_popup__setup
       lda #panels__ids__time_insert_delete_popup
       bra @do_open_popup
    @about:
