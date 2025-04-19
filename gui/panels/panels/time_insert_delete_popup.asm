@@ -56,6 +56,7 @@
     @write_label_address:
         stx action_label_address
         sty action_label_address+1
+        STZ_COMPONENT_MEMBER_ADDRESS drag_edit, num_bars, coarse_value ; for safety, always default to 0
         rts
     .endproc
 

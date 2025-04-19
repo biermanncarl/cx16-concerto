@@ -148,6 +148,29 @@
         rts
     .endproc
 
+
+    .proc insertTime
+        ; Get time delta
+
+        ldy #0
+    @clips_loop:
+        phy
+        jsr clips::getClipEventVector
+        ldy multitrack_player::player_start_timestamp
+        sty timing::time_stamp_parameter
+        ldy multitrack_player::player_start_timestamp+1
+        sty timing::time_stamp_parameter+1
+        jsr event_selection::findEventAtTimeStamp
+        bcc @continue
+        ; TODO: shift events
+    @continue:
+        ply
+        iny
+        cpy clips::number_of_clips
+        bne @clips_loop
+
+        rts
+    .endproc
 .endscope
 
 .endif ; .ifndef SONG_ENGINE_SONG_DATA_ASM

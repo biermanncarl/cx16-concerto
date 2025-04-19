@@ -18,8 +18,8 @@ concerto_playback_routine = song_engine__simple_player__playerTick
 .include "events.asm"
 .include "event_selection.asm"
 .include "clips.asm"
-.include "song_data.asm"
 .include "multitrack_player.asm"
+.include "song_data.asm"
 
 .endscope
 
