@@ -4,6 +4,44 @@
 ::SONG_ENGINE_SONG_DATA_ASM = 1
 
 .scope song_data
+    .scope detail
+        ; stealing some ZP variables, I hope that's fine with them
+        time_delta = event_selection::temp_vector_x
+
+        ; Calculates the number of ticks in N bars.
+        ; Expects the number of bars in .Y
+        ; Returns number of ticks in time_delta
+        .proc calculateLengthOfNBars
+            ticks_one_bar = event_selection::temp_vector_y
+            stz ticks_one_bar
+            stz ticks_one_bar+1
+            ldx timing::beats_per_bar
+        @ticks_in_bar_loop: ; calculate number of ticks in one bar
+            lda timing::detail::quarter_ticks
+            clc
+            adc ticks_one_bar
+            sta ticks_one_bar
+            bcc :+
+            inc ticks_one_bar+1
+        :   dex
+            bne @ticks_in_bar_loop
+
+            stz time_delta
+            stz time_delta+1
+        @ticks_in_n_bars_loop: ; multiply that by N
+            lda time_delta
+            clc
+            adc ticks_one_bar
+            sta time_delta
+            lda time_delta+1
+            adc ticks_one_bar+1
+            sta time_delta+1
+            dey
+            bne @ticks_in_n_bars_loop
+            rts
+        .endproc
+    .endscope
+
 
     .proc changeSongTempo
         jsr clips::flushClip
@@ -149,8 +187,13 @@
     .endproc
 
 
+    ; Inserts time at the current position of the playback start marker.
+    ; Expects number of bars to insert in .Y
     .proc insertTime
-        ; Get time delta
+        ; stealing some ZP variables, I hope that's fine with them
+        temp_pointer = event_selection::temp_vector_y ; used inside calculateLengthOfNBars, so can only use it after that function is called.
+
+        jsr detail::calculateLengthOfNBars
 
         ldy #0
     @clips_loop:
@@ -161,8 +204,61 @@
         ldy multitrack_player::player_start_timestamp+1
         sty timing::time_stamp_parameter+1
         jsr event_selection::findEventAtTimeStamp
-        bcc @continue
-        ; TODO: shift events
+        bcs @continue
+        
+        ; lazy version first, using the v5b API. If that's too slow, we could work on the raw data directly.
+
+        ; skip note-offs at the current time stamp (want to keep them on the left side of the newly formed time gap)
+        @skip_note_off_loop:
+            sta temp_pointer
+            stx temp_pointer+1
+            sty temp_pointer+2
+            jsr v5b::read_entry
+            lda events::event_type
+            bne @end_skip_note_off_loop
+            lda events::event_time_stamp_l
+            cmp timing::time_stamp_parameter
+            bne @end_skip_note_off_loop
+            lda events::event_time_stamp_h
+            cmp timing::time_stamp_parameter+1
+            bne @end_skip_note_off_loop
+            ; it's note-off and still the same time stamp --> skip
+            lda temp_pointer
+            ldx temp_pointer+1
+            ldy temp_pointer+2
+            jsr v5b::get_next_entry
+            bcs @continue
+            bra @skip_note_off_loop
+        @end_skip_note_off_loop:
+
+        ; shift events
+        lda temp_pointer
+        ldx temp_pointer+1
+        ldy temp_pointer+2
+        @shift_events_loop:
+            sta temp_pointer
+            stx temp_pointer+1
+            sty temp_pointer+2
+            jsr v5b::read_entry
+
+            lda events::event_time_stamp_l
+            clc
+            adc detail::time_delta
+            sta events::event_time_stamp_l
+            lda events::event_time_stamp_h
+            adc detail::time_delta+1
+            sta events::event_time_stamp_h
+
+            lda temp_pointer
+            ldx temp_pointer+1
+            ldy temp_pointer+2
+            jsr v5b::write_entry
+
+            lda temp_pointer
+            ldx temp_pointer+1
+            ldy temp_pointer+2
+            jsr v5b::get_next_entry
+            bcc @shift_events_loop
     @continue:
         ply
         iny

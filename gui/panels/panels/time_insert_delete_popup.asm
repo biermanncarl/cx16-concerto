@@ -103,8 +103,15 @@
         .word button_cancel
         .word panel_common::dummy_subroutine ; num_bars, we'll just read ourselves when doing the thing
     button_ok:
-        ; TODO
-
+        jsr song_engine::event_selection::unselectAllEvents
+        LDY_COMPONENT_MEMBER_ADDRESS drag_edit, num_bars, coarse_value
+        lda mode
+        beq @delete_time
+        @insert_time:
+            jsr song_engine::song_data::insertTime
+            bra button_cancel
+        @delete_time:
+            ; TODO
         ; fall through to button_cancel, which closes the popup
     button_cancel:
         ; close popup
