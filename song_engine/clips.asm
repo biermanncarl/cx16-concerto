@@ -252,6 +252,21 @@ sneak_entry:
     jmp flushEventPointer::sneak_entry
 .endproc
 
+; Expects the clip id in .Y
+; Expects the new event vector in .A/.X
+.proc setClipEventPointer
+    phx ; deliberately inverse order to get correct order on pop
+    pha
+    jsr accessClip
+    ldy #clip_data::event_ptr
+    pla
+    sta (v32b::entrypointer),y
+    iny
+    pla
+    sta (v32b::entrypointer),y
+    rts
+.endproc
+
 ; Expects that access to the clip has already been established.
 ; Returns vector in .A/.X
 getCurrentEventVector = getClipEventVector+3
