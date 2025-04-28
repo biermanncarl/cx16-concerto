@@ -13,8 +13,8 @@
     wd = 80
     hg = 60
     ; where the actual popup appears
-        box_width = 40
-        box_height = 6
+        box_width = 38
+        box_height = 8
         box_x = (80 - box_width) / 2
         box_y = (60 - box_height) / 2
     comps:
@@ -28,15 +28,18 @@
         ; If we have more use-cases for this panel, we may need to convert the caption into a dynamic label
         .byte 16*COLOR_BACKGROUND+1, box_x+2, box_y+2
         .word lb_insert
-        .byte 16*COLOR_BACKGROUND+1, box_x+14, box_y+2
+        .byte 16*COLOR_BACKGROUND+1, box_x+13, box_y+2
         .word lb_message
+        .byte 16*COLOR_BACKGROUND+1, box_x+12, box_y+4
+        .word lb_message_2
         .byte 16*COLOR_BACKGROUND+8, 36, box_y
         .word lb_caution
         .byte 0
     ; data specific to the panel
     lb_insert: STR_FORMAT "insert"
     lb_delete: STR_FORMAT "delete"
-    lb_message: STR_FORMAT "bars at playback marker?"
+    lb_message: STR_FORMAT "bars at playback marker"
+    lb_message_2: STR_FORMAT "on all tracks?"
     lb_caution: STR_FORMAT "caution"
     action_label_address = capts + 3
     mode: ; delete (0) or insert (1)
