@@ -504,7 +504,7 @@
             ply ; Get current clip id
             phy
             jsr clips::getClipEventVector
-            jsr v5b::mergeVectors
+            jsr v5b::concatenateVectors
             bra @continue
 
         ; If we deleted from somewhere in the middle of the vector, the newly joint event vector still has the original starting address.
@@ -555,7 +555,7 @@
                     sty v5b::zp_pointer_2+1
                     ply
                     sty v5b::zp_pointer_2
-                    jsr v5b::mergeVectors
+                    jsr v5b::concatenateVectors
                     bra @load_squash_result
                 @no_squash_1:
                     plx

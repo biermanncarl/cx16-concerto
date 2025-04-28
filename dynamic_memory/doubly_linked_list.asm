@@ -574,7 +574,7 @@ copyElement = detail::copyElement
 ; Expects pointer (B/H) to an element of the first list in .A/.X
 ; Expects pointer (B/H) to the beginning of the second list in zp_pointer_2
 ; The joined list will have the same starting point as the first list.
-.proc mergeLists
+.proc concatenateLists
    ; set up access to first list's last element
    jsr get_last_element
    pha ; remember pointer to that element

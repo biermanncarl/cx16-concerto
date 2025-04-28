@@ -786,7 +786,7 @@ pitch:
             stx v5b::zp_pointer_2+1
             lda temp_vector_y
             ldx temp_vector_y+1
-            jsr v5b::mergeVectors
+            jsr v5b::concatenateVectors
             ; No cleanup of vector A needed as it continues to exist inside temp_vector_y.
             bra @splice_end_done
         @vector_a_was_split:
@@ -795,7 +795,7 @@ pitch:
             stx v5b::zp_pointer_2+1
             lda temp_vector_y
             ldx temp_vector_y+1
-            jsr v5b::mergeVectors
+            jsr v5b::concatenateVectors
             ; Fall through to vector_a_already_used_up
     @vector_a_already_used_up:
         ; Cleanup the part of A that was already merged earlier.
@@ -819,7 +819,7 @@ pitch:
         sty v5b::zp_pointer_2
         ldy temp_vector_y+1
         sty v5b::zp_pointer_2+1
-        jmp v5b::mergeVectors
+        jmp v5b::concatenateVectors
     @no_merge_needed:
         ; Nothing in temp_vector_x, just use temp_vector_y.
         lda temp_vector_y

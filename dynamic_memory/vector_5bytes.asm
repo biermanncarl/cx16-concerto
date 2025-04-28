@@ -807,7 +807,7 @@ loop_counter:
 
 
 ; TODO: for better memory efficiency, check if the two interfacing chunks could be combined into one.
-mergeVectors = dll::mergeLists
+concatenateVectors = dll::concatenateLists
 
 
 ; Defragments a vector, i.e. moves data inside a vector such that no chunk except the last one has empty space in it.
