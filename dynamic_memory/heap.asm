@@ -201,6 +201,7 @@ first_unused_chunk:
    sta local_byte
 
    ; check if index is lower than first_unused_chunk
+   ; The only case where this section is useful is when the heap was full but now isn't anymore. Could be simplified. #optimize-for-size
    lda local_byte_2
    cmp detail::first_unused_chunk+1
    bcc @update_first_unused_chunk ; high byte is smaller -> total number is smaller for sure

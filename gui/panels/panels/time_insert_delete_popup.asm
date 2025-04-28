@@ -111,7 +111,7 @@
             jsr song_engine::song_data::insertTime
             bra button_cancel
         @delete_time:
-            ; TODO
+            jsr song_engine::song_data::deleteTime
         ; fall through to button_cancel, which closes the popup
     button_cancel:
         ; close popup

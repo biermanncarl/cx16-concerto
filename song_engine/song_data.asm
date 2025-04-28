@@ -435,11 +435,12 @@
         sty timing::time_stamp_parameter+1
         jsr event_selection::findEventAtTimeStamp
         bcs @continue ; No event to be deleted, and nothing after the interval --> continue.
-
-        ; Find first event after the delete time interval.
+        ; Save pointer to first event within the delete time interval.
         sta temp_pointer
         stx temp_pointer+1
         sty temp_pointer+2
+
+        ; Find first event after the delete time interval.
         ; Use the current event's chunk as starting point for the next search.
         tya ; converts an .A/.X/.Y event pointer into the B/H pointer to a chunk.
         ldy delete_interval_end
@@ -473,12 +474,13 @@
             bra @delete_common
         @delete_from_middle:
             jsr v5b::splitVectorBeforeEntry
+            ; all good so far.
     @delete_common:
         jsr deleteUntilTime ; could be inlined again (only one place uses it)
         bcc @manage_second_part
         @no_second_part:
             lda first_event_is_inside_interval
-            bne @continue  ; no events remain after the deleted time interval --> nothing to be shifted.
+            beq @continue  ; no events remain after the deleted time interval --> nothing to be shifted.
             ; The entire content got deleted. Need to create new one.
             jsr v5b::new
             sta temp_pointer+2
@@ -494,23 +496,25 @@
         ; Concatenate the two vectors
         plx
         pla
-        sta v5b::zp_pointer_2
-        stx v5b::zp_pointer_2+1
-        lda temp_pointer+2
-        ldx temp_pointer+1
-        jsr v5b::mergeVectors
+        ldy first_event_is_inside_interval
+        bne @update_event_pointer
+        @first_part_still_exists:
+            sta v5b::zp_pointer_2
+            stx v5b::zp_pointer_2+1
+            ; Load pointer to first part, which still remains at its original address.
+            ply ; Get current clip id
+            phy
+            jsr clips::getClipEventVector
+            jsr v5b::mergeVectors
+            bra @continue
 
         ; If we deleted from somewhere in the middle of the vector, the newly joint event vector still has the original starting address.
         ; On the other hand, deleting events directly from the beginning will end up changing the vector's start address.
         ; I choose not to preserve the pointer to the start of the vector, but rather update the clip's pointer if necessary.
         ; In that case, also the "unselected_events_vector" might need updating in case the currently selected clip is affected.
-        lda first_event_is_inside_interval
-        bne @end_update_event_pointer
         @update_event_pointer:
             ply ; Get current clip id
             phy
-            lda temp_pointer+2
-            ldx temp_pointer+1
             jsr clips::setClipEventPointer
             ; We'll update unselected_events_vector at the end of this function.
     @end_update_event_pointer:
@@ -531,6 +535,7 @@
         ; Deletes all events in a vector up until the given timestamp.
         ; Expects the timestamp in time_stamp_parameter
         ; Expects the vector address in .A/.X
+        ; Assumes that at least one event will be deleted.
         ; If new event vector exists, carry will be clear. Otherwise set.
         ; Returns the new vector address in .A/.X
         .proc deleteUntilTime
@@ -562,7 +567,7 @@
                 jsr detail::squashEventVector
                 bcc @load_squash_result
                 @deleted_whole_vector:
-                    sec
+                    ; sec ; carry is already set
                     rts
             @load_squash_result:
                 lda detail::squashEventVector::squash_result

@@ -146,7 +146,6 @@
       lda #1
       bra @time_insert_delete_popup
    @delete_time:
-      ; TODO
       lda #0
    @time_insert_delete_popup:
       jsr panels__time_insert_delete_popup__setup
