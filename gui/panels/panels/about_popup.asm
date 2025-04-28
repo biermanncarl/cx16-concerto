@@ -14,13 +14,13 @@
     hg = 60
     ; where the actual popup appears
         box_width = 40
-        box_height = 40
+        box_height = 39
         box_x = (80 - box_width) / 2
         box_y = (60 - box_height) / 2
     comps:
     .scope comps
         COMPONENT_DEFINITION button, ok, 37, box_y + box_height - 3, 6, A panel_common::lb_ok
-        COMPONENT_DEFINITION text_field, about_text, box_x+2, box_y+3, 36, 33, A vram_assets::about_text
+        COMPONENT_DEFINITION text_field, about_text, box_x+2, box_y+2, 36, 33, A vram_assets::about_text
         COMPONENT_LIST_END
     .endscope
     capts:
