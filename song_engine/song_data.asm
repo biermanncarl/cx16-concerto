@@ -405,7 +405,6 @@
         ; stealing some ZP variables, I hope that's fine with them
         temp_pointer = event_selection::next_event_b
         delete_interval_end = event_selection::next_event_a
-        temp_pointer_2 = event_selection::next_event_a
         first_event_is_inside_interval = event_selection::most_recent_event_source
 
         jsr detail::calculateLengthOfNBars
@@ -579,9 +578,9 @@
         ; Shifts the given and all subsequent events to the left.
         .proc shiftLeft
             @shift_events_loop:
-                sta temp_pointer_2
-                stx temp_pointer_2+1
-                sty temp_pointer_2+2
+                pha
+                phx
+                phy
                 jsr v5b::read_entry
 
                 lda events::event_time_stamp_l
@@ -592,14 +591,17 @@
                 sbc detail::time_delta+1
                 sta events::event_time_stamp_h
 
-                lda temp_pointer_2
-                ldx temp_pointer_2+1
-                ldy temp_pointer_2+2
+                ply
+                plx
+                pla
+                pha
+                phx
+                phy
                 jsr v5b::write_entry
 
-                lda temp_pointer_2
-                ldx temp_pointer_2+1
-                ldy temp_pointer_2+2
+                ply
+                plx
+                pla
                 jsr v5b::get_next_entry
                 bcc @shift_events_loop
             rts
