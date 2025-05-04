@@ -21,7 +21,7 @@
    box_y = file_popups_common::box_y
    comps:
    .scope comps
-      COMPONENT_DEFINITION listbox, file_select, box_x+2, box_y + 2, box_width-4, box_height-7, A 0, 0, 255, 0
+      COMPONENT_DEFINITION listbox, file_select, box_x+2, box_y + 2, box_width-4, box_height-9, A 0, 0, 255, 0
       COMPONENT_DEFINITION text_edit, file_name_edit, box_x+3, box_y + box_height-4, MAX_FILENAME_LENGTH+1, A 0, 0, 0
       COMPONENT_DEFINITION button, ok, 41, box_y + box_height - 3, 6, A lb_save
       COMPONENT_DEFINITION button, cancel, 33, box_y + box_height - 3, 6, A panel_common::lb_cancel
@@ -30,6 +30,8 @@
    capts:
       .byte 16*COLOR_BACKGROUND+1, 40-5, box_y
       .word lb_caption
+      .byte 16*COLOR_BACKGROUND+12, 40-9, box_y + box_height - 6
+      .word file_popups_common::lb_scroll_hint
       .byte 0
    ; data specific to the combobox-popup panel
    lb_save: STR_FORMAT " save"
