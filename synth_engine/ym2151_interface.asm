@@ -71,6 +71,9 @@ invalidate_fm_instruments:
    sta FMmap::instrumentmap, x
    dex
    bpl @loop_fm_voices
+   ; invalidate FM LFO parameters
+   lda #255
+   sta last_fm_lfo_instrument
    rts
 
 
@@ -83,27 +86,7 @@ invalidate_fm_instruments:
    pha
    ldx note_instrument
 
-   ; Global LFO settings
-   lda instruments::Instrument::fm_general::lfo_enable, x
-   beq @lfo_global_end
-      ; LFO frequency
-      ldy instruments::Instrument::fm_general::lfo_frequency, x
-      lda #YM_LFRQ
-      jsr write_ym2151
-      ; LFO modulation strengths
-      ldy instruments::Instrument::fm_general::lfo_vol_mod, x
-      lda #YM_PMD_AMD
-      jsr write_ym2151
-      lda instruments::Instrument::fm_general::lfo_pitch_mod, x
-      ora #%10000000
-      tay
-      lda #YM_PMD_AMD
-      jsr write_ym2151
-      ; waveform
-      ldy instruments::Instrument::fm_general::lfo_waveform, x
-      lda #YM_CT_W
-      jsr write_ym2151
-   @lfo_global_end:
+   ; LFO gets updated independently on note-on
 
    ; General parameters
    ; set RL_FL_CON
@@ -260,6 +243,29 @@ invalidate_fm_instruments:
    ; pop running address
    pla
    rts
+.endproc
+
+
+; Load the LFO parameters onto the YM2151.
+; Expects instrument id in .X
+.proc updateLfo
+   ; LFO frequency
+   ldy instruments::Instrument::fm_general::lfo_frequency, x
+   lda #YM_LFRQ
+   jsr write_ym2151
+   ; LFO modulation strengths
+   ldy instruments::Instrument::fm_general::lfo_vol_mod, x
+   lda #YM_PMD_AMD
+   jsr write_ym2151
+   lda instruments::Instrument::fm_general::lfo_pitch_mod, x
+   ora #%10000000
+   tay
+   lda #YM_PMD_AMD
+   jsr write_ym2151
+   ; waveform
+   ldy instruments::Instrument::fm_general::lfo_waveform, x
+   lda #YM_CT_W
+   jmp write_ym2151
 .endproc
 
 

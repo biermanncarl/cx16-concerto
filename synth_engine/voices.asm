@@ -114,6 +114,8 @@
    nfv:  .byte 0
 .endscope
 
+last_fm_lfo_instrument: .byte 255 ; which instrument's LFO parameters were uploaded most recently
+
 ; advance free-oscillators-list pointer
 .macro ADVANCE_FOL_POINTER adv_fol_ptr
    lda adv_fol_ptr
@@ -220,10 +222,17 @@ play_note:
    sta Voice::pitch, x
    lda note_instrument
    sta Voice::instrument, x
-
-   ; activate note (should be the last thing done!)
+   ; activate note
    lda #1
    sta Voice::active,x
+   ; re-upload global FM LFO parameters if needed
+   ldx note_instrument
+   lda instruments::Instrument::fm_general::lfo_enable, x
+   beq @skip_play ; FM LFO disabled
+   cpx last_fm_lfo_instrument
+   beq @skip_play ; same instrument
+   stx last_fm_lfo_instrument
+   jsr updateLfo
 @skip_play:
    plp
    rts
