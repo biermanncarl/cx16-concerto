@@ -17,8 +17,8 @@
       COMPONENT_DEFINITION arrowed_edit, instrument_select, 45, 1, 0, N_INSTRUMENTS-1, 0
       COMPONENT_DEFINITION button, load_preset, 66, 0, 13, A load_preset_lb
       COMPONENT_DEFINITION button, save_preset, 52, 0, 13, A save_preset_lb
-      COMPONENT_DEFINITION button, copy_preset, 37, 2, 6, A copy_preset_lb
-      COMPONENT_DEFINITION button, paste_preset, 44, 2, 7, A paste_preset_lb
+      COMPONENT_DEFINITION button, copy_preset, 37, 2, 6, A panel_common::lb_copy
+      COMPONENT_DEFINITION button, paste_preset, 44, 2, 7, A panel_common::lb_paste
       COMPONENT_LIST_END
    .endscope
    capts:
@@ -28,8 +28,6 @@
    ; data specific to the synth-navigation panel
    load_preset_lb: STR_FORMAT " load preset"
    save_preset_lb: STR_FORMAT " save preset"
-   copy_preset_lb: STR_FORMAT " copy"
-   paste_preset_lb: STR_FORMAT " paste"
 
    ; No special action required (yet)
    draw = panel_common::dummy_subroutine

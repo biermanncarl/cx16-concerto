@@ -38,6 +38,9 @@
       COMPONENT_DEFINITION button, about, 23, 0, 7, A about_lb
       COMPONENT_DEFINITION button, insert_time, 38, 2, 11, A insert_time_lb
       COMPONENT_DEFINITION button, delete_time, 50, 2, 11, A delete_time_lb
+      COMPONENT_DEFINITION button, copy_events, 23, 2, 4, A panel_common::lb_copy+1 ; skip the leading space in the label string
+      COMPONENT_DEFINITION button, cut_events, 28, 2, 3, A panel_common::lb_cut
+      COMPONENT_DEFINITION button, paste_events, 32, 2, 5, A panel_common::lb_paste+1
       COMPONENT_DEFINITION text_field, clip_help, help_box_x+2, help_box_y+2, help_box_width-4, help_box_height-4, A vram_assets::help_text_note_edit
       COMPONENT_LIST_END
    .endscope
@@ -108,6 +111,9 @@
       .word @about
       .word @insert_time
       .word @delete_time
+      .word components::dnd::dragables::notes::clipboardCopy
+      .word components::dnd::dragables::notes::clipboardCut
+      .word components::dnd::dragables::notes::clipboardPaste
    @zoom_level:
       lda comps, y
       sta components::dnd::dragables::notes::temporal_zoom

@@ -29,6 +29,9 @@
    channel_lb: .byte 12, 47, 18, 0 ; L/R
    lb_mono: STR_FORMAT "monophonic"
    lb_drum: STR_FORMAT "drum pad"
+   lb_copy: STR_FORMAT " copy"
+   lb_cut: STR_FORMAT "cut"
+   lb_paste: STR_FORMAT " paste"
 
    modsources_none_option_lb:
       .byte 32, 45, 45, 0
