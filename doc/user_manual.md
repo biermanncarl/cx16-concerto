@@ -20,7 +20,7 @@ Concerto Multitrack is a program for making music on the Commander X16. It aims 
 
 Samples are not supported, unfortunately. But don’t worry: Concerto is capable of producing a large variety of sounds, including drums. The presets that come with the software should be enough to get you started.
 
-# Contents {#contents}
+# Contents
 
 0. [**Contents**](#contents)
 1. [**Hardware Requirements**](#hardware-requirements)
@@ -53,11 +53,11 @@ Samples are not supported, unfortunately. But don’t worry: Concerto is capable
     * [FM Operators](#fm-operators)
     * [FM LFO](#fm-lfo)
 8. [**Keyboard Shortcuts**](#keyboard-shortcuts)
-9. [**Where is the undo feature?**](#where-is-the-undo-feature?)
-10. [**How To …?**](#how-to-…?)
-11. [**Known Limitations/Problems**](#known-limitations/problems)
+9. [**Where is the undo feature?**](#where-is-the-undo-feature)
+10. [**How To…?**](#how-to)
+11. [**Known Limitations/Problems**](#known-limitationsproblems)
 
-# Hardware Requirements {#hardware-requirements}
+# Hardware Requirements
 
 Concerto Multitrack runs on the unexpanded Commander X16:
 
@@ -67,9 +67,9 @@ Concerto Multitrack runs on the unexpanded Commander X16:
 * Three-button mouse  
 * 80x60 characters capable screen
 
-# Starting Concerto Multitrack {#starting-concerto-multitrack}
+# Starting Concerto Multitrack
 
-## From BASIC {#from-basic}
+## From BASIC
 
 Navigate to the directory on the SD card that contains CONCERTO.PRG. For example:  
 > `@CD: AUDIO/CONCERTO`  
@@ -81,14 +81,14 @@ Then load and run as usual:
 Concerto expects the current working directory to be set correctly. Loading the program from a different location will not work:  
 > `LOAD “AUDIO/CONCERTO/CONCERTO.PRG” : REM THIS WILL NOT WORK!`
 
-## With the Emulator {#with-the-emulator}
+## With the Emulator
 
 Recommended settings for the emulator are  
 > `x16emu -fsroot <*path/to/concerto*> -prg CONCERTO.PRG -run -scale 2 -abufs 8 -capture -nokeyboardcapture`
 
 Capturing the mouse makes it behave more predictably.
 
-# Overview {#overview}
+# Overview
 
 Concerto Multitrack’s user interface is separated into two pages: the Track page and the Synth page. Which page is currently shown can be selected with the mouse at the bottom left of the screen, or by pressing TAB.
 
@@ -100,7 +100,7 @@ The musical keyboard helps you to easily pre-listen the currently selected instr
 
 Most of the GUI controls should be very intuitive: buttons, tabs, checkboxes, drop down menus. One potentially unintuitive control is the “drag edit”. Whenever there is a light blue number inside a black box, and there are no arrows to click on, then that’s a drag edit. You modify its value by clicking on it and dragging the mouse pointer up or down. Some drag edits contain a “decimal point”. By either holding the left or right mouse button, you can view and edit either the coarse or fine portion, respectively.
 
-# The Musical Keyboard {#the-musical-keyboard}
+# The Musical Keyboard
 
 Concerto turns a part of the keyboard into a musical one. The currently selected synth sound can be played manually to preview sounds, to improvise solo or alongside your composition. During sound design, it is an essential tool to get fast feedback, and it can even be used to quickly navigate the drum slots.
 
@@ -119,11 +119,11 @@ Tip \#1: In order to align the leftmost key A with the first drum slot, set the 
 
 Tip \#2: The base note and velocity edits are so close to the bottom that there is little room for reducing the value by dragging the mouse down. You can drag upwards to the max value and continue upwards for some distance. Drag the mouse down again while still holding the mouse button down, and you will have the full range of values available.
 
-# The Sound Engine {#the-sound-engine}
+# The Sound Engine
 
 This chapter outlines the capabilities of Concerto Multitrack, and thus lets you understand what you can and cannot do with it, at a high level.
 
-## Feature Overview {#feature-overview}
+## Feature Overview
 
 Concerto exposes two out of the three built-in sound generators of the Commander X16 via its built-in synthesizer engine: the PSG oscillators and FM. PCM (sample playback) is currently not supported.
 
@@ -134,11 +134,11 @@ There can be up to 16 tracks in a song. Each track can be polyphonic or monophon
 The synthesizer engine has 16 voice polyphony, which is shared across all tracks and all instruments. Concerto takes care to automatically assign resources as needed.  
 One consequence of there being only 16 voices is that, although there are 24 independent sound generators in total (8 FM \+ 16 PSG), only a maximum of 16 notes can play at any one time. To make use of all available sound generators, you need to use instruments which layer several oscillators (a capability of Concerto which I hope you quickly grow accustomed to).
 
-## Indicator Lights {#indicator-lights}
+## Indicator Lights
 
 The columns of green “lights” to the left of the screen show how many of each resource are currently being used. The leftmost column shows the number of active synth voices, the middle column the number of PSG oscillators and the right column the number of FM voices. Below these, there are the Steal and Drop note indicators, which are explained in the next section.
 
-## Voice Stealing and Dropping {#voice-stealing-and-dropping}
+## Voice Stealing and Dropping
 
 It can happen that one of these three resources gets depleted. Whenever a note cannot allocate all needed resources directly, it attempts to steal them from other notes which are currently in the release phase, i.e. notes that have almost ended anyway. If this succeeds, the Steal indicator lights up for a brief moment. Typically, note stealing isn’t too noticeable and is therefore nothing to worry about. Especially when using instruments with long release tails, note stealing will occur quite often.
 
@@ -151,34 +151,34 @@ Use the indicator lights to find out which resource is getting depleted. Strateg
 
 A rather technical note: Resource stealing prioritizes notes being played with the same instrument. E.g. suppose there are two notes currently in the release phase, one with instrument A and the other with instrument B. When a track attempts to play a note with instrument A but doesn’t find the resources, it will always steal them from the instrument A note. If there is no such note, then in the worst case, the stealing algo will kill all notes that are currently in the release phase and still not get everything it needs. This can happen e.g. if the new note needs an FM voice, but all notes currently in the release phase use only PSG oscillators.
 
-# Track Page {#track-page}
+# Track Page
 
 As the name implies, the Track page is mostly about tracks. Moreover, song settings and playback controls are located here.
 
-## Loading and Saving Songs {#loading-and-saving-songs}
+## Loading and Saving Songs
 
 The correspondingly named buttons at the top of the track page open the load and save song dialogue, respectively. It shows all the song files located in the current folder, and it allows you to navigate to different folders by opening or “saving” them. Opening “..” lets you move upwards in the folder structure.  
 The dialogue asks for confirmation before you overwrite an existing file.  
 Scrolling the list of files is done by holding the right mouse button and dragging up or down.  
 Open/Save can also be performed by pressing ENTER. ESCAPE cancels the dialogue.
 
-## Playback Controls {#playback-controls}
+## Playback Controls
 
 The two buttons with the triangle and the square symbols start and stop playback of the song, respectively. Pressing SPACE also toggles playback on and off.  
 Playback always starts at the position of the playback-start-marker, which is shown as a yellow triangle inside the black horizontal bar below the Start/Stop buttons. If the marker is outside the currently shown time window, it isn’t shown as a yellow triangle: when to the left, it is shown as a gray triangle; when to the right, it is simply not shown at all.  
 The playback-start-marker is also used for a small number of other things, e.g. copy/paste, but these will be discussed further below.
 
-## What is a Track? {#what-is-a-track?}
+## What is a Track?
 
 A track is a central building block of your music.  
 Each track can be filled with notes (e.g. melodies, chords, drum patterns) for one instrument. Only drum tracks allow you to play several instruments within a single track. The tracks are like a sheet of music, or a score, which tells each instrument what to play. You can have up to 16 tracks in a song.
 
-## Managing tracks {#managing-tracks}
+## Managing tracks
 
 In the top right corner, you will find a list of all tracks in the currently loaded song. Typically, at startup, there is only one track called “UNNAMED”. You can select the track you want to edit by clicking on its name. You can change its name by clicking on the “TRACK NAME” button below the list. You can also add new tracks, remove tracks and move the currently selected track up or down in the list by clicking on the buttons next to the list.  
 You can scroll through the list by dragging the right mouse button up or down.
 
-## Note editing {#note-editing}
+## Note editing
 
 The center of the Track page is filled with the note editing area. Here you edit and inspect the music to be played.  
 The grid shows note pitch in the vertical axis and time in the horizontal axis. The music will be played from left to right. All notes within a track lie on the same big timeline, which extends along the entire song.
@@ -234,12 +234,12 @@ All the above features move notes around within one track at a time. But what if
 Set the playback start marker to the beginning of the section you want to delete, or where you want to insert a gap. Then click on the accordingly named button near the top of the UI, select the number of bars and click ok.  
 It is strongly recommended to make a unique backup before this operation because there is no undo feature\! If you delete something, it is gone, unless you have saved it yourself beforehand. Also be reminded that insert/delete time *acts on all tracks at once*.
 
-## Track Settings {#track-settings}
+## Track Settings
 
 On the right side of the note editing area, there are a number of settings for the currently selected track. The instrument selector is the most important one of these. It selects one of the 32 instruments to play all the notes inside the track. Alternatively, you can enable “*drum track*”. This makes each note play one of the instruments 16 to 31\. A note with pitch 0 plays instrument 16, pitch 1 plays instrument 17 and so on, until pitch 15/instrument 31\. Then all the instruments are repeated, but one semitone higher. Little markers to the left of the note editing area indicate the jumps from instrument 31 back to 16\. Drum tracks ignore the instrument selector.  
 The final setting is the “monophonic” switch. It causes each note to replace all formerly played ones instead of being layered on top of them. This is useful for portamento, i.e. smoothly sliding from one note to the next. For further details, see the explanation of “Global Settings” in the Synth part.
 
-## Song Tempo {#song-tempo}
+## Song Tempo
 
 The accordingly named button at the top opens a dialogue window which lets you adjust the duration of the two eighth notes within a beat and thereby control the song tempo. Length is expressed in terms of ticks. The third drag edit controls the signature.
 
@@ -259,7 +259,7 @@ It is strongly recommended to make a backup before changing the song tempo. This
 First, changing the song tempo is generally a lossy operation. Whereas notes that lie exactly on any of the grid lines (up to thirty-secondth notes precision) are always moved without loss in precision, notes with off-grid timings (sub-thirty-secondth) could be moved to a slightly unexpected location.  
 And second, you could accidentally exceed the maximum song length of 8:30 minutes. For example, if you have a song that is 5 minutes long, and you set it to half the original tempo, it would be 10 minutes long. After the tempo change, the song data would be corrupted.
 
-# Synth Page {#synth-page}
+# Synth Page
 
 The synth page is all about the instruments. Here you can load, save and tweak the sounds you want to use in your music.
 
@@ -269,13 +269,13 @@ At the top of the page, the currently selected instrument slot is shown. You can
 * a different instrument is configured for the current track, or  
 * the musical keyboard is played as a drum kit (“drum track” active).
 
-## Loading and Saving Instruments {#loading-and-saving-instruments}
+## Loading and Saving Instruments
 
 This works very similar to how loading and saving songs works, except that you use the buttons “load preset”/”save preset” on the synth page to open the dialogues. For more details, please refer to the section “Loading and Saving Songs”.
 
 Below the instrument slot number, there are the Copy and Paste buttons. Pressing Copy selects the current slot for copying. Pressing paste copies the content of the previously selected (copied) slot into the current one. This is useful when you want to move an instrument to a different slot, or if you want to create a variation of an existing instrument.
 
-## Synthesizer Overview {#synthesizer-overview}
+## Synthesizer Overview
 
 Up to four PSG oscillators and one FM voice can be combined in a single instrument. In addition to the hardware envelopes and the single LFO present on the FM chip, there are up to three software envelopes and one software LFO available for each instrument. These can be used to control the PSG oscillators and the pitch of the FM voice.
 
@@ -287,7 +287,7 @@ The FM voice is a very versatile sound generator. It consists of four so-called 
 
 The PSG oscillators are comparatively simple on their own. However, with the support of modulation and layering, they become powerful tools for a wide range of applications. One of Concerto’s main design goals is to unlock this potential.
 
-## Global Settings {#global-settings}
+## Global Settings
 
 The global settings are situated near the top left of the Synth Page.  
 The first three options are related to *monophonic* tracks:
@@ -298,7 +298,7 @@ The first three options are related to *monophonic* tracks:
 
 And last, there is the vibrato amount. It affects all oscillators with active “Track”. The software LFO must be activated for vibrato to work. Its waveform and frequency affect vibrato.
 
-## Software Envelopes {#software-envelopes}
+## Software Envelopes
 
 Envelopes are devices (for the lack of a better word) which generate a control signal that varies over time, starting with note-on. Concerto implements the well-known ADSR schema: Attack–Decay–Sustain–Release, the four phases of the curve. In contrast to how most synthesizers work, the attack, decay and release parameters mean *time* instead of *rate*. While for most synthesizers, lower means faster, in Concerto higher means faster.
 
@@ -315,7 +315,7 @@ The number of active envelopes can be adjusted with the “n. active” dial. Se
 
 Envelope 1 is always active and determines the note’s length. As soon as its release phase ends, all oscillators are muted and made available for other voices. This can sometimes lead to unexpected results, e.g. when the FM voice has a long release phase, it can be cut short because of this, sometimes even resulting in audible clicks. To mitigate this problem, decrease release rate and/or increase sustain level of envelope 1\.
 
-## Software LFO {#software-lfo}
+## Software LFO
 
 LFO stands for low frequency oscillator. Like the envelope, it generates a control signal that varies over time. In contrast to envelopes, it is periodic. The waveform determines the shape of the oscillation:
 
@@ -331,7 +331,7 @@ If the Retrig(ger) switch is enabled, the LFO will always start at the same poin
 
 For Sample and Hold, retriggering means that each note starts with the same sequence of semi-random values. Which one it is can be influenced by the phase dial.
 
-## PSG Oscillators {#psg-oscillators}
+## PSG Oscillators
 
 The number of active PSG oscillators can be selected with the “n. active” dial. For a pure FM sound, set it to zero; otherwise to the number of oscillators you wish to use. Oscillators 1 to N are active. Each oscillator has its own independent set of parameters, including the small modulation matrix.
 
@@ -347,7 +347,7 @@ At the bottom right there is a small modulation matrix. There is one slot to mod
 
 Volume modulation has a small feature (or quirk – depending on how you view it): The oscillator volume can never exceed the maximal volume of the Amp Envelope. This is the volume an oscillator reaches directly after the attack phase. Positive volume modulation will be truncated accordingly. One way this can be used is to keep oscillators at their maximal volume for longer (e.g. to create “compressed” drum sounds).
 
-## About FM Synthesis {#about-fm-synthesis}
+## About FM Synthesis
 
 The FM chip is a small but powerful synthesizer on its own. A general introduction to FM synthesis is outside the scope of this document, but you may refer to the following videos, which do an excellent job at it:
 
@@ -357,7 +357,7 @@ The FM chip is a small but powerful synthesizer on its own. A general introducti
 
 Although there are slight differences between FM synthesizers, the core concepts from these videos can be directly applied to the sound chip in the Commander X16.
 
-## FM General {#fm-general}
+## FM General
 
 Operators can be switched on and off at the top of the FM General section. If one or more operators are active, an FM voice is being used for the instrument.
 
@@ -376,7 +376,7 @@ The small “modulation matrix” to the bottom right of the FM General section 
 
 Please note that even though the FM LFO may be deactivated for the current instrument, another instrument might use it. It is therefore advisable to turn down LFO sensitivity to prevent unwanted interference, if it isn’t used. For more details on the FM LFO, please refer to its dedicated section below.
 
-## FM Operators {#fm-operators}
+## FM Operators
 
 Each operator is basically a fancy sine-wave oscillator, with its own dedicated amplitude envelope and frequency settings. What makes FM operators special is their capability of being modulated by other operators, which distorts their sine wave into other, harmonically more complex waveforms.  
 Which of the four operators are outputs (carriers) and which ones modulate other operators is decided by the algorithm/connection scheme.
@@ -401,7 +401,7 @@ The two decay stages allow us to distinguish between the “bulk” and the “t
 
 The key scaling dial at the very bottom can make the amplitude envelope behave differently at different pitches. If set to a non-zero value, the envelope will become faster for high notes, and slower for low notes. The higher the number, the more pronounced this effect becomes.
 
-## FM LFO {#fm-lfo}
+## FM LFO
 
 ### Overview
 
@@ -431,7 +431,7 @@ There are several strategies to deal with this:
 * Use instruments with identical FM LFO settings for seamless operation. (Sensitivity can still be different, but everything inside the FM LFO box should be identical.)  
 * Simply accept the fact that FM LFO settings can be changed by another instrument in the middle of a note. This can even be used creatively.
 
-# Keyboard Shortcuts {#keyboard-shortcuts}
+# Keyboard Shortcuts
 
 | TAB | Switch between tracks and synth pages |
 | :---- | :---- |
@@ -448,7 +448,7 @@ There are several strategies to deal with this:
 | DELETE | Delete characters right of cursor |
 | LEFT/RIGHT | Move cursor (can use mouse, too\!) |
 
-# Where is the undo feature? {#where-is-the-undo-feature?}
+# Where is the undo feature?
 
 There is none, unfortunately. It is therefore advised that you save your work regularly. Especially before potentially destructive operations, it is strongly recommended to make a backup. These include
 
@@ -460,7 +460,7 @@ There is none, unfortunately. It is therefore advised that you save your work re
 Moreover, it is beneficial to save multiple versions of your project. If you made a mistake and realize it only much later, you could still go back. Another case where this is beneficial is when the song data had become corrupted before you saved (unfortunately, this is a possibility, albeit rare, e.g. when exceeding the maximum song length).  
 You can export and import instruments across song files. There is not yet a way to exchange note data between files. Therefore, in order to fix a broken project state, open the file which has the most intact note data and then import all the instruments you need to update in it.
 
-# How To …? {#how-to-…?}
+# How To…?
 
 * **Find a certain point on the timeline:** Since Concerto Multitrack currently doesn’t provide any overview over the arrangement, navigation can be a challenge. It is best to select a track which has an easily recognizable note pattern at the section you are looking for. Once you have found the section, simply switch to the track you want to work on.  
 * **Use instruments from another song file:** Save the instrument to SD card, then load it in the desired slot in the target song file. Be careful to not overwrite another instrument that you still need.  
@@ -479,7 +479,7 @@ You can export and import instruments across song files. There is not yet a way 
   * Because of this, moving notes by non-integer amounts of quarters often makes some notes (and note-offs\!) fall slightly off-grid. This can be frustrating especially when this accidentally creates overlapping notes, which are then automatically merged.  
 * **Adjust instrument volume:** All active sound generators need to be adjusted individually: all PSG oscillators and all output operators (not the modulators). Alternatively, you can adjust the velocity of the notes. Unfortunately, there is no global volume knob for the entire instrument. This is for performance reasons: each volume knob adds a little to CPU and memory usage.
 
-# Known Limitations/Problems {#known-limitations/problems}
+# Known Limitations/Problems
 
 If you take Concerto Multitrack through its paces, here are some problems / limitations you might run into.
 
