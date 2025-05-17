@@ -1984,7 +1984,7 @@ update_track_player:
 
 
 .proc clipboardPaste
-   inc gui_variables::request_components_redraw
+   inc gui_variables::request_components_refresh_and_redraw
 
    jsr song_engine::event_selection::unselectAllEvents
    jsr detail::aligningClipboardDuplicate
