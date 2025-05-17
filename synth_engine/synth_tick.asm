@@ -574,7 +574,7 @@ end_env: ; jump here when done with all envelopes
    adc #N_VOICES
    tax
    tya
-   clc   ; unnecessary
+   ; clc   ; previous ADC clears it already
    adc #N_INSTRUMENTS
    tay
    inc modsource_index

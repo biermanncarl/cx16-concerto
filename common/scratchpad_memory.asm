@@ -1,4 +1,4 @@
-; Copyright 2024 Carl Georg Biermann
+; Copyright 2024-2025 Carl Georg Biermann
 
 ; In this file, some globally available contiguous scratchpad memory is provided.
 ; To use it, the application must conform to these rules:
@@ -20,7 +20,12 @@
 .include "utility_macros.asm"
 
 ; region also known as "golden RAM" from $0400 to $07FF
-.define SCRATCHPAD_START $0400
+; Other buffers
+goldenram_snh_lut = $0400 ; first 256 bytes are for Sample-and-Hold lookup table
+goldenram_pre_parsing_buffer = $0500 ; next 256 bytes are for processing note data
+
+; The actual scratchpad
+.define SCRATCHPAD_START $0600
 ; we don't use the entire region (yet), maybe we'll need some space for other things, too
 .define SCRATCHPAD_SIZE $0180
 
