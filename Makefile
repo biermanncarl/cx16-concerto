@@ -29,7 +29,6 @@ examples: example_01 example_02 example_03 example_04 example_05 example_06 exam
 copy_presets:
 	cp -r presets/* build/
 	mkdir -p build/INSTRUMENTS-USER
-	mkdir -p build/SONGS-DEMOS
 	mkdir -p build/SONGS-USER
 
 example_01: build_folder unspecified_dependencies
