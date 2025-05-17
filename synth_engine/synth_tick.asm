@@ -306,6 +306,18 @@ end_env: ; jump here when done with all envelopes
    bne :+
    jmp @end_lfos
 :  
+   ; advance phase
+   lda voices::Voice::lfo::phaseL, x
+   clc
+   adc instruments::Instrument::lfo::rateL, y
+   sta voices::Voice::lfo::phaseL, x
+   lda voices::Voice::lfo::phaseH, x
+   adc instruments::Instrument::lfo::rateH, y
+   sta voices::Voice::lfo::phaseH, x
+   bcc :+
+   inc voices::Voice::lfo::phaseS, x ; advance sample index for Sample and Hold
+:
+
    ; select waveform / algorithm
    phx
    lda instruments::Instrument::lfo::wave, y
@@ -325,14 +337,7 @@ end_env: ; jump here when done with all envelopes
    ; modulation falling, if most significant phase bit is 1
 @alg_triangle:
    plx
-   ; advance phase
-   lda voices::Voice::lfo::phaseL, x
-   clc
-   adc instruments::Instrument::lfo::rateL, y
-   sta voices::Voice::lfo::phaseL, x
    lda voices::Voice::lfo::phaseH, x
-   adc instruments::Instrument::lfo::rateH, y
-   sta voices::Voice::lfo::phaseH, x
    ; check high bit
    bmi @tri_falling
 @tri_rising:
@@ -399,14 +404,7 @@ end_env: ; jump here when done with all envelopes
    ; modulation is minimal, if most significant phase bit is 1
 @alg_square:
    plx
-   ; advance phase
-   lda voices::Voice::lfo::phaseL, x
-   clc
-   adc instruments::Instrument::lfo::rateL, y
-   sta voices::Voice::lfo::phaseL, x
    lda voices::Voice::lfo::phaseH, x
-   adc instruments::Instrument::lfo::rateH, y
-   sta voices::Voice::lfo::phaseH, x
    ; check high bit
    bmi @squ_high
 @squ_low:
@@ -433,14 +431,7 @@ end_env: ; jump here when done with all envelopes
    ; signal needs to be rightshifted, since otherwise we would get too much amplitude
 @ramp_up:
    plx
-   ; advance phase
-   lda voices::Voice::lfo::phaseL, x
-   clc
-   adc instruments::Instrument::lfo::rateL, y
-   sta voices::Voice::lfo::phaseL, x
    lda voices::Voice::lfo::phaseH, x
-   adc instruments::Instrument::lfo::rateH, y
-   sta voices::Voice::lfo::phaseH, x
    ; check high bit
    bmi @ramp_up_negative
 @ramp_up_positive:
@@ -477,14 +468,7 @@ end_env: ; jump here when done with all envelopes
    ; ramp down ... we basically need to invert the sign
 @ramp_down:
    plx
-   ; advance phase
-   lda voices::Voice::lfo::phaseL, x
-   clc
-   adc instruments::Instrument::lfo::rateL, y
-   sta voices::Voice::lfo::phaseL, x
    lda voices::Voice::lfo::phaseH, x
-   adc instruments::Instrument::lfo::rateH, y
-   sta voices::Voice::lfo::phaseH, x
    ; check high bit
    bmi @ramp_dn_negative
 @ramp_dn_positive:
@@ -519,48 +503,18 @@ end_env: ; jump here when done with all envelopes
 
 
    ; Sample and Hold
-   ; phaseL is a counter, which upon hitting 0 initiates the generation of a new random value
-   ; phaseH is the seed as well as the random value itself (LFSR algorithm)
-   ; (?? -- this is not how LFSR is supposed to work!)
+   ; look up a "random" sample
 @alg_snh:
    plx
+   ; compute index ... the "sample index" isn't actually the index, but we shift the upper bit out and the high bit of phaseH in at the bottom.
+   ; This effectively doubles the sampling speed, allowing for a new sample every tick.
    phy
-   ; countdown
-   lda voices::Voice::lfo::phaseL, x
-   bne @snh_constant
-@snh_random:
-   ; reset counter
-   lda instruments::Instrument::lfo::rateL, y
-   dec
-   sta voices::Voice::lfo::phaseL, x
-   ; very rudimentary RNG: 8 bit LFSR
    lda voices::Voice::lfo::phaseH, x
-   ldy #1
-   lsr ; check bit 0
-   bcc :+
-   iny
-:  lsr
-   lsr ; check bit 2
-   bcc :+
-   iny
-:  lsr ; check bit 3
-   bcc :+
-   iny
-:  lsr ; check bit 4
-   bcc :+
-   iny
-:  tya
-   ror   ; put least significant bit (i.e. parity) into carry flag
-   lda voices::Voice::lfo::phaseH, x
-   ror
-   sta voices::Voice::lfo::phaseH, x
-   jmp @snh_write
-   ; if just held constant
-@snh_constant:
-   dec
-   sta voices::Voice::lfo::phaseL, x
-   lda voices::Voice::lfo::phaseH, x
-@snh_write:
+   asl
+   lda voices::Voice::lfo::phaseS, x
+   rol
+   tay
+   lda goldenram_snh_lut, y
    ldy modsource_index
    sta voi_modsourcesH, y
    lda #0

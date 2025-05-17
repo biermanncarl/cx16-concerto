@@ -48,6 +48,7 @@
    .scope lfo
       phaseL:  LFO_VOICE_BYTE_FIELD
       phaseH:  LFO_VOICE_BYTE_FIELD
+      phaseS:  LFO_VOICE_BYTE_FIELD ; sample index, only used for Sample and Hold
    .endscope
 
    ; PSG voices (synth oscillator to PSG oscillator mapping) and FM voices (synth voice to YM2151 voice mapping)
@@ -336,12 +337,21 @@ retrigger_note:
    beq @skip_lfos   ; for now we skip only if there are NO LFOs active. should be fine tho, because initializing unused stuff doesn't hurt
 @loop_lfos:
    ; figure out if lfo is retriggered. If yes, reset phase
-   ; TODO: if it's an SnH LFO, get a random initial phase from entropy_get (KERNAL routine) if not retriggered
    lda instruments::Instrument::lfo::retrig, y
    beq @advance_lfo
    ; set lfo phase
-   lda instruments::Instrument::lfo::offs, y
-   sta Voice::lfo::phaseH, x
+   lda instruments::Instrument::lfo::wave, y
+   cmp #4 ; SnH?
+   bne @periodic_lfo
+   @snh:
+      lda instruments::Instrument::lfo::offs, y
+      sta Voice::lfo::phaseS, x
+      stz Voice::lfo::phaseH, x
+      bra @endif
+   @periodic_lfo:
+      lda instruments::Instrument::lfo::offs, y
+      sta Voice::lfo::phaseH, x
+@endif:
    stz Voice::lfo::phaseL, x
 
 @advance_lfo:  ; advance x and y offset
