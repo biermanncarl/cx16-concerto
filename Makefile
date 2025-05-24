@@ -2,7 +2,7 @@ all: CONCERTO.PRG
 
 .PHONY: run
 run:
-	cd build ; x16emu -prg CONCERTO.PRG -run -scale 2 -debug -abufs 8 -capture -nokeyboardcapture
+	cd build ; x16emu -prg CONCERTO.PRG -scale 2 -debug -abufs 8 -capture -nokeyboardcapture -run
 
 .PHONY: test
 test:
@@ -16,7 +16,7 @@ build_folder:
 .PHONY: unspecified_dependencies
 unspecified_dependencies:
 
-CONCERTO.PRG: CONCMAIN.BIN copy_presets unspecified_dependencies
+CONCERTO.PRG: CONCMAIN.BIN copy_presets copy_docs unspecified_dependencies
 	cl65 -t cx16 -o build/CONCERTO.PRG -C cx16-asm-concerto.cfg -u __EXEHDR__ -Ln build/CONCERTO.sym -g "main/concerto_launcher.asm"
 
 CONCMAIN.BIN: build_folder unspecified_dependencies
@@ -30,6 +30,12 @@ copy_presets:
 	cp -r presets/* build/
 	mkdir -p build/INSTRUMENTS-USER
 	mkdir -p build/SONGS-USER
+
+.PHONY: copy_docs
+copy_docs:
+	cp README.MD build/
+	mkdir -p build/DOCUMENTATION
+	cp doc/* build/DOCUMENTATION/
 
 example_01: build_folder unspecified_dependencies
 	cl65 -t cx16 -o build/EXAMPLE01.PRG -C cx16-asm.cfg -u __EXEHDR__ "examples/example_01_hello_world_concerto.asm"

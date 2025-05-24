@@ -1,6 +1,6 @@
 # Welcome to Concerto Multitrack
 
-| ![Track page](track_page.png) | ![Synth page](synth_page.png) |
+| ![Track page](TRACK-PAGE.PNG) | ![Synth page](SYNTH-PAGE.PNG) |
 | ---- | ---- |
 
 Concerto Multitrack is a program for making music on the Commander X16. It aims to unlock the full potential of 16 PSG oscillators plus 8 FM voices. Some of its features are
@@ -80,6 +80,8 @@ Then load and run as usual:
 
 Concerto expects the current working directory to be set correctly. Loading the program from a different location will not work:  
 > `LOAD “AUDIO/CONCERTO/CONCERTO.PRG” : REM THIS WILL NOT WORK!`
+
+Tip: You can view this documentation directly on the Commander X16 with the built-in text editor. Using the ISO THIN charset is recommended.
 
 ## With the Emulator
 

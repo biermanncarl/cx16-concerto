@@ -1,6 +1,6 @@
 # Welcome to Concerto Multitrack
 
-The user manual of the software is [here](doc/user_manual.md).
+The user manual of the software is [here](doc/USER-MANUAL.MD).
 
 ## Dependencies
 
@@ -13,3 +13,9 @@ On Ubuntu, simply type `make` when inside the repo.
 For unit testing:
 * Commander X16 Emulator R48
 * xdotool version 3.20160805.1
+
+## Contact
+
+carlgeorg at gmx dot net
+
+Copyright 2020-2025 Carl Georg Biermann
