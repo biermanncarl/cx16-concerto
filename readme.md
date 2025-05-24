@@ -7,6 +7,7 @@ The user manual of the software is [here](doc/user_manual.md).
 For building Concerto:
 * CC65 V2.19
 * Make
+
 On Ubuntu, simply type `make` when inside the repo.
 
 For unit testing:
