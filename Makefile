@@ -4,6 +4,10 @@ all: CONCERTO.PRG COS2ZSM.PRG
 run:
 	cd build ; x16emu -prg CONCERTO.PRG -scale 2 -debug -abufs 8 -capture -nokeyboardcapture -run
 
+.PHONY: convert
+convert:
+	cd build ; x16emu -prg COS2ZSM.PRG -scale 2 -debug -abufs 8 -capture -nokeyboardcapture -run
+
 .PHONY: test
 test:
 	testing/run_tests.sh

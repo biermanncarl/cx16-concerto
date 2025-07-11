@@ -6,7 +6,7 @@
 
 ; GUI definitions
 ; colors
-.ifdef ::concerto_full_daw
+.if .defined(::concerto_full_daw) .or .defined(::concerto_cos2zsm_converter)
    .define COLOR_BACKGROUND 11
    .define COLOR_FRAME 15
    .define COLOR_ARROWED_EDIT_BG 0

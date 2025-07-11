@@ -11,6 +11,8 @@
 
    .ifdef ::concerto_full_daw
       .include "configs/full_daw_gui.asm"
+   .elseif ::concerto_cos2zsm_converter
+      .include "configs/cos2zsm_gui.asm"
    .else
       .include "configs/only_synth_gui.asm"
    .endif

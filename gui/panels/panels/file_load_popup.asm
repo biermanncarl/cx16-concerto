@@ -95,18 +95,22 @@
       lda file_browsing::current_file_type
       bne @load_song
       @load_instrument:
-         lda gui_variables::current_synth_instrument
-         jsr concerto_synth::instruments::loadInstrument
+         .ifdef ::concerto_full_daw
+            lda gui_variables::current_synth_instrument
+            jsr concerto_synth::instruments::loadInstrument
+         .endif
          bra @close_file
       @load_song:
          jsr song_engine::song_data::loadSong
-         jsr panels__clip_properties__copyClipSettingsToMusicalKeyboard
-         lda #$ff
-         sta concerto_synth::instruments::detail::copying
-         stz song_engine::multitrack_player::player_start_timestamp
-         stz song_engine::multitrack_player::player_start_timestamp+1
-         stz components::dnd::dragables::notes::window_time_stamp
-         stz components::dnd::dragables::notes::window_time_stamp+1
+         .ifdef ::concerto_full_daw
+            jsr panels__clip_properties__copyClipSettingsToMusicalKeyboard
+            lda #$ff
+            sta concerto_synth::instruments::detail::copying
+            stz song_engine::multitrack_player::player_start_timestamp
+            stz song_engine::multitrack_player::player_start_timestamp+1
+            stz components::dnd::dragables::notes::window_time_stamp
+            stz components::dnd::dragables::notes::window_time_stamp+1
+         .endif
       @close_file:
       jsr file_browsing::closeFile
    :  plp

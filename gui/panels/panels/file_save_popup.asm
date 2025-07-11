@@ -88,11 +88,17 @@
       lda file_browsing::current_file_type
       bne @save_song
       @save_instrument:
-         lda gui_variables::current_synth_instrument
-         jsr concerto_synth::instruments::saveInstrument
+         .ifdef ::concerto_full_daw
+            lda gui_variables::current_synth_instrument
+            jsr concerto_synth::instruments::saveInstrument
+         .endif
          bra @close_file
       @save_song:
-         jsr song_engine::song_data::saveSong
+         .ifdef ::concerto_full_daw
+            jsr song_engine::song_data::saveSong
+         .elseif ::concerto_cos2zsm_converter
+            ; TODO export ZSM
+         .endif
       @close_file:
       jsr file_browsing::closeFile
       plp

@@ -1,5 +1,7 @@
 ; Copyright 2021-2025 Carl Georg Biermann
 
+::concerto_full_daw = 1
+
 .code
 
    jmp start
@@ -19,7 +21,6 @@
 .include "../song_engine/song_engine.asm"
 
 ; include the synth gui
-::concerto_full_daw = 1
 .include "../gui/concerto_gui.asm"
 
 ; include the X16 header

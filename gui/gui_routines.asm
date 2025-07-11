@@ -55,6 +55,15 @@
       rts
    .endproc 
 
+.elseif ::concerto_cos2zsm_converter
+   .proc load_cos2zsm_converter_gui
+      jsr guiutils::cls
+      lda #1 ; GUI stack size (how many panels are visible)
+      sta panels::panels_stack_pointer
+      lda #panels::ids::cos2zsm_global
+      sta panels::panels_stack+0
+      jmp refresh_gui
+   .endproc
 .else
    ; brings up the synth GUI
    ; puts all synth related panels into the GUI stack
@@ -233,6 +242,7 @@
 ; Hence, we do not create a jump table covering every component, but rather
 ; do the dispatching "by hand". If needed, we can do it "properly" later on.
 .proc drag_end_event
+.ifdef ::concerto_full_daw
    ; check if *the* drag&drop component is being dragged on
    lda mouse_variables::prev_panel
    cmp #panels::ids::clip_editing
@@ -244,7 +254,9 @@
    cmp #(panels::clip_editing::comps::notes_edit - panels::clip_editing::comps)
    bne :+
    jsr components::drag_and_drop_area::end_drag_event
-:  rts
+:  
+.endif
+   rts
 .endproc
 
 

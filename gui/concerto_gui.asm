@@ -23,7 +23,9 @@
 .include "file_browsing.asm"
 .include "components/components.asm"
 .include "panels/panels.asm"
-.include "gauges.asm"
+.ifdef ::concerto_full_daw
+   .include "gauges.asm"
+.endif
 ; higher level routines
 .include "gui_routines.asm"
 .include "keyboard_routines.asm"
@@ -41,17 +43,20 @@ initialize:
    lda VERA_L1_mapbase
    sta guiutils::original_map_base
    jsr mouse::mouse_init
+   ; Initializations used for both DAW and COS2ZSM applications
    jsr song_engine::clips::initialize
-   jsr song_engine::multitrack_player::musical_keyboard::initialize
    jsr file_browsing::initialize
    jsr panels::file_save_popup::initialize
    jsr panels::file_load_popup::initialize
-   jsr keyboard::installMusicalKeyboard
 .ifdef ::concerto_full_daw
+   jsr song_engine::multitrack_player::musical_keyboard::initialize
+   jsr keyboard::installMusicalKeyboard
    jsr components::dnd::hitboxes::initialize
    jsr components::drag_and_drop_area::initialize
-.endif
    jsr gui_routines::load_clip_gui
+.elseif ::concerto_cos2zsm_converter
+   jsr gui_routines::load_cos2zsm_converter_gui
+.endif
    ; prevent emulator from intercepting Ctrl+V because we want to use it ourselves
    lda #1
    sta $9FB7
@@ -61,8 +66,10 @@ initialize:
 ; Hides the mouse cursor and restores the previous tilemap base.
 ; PARAMETERS: none
 ; AFFECTS: A, X
-hide: 
+hide:
+.ifdef ::concerto_full_daw
    jsr keyboard::uninstallMusicalKeyboard
+.endif
    lda guiutils::original_map_base
    sta VERA_L1_mapbase
    jsr mouse::mouse_hide
@@ -77,7 +84,10 @@ hide:
 .proc gui_tick
    jsr keyboard::tick
    jsr mouse::mouse_tick
-   jmp gauges::tick
+.ifdef ::concerto_full_daw
+   jsr gauges::tick
+.endif
+   rts
 .endproc
 
 

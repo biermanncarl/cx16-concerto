@@ -1,5 +1,7 @@
 ; Copyright 2025 Carl Georg Biermann
 
+::concerto_cos2zsm_converter = 1
+
 .code
     jmp start
 
@@ -7,7 +9,7 @@
 .include "../common/x16.asm"
 
 ; include VRAM assets for symbols
-; .include "../assets/vram_assets.asm"
+.include "../assets/vram_assets.asm"
 
 ; Scratchpad needed for the location of the Sample-and-Hold table
 .include "../common/scratchpad_memory.asm"
@@ -20,9 +22,18 @@
 .include "../gui/gui_macros.asm"
 .include "../synth_engine/snh_lut_generation.asm"
 
+; Synth and song engine
+.include "../song_engine/song_engine.asm"
+
+; Include ZSM converter UI
+.include "../gui/concerto_gui.asm"
+
+
 .code
 start:
     INIT_VERA
+    INIT_CUSTOM_CHARACTERS
+    INIT_SNH_LUT goldenram_snh_lut
 
 
     ; VRAM assets ?
@@ -37,13 +48,25 @@ start:
     ; lda #2 ; load into first half of VRAM
     ; jsr LOAD
 
-    INIT_CUSTOM_CHARACTERS
 
-    INIT_SNH_LUT goldenram_snh_lut
+   jsr concerto_synth::initialize
+   jsr concerto_gui::initialize
+;    inc concerto_gui::gui_variables::request_components_refresh_and_redraw
 
+;    jsr concerto_synth::activate_synth ; not needed?
 
+mainloop:
+   jsr concerto_gui::gui_tick
+   lda concerto_gui::gui_variables::request_program_exit
+   beq mainloop
 
+exit:
+   jsr concerto_synth::deactivate_synth
+   jsr concerto_gui::hide
 
+   ; Cold-start enter BASIC: program is cleared.
+   sec
+   jmp ENTER_BASIC
 
 
 

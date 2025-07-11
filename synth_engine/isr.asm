@@ -75,7 +75,9 @@ do_tick:
    jsr synth_engine::synth_tick
    ; call playback routine (done after the synth tick to reduce jitter caused by fluctuating computational load inside the playback routine.
    ; Jitter hasn't been a problem so far, this move was done in anticipation of jitter)
-   jsr concerto_gui__gauges__tick_isr
+   .ifdef ::concerto_full_daw
+      jsr concerto_gui__gauges__tick_isr
+   .endif
    jsr concerto_playback_routine
    ; restore shared variables
    pla

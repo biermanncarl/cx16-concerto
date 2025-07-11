@@ -28,8 +28,10 @@
 
    request_program_exit: .byte 0
 
+.ifdef ::concerto_full_daw
    ; Which instrument is currently viewed in the synth page.
    current_synth_instrument: .byte 0
+.endif
 
 
    ; These are variables located at the zero page.
