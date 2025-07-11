@@ -1,4 +1,4 @@
-; Copyright 2020-2024 Matt Heffernan, Carl Georg Biermann
+; Copyright 2020-2025 Matt Heffernan, Carl Georg Biermann
 
 
 ; This file contains various definitions of Commander X16 addresses and values.
@@ -175,7 +175,7 @@ CLOCK_SET_DATE_TIME           := $FF4D
 CLOCK_GET_DATE_TIME           := $FF50
 JOYSTICK_SCAN                 := $FF53
 JOYSTICK_GET                  := $FF56
-SCREEN_SET_MODE               := $FF5F
+SCREEN_MODE                   := $FF5F
 SCREEN_SET_CHARSET            := $FF62
 
 MOUSE_CONFIG                  := $FF68

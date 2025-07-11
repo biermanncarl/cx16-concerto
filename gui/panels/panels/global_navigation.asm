@@ -18,6 +18,7 @@
       COMPONENT_DEFINITION drag_edit, keyboard_basenote, 32, 58, %00000000, 0, 108, 60, 0
       COMPONENT_DEFINITION checkbox, keyboard_monophonic, 53, 58, 12, 0
       COMPONENT_DEFINITION checkbox, keyboard_drum_pad, 68, 58, 10, 0
+      COMPONENT_DEFINITION button, exit, 5, 57, 4, A exit_lb
       COMPONENT_DEFINITION dummy, click_catcher, 0, 0, 3, 60
       COMPONENT_DEFINITION text_field, concerto_banner, 1, 1, 19, 6, A vram_assets::concerto_banner
       COMPONENT_LIST_END
@@ -51,6 +52,7 @@
    fm_lb: STR_FORMAT "fm"
    steal_lb: STR_FORMAT "steal"
    drop_lb: STR_FORMAT "drop"
+   exit_lb: STR_FORMAT "exit"
 
    .proc draw
       lda active_tab
@@ -72,6 +74,7 @@
       .word @set_kbd_basenote
       .word @set_kbd_mono
       .word @set_kbd_drum
+      .word @exit
       .word @select_tab
    @set_kbd_volume:
       LDA_COMPONENT_MEMBER_ADDRESS drag_edit, keyboard_volume, coarse_value
@@ -88,6 +91,9 @@
       sta song_engine::multitrack_player::musical_keyboard::drum
       LDA_COMPONENT_MEMBER_ADDRESS drag_edit, keyboard_basenote, coarse_value
       sta song_engine::multitrack_player::musical_keyboard::basenote
+      rts
+   @exit:
+      inc gui_variables::request_program_exit
       rts
    @select_tab:
       lda mouse_variables::curr_data_2 ; y position in multiples of 8 pixels

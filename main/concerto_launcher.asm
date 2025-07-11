@@ -121,6 +121,14 @@ sprt_hflip_off = 0
 
 
 start:
+    ; load PETSCII charset
+    lda #2
+    jsr SCREEN_SET_CHARSET
+    ; Set screen mode to 80x60 characters
+    clc
+    lda #0
+    jsr SCREEN_MODE
+
     lda #$93
     jsr CHROUT ; clear screen
 

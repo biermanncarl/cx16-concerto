@@ -43,4 +43,6 @@ exit:
    jsr concerto_synth::deactivate_synth
    jsr concerto_gui::hide
 
-   rts            ; return to BASIC
+   ; Cold-start enter BASIC: program is cleared.
+   sec
+   jmp ENTER_BASIC
