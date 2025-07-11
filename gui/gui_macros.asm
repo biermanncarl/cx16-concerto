@@ -69,4 +69,166 @@
    jmp (ej_jmp_tbl,x)
 .endmacro
 
+.macro INIT_VERA
+   ; load PETSCII charset
+   lda #2
+   jsr SCREEN_SET_CHARSET
+   ; Set screen mode to 80x60 characters
+   clc
+   lda #0
+   jsr SCREEN_MODE
+
+   lda #$93
+   jsr CHROUT ; clear screen
+.endmacro
+
+.macro INIT_CUSTOM_CHARACTERS
+   ; modify <> characters
+   lda #1 + 16 ; select high bank, increment by 1
+   sta VERA_addr_high
+   ; Default tile map address: $1:F000-$1:F7FF
+   ; offset ">": 496
+   address_greater = $f000 + $1F0
+   ; offset "<": 480
+   address_lower = $f000 + $1E0
+
+   address_block_up_left = $f000 + 126*8
+   address_spade = $f000 + 65*8
+   address_diamond = $f000 + 90*8
+   address_heart = $f000 + 83*8
+
+   ; new greater than sign
+   lda #>address_greater
+   sta VERA_addr_mid
+   lda #<address_greater
+   sta VERA_addr_low
+   lda #%01000000
+   sta VERA_data0
+   lda #%01110000
+   sta VERA_data0
+   lda #%01111100
+   sta VERA_data0
+   lda #%01111110
+   sta VERA_data0
+   lda #%01111100
+   sta VERA_data0
+   lda #%01110000
+   sta VERA_data0
+   lda #%01000000
+   sta VERA_data0
+   lda #%00000000
+   sta VERA_data0
+
+   ; new lower than sign
+   lda #>address_lower
+   sta VERA_addr_mid
+   lda #<address_lower
+   sta VERA_addr_low
+   lda #%00000010
+   sta VERA_data0
+   lda #%00001110
+   sta VERA_data0
+   lda #%00111110
+   sta VERA_data0
+   lda #%01111110
+   sta VERA_data0
+   lda #%00111110
+   sta VERA_data0
+   lda #%00001110
+   sta VERA_data0
+   lda #%00000010
+   sta VERA_data0
+   lda #%00000000
+   sta VERA_data0
+
+   ; turn diamond to triangle down
+   lda #>address_diamond
+   sta VERA_addr_mid
+   lda #<address_diamond
+   sta VERA_addr_low
+   lda #%00000000
+   sta VERA_data0
+   lda #%00000000
+   sta VERA_data0
+   lda #%01111111
+   sta VERA_data0
+   lda #%00111110
+   sta VERA_data0
+   lda #%00011100
+   sta VERA_data0
+   lda #%00001000
+   sta VERA_data0
+   lda #%00000000
+   sta VERA_data0
+   lda #%00000000
+   sta VERA_data0
+   lda #%00000000
+   sta VERA_data0
+
+   ; turn heart to folder icon
+   lda #>address_heart
+   sta VERA_addr_mid
+   lda #<address_heart
+   sta VERA_addr_low
+   lda #%00000000
+   sta VERA_data0
+   lda #%00000111
+   sta VERA_data0
+   lda #%00111111
+   sta VERA_data0
+   lda #%01000001
+   sta VERA_data0
+   lda #%01000001
+   sta VERA_data0
+   lda #%01000001
+   sta VERA_data0
+   lda #%00111110
+   sta VERA_data0
+   lda #%00000000
+   sta VERA_data0
+
+   ; special characters used in Concerto banner
+   lda #>address_block_up_left
+   sta VERA_addr_mid
+   lda #<address_block_up_left
+   sta VERA_addr_low
+   lda #%11111000
+   sta VERA_data0
+   lda #%11111000
+   sta VERA_data0
+   lda #%11111000
+   sta VERA_data0
+   lda #%11111000
+   sta VERA_data0
+   lda #%11111000
+   sta VERA_data0
+   lda #%11110000
+   sta VERA_data0
+   lda #%11100000
+   sta VERA_data0
+   lda #%10000000
+   sta VERA_data0
+
+   lda #>address_spade
+   sta VERA_addr_mid
+   lda #<address_spade
+   sta VERA_addr_low
+   lda #%00011000
+   sta VERA_data0
+   lda #%00011000
+   sta VERA_data0
+   lda #%00011000
+   sta VERA_data0
+   lda #%00011000
+   sta VERA_data0
+   lda #%00011000
+   sta VERA_data0
+   lda #%00000000
+   sta VERA_data0
+   lda #%00000000
+   sta VERA_data0
+   lda #%00000000
+   sta VERA_data0
+.endmacro
+
 .endif ; .ifndef ::GUI_GUI_MACROS_ASM
