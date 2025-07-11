@@ -15,14 +15,15 @@
    comps:
    .scope comps
       COMPONENT_DEFINITION button, exit, 5, 57, 4, A exit_lb
+      COMPONENT_DEFINITION text_field, converto_banner, 1, 1, 19, 6, A vram_assets::converto_banner
       COMPONENT_LIST_END
    .endscope
    capts:
-      .byte CCOLOR_CAPTION, 5, 2
+      .byte CCOLOR_CAPTION, 22, 3
       .word caption_lb
       .byte 0
    ; data specific to this panel
-   caption_lb: STR_FORMAT "cos to zsm converter tool"
+   caption_lb: STR_FORMAT ".cos to .zsm file converter tool"
    exit_lb: STR_FORMAT "exit"
 
    .proc draw

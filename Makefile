@@ -22,12 +22,15 @@ unspecified_dependencies:
 
 CONCERTO.PRG: CONCMAIN.BIN copy_presets copy_docs unspecified_dependencies
 	cl65 -t cx16 -o build/CONCERTO.PRG -C cx16-asm-concerto.cfg -u __EXEHDR__ -Ln build/CONCERTO.sym -g "main/concerto_launcher.asm"
+	mv build/CONCERTO.PRG.VRAM build/VRAMASSETS.BIN
 
 CONCMAIN.BIN: build_folder unspecified_dependencies
 	cl65 -t cx16 -o build/CONCMAIN.BIN -C cx16-asm-concerto.cfg -Ln build/CONCMAIN.sym -g "main/concerto.asm"
+	rm build/CONCMAIN.BIN.VRAM
 
 COS2ZSM.PRG:
 	cl65 -t cx16 -o build/COS2ZSM.PRG -C cx16-asm-concerto.cfg -u __EXEHDR__ -Ln build/COS2ZSM.sym -g "cos2zsm/cos2zsm.asm"
+	mv build/COS2ZSM.PRG.VRAM build/VRAMASSETS-COS2ZSM.BIN
 
 .PHONY: examples
 examples: example_01 example_02 example_03 example_04 example_05 example_06 example_07

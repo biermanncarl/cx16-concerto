@@ -834,35 +834,6 @@ clear_rectangle:
 .endproc
 
 
-; draw FM algorithm
-; Alg number in draw_data1
-; Position fixed by macros @alg_x, @alg_y
-.proc draw_fm_alg
-   @alg_x = 26
-   @alg_y = 41
-   lda #@alg_x
-   sta draw_x
-   lda #@alg_y
-   sta draw_y
-   lda #2*5
-   sta draw_width
-   lda #8
-   sta draw_height
-   ; calculate VRAM offset (in VRAM, the different layouts are 128 bytes apart for ease of calculating offset)
-   lda draw_data1
-   lsr
-   tay
-   lda #0
-   ror
-   adc #<vram_assets::fm_algs
-   tax
-   tya
-   adc #>vram_assets::fm_algs
-   jsr draw_buffer_box
-   rts
-.endproc
-
-
 ; moves to screen position (.A|.X) (does not preserve .A)
 alternative_gotoxy:
    stz VERA_ctrl
@@ -883,246 +854,276 @@ alternative_gotoxy:
 .endproc
 
 
-; expects selected tab in draw_data1
-; clobbers some of the other API variables
-draw_globalnav:
-   @tab_height = 16
-   @tab_start = 28 ; y coordinate
-   @num_tabs = 2
-   ; abuse API variables for temporary storage
-   @character_top = draw_x
-   @character_bottom = draw_y
-   @character_border = draw_width
-   @caption_index = draw_data2
-   ; TODO: draw lowest character first (which might get overwritten by selected tab)
-   stz @caption_index
-   stz cur_x
-   lda #@tab_start
-   sta cur_y
-   jsr set_cursor
-   ldy #0
-@tab_loop:
-   ; selects tab index in .Y
-   phy
-   cpy draw_data1
-   beq @selected_tab
-@unselected_tab:
-   ldx #(16*COLOR_BACKGROUND + COLOR_TABS)
-   ldy #77 ; line top left to bottom right
-   sty @character_top
-   ldy #78 ; line top right to bottom left
-   sty @character_bottom
-   ldy #106
-   sty @character_border
-   bra @draw_tab
-@selected_tab:
-   ldx #(16*COLOR_TABS + COLOR_BACKGROUND)
-   ldy #95
-   sty @character_top
-   ldy #233
-   sty @character_bottom
-   ldy #32
-   sty @character_border
-@draw_tab:
-   ldy @character_top
-   sty VERA_data0
-   stx VERA_data0
-   jsr move_cursor_down
-   ldy #32
-   sty VERA_data0
-   stx VERA_data0
-   ldy @character_top
-   sty VERA_data0
-   stx VERA_data0
-   jsr move_cursor_down
-   ldy #32
-   sty VERA_data0
-   stx VERA_data0
-   sty VERA_data0
-   stx VERA_data0
-   ldy @character_top
-   sty VERA_data0
-   stx VERA_data0
-   ldy #0
-@fill_loop_unselected:
-   jsr move_cursor_down
-   lda #32
-   sta VERA_data0
-   stx VERA_data0
-   phy
-   ldy @caption_index
-   lda @captions,y
-   iny
-   sty @caption_index
-   ply
-   sta VERA_data0
-   stx VERA_data0
-   lda @character_border
-   sta VERA_data0
-   stx VERA_data0
-   iny
-   cpy #@tab_height-5
-   bne @fill_loop_unselected ; end of fill_loop
-   jsr move_cursor_down
-   ldy #32
-   sty VERA_data0
-   stx VERA_data0
-   sty VERA_data0
-   stx VERA_data0
-   ldy @character_bottom
-   sty VERA_data0
-   stx VERA_data0
-   jsr move_cursor_down
-   ldy #32
-   sty VERA_data0
-   stx VERA_data0
-   ldy @character_bottom
-   sty VERA_data0
-   stx VERA_data0
-   jsr move_cursor_down
-   ; finish the tab loop
-   ply
-   iny
-   cpy #@num_tabs
-   beq :+
-   jmp @tab_loop
-:  rts
-@captions:
-   STR_FORMAT " t r a c k  s y n t h "
+.ifdef ::concerto_full_daw
+   ; draw FM algorithm
+   ; Alg number in draw_data1
+   ; Position fixed by macros @alg_x, @alg_y
+   .proc draw_fm_alg
+      @alg_x = 26
+      @alg_y = 41
+      lda #@alg_x
+      sta draw_x
+      lda #@alg_y
+      sta draw_y
+      lda #2*5
+      sta draw_width
+      lda #8
+      sta draw_height
+      ; calculate VRAM offset (in VRAM, the different layouts are 128 bytes apart for ease of calculating offset)
+      lda draw_data1
+      lsr
+      tay
+      lda #0
+      ror
+      adc #<vram_assets::fm_algs
+      tax
+      tya
+      adc #>vram_assets::fm_algs
+      jsr draw_buffer_box
+      rts
+   .endproc
+
+   ; expects selected tab in draw_data1
+   ; clobbers some of the other API variables
+   draw_globalnav:
+      @tab_height = 16
+      @tab_start = 28 ; y coordinate
+      @num_tabs = 2
+      ; abuse API variables for temporary storage
+      @character_top = draw_x
+      @character_bottom = draw_y
+      @character_border = draw_width
+      @caption_index = draw_data2
+      ; TODO: draw lowest character first (which might get overwritten by selected tab)
+      stz @caption_index
+      stz cur_x
+      lda #@tab_start
+      sta cur_y
+      jsr set_cursor
+      ldy #0
+   @tab_loop:
+      ; selects tab index in .Y
+      phy
+      cpy draw_data1
+      beq @selected_tab
+   @unselected_tab:
+      ldx #(16*COLOR_BACKGROUND + COLOR_TABS)
+      ldy #77 ; line top left to bottom right
+      sty @character_top
+      ldy #78 ; line top right to bottom left
+      sty @character_bottom
+      ldy #106
+      sty @character_border
+      bra @draw_tab
+   @selected_tab:
+      ldx #(16*COLOR_TABS + COLOR_BACKGROUND)
+      ldy #95
+      sty @character_top
+      ldy #233
+      sty @character_bottom
+      ldy #32
+      sty @character_border
+   @draw_tab:
+      ldy @character_top
+      sty VERA_data0
+      stx VERA_data0
+      jsr move_cursor_down
+      ldy #32
+      sty VERA_data0
+      stx VERA_data0
+      ldy @character_top
+      sty VERA_data0
+      stx VERA_data0
+      jsr move_cursor_down
+      ldy #32
+      sty VERA_data0
+      stx VERA_data0
+      sty VERA_data0
+      stx VERA_data0
+      ldy @character_top
+      sty VERA_data0
+      stx VERA_data0
+      ldy #0
+   @fill_loop_unselected:
+      jsr move_cursor_down
+      lda #32
+      sta VERA_data0
+      stx VERA_data0
+      phy
+      ldy @caption_index
+      lda @captions,y
+      iny
+      sty @caption_index
+      ply
+      sta VERA_data0
+      stx VERA_data0
+      lda @character_border
+      sta VERA_data0
+      stx VERA_data0
+      iny
+      cpy #@tab_height-5
+      bne @fill_loop_unselected ; end of fill_loop
+      jsr move_cursor_down
+      ldy #32
+      sty VERA_data0
+      stx VERA_data0
+      sty VERA_data0
+      stx VERA_data0
+      ldy @character_bottom
+      sty VERA_data0
+      stx VERA_data0
+      jsr move_cursor_down
+      ldy #32
+      sty VERA_data0
+      stx VERA_data0
+      ldy @character_bottom
+      sty VERA_data0
+      stx VERA_data0
+      jsr move_cursor_down
+      ; finish the tab loop
+      ply
+      iny
+      cpy #@num_tabs
+      beq :+
+      jmp @tab_loop
+   :  rts
+   @captions:
+      STR_FORMAT " t r a c k  s y n t h "
 
 
-; Sets up VERA port 0 to access a sprite of given index. Will position the data pointer at the x position for convenience (not the bitmap address).
-; Expects the index of the sprite in .A
-; Expects the offset within the sprite data in .Y. Value must be from 0 to 7 (inclusive).
-; Preserves .X and .Y.
-.proc setupSpriteAccess
-   sprite_address_mid = sprite_temp
-   sprite_address_offset = sprite_temp+1
-   sty sprite_address_offset
-   stz sprite_address_mid
-   ; multiply sprite index by 8
-   asl
-   rol sprite_address_mid
-   asl
-   rol sprite_address_mid
-   asl
-   rol sprite_address_mid
-   ; carry is clear as we did initialize sprite_address_high with zero
-   adc sprite_address_offset ; Carry will also be clear after this operation, as well, because the lowest three bits are guaranteed zero prior to this.
+   ; Sets up VERA port 0 to access a sprite of given index. Will position the data pointer at the x position for convenience (not the bitmap address).
+   ; Expects the index of the sprite in .A
+   ; Expects the offset within the sprite data in .Y. Value must be from 0 to 7 (inclusive).
+   ; Preserves .X and .Y.
+   .proc setupSpriteAccess
+      sprite_address_mid = sprite_temp
+      sprite_address_offset = sprite_temp+1
+      sty sprite_address_offset
+      stz sprite_address_mid
+      ; multiply sprite index by 8
+      asl
+      rol sprite_address_mid
+      asl
+      rol sprite_address_mid
+      asl
+      rol sprite_address_mid
+      ; carry is clear as we did initialize sprite_address_high with zero
+      adc sprite_address_offset ; Carry will also be clear after this operation, as well, because the lowest three bits are guaranteed zero prior to this.
 
-   stz VERA_ctrl ; select data0
-   sta VERA_addr_low
-   lda #(1 + 16) ; high bank, increment by 1
-   sta VERA_addr_high
-   lda sprite_address_mid
-   adc #$FC ; offset of sprite data, carry is zero as reasoned above
-   sta VERA_addr_mid
-   rts
-.endproc
-
-
-
-; todo: move these variables up to the others, so we have them all in one place
+      stz VERA_ctrl ; select data0
+      sta VERA_addr_low
+      lda #(1 + 16) ; high bank, increment by 1
+      sta VERA_addr_high
+      lda sprite_address_mid
+      adc #$FC ; offset of sprite data, carry is zero as reasoned above
+      sta VERA_addr_mid
+      rts
+   .endproc
 
 
-.proc showBoxSelectFrame
-   lda #vram_assets::sprite_index_box_selection_frame_top_left
-   ldy #2 ; offset of x data
-   jsr setupSpriteAccess
-   lda mouse_variables::curr_x
-   sta box_select_left
-   sta VERA_data0
-   lda mouse_variables::curr_x+1
-   sta box_select_left+1
-   sta VERA_data0
-   lda mouse_variables::curr_y
-   sta box_select_top
-   sta VERA_data0
-   lda mouse_variables::curr_y+1
-   sta box_select_top+1
-   sta VERA_data0
-   lda #12
-   sta VERA_data0
-   ; fall through to updateBoxSelectFrame
-.endproc
-.proc updateBoxSelectFrame
-   lda #vram_assets::sprite_index_box_selection_frame_bottom_right
-   ldy #2 ; offset of x data
-   jsr setupSpriteAccess
 
-   ; determine x position
-   ; clamp x position towards box origin x
-   lda mouse_variables::curr_x+1
-   cmp box_select_left+1
-   bcc @use_origin_x ; if high byte is lower, clamp is needed
-   bne @use_mouse_x
-@check_low_x:
-   ; high bytes are equal, need to check low bytes
-   lda mouse_variables::curr_x
-   cmp box_select_left
-   bcs @use_mouse_x
-@use_origin_x:
-   lda box_select_left
-   ldx box_select_right+1
-   bra @set_sprite_x
-@use_mouse_x:
-   lda mouse_variables::curr_x
-   ldx mouse_variables::curr_x+1
-@set_sprite_x:
-   sta box_select_right
-   stx box_select_right+1
-   sec
-   sbc #(vram_assets::box_selection_frame_size-1)
-   sta VERA_data0
-   txa
-   sbc #0
-   sta VERA_data0
+   ; todo: move these variables up to the others, so we have them all in one place
 
-   ; determine y position
-   ; clamp y position towards box origin y
-   lda mouse_variables::curr_y+1
-   cmp box_select_top+1
-   bcc @use_origin_y ; if high byte is lower, clamp is needed
-   bne @use_mouse_y
-@check_low_y:
-   ; high bytes are equal, need to check low bytes
-   lda mouse_variables::curr_y
-   cmp box_select_top
-   bcs @use_mouse_y
-@use_origin_y:
-   lda box_select_top
-   ldx box_select_top+1
-   bra @set_sprite_y
-@use_mouse_y:
-   lda mouse_variables::curr_y
-   ldx mouse_variables::curr_y+1
-@set_sprite_y:
-   sta box_select_bottom
-   stx box_select_bottom+1
-   sec
-   sbc #(vram_assets::box_selection_frame_size-1)
-   sta VERA_data0
-   txa
-   sbc #0
-   sta VERA_data0
 
-   ; activate sprite and set hflip/vflip
-   lda #15
-   sta VERA_data0
-   rts
-.endproc
+   .proc showBoxSelectFrame
+      lda #vram_assets::sprite_index_box_selection_frame_top_left
+      ldy #2 ; offset of x data
+      jsr setupSpriteAccess
+      lda mouse_variables::curr_x
+      sta box_select_left
+      sta VERA_data0
+      lda mouse_variables::curr_x+1
+      sta box_select_left+1
+      sta VERA_data0
+      lda mouse_variables::curr_y
+      sta box_select_top
+      sta VERA_data0
+      lda mouse_variables::curr_y+1
+      sta box_select_top+1
+      sta VERA_data0
+      lda #12
+      sta VERA_data0
+      ; fall through to updateBoxSelectFrame
+   .endproc
+   .proc updateBoxSelectFrame
+      lda #vram_assets::sprite_index_box_selection_frame_bottom_right
+      ldy #2 ; offset of x data
+      jsr setupSpriteAccess
 
-.proc hideBoxSelectFrame
-   lda #vram_assets::sprite_index_box_selection_frame_top_left
-   ldy #6 ; offset of sprite activation
-   jsr setupSpriteAccess
-   stz VERA_data0
+      ; determine x position
+      ; clamp x position towards box origin x
+      lda mouse_variables::curr_x+1
+      cmp box_select_left+1
+      bcc @use_origin_x ; if high byte is lower, clamp is needed
+      bne @use_mouse_x
+   @check_low_x:
+      ; high bytes are equal, need to check low bytes
+      lda mouse_variables::curr_x
+      cmp box_select_left
+      bcs @use_mouse_x
+   @use_origin_x:
+      lda box_select_left
+      ldx box_select_right+1
+      bra @set_sprite_x
+   @use_mouse_x:
+      lda mouse_variables::curr_x
+      ldx mouse_variables::curr_x+1
+   @set_sprite_x:
+      sta box_select_right
+      stx box_select_right+1
+      sec
+      sbc #(vram_assets::box_selection_frame_size-1)
+      sta VERA_data0
+      txa
+      sbc #0
+      sta VERA_data0
 
-   lda #vram_assets::sprite_index_box_selection_frame_bottom_right
-   ldy #6 ; offset of sprite activation
-   jsr setupSpriteAccess
-   stz VERA_data0
-   rts
-.endproc
+      ; determine y position
+      ; clamp y position towards box origin y
+      lda mouse_variables::curr_y+1
+      cmp box_select_top+1
+      bcc @use_origin_y ; if high byte is lower, clamp is needed
+      bne @use_mouse_y
+   @check_low_y:
+      ; high bytes are equal, need to check low bytes
+      lda mouse_variables::curr_y
+      cmp box_select_top
+      bcs @use_mouse_y
+   @use_origin_y:
+      lda box_select_top
+      ldx box_select_top+1
+      bra @set_sprite_y
+   @use_mouse_y:
+      lda mouse_variables::curr_y
+      ldx mouse_variables::curr_y+1
+   @set_sprite_y:
+      sta box_select_bottom
+      stx box_select_bottom+1
+      sec
+      sbc #(vram_assets::box_selection_frame_size-1)
+      sta VERA_data0
+      txa
+      sbc #0
+      sta VERA_data0
+
+      ; activate sprite and set hflip/vflip
+      lda #15
+      sta VERA_data0
+      rts
+   .endproc
+
+   .proc hideBoxSelectFrame
+      lda #vram_assets::sprite_index_box_selection_frame_top_left
+      ldy #6 ; offset of sprite activation
+      jsr setupSpriteAccess
+      stz VERA_data0
+
+      lda #vram_assets::sprite_index_box_selection_frame_bottom_right
+      ldy #6 ; offset of sprite activation
+      jsr setupSpriteAccess
+      stz VERA_data0
+      rts
+   .endproc
+.endif
 
 .endscope ; guiutils
