@@ -91,7 +91,7 @@
 .include "scale5.asm"
 .include "synth_macros.asm"
 .ifdef ::concerto_enable_zsound_recording
-   .include "zsm_recording.asm"
+   .include "zsm_recording_direct.asm"
 .endif
 .include "instruments.asm"
 .include "voices.asm"

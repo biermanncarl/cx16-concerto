@@ -1,7 +1,8 @@
-; Copyright 2022-2023 Carl Georg Biermann
+; Copyright 2022-2025 Carl Georg Biermann
 
 
 ; This file provides routines and memory needed for recording Zsound data.
+; It implements the newer approach where data is written into the file as it is being recorded.
 ;
 ; The basic idea is that every time you would write a command to the programmable sound generators (PSGs)
 ; in the VERA, or the YM2151 chip, you can instead, or additionally, call a function from this library,
@@ -26,7 +27,6 @@
 ; * FM channel bit mask only considers key-on and key-off events
 ; * supports only up to 70 PSG operations and 250 FM operations per tick
 ; * filters out only direct duplicates (e.g. A-B-A within the same tick is not filtered out, even though it's equivalent to just A)
-; * Output file is always overwritten (safety measures to prevent unwanted data loss is offloaded to the user)
 
 .scope zsm_recording
 
@@ -40,15 +40,8 @@ zp_pointer: ; this can be pointed to any location in the zeropage, where a 16 bi
 
 
 ; Start a recording
-; .A tick rate low
-; .X tick rate high
-; .Y ram bank (where recording data should be stored)
-; preserves .Y
-; discards .A and .X
 .proc init
    ; initialize variables
-   sta tick_rate
-   stx tick_rate+1
    sty start_bank
    sty current_bank
    lda #$10 ; start saving commands after the header
@@ -63,37 +56,14 @@ zp_pointer: ; this can be pointed to any location in the zeropage, where a 16 bi
    stz reset_area_begin, x
    bne @reset_loop
 
-   ; fill in some members of the ZSM header
-   lda RAM_BANK
-   pha
-   lda start_bank
-   sta RAM_BANK
-   ; magic header
-   lda #$7A
-   sta RAM_WIN+0
-   lda #$6D
-   sta RAM_WIN+1
-   ; version
-   lda #zsm_version
-   sta RAM_WIN+2
-   ; Loop point: default offset is $10, can be changed
-   lda #$10
-   sta RAM_WIN+3
-   stz RAM_WIN+4
-   stz RAM_WIN+5
-   ; PCM offset: ignore
-   ; FM channel mask: fill in at the end
-   ; PSG channel mask: fill in at the end
-   ; Tick rate
-   lda tick_rate
-   sta RAM_WIN+12
-   lda tick_rate+1
-   sta RAM_WIN+13
-   ; reserved bytes: set to zero
-   stz RAM_WIN+14
-   stz RAM_WIN+15
-   pla
-   sta RAM_BANK
+   ; emit header data
+   ldx #0
+@header_loop:
+   lda header_data, x
+   jsr CHROUT
+   inx
+   cpx #header_length
+   bne @header_loop
 
    ; start recording
    lda #$01
@@ -249,8 +219,6 @@ zp_pointer: ; this can be pointed to any location in the zeropage, where a 16 bi
    rts
 :
 
-   jsr prepare_writing_to_bram
-
    ; waiting tick logic
    ; ==================
    lda pending_ticks
@@ -265,7 +233,7 @@ zp_pointer: ; this can be pointed to any location in the zeropage, where a 16 bi
 @emit_ticks:
    lda pending_ticks
    ora #%10000000
-   jsr push_byte_to_bram
+   jsr CHROUT
    stz pending_ticks
 @end_ticks:
 
@@ -284,7 +252,9 @@ zp_pointer: ; this can be pointed to any location in the zeropage, where a 16 bi
    sbc #63 ; carry for subtraction is already set as per branching condition
    sta fm_num_pairs
    lda #$7f
-   jsr push_byte_to_bram ; emit ZSOUND fm signal byte to write 63 FM pairs
+   phx
+   jsr CHROUT ; emit ZSOUND fm signal byte to write 63 FM pairs
+   plx
    ldy #63 ; set loop counter
    bra @fm_flush_inner_loop
 
@@ -293,15 +263,15 @@ zp_pointer: ; this can be pointed to any location in the zeropage, where a 16 bi
    beq @fm_flush_outer_end
    tay ; set loop counter
    ora #%01000000 ; set bit 6 to indicate that we are writing FM data.
-   jsr push_byte_to_bram ; emit ZSOUND fm signal byte
+   jsr CHROUT ; emit ZSOUND fm signal byte
    stz fm_num_pairs ; we will write all remaining pairs in this iteration
 
 @fm_flush_inner_loop:
    ; in the inner loop, .Y is the loop counter, which is guaranteed to be at least 1 during the first iteration
    lda fm_address_buffer, x
-   jsr push_byte_to_bram
+   jsr CHROUT
    lda fm_data_buffer, x
-   jsr push_byte_to_bram
+   jsr CHROUT
    inx
    dey
    bne @fm_flush_inner_loop
@@ -321,16 +291,13 @@ zp_pointer: ; this can be pointed to any location in the zeropage, where a 16 bi
    cpx psg_num_pairs
    beq @psg_flush_end
    lda psg_address_buffer, x
-   jsr push_byte_to_bram
+   jsr CHROUT
    lda psg_data_buffer, x
-   jsr push_byte_to_bram
+   jsr CHROUT
    inx
    bra @psg_flush_loop
 @psg_flush_end:
    stz psg_num_pairs
-
-
-   jsr end_writing_to_bram
 
    ; advance clock
    inc pending_ticks
@@ -339,14 +306,7 @@ zp_pointer: ; this can be pointed to any location in the zeropage, where a 16 bi
 
 
 ; Ends the recording and writes the recorded commands into a file.
-; Takes the file name as a zero-terminated string. Must not be empty!
-; .A low byte of starting address of the string
-; .X high byte of starting address of the string
-; discards .A, .X, .Y
 .proc finish
-   pha ; save the pointer to the stack
-   phx
-
    ; finish up emitting bytes
    jsr tick
    stz recorder_active
@@ -361,87 +321,13 @@ zp_pointer: ; this can be pointed to any location in the zeropage, where a 16 bi
    lda psg_channel_mask+1
    sta RAM_WIN+11
 
+   ; TODO write channel mask
+   ; For now, we'll just activate them all.
 
-   ; generate the file command string
-   ; copy file name
-   plx ; recall pointer to file name
-   pla
-   sta zp_pointer
-   stx zp_pointer+1
-   ldy #$FF ; setting to 255 instead of 0 allows incrementing at the beginning of the loop
-@filename_copy_loop:
-   iny
-   lda (zp_pointer),y
-   sta file_name,y
-   bne @filename_copy_loop
-   ; add ",s,w" to the command
-   lda #','
-   sta file_name,y
-   iny
-   lda #'s'
-   sta file_name,y
-   iny
-   lda #','
-   sta file_name,y
-   iny
-   lda #'w'
-   sta file_name,y
-   ; calculate command length
-   tya
-   clc
-   adc #4 ; account for characters in the prefix, too
-
-
-   ; write buffer to a file
-   ; =====================
-   ; OPEN THE OUTPUT FILE
-   ; expecting command length in .A
-   ldx #<file_command
-   ldy #>file_command
-   jsr SETNAM ; set file name
-   ; setlfs - set logical file number
-   lda #1 ; logical file number
-   ldx #8 ; device number. 8 is disk drive
-   ldy #1 ; secondary command address, I really don't understand this.
-   jsr SETLFS
-   ; open - open the logical file
-   jsr OPEN
-   ; chkout - open a logical file for output
-   ldx #1 ; logical file to be used
-   jsr CHKOUT
-
-   ; emit data into file
-   lda RAM_BANK
-   pha ; save RAM bank
-   stz zp_pointer
-   lda #>RAM_WIN
-   sta zp_pointer+1
-@loop:
-   lda (zp_pointer)
-   jsr CHROUT
-   jsr advance_buffer_address
-   ; check if end of data is reached
-   lda current_bank
-   cmp RAM_BANK
-   bne @loop
-   lda zp_pointer+1
-   cmp current_low_address+1
-   bne @loop
-   lda zp_pointer
-   cmp current_low_address
-   bne @loop
-
-   ; emit EOF signal
+   ; emit EOF
    lda #$80
    jsr CHROUT
 
-   ; close the file
-   lda #1
-   jsr CLOSE
-   jsr CLRCHN
-
-   pla
-   sta RAM_BANK
    rts
 .endproc
 
@@ -456,14 +342,14 @@ zp_pointer: ; this can be pointed to any location in the zeropage, where a 16 bi
    bne :+
    rts
 
-   jsr prepare_writing_to_bram
+   ; jsr prepare_writing_to_bram
 :
    ; first we need to save any pending ticks so we can guarantee to have a byte to jump to. (otherwise it could happen that the looping point is in the middle of a wait command)
    lda pending_ticks
    beq :+
    lda pending_ticks
    ora #%10000000
-   jsr push_byte_to_bram
+   jsr CHROUT
    stz pending_ticks
 :
    ; then calculate offset and save it in the header
@@ -494,52 +380,7 @@ zp_pointer: ; this can be pointed to any location in the zeropage, where a 16 bi
    lsr
    sta RAM_WIN+5
 
-   jsr end_writing_to_bram
-.endproc
-
-
-; Sets up the RAM bank and the zeropage pointer for output into the BRAM buffer.
-; Use in conjunction with push_byte_to_bram and end_writing_to_bram
-; It's a separate function to avoid code duplication.
-.proc prepare_writing_to_bram
-   ; prepare buffer write operations
-   lda RAM_BANK
-   sta ram_bank_memory
-   lda current_bank
-   sta RAM_BANK
-   lda current_low_address
-   sta zp_pointer
-   lda current_low_address+1
-   sta zp_pointer+1
-   rts
-.endproc
-
-; Writes one byte to the BRAM buffer.
-; Use in conjunction with prepare_writing_to_bram and end_writing_to_bram
-; Assumes value in .A
-; discards .A
-; preserves .X and .Y
-.proc push_byte_to_bram
-   sta (zp_pointer)
-   jsr advance_buffer_address
-   rts
-.endproc
-
-; Release the zeropage pointer for other uses.
-; Use in conjunction with prepare_writing_to_bram and push_byte_to_bram
-; It's a separate function to avoid code duplication.
-.proc end_writing_to_bram
-   ; save the tip of the output
-   lda zp_pointer
-   sta current_low_address
-   lda zp_pointer+1
-   sta current_low_address+1
-   lda RAM_BANK
-   sta current_bank
-   ; restore RAM bank
-   lda ram_bank_memory
-   sta RAM_BANK
-   rts
+   ; jsr end_writing_to_bram
 .endproc
 
 
@@ -649,9 +490,6 @@ current_bank:
 tick_rate:
    .word 0
 
-ram_bank_memory:
-   .byte 0 ; used to store which RAM bank was active before the recorder started writing stuff to banked RAM
-
 ; mirrors mirror the data stored on the respective chips as reference for deduplication
 psg_mirror_size = 64
 psg_mirror:
@@ -662,7 +500,7 @@ fm_mirror:
    .res fm_mirror_size
 
 ; buffer for PSG instructions
-psg_maximum_buffer_length = 70 ; greater than 64 just incase there are redundant write operations
+psg_maximum_buffer_length = 70 ; greater than 64 just in case there are redundant write operations
 psg_address_buffer:
    .res psg_maximum_buffer_length
 psg_data_buffer:
@@ -692,9 +530,9 @@ header_data:
    .byte 1 ; ZSM version number
    .byte 0, 0, 0 ; loop point, zero is no loop
    .byte 0, 0, 0 ; PCM offset, zero is no PCM
-   .byte 0 ; FM channel bit mask
-   .byte 0, 0 ; PSG channel bit mask
-   .byte 127, 0 ; Tick rate, Concerto uses 127.17 Hz, 127 is close enough
+   .byte $ff ; FM channel bit mask
+   .byte $ff, $ff ; PSG channel bit mask
+   .byte 127, 0 ; Tick rate, Concerto uses 127.165 Hz. Closest ZSM equivalent is 127 Hz.
    .byte 0, 0 ; Reserved for future use. Set to zero.
 @header_data_end:
 header_length = @header_data_end - header_data

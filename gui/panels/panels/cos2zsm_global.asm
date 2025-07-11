@@ -14,17 +14,21 @@
    hg = 60
    comps:
    .scope comps
-      COMPONENT_DEFINITION button, exit, 5, 57, 4, A exit_lb
-      COMPONENT_DEFINITION text_field, converto_banner, 1, 1, 19, 6, A vram_assets::converto_banner
+      COMPONENT_DEFINITION button, exit, 32, 40, 16, A exit_lb
+      COMPONENT_DEFINITION button, load, 32, 27, 16, A load_lb
+      COMPONENT_DEFINITION button, save, 32, 30, 16, A save_lb
+      COMPONENT_DEFINITION text_field, converto_banner, 30, 17, 19, 4, A vram_assets::converto_banner
       COMPONENT_LIST_END
    .endscope
    capts:
-      .byte CCOLOR_CAPTION, 22, 3
+      .byte CCOLOR_CAPTION, 24, 23
       .word caption_lb
       .byte 0
    ; data specific to this panel
    caption_lb: STR_FORMAT ".cos to .zsm file converter tool"
-   exit_lb: STR_FORMAT "exit"
+   exit_lb: STR_FORMAT "      exit"
+   load_lb: STR_FORMAT " load .cos song"
+   save_lb: STR_FORMAT "  save as .zsm"
 
    .proc draw
       rts
@@ -38,6 +42,18 @@
       jmp (@jmp_tbl, x)
    @jmp_tbl:
       .word @exit
+      .word @load
+      .word @save
+   @load:
+      lda #file_browsing::file_type::song
+      sta file_browsing::current_file_type
+      lda #panels__ids__file_load_popup
+      jmp gui_routines__openPopup
+   @save:
+      lda #file_browsing::file_type::zsm
+      sta file_browsing::current_file_type
+      lda #panels__ids__file_save_popup
+      jmp gui_routines__openPopup
    @exit:
       inc gui_variables::request_program_exit
       rts

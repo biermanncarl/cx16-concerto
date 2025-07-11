@@ -63,7 +63,6 @@
    .endproc
    .proc refresh
       ; prepare file listing
-      ldx #file_browsing::file_type::instrument
       jsr file_browsing::getFiles
       lda #255 ; none selected
       STA_COMPONENT_MEMBER_ADDRESS listbox, file_select, selected_entry
@@ -85,25 +84,38 @@
       sec
       rts
    :  ; fill in the data
-      lda file_browsing::current_file_type
-      bne @save_song
-      @save_instrument:
-         .ifdef ::concerto_full_daw
-            lda gui_variables::current_synth_instrument
-            jsr concerto_synth::instruments::saveInstrument
-         .endif
-         bra @close_file
-      @save_song:
-         .ifdef ::concerto_full_daw
-            jsr song_engine::song_data::saveSong
-         .elseif ::concerto_cos2zsm_converter
-            ; TODO export ZSM
-         .endif
-      @close_file:
-      jsr file_browsing::closeFile
-      plp
-      clc
-      rts
+      .ifdef ::concerto_full_daw
+         lda file_browsing::current_file_type
+         bne @save_song
+         @save_instrument:
+            .ifdef ::concerto_full_daw
+               lda gui_variables::current_synth_instrument
+               jsr concerto_synth::instruments::saveInstrument
+            .endif
+            bra @close_file
+         @save_song:
+            .ifdef ::concerto_full_daw
+               jsr song_engine::song_data::saveSong
+            .elseif ::concerto_cos2zsm_converter
+               ; TODO export ZSM
+            .endif
+         @close_file:
+         jsr file_browsing::closeFile
+         plp
+         clc
+         rts
+      .elseif .defined(::concerto_cos2zsm_converter)
+         ; Export ZSM is the only possible action here
+         jsr ::exportZsm
+         jsr file_browsing::closeFile
+         plp
+         clc
+         rts
+      .else
+         jsr file_browsing::closeFile
+         plp
+         rts
+      .endif
    .endproc
 
    .proc write

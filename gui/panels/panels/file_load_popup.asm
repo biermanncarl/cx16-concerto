@@ -51,7 +51,6 @@
    .endproc
    .proc refresh
       ; prepare file listing
-      ldx #file_browsing::file_type::instrument
       jsr file_browsing::getFiles
       lda #255 ; none selected
       ; #optimize-for-size by putting stuff above in common function (load and save popup)

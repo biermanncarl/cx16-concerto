@@ -23,6 +23,7 @@ vram_assets_name_end:
 .include "../synth_engine/snh_lut_generation.asm"
 
 ; Synth and song engine
+::concerto_enable_zsound_recording = 1
 .include "../song_engine/song_engine.asm"
 
 ; Include ZSM converter UI
@@ -68,6 +69,28 @@ exit:
    sec
    jmp ENTER_BASIC
 
+
+
+
+.proc exportZsm
+    jsr concerto_synth::zsm_recording::init
+
+    ; Play back song start to finish
+    stz song_engine::multitrack_player::player_start_timestamp
+    stz song_engine::multitrack_player::player_start_timestamp+1
+    jsr song_engine::multitrack_player::startPlayback
+
+    @loop:
+        jsr song_engine::multitrack_player::anyTracksActive
+        bcc @loop_end
+        jsr concerto_synth::isr::do_tick
+        bra @loop
+    @loop_end:
+    jsr song_engine::multitrack_player::stopPlayback
+    jsr concerto_synth::zsm_recording::finish
+    clc
+    rts
+.endproc
 
 
 

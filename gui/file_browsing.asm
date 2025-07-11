@@ -14,7 +14,11 @@
 .define MAX_FILENAME_LENGTH 21
 
 .scope file_type
-    ID_GENERATOR 0, instrument, song
+    .ifdef ::concerto_full_daw
+        ID_GENERATOR 0, instrument, song
+    .elseif .defined(::concerto_cos2zsm_converter)
+        ID_GENERATOR 0, zsm, song
+    .endif
 .endscope
 
 files:
@@ -34,18 +38,44 @@ current_selection_is_directory:
     extension:
         ; concerto-x
         .byte ".cox", FILE_VERSION ; the FILE_VERSION byte is used by the file_header
-    last_letters:
-        ; replacement letters for "x" in .cox : preset (instrument), song
-        .byte "ps"
     file_header = extension+1
 
-    .proc updateExtension
-        ; replace last character of file extension
-        ldx current_file_type
-        lda last_letters, x
-        sta extension+3
-        rts
-    .endproc
+
+    .ifdef ::concerto_full_daw
+        last_letters:
+            ; replacement letters for "x" in .cox : preset (instrument), song
+            .byte "ps"
+
+        .proc updateExtension
+            ; replace last character of file extension
+            ldx current_file_type
+            lda last_letters, x
+            sta extension+3
+            rts
+        .endproc
+    .elseif .defined(::concerto_cos2zsm_converter)
+        .proc updateExtension
+            ; here, file type 0 is for ZSM files, file type 1 is for COS files
+            lda current_file_type
+            beq @set_zsm
+        @set_cos:
+            lda #'c'
+            sta extension+1
+            lda #'o'
+            sta extension+2
+            lda #'s'
+            sta extension+3
+            rts
+        @set_zsm:
+            lda #'z'
+            sta extension+1
+            lda #'s'
+            sta extension+2
+            lda #'m'
+            sta extension+3
+            rts
+        .endproc
+    .endif
 .endscope
 
 .proc initialize
@@ -167,15 +197,18 @@ current_selection_is_directory:
     ldx #1 ; logical file number
     jsr CHKOUT
     ; Emit file header
-    ldx #0
-    @write_header_loop:
-        lda detail::file_header, x
-        phx
-        jsr CHROUT
-        plx
-        inx
-        cpx #4
-        bne @write_header_loop
+    .ifdef ::concerto_full_daw
+        ldx #0
+        @write_header_loop:
+            lda detail::file_header, x
+            phx
+            jsr CHROUT
+            plx
+            inx
+            cpx #4
+            bne @write_header_loop
+    .endif
+    ; In the ZSM converter, the ZSM header will be written by the calling code.
     clc
     rts
 
@@ -209,7 +242,7 @@ delete_me:
 
 
 ; Populates the files vector with files from the current directory and given file type.
-; In current_file_type, expects one of the ids in the file_type scope (instrument, bank or song)
+; In current_file_type, expects one of the ids in the file_type scope (instrument, song or zsm)
 ; so the directory listing is filtered for that type (.COP and .COS extension, respectively)
 .proc getFiles
     reading_file_name = detail::temp_variable_a

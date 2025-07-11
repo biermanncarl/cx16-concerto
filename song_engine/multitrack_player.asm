@@ -815,6 +815,23 @@ player_counter:
     rts
 .endproc
 
+.ifdef ::concerto_cos2zsm_converter
+    ; If any track is currently playing back something, carry will be set upon return. Clear otherwise.
+    .proc anyTracksActive
+        ldx #detail::num_players
+        @loop:
+            dex
+            bmi @loop_end
+            lda detail::next_event_pointer_y, x
+            beq @loop
+            sec
+            rts
+        @loop_end:
+        clc
+        rts
+    .endproc
+.endif
+
 .endscope
 
 .endif ; .ifndef SONG_ENGINE_MULTITRACK_PLAYER_ASM

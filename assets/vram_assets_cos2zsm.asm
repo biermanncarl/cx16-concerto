@@ -175,7 +175,7 @@ converto_banner:
     CURVE_UP_RIGHT @banner_color
     HORIZONTAL_LINE @banner_color
     CURVE_UP_LEFT @banner_color
-    VERTICAL_LINE @banner_color
+    .byte $41, @banner_color
     CURVE_UP_RIGHT @banner_color
     CORNER_UP_RIGHT @banner_color
     CURVE_UP_LEFT @banner_color
@@ -188,15 +188,6 @@ converto_banner:
     CURVE_UP_RIGHT @banner_color
     HORIZONTAL_LINE @banner_color
     CURVE_UP_LEFT @banner_color
-    ; fifth line
-    SPACES 6, @background
-    VERTICAL_LINE @banner_color
-    SPACES 12, @background
-    ; sixth line
-    SPACES 5, @background
-    .byte $A0, @banner_color
-    .byte $7E, @banner_color
-    SPACES 12, @background
 
 
 
