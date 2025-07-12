@@ -424,6 +424,46 @@ start_note:
    sta stn_loop_counter
 @loop_osc:
    ; get oscillator from list and put it into voice data
+   .ifdef ::concerto_enable_zsound_recording
+      ; For ZSM recording, we want the lowest voice index possible.
+      ; This causes songs that don't use all VERA voices to not "spill" all over VERA.
+      ; Moreover, the resulting ZSMs tend to be a little smaller, and the Melodius visualizations
+      ; a little easier on the eye.
+      ;
+      ; Get index of next voice in the ring list.
+      ldy Oscmap::ffo
+      lda Oscmap::freeosclist, y
+      ; Find lowest free VERA voice.
+      ; .A contains the lowest free voice index found so far.
+      ; .Y contains the current ring list index
+      @find_lowest_vera_loop:
+         ; Advance .Y to the next entry in the ring list
+         iny
+         cpy #N_OSCILLATORS
+         bne :+
+         ldy #0
+      :  ; Check if we have already checked all free oscillators
+         cpy Oscmap::lfo
+         beq @find_lowest_vera_loop_end
+         ; Check if the current oscillator has lower index than the previously selected one
+         cmp Oscmap::freeosclist, y
+         bcc @find_lowest_vera_loop ; nope, previous VERA voice was lower
+         ; yes, current VERA voice is lower --> swap
+         phx
+         ldx Oscmap::ffo
+         pha ; save higher voice
+         ; copy lower voice to first ringlist slot
+         lda Oscmap::freeosclist, y
+         sta Oscmap::freeosclist, x
+         ; copy higher voice to current ringlist slot
+         pla
+         sta Oscmap::freeosclist, y
+         ; Load lower voice into .A
+         lda Oscmap::freeosclist, x
+         plx
+         bra @find_lowest_vera_loop
+      @find_lowest_vera_loop_end:
+   .endif
    ldy Oscmap::ffo
    lda Oscmap::freeosclist, y
    sta Voice::osc_psg_map, x
