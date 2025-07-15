@@ -178,10 +178,10 @@ start:
     dex
     bmi @load_trampoline_end
     lda main_trampoline, x
-    sta GOLDEN_RAM_START, x
+    sta SCRATCHPAD_START, x
     bra @load_trampoline_loop
 @load_trampoline_end:
-    jmp GOLDEN_RAM_START
+    jmp SCRATCHPAD_START
 
 
 
