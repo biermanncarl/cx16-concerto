@@ -254,52 +254,6 @@ player_start_timestamp:
 .endscope
 
 
-.scope musical_keyboard
-    ; Musical keyboard stuff
-    velocity: .byte 63
-    instrument: .byte 0
-    mono: .byte 0
-    drum: .byte 0
-    basenote: .byte 60
-    buffer_size = 4
-    buffer_num_events:
-        .byte 0
-    buffer:
-        .res buffer_size
-    musical_keyboard_channel = $00
-    last_key_down:
-        .byte 0
-
-    ; pointer to musical keyboard settings
-    ; While we could handle the musical keyboard entirely separately from the multitrack player, using the
-    ; multitrack-player function "processEvent" has some advantages:
-    ; It handles mono/polyphony, drum pad and voice stealing.
-    ; On the downside, we have to provide a pointer to the settings -- essentially an invisible "clip"
-    musical_kbd_settings_a = detail::clip_settings_a
-    musical_kbd_settings_x = detail::clip_settings_x
-
-
-    ; Initializes the musical keyboard, which is now handled by the multitrack-player, as well.
-    .proc initialize
-        jsr v32b::new
-        sta musical_kbd_settings_a
-        stx musical_kbd_settings_x
-        jsr v32b::accessEntry
-        ldy #clips::clip_data::instrument_id
-        lda #0
-        sta (v32b::entrypointer), y ; set instrument id to zero
-        iny
-        sta (v32b::entrypointer), y ; set to polyphonic
-        iny
-        sta (v32b::entrypointer), y ; disable drum pad
-        ; clear musical keyboard buffer
-        stz musical_keyboard::buffer_num_events
-        rts
-    .endproc
-.endscope
-
-
-
 ; Expects channel id in .A
 .proc stopVoicesOnChannel
     ldx #0
@@ -578,130 +532,204 @@ player_index:
 
 
 .ifdef ::concerto_full_daw
-    ; Looks through our keyboard buffer and handles key presses.
-    ; ISR only.
-    .proc handleMusicalKeyboard
-        ; keycodes can be found here: https://github.com/X16Community/x16-rom/blob/master/inc/keycode.inc
-        lowest_relevant_keycode = $12 ; keycode for "w" key
-        highest_relevant_keycode = $29 ; single quote on english keyboard, rightmost key on second row of letters
-
-        ; move updated musical keyboard settings to the place where the multitrack player expects them
-        ; This could be done whenever panels__global_navigation__redrawMusicalKeyboardSettings is called.
-        ; #optimize-for-speed
-        lda musical_keyboard::musical_kbd_settings_a
-        ldx musical_keyboard::musical_kbd_settings_x
-        jsr v32b::accessEntry
-        ldy #clips::clip_data::instrument_id
-        lda musical_keyboard::instrument
-        sta (v32b::entrypointer), y ; set instrument id
-        iny
-        lda musical_keyboard::mono
-        sta (v32b::entrypointer), y ; set mono/poly
-        iny
-        lda musical_keyboard::drum
-        sta (v32b::entrypointer), y ; set drum pad
-
-        ; check for new key down/up events
-        lda musical_keyboard::buffer_num_events
-        bne :+
-        rts
-    :   stz kbd_event_index
-
-        @kbd_event_loop:
-            ldx kbd_event_index
-            lda musical_keyboard::buffer, x
-            cmp #128
-            ldx #0
-            bcs :+
-            inx
-        :   stx key_down
-            and #$7F
-            sec
-            sbc #lowest_relevant_keycode
-            cmp #(highest_relevant_keycode + 1 - lowest_relevant_keycode) ; this and higher key codes are irrelevant for musical keyboard
-            bcs @finish_event
-            tax
-            lda key_pitch_map_lut, x
-            bmi @finish_event ; filter out irrelevant keys
-
-            clc
-            adc musical_keyboard::basenote
-
-            ldy key_down
-            beq @key_up
-        @key_down:
-            cmp musical_keyboard::last_key_down ; check for keyboard autorepeat
-            beq @finish_event
-            sta song_engine::events::note_pitch
-            sta musical_keyboard::last_key_down
-            lda #musical_keyboard::musical_keyboard_channel
-            sta processEvent::player_index
-            lda musical_keyboard::velocity
-            sta song_engine::events::note_velocity
-            lda #song_engine::events::event_type_note_on
-            sta song_engine::events::event_type
-            jsr processEvent
-            ; in case of a drum pad event, we want to update the instrument shown in the GUI accordingly
-            lda concerto_synth::note_instrument
-            cmp concerto_gui__gui_variables__current_synth_instrument
-            beq @finish_event
-                sta concerto_gui__gui_variables__current_synth_instrument
-                inc concerto_gui__gui_variables__request_components_refresh_and_redraw
-                bra @finish_event
-        @key_up:
-            cmp musical_keyboard::last_key_down
-            bne :+
-            ldx #$ff
-            stx musical_keyboard::last_key_down
-        :   sta song_engine::events::note_pitch
-            lda #song_engine::events::event_type_note_off
-            sta song_engine::events::event_type
-            lda #musical_keyboard::musical_keyboard_channel
-            sta processEvent::player_index
-            jsr processEvent
-        @finish_event:
-            inc kbd_event_index
-            ldx kbd_event_index
-            cpx musical_keyboard::buffer_num_events
-            bne @kbd_event_loop
-        stz musical_keyboard::buffer_num_events
-        rts
-
-        kbd_event_index = detail::temp_variable_a
-        key_down:
+    .scope musical_keyboard
+        ; Musical keyboard stuff
+        velocity: .byte 63
+        instrument: .byte 0
+        mono: .byte 0
+        drum: .byte 0
+        basenote: .byte 60
+        buffer_size = 4
+        buffer_num_events:
             .byte 0
-        key_pitch_map_lut:
-            .byte 1 ; w
-            .byte 3 ; e
-            .byte $FF ; r
-            .byte 6 ; t
-            .byte 8 ; z
-            .byte 10 ; u
-            .byte $FF ; i
-            .byte 13 ; o
-            .byte 15 ; p
-            .byte $FF ; [
-            .byte $FF ; ]
-            .byte $FF ; \
-            .byte $FF ; caps lock
-            .byte 0 ; a
-            .byte 2 ; s
-            .byte 4 ; d
-            .byte 5 ; f
-            .byte 7 ; g
-            .byte 9 ; h
-            .byte 11 ; j
-            .byte 12 ; k
-            .byte 14 ; l
-            .byte 16 ; ;
-            .byte 17 ; '
-    .endproc
+        buffer:
+            .res buffer_size
+        musical_keyboard_channel = $00
+        last_key_down:
+            .byte 0
+
+        is_recording:
+            .byte 0
+        ; Having a smaller buffer explicitly listing active note pitches would also be possible, but might require more code overall
+        ; for searching and removing array entries.
+        ; Unfortunately, golden RAM is full already, so we'll have to provide another big buffer here.
+        recording_active_notes:
+            .res 256
+
+        ; pointer to musical keyboard settings
+        ; While we could handle the musical keyboard entirely separately from the multitrack player, using the
+        ; multitrack-player function "processEvent" has some advantages:
+        ; It handles mono/polyphony, drum pad and voice stealing.
+        ; On the downside, we have to provide a pointer to the settings -- essentially an invisible "clip"
+        musical_kbd_settings_a = detail::clip_settings_a
+        musical_kbd_settings_x = detail::clip_settings_x
+
+
+        ; Initializes the musical keyboard, which is now handled by the multitrack-player, as well.
+        .proc initialize
+            jsr v32b::new
+            sta musical_kbd_settings_a
+            stx musical_kbd_settings_x
+            jsr v32b::accessEntry
+            ldy #clips::clip_data::instrument_id
+            lda #0
+            sta (v32b::entrypointer), y ; set instrument id to zero
+            iny
+            sta (v32b::entrypointer), y ; set to polyphonic
+            iny
+            sta (v32b::entrypointer), y ; disable drum pad
+            ; clear musical keyboard buffer
+            stz musical_keyboard::buffer_num_events
+            rts
+        .endproc
+
+        ; Looks through our keyboard buffer and handles key presses.
+        ; ISR only.
+        .proc handleMusicalKeyboard
+            ; keycodes can be found here: https://github.com/X16Community/x16-rom/blob/master/inc/keycode.inc
+            lowest_relevant_keycode = $12 ; keycode for "w" key
+            highest_relevant_keycode = $29 ; single quote on english keyboard, rightmost key on second row of letters
+
+            ; move updated musical keyboard settings to the place where the multitrack player expects them
+            ; This could be done whenever panels__global_navigation__redrawMusicalKeyboardSettings is called.
+            ; #optimize-for-speed
+            lda musical_keyboard::musical_kbd_settings_a
+            ldx musical_keyboard::musical_kbd_settings_x
+            jsr v32b::accessEntry
+            ldy #clips::clip_data::instrument_id
+            lda musical_keyboard::instrument
+            sta (v32b::entrypointer), y ; set instrument id
+            iny
+            lda musical_keyboard::mono
+            sta (v32b::entrypointer), y ; set mono/poly
+            iny
+            lda musical_keyboard::drum
+            sta (v32b::entrypointer), y ; set drum pad
+
+            ; check for new key down/up events
+            lda musical_keyboard::buffer_num_events
+            bne :+
+            rts
+        :   stz kbd_event_index
+
+            @kbd_event_loop:
+                ldx kbd_event_index
+                lda musical_keyboard::buffer, x
+                cmp #128
+                ldx #0
+                bcs :+
+                inx
+            :   stx key_down
+                and #$7F
+                sec
+                sbc #lowest_relevant_keycode
+                cmp #(highest_relevant_keycode + 1 - lowest_relevant_keycode) ; this and higher key codes are irrelevant for musical keyboard
+                bcs @finish_event
+                tax
+                lda key_pitch_map_lut, x
+                bmi @finish_event ; filter out irrelevant keys
+
+                clc
+                adc musical_keyboard::basenote
+
+                ldy key_down
+                beq @key_up
+            @key_down:
+                cmp musical_keyboard::last_key_down ; check for keyboard autorepeat
+                beq @finish_event
+                sta song_engine::events::note_pitch
+                sta musical_keyboard::last_key_down
+                lda #musical_keyboard::musical_keyboard_channel
+                sta processEvent::player_index
+                lda musical_keyboard::velocity
+                sta song_engine::events::note_velocity
+                lda #song_engine::events::event_type_note_on
+                sta song_engine::events::event_type
+                jsr processEvent
+                ; in case of a drum pad event, we want to update the instrument shown in the GUI accordingly
+                lda concerto_synth::note_instrument
+                cmp concerto_gui__gui_variables__current_synth_instrument
+                beq @finish_event
+                    sta concerto_gui__gui_variables__current_synth_instrument
+                    inc concerto_gui__gui_variables__request_components_refresh_and_redraw
+                    bra @finish_event
+            @key_up:
+                cmp musical_keyboard::last_key_down
+                bne :+
+                ldx #$ff
+                stx musical_keyboard::last_key_down
+            :   sta song_engine::events::note_pitch
+                lda #song_engine::events::event_type_note_off
+                sta song_engine::events::event_type
+                lda #musical_keyboard::musical_keyboard_channel
+                sta processEvent::player_index
+                jsr processEvent
+            @finish_event:
+                inc kbd_event_index
+                ldx kbd_event_index
+                cpx musical_keyboard::buffer_num_events
+                bne @kbd_event_loop
+            stz musical_keyboard::buffer_num_events
+            rts
+
+            kbd_event_index = detail::temp_variable_a
+            key_down:
+                .byte 0
+            key_pitch_map_lut:
+                .byte 1 ; w
+                .byte 3 ; e
+                .byte $FF ; r
+                .byte 6 ; t
+                .byte 8 ; z
+                .byte 10 ; u
+                .byte $FF ; i
+                .byte 13 ; o
+                .byte 15 ; p
+                .byte $FF ; [
+                .byte $FF ; ]
+                .byte $FF ; \
+                .byte $FF ; caps lock
+                .byte 0 ; a
+                .byte 2 ; s
+                .byte 4 ; d
+                .byte 5 ; f
+                .byte 7 ; g
+                .byte 9 ; h
+                .byte 11 ; j
+                .byte 12 ; k
+                .byte 14 ; l
+                .byte 16 ; ;
+                .byte 17 ; '
+        .endproc
+
+        .proc startKeyboardRecording
+            jsr event_selection::unselectAllEvents
+            ; No flushClip needed because that is being done when the track is unselected
+            ; (or any other occasion where the correct pointer in Clip data must be guaranteed: saving song, tempo change ...)
+            ldx #0
+            @loop:
+                stz recording_active_notes, x
+                inx
+                bne @loop
+            lda #1
+            sta recording_active_notes
+            
+            ; redraw needs to be done by caller
+            rts
+        .endproc
+
+        .proc stopKeyboardRecording
+            ; TODO: Finish up all unfinished notes
+            stz is_recording
+            rts
+        .endproc
+    .endscope
 .endif
 
 ; ISR only
 .proc playerTick
     .ifdef ::concerto_full_daw
-        jsr handleMusicalKeyboard
+        jsr musical_keyboard::handleMusicalKeyboard
     .endif
     lda detail::active
     bne :+

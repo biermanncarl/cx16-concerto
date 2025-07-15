@@ -10,30 +10,29 @@
 .scope keyboard
 
 .scope detail
+    .ifdef ::concerto_full_daw
+        ; Apparently, since this keyboard handler is an ISR, it never occurs simultaneously with the concerto synth/player tick.
+        ; We therefore (probably, from experience) don't have to worry about ISR compatibility of this keyboard handler.
+        ; Its run time is of bigger concern. PS/2 communication might suffer if it takes too long. (Can result in glitchy mouse)
+        ; Therefore, we use a small buffer to store keyboard events and let our ISR do the rest.
+        .proc musicalKbdHandler
+            ; We need to preserve .A and .X.
 
+            ; check bypass
+            ldy kbd_variables::musical_keyboard_bypass
+            bne @finish_direct
 
-    ; Apparently, since this keyboard handler is an ISR, it never occurs simultaneously with the concerto synth/player tick.
-    ; We therefore (probably, from experience) don't have to worry about ISR compatibility of this keyboard handler.
-    ; Its run time is of bigger concern. PS/2 communication might suffer if it takes too long. (Can result in glitchy mouse)
-    ; Therefore, we use a small buffer to store keyboard events and let our ISR do the rest.
-    .proc musicalKbdHandler
-        ; We need to preserve .A and .X.
+            ldy song_engine::multitrack_player::musical_keyboard::buffer_num_events
+            cpy #song_engine::multitrack_player::musical_keyboard::buffer_size ; keyboard event buffer full?
+            bcs @finish_direct
+            ; put keyboard event into buffer
+            sta song_engine::multitrack_player::musical_keyboard::buffer, y
+            inc song_engine::multitrack_player::musical_keyboard::buffer_num_events
 
-        ; check bypass
-        ldy kbd_variables::musical_keyboard_bypass
-        bne @finish_direct
-
-        ldy song_engine::multitrack_player::musical_keyboard::buffer_num_events
-        cpy #song_engine::multitrack_player::musical_keyboard::buffer_size ; keyboard event buffer full?
-        bcs @finish_direct
-        ; put keyboard event into buffer
-        sta song_engine::multitrack_player::musical_keyboard::buffer, y
-        inc song_engine::multitrack_player::musical_keyboard::buffer_num_events
-
-    @finish_direct:
-        jmp (kbd_variables::original_keyboard_handler)
-
-    .endproc
+        @finish_direct:
+            jmp (kbd_variables::original_keyboard_handler)
+        .endproc
+    .endif
 .endscope
 
 .proc tick
@@ -54,32 +53,33 @@
     jmp gui_routines::keypress_event
 .endproc
 
+.ifdef ::concerto_full_daw
+    .proc installMusicalKeyboard
+        php
+        sei
+        lda KBDVec
+        sta kbd_variables::original_keyboard_handler
+        lda KBDVec+1
+        sta kbd_variables::original_keyboard_handler+1
+        lda #<detail::musicalKbdHandler
+        ldx #>detail::musicalKbdHandler
+        sta KBDVec
+        stx KBDVec+1
+        plp
+        rts
+    .endproc
 
-.proc installMusicalKeyboard
-    php
-    sei
-    lda KBDVec
-    sta kbd_variables::original_keyboard_handler
-    lda KBDVec+1
-    sta kbd_variables::original_keyboard_handler+1
-    lda #<detail::musicalKbdHandler
-    ldx #>detail::musicalKbdHandler
-    sta KBDVec
-    stx KBDVec+1
-    plp
-    rts
-.endproc
-
-.proc uninstallMusicalKeyboard
-    php
-    sei
-    lda kbd_variables::original_keyboard_handler
-    sta KBDVec
-    lda kbd_variables::original_keyboard_handler+1
-    sta KBDVec+1
-    plp
-    rts
-.endproc
+    .proc uninstallMusicalKeyboard
+        php
+        sei
+        lda kbd_variables::original_keyboard_handler
+        sta KBDVec
+        lda kbd_variables::original_keyboard_handler+1
+        sta KBDVec+1
+        plp
+        rts
+    .endproc
+.endif
 
 .endscope
 

@@ -249,7 +249,7 @@ sneak_entry:
     php
     sei
     jsr event_selection::unselectAllEvents
-    jmp flushEventPointer::sneak_entry
+    bra flushEventPointer::sneak_entry
 .endproc
 
 ; Expects the clip id in .Y
