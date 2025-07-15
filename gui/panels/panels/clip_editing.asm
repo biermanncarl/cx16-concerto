@@ -106,7 +106,7 @@
       .word @zoom_level
       .word song_engine::multitrack_player::startPlayback
       .word song_engine::multitrack_player::stopPlayback
-      .word song_engine::multitrack_player::stopPlayback ; TODO recording
+      .word song_engine::multitrack_player::musical_keyboard::startKeyboardRecording
       .word @song_tempo
       .word @load_song
       .word @save_song

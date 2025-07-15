@@ -11,8 +11,6 @@ player_start_timestamp:
 .scope detail
     active: .byte 0
     time_stamp: .word 0
-    next_time_stamp: .word 0
-    next_event: .res 3
 
     ; Which voice belongs to which channel
     voice_channels:
@@ -624,9 +622,15 @@ player_index:
                 bne :+
                 ldx #$ff
                 stx musical_keyboard::last_key_down
-            :   sta song_engine::events::note_pitch
-                lda #song_engine::events::event_type_note_off
-                sta song_engine::events::event_type
+            :   ; TODO: clear entry in recording_active_notes
+                lda #events::event_type_note_off
+                sta events::event_type
+                ldx is_recording
+                beq @skip_recording_note_off
+                jsr recordEvent
+            @skip_recording_note_off:
+                lda #events::event_type_note_off
+                sta events::event_type
                 lda #musical_keyboard::musical_keyboard_channel
                 sta processEvent::player_index
                 jsr processEvent
@@ -645,7 +649,6 @@ player_index:
             @key_down_event:
                 cmp musical_keyboard::last_key_down ; check for keyboard autorepeat
                 beq @skip2
-                sta song_engine::events::note_pitch
                 sta musical_keyboard::last_key_down
                 lda #musical_keyboard::musical_keyboard_channel
                 sta processEvent::player_index
@@ -653,6 +656,10 @@ player_index:
                 sta song_engine::events::note_velocity
                 lda #song_engine::events::event_type_note_on
                 sta song_engine::events::event_type
+                lda is_recording
+                beq @skip_recording_note_on
+                jsr recordEvent
+            @skip_recording_note_on:
                 jsr processEvent
                 ; in case of a drum pad event, we want to update the instrument shown in the GUI accordingly
                 lda concerto_synth::note_instrument
@@ -733,6 +740,7 @@ player_index:
             .endproc
         .endproc
 
+        ; Also acts as playback start for convenience.
         .proc startKeyboardRecording
             jsr event_selection::unselectAllEvents
             ; No flushClip needed because that is being done when the track is unselected
@@ -743,16 +751,30 @@ player_index:
                 inx
                 bne @loop
             lda #1
-            sta recording_active_notes
+            sta is_recording
             
-            ; redraw needs to be done by caller
-            rts
+            ; Notes redraw needs to be done by caller
+            jmp startPlayback
         .endproc
 
         .proc stopKeyboardRecording
+            lda is_recording
+            beq @end
             ; TODO: Finish up all unfinished notes
             stz is_recording
+        @end:
             rts
+        .endproc
+
+        .proc recordEvent
+            ; Set timestamp
+            lda detail::time_stamp
+            sta events::event_time_stamp_l
+            lda detail::time_stamp+1
+            sta events::event_time_stamp_h
+            lda event_selection::selected_events_vector
+            ldx event_selection::selected_events_vector+1
+            jmp v5b::append_new_entry
         .endproc
     .endscope
 .endif
@@ -871,6 +893,9 @@ player_counter:
 .proc stopPlayback
     stz detail::active
     jsr concerto_synth::panic
+    .ifdef ::concerto_full_daw
+        jsr musical_keyboard::stopKeyboardRecording
+    .endif
     rts
 .endproc
 
