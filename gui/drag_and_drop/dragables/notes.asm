@@ -1653,6 +1653,7 @@ height = 2 * detail::event_edit_height
    :
 
    ; Start of a dragging operation. figure out what we're actually doing
+   stz dnd::drag_action_state ; #drag_action::none -- default
    lda mouse_variables::curr_buttons
    and #1 ; check for left button
    bne @left_button
@@ -1664,10 +1665,10 @@ height = 2 * detail::event_edit_height
    and #4 ; check for middle button
    beq :+
    jmp @middle_button
-:  stz dnd::drag_action_state ; #drag_action::none
-   rts
+:  rts
 @left_button:
    ; LMB down: mostly selection / unselection stuff
+   RTS_IF_RECORDING ; none of the LMB operations shall happen during recording
    inc gui_variables::request_components_redraw
    lda mouse_variables::curr_data_1
    bne @lmb_event_clicked
@@ -1745,12 +1746,12 @@ height = 2 * detail::event_edit_height
    ; pointing at a note. If it is selected, we do velocity editing.
    lda mouse_variables::curr_data_3
    bmi @velocity
-   stz dnd::drag_action_state ; #drag_action::none
    rts
 @middle_button:
    lda #drag_action::zoom
    bra @finish
 @velocity:
+   RTS_IF_RECORDING ; no velocity editing during recording
    lda #drag_action::velocity_edit
    bra @finish
 @scroll:

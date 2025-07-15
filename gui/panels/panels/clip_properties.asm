@@ -69,6 +69,7 @@
         ; move all events back into the clip
         php
         sei
+        jsr song_engine::multitrack_player::musical_keyboard::stopPlaybackIfRecording
         jsr song_engine::clips::flushClip
 
         ; update playback

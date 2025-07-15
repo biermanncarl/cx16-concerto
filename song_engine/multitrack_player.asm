@@ -807,8 +807,23 @@ player_index:
                 bne @loop
             rts
         .endproc
+
+        .proc stopPlaybackIfRecording
+            lda is_recording
+            bne :+
+            rts
+        :   jmp stopPlayback 
+        .endproc
     .endscope
 .endif
+
+; Utility macro to make functions recording-safe
+.macro RTS_IF_RECORDING
+   lda song_engine::multitrack_player::musical_keyboard::is_recording
+   beq :+
+   rts
+:
+.endmacro
 
 ; ISR only
 .proc playerTick
