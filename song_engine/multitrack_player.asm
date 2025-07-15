@@ -634,6 +634,7 @@ player_index:
                 lda #musical_keyboard::musical_keyboard_channel
                 sta processEvent::player_index
                 jsr processEvent
+                inc concerto_gui__gui_variables__request_components_refresh_and_redraw
             @skip1:
                 lda kbd_event_index
                 cmp musical_keyboard::buffer_num_events
@@ -659,6 +660,7 @@ player_index:
                 lda is_recording
                 beq @skip_recording_note_on
                 jsr recordEvent
+                inc concerto_gui__gui_variables__request_components_refresh_and_redraw
             @skip_recording_note_on:
                 jsr processEvent
                 ; in case of a drum pad event, we want to update the instrument shown in the GUI accordingly
@@ -752,8 +754,7 @@ player_index:
                 bne @loop
             lda #1
             sta is_recording
-            
-            ; Notes redraw needs to be done by caller
+            inc concerto_gui__gui_variables__request_components_refresh_and_redraw
             jmp startPlayback
         .endproc
 
@@ -762,6 +763,7 @@ player_index:
             beq @end
             ; TODO: Finish up all unfinished notes
             stz is_recording
+            inc concerto_gui__gui_variables__request_components_refresh_and_redraw
         @end:
             rts
         .endproc
