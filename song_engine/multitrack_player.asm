@@ -610,33 +610,41 @@ player_index:
             lda musical_keyboard::buffer_num_events
             bne :+
             rts
-        :   stz kbd_event_index
+        :   
 
-            @kbd_event_loop:
-                ldx kbd_event_index
-                lda musical_keyboard::buffer, x
-                cmp #128
-                ldx #0
-                bcs :+
-                inx
-            :   stx key_down
-                and #$7F
-                sec
-                sbc #lowest_relevant_keycode
-                cmp #(highest_relevant_keycode + 1 - lowest_relevant_keycode) ; this and higher key codes are irrelevant for musical keyboard
-                bcs @finish_event
-                tax
-                lda key_pitch_map_lut, x
-                bmi @finish_event ; filter out irrelevant keys
+            ; process all key-up events
+            stz kbd_event_index
+            @key_up_loop:
+                jsr isKeyUp
+                bpl @skip1 ; skip key-down events in this loop
+                jsr isKeyRelevant
+                bcs @skip1
+            @key_up_event:
+                cmp musical_keyboard::last_key_down
+                bne :+
+                ldx #$ff
+                stx musical_keyboard::last_key_down
+            :   sta song_engine::events::note_pitch
+                lda #song_engine::events::event_type_note_off
+                sta song_engine::events::event_type
+                lda #musical_keyboard::musical_keyboard_channel
+                sta processEvent::player_index
+                jsr processEvent
+            @skip1:
+                lda kbd_event_index
+                cmp musical_keyboard::buffer_num_events
+                bne @key_up_loop
 
-                clc
-                adc musical_keyboard::basenote
-
-                ldy key_down
-                beq @key_up
-            @key_down:
+            ; process all key-down events
+            stz kbd_event_index
+            @key_down_loop:
+                jsr isKeyUp
+                bmi @skip2 ; skip key-up events in this loop
+                jsr isKeyRelevant
+                bcs @skip2
+            @key_down_event:
                 cmp musical_keyboard::last_key_down ; check for keyboard autorepeat
-                beq @finish_event
+                beq @skip2
                 sta song_engine::events::note_pitch
                 sta musical_keyboard::last_key_down
                 lda #musical_keyboard::musical_keyboard_channel
@@ -649,26 +657,15 @@ player_index:
                 ; in case of a drum pad event, we want to update the instrument shown in the GUI accordingly
                 lda concerto_synth::note_instrument
                 cmp concerto_gui__gui_variables__current_synth_instrument
-                beq @finish_event
+                beq @skip2
                     sta concerto_gui__gui_variables__current_synth_instrument
                     inc concerto_gui__gui_variables__request_components_refresh_and_redraw
-                    bra @finish_event
-            @key_up:
-                cmp musical_keyboard::last_key_down
-                bne :+
-                ldx #$ff
-                stx musical_keyboard::last_key_down
-            :   sta song_engine::events::note_pitch
-                lda #song_engine::events::event_type_note_off
-                sta song_engine::events::event_type
-                lda #musical_keyboard::musical_keyboard_channel
-                sta processEvent::player_index
-                jsr processEvent
-            @finish_event:
-                inc kbd_event_index
-                ldx kbd_event_index
-                cpx musical_keyboard::buffer_num_events
-                bne @kbd_event_loop
+            @skip2:
+                lda kbd_event_index
+                cmp musical_keyboard::buffer_num_events
+                bne @key_down_loop
+
+
             stz musical_keyboard::buffer_num_events
             rts
 
@@ -700,6 +697,40 @@ player_index:
                 .byte 14 ; l
                 .byte 16 ; ;
                 .byte 17 ; '
+
+            ; Reads the current keyboard event and checks if it's key-up or key-down.
+            ; If key-up, minus flag is set; clear otherwise.
+            ; Event code is returned in .A
+            ; kbd_event_index is incremented.
+            .proc isKeyUp
+                ldx kbd_event_index
+                inc kbd_event_index
+                lda musical_keyboard::buffer, x
+                rts
+            .endproc
+
+            ; Expects current keyboard event in .A
+            ; If key is relevant for musical keyboard, carry is clear upon return; set otherwise.
+            ; If carry is clear, both .A and song_engine::events::note_pitch are set to the corresponding pitch.
+            .proc isKeyRelevant
+                and #$7F
+                sec
+                sbc #lowest_relevant_keycode
+                cmp #(highest_relevant_keycode + 1 - lowest_relevant_keycode) ; this and higher key codes are irrelevant for musical keyboard
+                ; If carry is set, key is irrelevant
+                bcc :++
+            :   rts
+            :   tax
+                lda key_pitch_map_lut, x
+                asl
+                bcs :-- ; irrelevant key within the LUT
+                lsr
+                ; carry is clear as per above instructions
+                adc musical_keyboard::basenote
+                sta song_engine::events::note_pitch ; save the pitch value (in case it's significant)
+                clc ; #optimize-for-size CLC can probably be omitted, if the maximal basenote is low enough. Haven't checked yet.
+                rts
+            .endproc
         .endproc
 
         .proc startKeyboardRecording
