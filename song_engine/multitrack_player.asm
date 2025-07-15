@@ -625,8 +625,14 @@ player_index:
             :   ; TODO: clear entry in recording_active_notes
                 lda #events::event_type_note_off
                 sta events::event_type
+                ; recording
                 ldx is_recording
                 beq @skip_recording_note_off
+                ; check if note was active
+                ldx events::note_pitch
+                lda recording_active_notes, x
+                beq @skip_recording_note_off
+                stz recording_active_notes, x
                 jsr recordEvent
             @skip_recording_note_off:
                 lda #events::event_type_note_off
@@ -654,11 +660,14 @@ player_index:
                 lda #musical_keyboard::musical_keyboard_channel
                 sta processEvent::player_index
                 lda musical_keyboard::velocity
-                sta song_engine::events::note_velocity
-                lda #song_engine::events::event_type_note_on
-                sta song_engine::events::event_type
+                sta events::note_velocity
+                lda #events::event_type_note_on
+                sta events::event_type
+                ; recording
                 lda is_recording
                 beq @skip_recording_note_on
+                ldx events::note_pitch
+                inc recording_active_notes, x
                 jsr recordEvent
                 inc concerto_gui__gui_variables__request_components_refresh_and_redraw
             @skip_recording_note_on:
@@ -755,13 +764,15 @@ player_index:
             lda #1
             sta is_recording
             inc concerto_gui__gui_variables__request_components_refresh_and_redraw
+            ; The player for selected events should get deactivated immediately, since there are no events in it (yet).
+            ; Therefore, recording won't interfere with playback.
             jmp startPlayback
         .endproc
 
         .proc stopKeyboardRecording
             lda is_recording
             beq @end
-            ; TODO: Finish up all unfinished notes
+            jsr flushRecording
             stz is_recording
             inc concerto_gui__gui_variables__request_components_refresh_and_redraw
         @end:
@@ -777,6 +788,24 @@ player_index:
             lda event_selection::selected_events_vector
             ldx event_selection::selected_events_vector+1
             jmp v5b::append_new_entry
+        .endproc
+
+        ; Finishes all currently unfinished notes, so it becomes safe to unselect the recorded events.
+        .proc flushRecording
+            lda #events::event_type_note_off
+            sta events::event_type
+            ldx #0
+            @loop:
+                lda recording_active_notes, x
+                beq :+
+                stx events::note_pitch
+                phx
+                jsr recordEvent
+                plx
+            :   stz recording_active_notes, x
+                inx
+                bne @loop
+            rts
         .endproc
     .endscope
 .endif
