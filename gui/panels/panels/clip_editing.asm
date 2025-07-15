@@ -29,8 +29,9 @@
    .scope comps
       COMPONENT_DEFINITION drag_and_drop_area, notes_edit, components::dnd::dragables::ids::notes
       COMPONENT_DEFINITION combobox, zoom_level_indicator, zoom_level_indicator_x, zoom_level_indicator_y, 6, 5, A zoom_select_lb, 0
-      COMPONENT_DEFINITION button, play_start, 34, 5, 3, A play_caption
-      COMPONENT_DEFINITION button, play_stop, 38, 5, 3, A stop_caption
+      COMPONENT_DEFINITION button, play_start, 32, 5, 3, A play_caption
+      COMPONENT_DEFINITION button, play_stop, 36, 5, 3, A stop_caption
+      COMPONENT_DEFINITION button, recording_start, 40, 5, 3, A record_button_lb
       COMPONENT_DEFINITION button, song_tempo, 51, 0, 10, A tempo_caption
       COMPONENT_DEFINITION button, load_song, 31, 0, 9, A load_song_lb
       COMPONENT_DEFINITION button, save_song, 41, 0, 9, A save_song_lb
@@ -68,6 +69,7 @@
    about_lb: STR_FORMAT " about"
    insert_time_lb: STR_FORMAT "insert time"
    delete_time_lb: STR_FORMAT "delete time"
+   record_button_lb: .byte 32, 81, 0
 
    .proc draw
       ; help frame
@@ -104,6 +106,7 @@
       .word @zoom_level
       .word song_engine::multitrack_player::startPlayback
       .word song_engine::multitrack_player::stopPlayback
+      .word song_engine::multitrack_player::stopPlayback ; TODO recording
       .word @song_tempo
       .word @load_song
       .word @save_song
