@@ -430,7 +430,7 @@ change_tempo_hint:
 
 about_text:
     @text_width = 36
-    PADDED_TEXT @text_width, white_text_color , "  concerto multitrack 0.7.0 (beta)  "
+    PADDED_TEXT @text_width, white_text_color , "  concerto multitrack 0.8.0 (beta)  "
     PADDED_TEXT @text_width, normal_text_color, "                                    "
     PADDED_TEXT @text_width, normal_text_color, "   by carl biermann  (kliepatsch)   "
     PADDED_TEXT @text_width, normal_text_color, "                                    "
