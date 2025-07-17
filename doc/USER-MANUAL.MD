@@ -36,6 +36,7 @@ Samples are not supported, unfortunately. But don’t worry: Concerto is capable
 6. [**Track Page**](#track-page)
     * [Loading and Saving Songs](#loading-and-saving-songs)
     * [Playback Controls](#playback-controls)
+    * [Recording](#recording)
     * [What is a Track?](#what-is-a-track?)
     * [Managing tracks](#managing-tracks)
     * [Note editing](#note-editing)
@@ -105,7 +106,7 @@ Most of the GUI controls should be very intuitive: buttons, tabs, checkboxes, dr
 
 # The Musical Keyboard
 
-Concerto turns a part of the keyboard into a musical one. The currently selected synth sound can be played manually to preview sounds, to improvise solo or alongside your composition. During sound design, it is an essential tool to get fast feedback, and it can even be used to quickly navigate the drum slots.
+Concerto turns a part of the keyboard into a musical one. The currently selected synth sound can be played manually to preview sounds, to improvise solo or alongside your composition. During sound design, it is an essential tool to get fast feedback, and it can even be used to quickly navigate the drum slots. Moreover, the keypresses can be recorded.
 
 Keys A, S, D etc. all the way to the right side are the white keys. Black keys are mapped to W, E, T etc. They can be played polyphonically\!
 
@@ -171,6 +172,10 @@ The two buttons with the triangle and the square symbols start and stop playback
 Playback always starts at the position of the playback-start-marker, which is shown as a yellow triangle inside the black horizontal bar below the Start/Stop buttons. If the marker is outside the currently shown time window, it isn’t shown as a yellow triangle: when to the left, it is shown as a gray triangle; when to the right, it is simply not shown at all.  
 The playback-start-marker is also used for a small number of other things, e.g. copy/paste, but these will be discussed further below.
 
+## Recording
+
+The button with the circle symbol starts recording. All notes played on the musical keyboard will appear in the currently selected track. Recording is stopped when playback is stopped, or when another track is selected. Once the recording is finished, the notes can be edited as any other notes.
+
 ## What is a Track?
 
 A track is a central building block of your music.  
@@ -184,7 +189,7 @@ You can scroll through the list by dragging the right mouse button up or down.
 ## Note editing
 
 The center of the Track page is filled with the note editing area. Here you edit and inspect the music to be played.  
-The grid shows note pitch in the vertical axis and time in the horizontal axis. The music will be played from left to right. All notes within a track lie on the same big timeline, which extends along the entire song.
+The grid shows note pitch in the vertical axis and time in the horizontal axis. The numbers on the left border indicate different octaves for melodic tracks; for drum tracks, the ticks represent the start of the 16-instrument-sequences. The music will be played from left to right. All notes within a track lie on the same big timeline, which extends along the entire song.
 
 ### Moving the view around
 
