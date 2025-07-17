@@ -168,8 +168,7 @@
 
    .proc refresh
       lda components::dnd::dragables::notes::temporal_zoom
-      LDY_COMPONENT_MEMBER combobox, zoom_level_indicator, selected_entry
-      sta comps, y
+      STA_COMPONENT_MEMBER_ADDRESS combobox, zoom_level_indicator, selected_entry
       rts
    .endproc
 

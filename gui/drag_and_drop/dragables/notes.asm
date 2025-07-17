@@ -298,6 +298,7 @@ note_data_changed: ; flag set within drag&drop operations to signal if playback 
 
    ; Copies the content of the clipboard to the selected events vector while shifting all events so that they start
    ; at the current playback start marker.
+   ; Assumes that the selected_events_vector is empty.
    .proc aligningClipboardDuplicate
       time_stamp_diff_l = temp_variable_a
       time_stamp_diff_h = temp_variable_b
@@ -1962,7 +1963,6 @@ height = 2 * detail::event_edit_height
 
 
 .proc clipboardCut
-   inc gui_variables::request_components_redraw
    ; mute track
    lda song_engine::clips::active_clip_id
    inc
@@ -1974,7 +1974,12 @@ height = 2 * detail::event_edit_height
 
    SWAP_VECTORS clipboard_events, song_engine::event_selection::selected_events_vector
    ; update player
-update_track_player:
+update_track_player_and_gui:
+   inc gui_variables::request_components_redraw ; we must not do GUI refresh (unless we do flushClip first)
+   ; this is a hack since normally, the mouse requests redrawings
+   lda #panels__ids__clip_editing
+   sta mouse_variables::curr_panel
+
    ; #optimize-for-size  I think this sequence is being done elsewhere, too.
    lda song_engine::clips::active_clip_id
    inc
@@ -1985,11 +1990,9 @@ update_track_player:
 
 
 .proc clipboardPaste
-   inc gui_variables::request_components_refresh_and_redraw
-
    jsr song_engine::event_selection::unselectAllEvents
    jsr detail::aligningClipboardDuplicate
-   bra clipboardCut::update_track_player
+   bra clipboardCut::update_track_player_and_gui
 .endproc
 
 

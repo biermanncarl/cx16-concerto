@@ -42,6 +42,7 @@ panels__combobox_popup__draw = panels::combobox_popup::draw
     panels__ids__global_navigation = panels::ids::global_navigation
     panels__ids__about_popup = panels::ids::about_popup
     panels__ids__time_insert_delete_popup = panels::ids::time_insert_delete_popup
+    panels__ids__clip_editing = panels::ids::clip_editing
     gui_routines__load_clip_gui = gui_routines::load_clip_gui
     gui_routines__load_arrangement_gui = gui_routines::load_arrangement_gui
     gui_routines__load_synth_gui = gui_routines::load_synth_gui
