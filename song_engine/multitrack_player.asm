@@ -634,13 +634,13 @@ player_index:
                 beq @skip_recording_note_off
                 stz recording_active_notes, x
                 jsr recordEvent
+                inc concerto_gui__gui_variables__request_components_refresh_and_redraw
             @skip_recording_note_off:
                 lda #events::event_type_note_off
                 sta events::event_type
                 lda #musical_keyboard::musical_keyboard_channel
                 sta processEvent::player_index
                 jsr processEvent
-                inc concerto_gui__gui_variables__request_components_refresh_and_redraw
             @skip1:
                 lda kbd_event_index
                 cmp musical_keyboard::buffer_num_events
