@@ -8,6 +8,25 @@ run:
 convert:
 	cd build ; x16emu -prg COS2ZSM.PRG -scale 2 -debug -abufs 8 -capture -nokeyboardcapture -run
 
+# Generate a zip file which is usable in the X16 forum
+# assuming we're inside the build folder
+.PHONY: release
+release: CONCERTO.PRG COS2ZSM.PRG
+	rm -rf release
+	mkdir -p release
+	cp -r build/* release/
+	rm -f release/*.sym
+	# Clean the user folders
+	rm -rf release/INSTRUMENTS-USER/*
+	rm -rf release/SONGS-USER/*
+	# Wipe and clean-install the preset folders
+	rm -rf release/INSTRUMENTS-DRUMS
+	rm -rf release/INSTRUMENTS-SYNTH
+	rm -rf release/SONGS-DEMOS
+	cp -r presets/* release/
+	cd release ; zip -r CONCERTO-MULTITRACK-B2.zip .
+
+
 .PHONY: test
 test:
 	testing/run_tests.sh
