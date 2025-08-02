@@ -24,6 +24,7 @@ release: CONCERTO.PRG COS2ZSM.PRG
 	rm -rf release/INSTRUMENTS-SYNTH
 	rm -rf release/SONGS-DEMOS
 	cp -r presets/* release/
+	cp manifest.json release/
 	cd release ; zip -r CONCERTO-MULTITRACK-B2.zip .
 
 

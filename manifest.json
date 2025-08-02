@@ -1,0 +1,8 @@
+{
+    "manifest_version": "1.0.0",
+    "name": "Concerto Multitrack Beta",
+    "author": "Carl Biermann",
+    "app_version": "0.8.0",
+    "license": "BSD 2-clause",
+    "start_prg": "CONCERTO.PRG"
+}
