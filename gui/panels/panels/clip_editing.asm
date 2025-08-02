@@ -175,6 +175,13 @@
    .proc keypress
       php
       sei
+      ; Recording key
+      lda kbd_variables::current_key
+      cmp #$87 ; F5 for recording
+      bne :+
+      plp
+      jmp song_engine::multitrack_player::musical_keyboard::startKeyboardRecording
+   :
       ; Handle clipboard (Copy/Cut/Paste)
       lda kbd_variables::ctrl_key_pressed
       beq @end ; only continue if CTRL is being pressed

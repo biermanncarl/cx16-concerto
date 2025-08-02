@@ -175,6 +175,7 @@ The playback-start-marker is also used for a small number of other things, e.g. 
 ## Recording
 
 The button with the circle symbol starts recording. All notes played on the musical keyboard will appear in the currently selected track. Recording is stopped when playback is stopped, or when another track is selected. Once the recording is finished, the notes can be edited as any other notes.
+The keyboard shortcut for recording is F5.
 
 ## What is a Track?
 
@@ -455,6 +456,7 @@ There are several strategies to deal with this:
 | BACKSPACE | Delete characters left of cursor |
 | DELETE | Delete characters right of cursor |
 | LEFT/RIGHT | Move cursor (can use mouse, too\!) |
+| F5 | Start recording musical keyboard |
 
 # Where is the undo feature?
 
